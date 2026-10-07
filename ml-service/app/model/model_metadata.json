@@ -1,0 +1,77 @@
+{
+  "model_version": "v1.0-rf",
+  "metrics_comparison": [
+    {
+      "model_name": "Logistic Regression (Baseline)",
+      "accuracy": 0.9667,
+      "precision": 0.7701,
+      "recall": 1.0,
+      "f1_score": 0.8701,
+      "roc_auc": 0.9982
+    },
+    {
+      "model_name": "Random Forest Classifier (Đề xuất)",
+      "accuracy": 0.97,
+      "precision": 0.8267,
+      "recall": 0.9254,
+      "f1_score": 0.8732,
+      "roc_auc": 0.9927
+    }
+  ],
+  "top_features": [
+    {
+      "feature": "supplement_count",
+      "importance": 0.6713332852611984
+    },
+    {
+      "feature": "officer_workload",
+      "importance": 0.07772482083777339
+    },
+    {
+      "feature": "annual_revenue",
+      "importance": 0.052630037925731274
+    },
+    {
+      "feature": "loan_amount",
+      "importance": 0.04813142654700465
+    },
+    {
+      "feature": "previous_stage_duration_hours",
+      "importance": 0.03748427847817128
+    },
+    {
+      "feature": "debt_to_equity",
+      "importance": 0.032128595421895924
+    },
+    {
+      "feature": "established_years",
+      "importance": 0.028781646555374775
+    },
+    {
+      "feature": "industry_Xay_Dung",
+      "importance": 0.014796600114335081
+    },
+    {
+      "feature": "loan_term_months",
+      "importance": 0.014115099806329141
+    },
+    {
+      "feature": "industry_San_Xuat",
+      "importance": 0.004519428043866582
+    }
+  ],
+  "numeric_features": [
+    "loan_amount",
+    "loan_term_months",
+    "established_years",
+    "annual_revenue",
+    "debt_to_equity",
+    "supplement_count",
+    "officer_workload",
+    "previous_stage_duration_hours"
+  ],
+  "categorical_features": [
+    "loan_type",
+    "industry"
+  ]
+}
