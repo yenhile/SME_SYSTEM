@@ -13,6 +13,7 @@
     "types": ["node"],
     "incremental": true,
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "strictPropertyInitialization": false
   }
 }

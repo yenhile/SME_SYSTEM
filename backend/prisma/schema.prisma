@@ -6,3 +6,278 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ==========================================
+// 1. ENUMS (HỆ THỐNG DANH MỤC ĐỊNH SẴN)
+// ==========================================
+
+enum RoleCode {
+  ADMIN
+  CBTD
+  THAM_QUYEN
+  QUAN_LY
+}
+
+enum LoanType {
+  VAY_VON_LUU_DONG
+  VAY_DAU_TU_TSCD
+  THAU_CHI
+}
+
+enum StageCode {
+  TIEP_NHAN
+  THAM_DINH
+  CAP_TREN
+  HOAN_TAT
+}
+
+enum LoanStatus {
+  RECEIVED              // Tiếp nhận ban đầu
+  CHECKED               // Đã kiểm duyệt checklist đầy đủ
+  SUPPLEMENT_REQUIRED   // Chờ doanh nghiệp bổ sung chứng từ
+  PENDING_APPRAISAL     // Đang chờ/trong quá trình thẩm định
+  WAITING_HEAD_OFFICE   // Chờ cấp trên phản hồi (vượt 10 tỷ)
+  APPROVED              // Đã phê duyệt cấp tín dụng
+  REJECTED              // Bị từ chối khoản vay
+  CLOSED_TIMEOUT        // Đóng hồ sơ do quá hạn bổ sung
+}
+
+enum DocumentType {
+  PHAP_LY
+  TAI_CHINH
+  PHUONG_AN
+  TSBD
+  KHAC
+}
+
+enum SupplementStatus {
+  PENDING
+  RESOLVED
+  EXPIRED
+}
+
+enum RiskLevel {
+  THAP
+  TRUNG_BINH
+  CAO
+}
+
+// ==========================================
+// 2. PHÂN HỆ NGƯỜI DÙNG & PHÂN QUYỀN (RBAC)
+// ==========================================
+
+model User {
+  id           String     @id @default(uuid())
+  username     String     @unique
+  passwordHash String     @map("password_hash")
+  fullName     String     @map("full_name")
+  email        String     @unique
+  phone        String?
+  branchName   String     @default("Chi nhánh TP.HCM") @map("branch_name")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Quan hệ
+  roles                  UserRole[]
+  assignedLoans          LoanApplication[]       @relation("AssignedLoans")
+  handledStageHistories  ApplicationStageHistory[] @relation("HandledHistories")
+  uploadedDocuments      Document[]              @relation("UploadedDocuments")
+  requestedSupplements   SupplementRequest[]     @relation("RequestedSupplements")
+  assignmentsFrom        ApplicationAssignment[] @relation("FromUser")
+  assignmentsTo          ApplicationAssignment[] @relation("ToUser")
+  assignmentsMade        ApplicationAssignment[] @relation("ReassignedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          String     @id @default(uuid())
+  code        RoleCode   @unique
+  name        String
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  // Quan hệ
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  roleId     String   @map("role_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// ==========================================
+// 3. DOANH NGHIỆP & HỒ SƠ VAY (CORE DOMAIN)
+// ==========================================
+
+model Company {
+  id                 String   @id @default(uuid())
+  taxCode            String   @unique @map("tax_code")
+  companyName        String   @map("company_name")
+  industry           String   // Sản xuất, Xây dựng, Thương mại - Dịch vụ...
+  establishedYear    Int      @map("established_year")
+  annualRevenue      Decimal  @map("annual_revenue") @db.Decimal(18, 2)
+  charterCapital     Decimal  @map("charter_capital") @db.Decimal(18, 2)
+  representativeName String   @map("representative_name")
+  phone              String
+  address            String
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  loans LoanApplication[]
+
+  @@map("companies")
+}
+
+model LoanApplication {
+  id                  String      @id @default(uuid())
+  applicationCode     String      @unique @map("application_code") // SME-YYYYMMDD-XXXX
+  companyId           String      @map("company_id")
+  loanPurpose         String      @map("loan_purpose")
+  loanType            LoanType    @map("loan_type")
+  proposedAmount      Decimal     @map("proposed_amount") @db.Decimal(18, 2)
+  officialAmount      Decimal?    @map("official_amount") @db.Decimal(18, 2)
+  approvedAmount      Decimal?    @map("approved_amount") @db.Decimal(18, 2)
+  loanTermMonths      Int         @map("loan_term_months")
+  interestRate        Decimal?    @map("interest_rate") @db.Decimal(5, 2)
+  currentStage        StageCode   @default(TIEP_NHAN) @map("current_stage")
+  currentStatus       LoanStatus  @default(RECEIVED) @map("current_status")
+  assignedTo          String?     @map("assigned_to")
+  rejectionReasonCode String?     @map("rejection_reason_code") // TC01 - TC05
+  rejectionNote       String?     @map("rejection_note")
+  isDocumentComplete  Boolean     @default(false) @map("is_document_complete")
+  supplementCount     Int         @default(0) @map("supplement_count") // Feature cho AI
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+  completedAt         DateTime?   @map("completed_at")
+
+  // Quan hệ
+  company            Company                   @relation(fields: [companyId], references: [id])
+  assignedUser       User?                     @relation("AssignedLoans", fields: [assignedTo], references: [id])
+  stageHistories     ApplicationStageHistory[]
+  documents          Document[]
+  supplementRequests SupplementRequest[]
+  assignments        ApplicationAssignment[]
+  delayPredictions   DelayPrediction[]
+
+  @@map("loan_applications")
+}
+
+// ==========================================
+// 4. WORKFLOW, TIẾN TRÌNH & ĐO LƯỜNG SLA
+// ==========================================
+
+model WorkflowStage {
+  id               String      @id @default(uuid())
+  stageCode        StageCode   @unique @map("stage_code")
+  stageName        String      @map("stage_name")
+  standardSlaHours Int         @map("standard_sla_hours") // SLA định mức (giờ)
+  orderIndex       Int         @map("order_index")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  stageHistories ApplicationStageHistory[]
+
+  @@map("workflow_stages")
+}
+
+model ApplicationStageHistory {
+  id                   String    @id @default(uuid())
+  applicationId        String    @map("application_id")
+  stageId              String    @map("stage_id")
+  enteredAt            DateTime  @default(now()) @map("entered_at")
+  exitedAt             DateTime? @map("exited_at")
+  actualDurationHours  Float?    @map("actual_duration_hours")
+  pausedAt             DateTime? @map("paused_at") // Thời điểm tạm dừng chờ bổ sung
+  pausedDurationHours  Float     @default(0) @map("paused_duration_hours")
+  netWorkDurationHours Float?    @map("net_work_duration_hours") // Thời gian ngân hàng trực tiếp làm việc
+  slaStandardHours     Int       @map("sla_standard_hours")
+  isDelayed            Boolean   @default(false) @map("is_delayed")
+  handledBy            String?   @map("handled_by")
+  notes                String?
+
+  application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  stage       WorkflowStage   @relation(fields: [stageId], references: [id])
+  handler     User?           @relation("HandledHistories", fields: [handledBy], references: [id])
+
+  @@map("application_stage_history")
+}
+
+model Document {
+  id            String       @id @default(uuid())
+  applicationId String       @map("application_id")
+  documentType  DocumentType @map("document_type")
+  fileName      String       @map("file_name")
+  filePath      String       @map("file_path")
+  fileSize      Int          @map("file_size")
+  mimeType      String?      @map("mime_type")
+  uploadedBy    String       @map("uploaded_by")
+  uploadedAt    DateTime     @default(now()) @map("uploaded_at")
+
+  application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  uploader    User            @relation("UploadedDocuments", fields: [uploadedBy], references: [id])
+
+  @@map("documents")
+}
+
+model SupplementRequest {
+  id             String           @id @default(uuid())
+  applicationId  String           @map("application_id")
+  requestContent String           @map("request_content")
+  requestedBy    String           @map("requested_by")
+  requestedAt    DateTime         @default(now()) @map("requested_at")
+  deadlineAt     DateTime?        @map("deadline_at")
+  resolvedAt     DateTime?        @map("resolved_at")
+  status         SupplementStatus @default(PENDING)
+  notes          String?
+
+  application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  requester   User            @relation("RequestedSupplements", fields: [requestedBy], references: [id])
+
+  @@map("supplement_requests")
+}
+
+model ApplicationAssignment {
+  id            String   @id @default(uuid())
+  applicationId String   @map("application_id")
+  fromUserId    String?  @map("from_user_id")
+  toUserId      String   @map("to_user_id")
+  reassignedBy  String   @map("reassigned_by")
+  reassignedAt  DateTime @default(now()) @map("reassigned_at")
+  reason        String?
+
+  application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromUser    User?           @relation("FromUser", fields: [fromUserId], references: [id])
+  toUser      User            @relation("ToUser", fields: [toUserId], references: [id])
+  manager     User            @relation("ReassignedBy", fields: [reassignedBy], references: [id])
+
+  @@map("application_assignments")
+}
+
+// ==========================================
+// 5. HỌC MÁY & DỰ BÁO NGUY CƠ TRỄ HẠN (AI)
+// ==========================================
+
+model DelayPrediction {
+  id                  String    @id @default(uuid())
+  applicationId       String    @map("application_id")
+  predictionTimestamp DateTime  @default(now()) @map("prediction_timestamp")
+  riskLevel           RiskLevel @map("risk_level")
+  delayProbability    Float     @map("delay_probability") // 0.0 - 1.0 (ví dụ 0.82)
+  topReasonsJson      String?   @map("top_reasons_json")  // Lưu 3 lý do dạng JSON (XAI)
+  modelVersion        String    @default("v1.0-rf") @map("model_version")
+
+  application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("delay_predictions")
+}
