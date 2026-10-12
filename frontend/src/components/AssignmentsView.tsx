@@ -32,7 +32,7 @@ export const AssignmentsView: React.FC = () => {
         setTargetOfficerId(workloadsData[0].id);
       }
     } catch (err: any) {
-      console.error('Lỗi khi tải dữ liệu phân công:', err);
+      setMsg({ text: err.message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -77,6 +77,7 @@ export const AssignmentsView: React.FC = () => {
 
   return (
     <div>
+      {msg?.type === 'error' && !selectedLoan && <p role="alert" className="error-message">{msg.text}</p>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>

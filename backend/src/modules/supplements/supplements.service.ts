@@ -18,7 +18,9 @@ export class SupplementsService {
    * Tạo yêu cầu bổ sung chứng từ (UC06) - Tạm dừng đồng hồ đo SLA
    */
   async createSupplementRequest(applicationId: string, dto: CreateSupplementDto, userId: string) {
-    const loan = await this.prisma.loanApplication.findUnique({
+    return this.prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
+    const loan = await tx.loanApplication.findUnique({
       where: { id: applicationId },
     });
 
@@ -30,10 +32,11 @@ export class SupplementsService {
       throw new BadRequestException('Hồ sơ hiện đang trong trạng thái chờ bổ sung chứng từ.');
     }
 
+    if (loan.completedAt || loan.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
     const now = new Date();
 
     // 1. Tạo bản ghi yêu cầu bổ sung
-    const request = await this.prisma.supplementRequest.create({
+    const request = await tx.supplementRequest.create({
       data: {
         applicationId,
         requestContent: dto.requestContent,
@@ -51,17 +54,18 @@ export class SupplementsService {
     });
 
     // 2. Tăng số lần bổ sung (supplementCount) và chuyển trạng thái hồ sơ
-    await this.prisma.loanApplication.update({
+    await tx.loanApplication.update({
       where: { id: applicationId },
       data: {
         currentStatus: LoanStatus.SUPPLEMENT_REQUIRED,
+        isDocumentComplete: false,
         supplementCount: { increment: 1 },
         updatedAt: now,
       },
     });
 
     // 3. TẠM DỪNG SLA: Lưu pausedAt vào bản ghi công đoạn đang diễn ra
-    const activeStage = await this.prisma.applicationStageHistory.findFirst({
+    const activeStage = await tx.applicationStageHistory.findFirst({
       where: {
         applicationId,
         exitedAt: null,
@@ -70,7 +74,7 @@ export class SupplementsService {
     });
 
     if (activeStage && !activeStage.pausedAt) {
-      await this.prisma.applicationStageHistory.update({
+      await tx.applicationStageHistory.update({
         where: { id: activeStage.id },
         data: { pausedAt: now },
       });
@@ -78,13 +82,18 @@ export class SupplementsService {
     }
 
     return request;
+    });
   }
 
   /**
    * Tiếp nhận và xử lý hoàn tất bổ sung chứng từ (UC07) - Tiếp tục đồng hồ đo SLA & Cập nhật AI
    */
   async resolveSupplementRequest(supplementId: string, dto: ResolveSupplementDto, userId: string) {
-    const request = await this.prisma.supplementRequest.findUnique({
+    const initial = await this.prisma.supplementRequest.findUnique({ where: { id: supplementId } });
+    if (!initial) throw new NotFoundException('Yêu cầu bổ sung không tồn tại.');
+    const updatedRequest = await this.prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${initial.applicationId} FOR UPDATE`;
+    const request = await tx.supplementRequest.findUnique({
       where: { id: supplementId },
       include: { application: true },
     });
@@ -93,14 +102,15 @@ export class SupplementsService {
       throw new NotFoundException(`Không tìm thấy yêu cầu bổ sung ID: ${supplementId}`);
     }
 
-    if (request.status === SupplementStatus.RESOLVED) {
+    if (request.status !== SupplementStatus.PENDING) {
       throw new BadRequestException('Yêu cầu bổ sung này đã được xử lý hoàn tất trước đó.');
     }
 
+    if (request.application.completedAt || request.application.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
     const now = new Date();
 
     // 1. Cập nhật trạng thái yêu cầu bổ sung
-    const updatedRequest = await this.prisma.supplementRequest.update({
+    const updatedRequest = await tx.supplementRequest.update({
       where: { id: supplementId },
       data: {
         status: SupplementStatus.RESOLVED,
@@ -110,7 +120,7 @@ export class SupplementsService {
     });
 
     // 2. TÍNH TOÁN VÀ TIẾP TỤC ĐỒNG HỒ SLA
-    const activeStage = await this.prisma.applicationStageHistory.findFirst({
+    const activeStage = await tx.applicationStageHistory.findFirst({
       where: {
         applicationId: request.applicationId,
         exitedAt: null,
@@ -123,7 +133,7 @@ export class SupplementsService {
       const additionalPausedHours = Math.round(((now.getTime() - pausedTime) / (1000 * 60 * 60)) * 10) / 10;
       const totalPausedHours = Math.round((activeStage.pausedDurationHours + additionalPausedHours) * 10) / 10;
 
-      await this.prisma.applicationStageHistory.update({
+      await tx.applicationStageHistory.update({
         where: { id: activeStage.id },
         data: {
           pausedAt: null, // Đặt lại null để đồng hồ tiếp tục chạy
@@ -136,12 +146,12 @@ export class SupplementsService {
     // 3. Khôi phục trạng thái hoạt động của hồ sơ
     let nextStatus: LoanStatus = LoanStatus.PENDING_APPRAISAL;
     if (request.application.currentStage === StageCode.TIEP_NHAN) {
-      nextStatus = LoanStatus.CHECKED;
+      nextStatus = LoanStatus.RECEIVED;
     } else if (request.application.currentStage === StageCode.CAP_TREN) {
       nextStatus = LoanStatus.WAITING_HEAD_OFFICE;
     }
 
-    await this.prisma.loanApplication.update({
+    await tx.loanApplication.update({
       where: { id: request.applicationId },
       data: {
         currentStatus: nextStatus,
@@ -149,10 +159,12 @@ export class SupplementsService {
       },
     });
 
+    return updatedRequest;
+    });
     // 4. KÍCH HOẠT LẠI DỰ BÁO AI (Vì supplement_count đã tăng, nguy cơ trễ hạn sẽ thay đổi)
     try {
-      this.logger.log(`Cập nhật dự báo AI sau khi nhận chứng từ bổ sung cho hồ sơ ${request.application.applicationCode}`);
-      await this.predictionService.predictForApplication(request.applicationId);
+      this.logger.log(`Cập nhật dự báo AI sau khi nhận chứng từ bổ sung cho hồ sơ ${initial.applicationId}`);
+      await this.predictionService.predictForApplication(initial.applicationId);
     } catch (err: any) {
       this.logger.warn(`Lỗi khi cập nhật dự báo AI: ${err.message}`);
     }

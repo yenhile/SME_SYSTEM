@@ -13,17 +13,18 @@ import {
 
 interface DashboardViewProps {
   onSelectLoan: (loanId: string) => void;
-  onGoToAssignments: () => void;
+  onGoToAssignments?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGoToAssignments }) => {
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [bottlenecks, setBottlenecks] = useState<SlaBottleneck[]>([]);
   const [warnings, setWarnings] = useState<EarlyWarningItem[]>([]);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchDashboardData = async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const [statsData, bottlenecksData, warningsData] = await Promise.all([
         api.get<OverviewStats>('/dashboard/overview'),
@@ -34,7 +35,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
       setBottlenecks(bottlenecksData);
       setWarnings(warningsData);
     } catch (err) {
-      console.error('Lỗi khi tải dữ liệu Dashboard:', err);
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -46,6 +47,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
 
   return (
     <div>
+      {error && <p role="alert" className="error-message">{error}</p>}
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
           Dashboard Giám sát SLA & Cảnh báo Sớm (AI)
@@ -237,9 +239,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
             </div>
           </div>
 
-          <button onClick={onGoToAssignments} className="btn btn-secondary" style={{ fontSize: '12px' }}>
+          {onGoToAssignments && <button onClick={onGoToAssignments} className="btn btn-secondary" style={{ fontSize: '12px' }}>
             Điều phối cán bộ <ArrowRight size={14} />
-          </button>
+          </button>}
         </div>
 
         <div className="data-table-container">

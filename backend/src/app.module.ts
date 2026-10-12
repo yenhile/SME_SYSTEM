@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AdminController } from './admin.controller';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
 import { PrismaService } from './prisma.service';
@@ -27,7 +28,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     DocumentsModule,
     DashboardModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, AdminController],
   providers: [HealthService, PrismaService],
 })
 export class AppModule {}

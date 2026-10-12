@@ -36,7 +36,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
   onClose,
   onRefresh,
 }) => {
-  const { user } = useAuth();
+  const { activeRole } = useAuth();
   const [loan, setLoan] = useState<LoanApplication | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -58,7 +58,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
   // Form state cho upload document
   const [showDocForm, setShowDocForm] = useState(false);
   const [docType, setDocType] = useState<DocumentType>('PHAP_LY');
-  const [docName, setDocName] = useState('');
+  const [docFile, setDocFile] = useState<File | null>(null);
 
   // Form xác định hạn mức vay chính thức
   const [showSetAmountForm, setShowSetAmountForm] = useState(false);
@@ -240,19 +240,17 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
   // 9. Thêm chứng từ
   const handleAddDocument = async () => {
-    if (!docName.trim()) {
-      alert('Vui lòng nhập tên tài liệu');
+    if (!docFile) {
+      alert('Vui lòng chọn tệp tài liệu (tối đa 10 MB)');
       return;
     }
     setActionLoading(true);
     try {
-      await api.post(`/documents/${loan.id}`, {
-        documentType: docType,
-        fileName: docName,
-        filePath: `/uploads/mock_${Date.now()}.pdf`,
-        fileSize: 1024 * 1024 * 2, // 2MB
-      });
-      setDocName('');
+      const form = new FormData();
+      form.append('documentType', docType);
+      form.append('file', docFile);
+      await api.post(`/documents/${loan.id}`, form);
+      setDocFile(null);
       setShowDocForm(false);
       await fetchDetail();
     } catch (err: any) {
@@ -289,6 +287,12 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
     }
   };
 
+  const terminal = loan.currentStage === 'HOAN_TAT' || ['APPROVED', 'REJECTED', 'CLOSED_TIMEOUT'].includes(loan.currentStatus);
+  const reception = activeRole === 'CBTD' && loan.currentStage === 'TIEP_NHAN' && !terminal;
+  const appraisal = activeRole === 'THAM_QUYEN' && ['THAM_DINH', 'CAP_TREN'].includes(loan.currentStage) && !terminal;
+  const canEdit = reception || appraisal;
+  const waitingSupplement = loan.currentStatus === 'SUPPLEMENT_REQUIRED';
+  const canPredict = !terminal && ['THAM_QUYEN', 'QUAN_LY'].includes(activeRole || '');
   const latestPrediction = loan.delayPredictions?.[0];
   let topReasons: string[] = [];
   if (latestPrediction?.topReasonsJson) {
@@ -465,14 +469,14 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 >
                   MỨC RỦI RO: {latestPrediction ? latestPrediction.riskLevel : 'CHƯA ĐÁNH GIÁ'}
                 </span>
-                <button
+                {canPredict && <button
                   onClick={handleRePredict}
                   disabled={actionLoading}
                   className="btn btn-secondary"
                   style={{ padding: '4px 10px', fontSize: '11px', background: '#ffffff' }}
                 >
                   Chạy lại AI
-                </button>
+                </button>}
               </div>
             </div>
 
@@ -548,12 +552,12 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
             <div className="card" style={{ padding: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>HẠN MỨC CHÍNH THỨC</span>
-                <button
+                {reception && !waitingSupplement && <button
                   onClick={() => setShowSetAmountForm(!showSetAmountForm)}
                   style={{ background: 'none', color: '#0284c7', fontSize: '11px', fontWeight: 700, padding: 0 }}
                 >
                   Sửa
-                </button>
+                </button>}
               </div>
               <div style={{ fontSize: '16px', fontWeight: 800, color: '#0284c7', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
                 {loan.officialAmount ? formatVnd(loan.officialAmount) : 'Chưa định mức'}
@@ -595,7 +599,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
           </div>
 
           {/* Form sửa hạn mức chính thức */}
-          {showSetAmountForm && (
+          {showSetAmountForm && reception && !waitingSupplement && (
             <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: 8, border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -800,20 +804,20 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
           {activeTab === 'documents' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <button
+                {reception && !waitingSupplement && <button
                   onClick={handleToggleDocComplete}
                   className={`btn ${loan.isDocumentComplete ? 'btn-success' : 'btn-secondary'}`}
                 >
                   <FileCheck size={16} />
                   {loan.isDocumentComplete ? 'Đã xác nhận đủ chứng từ' : 'Xác nhận hồ sơ đầy đủ'}
-                </button>
+                </button>}
 
-                <button onClick={() => setShowDocForm(!showDocForm)} className="btn btn-primary">
+                {canEdit && <button onClick={() => setShowDocForm(!showDocForm)} className="btn btn-primary">
                   <Plus size={14} /> Thêm tài liệu
-                </button>
+                </button>}
               </div>
 
-              {showDocForm && (
+              {showDocForm && canEdit && (
                 <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 12, border: '1px solid var(--border-color)', display: 'flex', gap: 8 }}>
                   <select value={docType} onChange={(e) => setDocType(e.target.value as DocumentType)}>
                     <option value="PHAP_LY">Pháp lý (GPKD, Điều lệ)</option>
@@ -823,10 +827,9 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                     <option value="KHAC">Khác</option>
                   </select>
                   <input
-                    type="text"
-                    placeholder="Tên tệp tin (ví dụ: BCTC_2025.pdf)"
-                    value={docName}
-                    onChange={(e) => setDocName(e.target.value)}
+                    type="file"
+                    aria-label="Tệp chứng từ"
+                    onChange={(e) => setDocFile(e.target.files?.[0] || null)}
                     style={{ flex: 1 }}
                   />
                   <button onClick={handleAddDocument} disabled={actionLoading} className="btn btn-primary">
@@ -853,17 +856,17 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                           <td>
                             <span className="badge badge-soft-blue">{doc.documentType}</span>
                           </td>
-                          <td>{doc.fileName}</td>
+                          <td><button className="btn" onClick={async () => { try { const blob = await api.download(`/documents/${doc.id}/download`); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = doc.fileName; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); } catch (err) { alert((err as Error).message); } }}>{doc.fileName}</button></td>
                           <td>{(doc.fileSize / 1024 / 1024).toFixed(1)} MB</td>
                           <td>{new Date(doc.uploadedAt).toLocaleString('vi-VN')}</td>
                           <td>
-                            <button
+                            {canEdit && <button
                               onClick={() => handleDeleteDocument(doc.id)}
                               className="btn btn-outline-danger"
                               style={{ padding: '4px 8px' }}
                             >
                               <Trash2 size={13} />
-                            </button>
+                            </button>}
                           </td>
                         </tr>
                       ))
@@ -887,15 +890,15 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                   Khi yêu cầu bổ sung chứng từ, <strong>đồng hồ đo SLA sẽ tự động tạm dừng</strong> cho đến khi doanh nghiệp nộp lại đầy đủ.
                 </p>
-                <button
+                {canEdit && !waitingSupplement && <button
                   onClick={() => setShowSupplementForm(!showSupplementForm)}
                   className="btn btn-warning"
                 >
                   <PauseCircle size={16} /> Yêu cầu bổ sung chứng từ
-                </button>
+                </button>}
               </div>
 
-              {showSupplementForm && (
+              {showSupplementForm && canEdit && !waitingSupplement && (
                 <div style={{ background: 'var(--badge-amber-bg)', padding: 16, borderRadius: 8, marginBottom: 16, border: '1px solid var(--badge-amber-border)' }}>
                   <h4 style={{ color: 'var(--badge-amber-text)', fontSize: '13.5px', marginBottom: 8, fontWeight: 700 }}>
                     Tạo yêu cầu bổ sung tài liệu (Đồng hồ SLA sẽ tạm dừng)
@@ -942,7 +945,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                             )}
                           </td>
                           <td>
-                            {supp.status === 'PENDING' && (
+                            {supp.status === 'PENDING' && canEdit && (
                               <button
                                 onClick={() => handleResolveSupplement(supp.id)}
                                 disabled={actionLoading}
@@ -979,28 +982,28 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
           <div style={{ display: 'flex', gap: 8 }}>
             {/* Nếu đang ở Tiếp nhận -> nút chuyển Thẩm định */}
-            {loan.currentStage === 'TIEP_NHAN' && (
+            {reception && !waitingSupplement && loan.isDocumentComplete && (
               <button onClick={handleTransitionToAppraisal} disabled={actionLoading} className="btn btn-primary">
                 <Send size={15} /> Chuyển sang Thẩm định
               </button>
             )}
 
             {/* Nếu đang ở Thẩm định và hạn mức > 10 tỷ -> nút chuyển Cấp trên */}
-            {loan.currentStage === 'THAM_DINH' && Number(loan.officialAmount || loan.proposedAmount) > 10000000000 && (
+            {appraisal && !waitingSupplement && loan.currentStage === 'THAM_DINH' && Number(loan.officialAmount || loan.proposedAmount) > 10000000000 && (
               <button onClick={handleTransitionToHeadOffice} disabled={actionLoading} className="btn btn-warning">
                 <Send size={15} /> Trình Hội đồng / Cấp trên (&gt; 10 tỷ)
               </button>
             )}
 
             {/* Phê duyệt / Từ chối */}
-            {['THAM_DINH', 'CAP_TREN'].includes(loan.currentStage) && (
+            {appraisal && !waitingSupplement && (
               <>
                 <button onClick={() => setShowRejectForm(true)} disabled={actionLoading} className="btn btn-danger">
                   Từ chối (TC01 - TC05)
                 </button>
-                <button onClick={() => setShowApproveForm(true)} disabled={actionLoading} className="btn btn-success">
+                {(loan.currentStage === 'CAP_TREN' || !isExceedBranchLimit) && <button onClick={() => setShowApproveForm(true)} disabled={actionLoading} className="btn btn-success">
                   <Check size={16} /> Phê duyệt Khoản vay
-                </button>
+                </button>}
               </>
             )}
 

@@ -1,5 +1,11 @@
 # SME Loan Workflow
 
+Sau khi cập nhật: hệ thống yêu cầu đăng nhập bằng tên tài khoản và mật khẩu ở bảng bên dưới. Chọn vai trò trong menu trái chỉ chuyển giữa các quyền đã được cấp cho tài khoản; Admin có khu vực quản trị riêng. Dữ liệu hồ sơ lấy từ PostgreSQL, không tự chuyển sang mock khi API lỗi.
+
+Xem [bảng quyền, luồng xử lý và các điểm cần nhóm thống nhất](docs/Phan_quyen_va_luong_nghiep_vu.md). Chứng từ tải lên được lưu trong Docker volume `uploaded_documents`.
+
+Kiểm thử tích hợp với hệ thống Docker đã chạy và database đã seed: trong thư mục `backend`, đặt `DATABASE_URL` trỏ tới PostgreSQL local rồi chạy `npm run check:workflow`. Script tạo dữ liệu riêng cho kiểm thử và xóa đúng những bản ghi đã tạo; không xóa dữ liệu seed.
+
 Hệ thống quản lý quy trình xét duyệt hồ sơ vay Doanh nghiệp nhỏ và vừa (SME) tích hợp mô hình Học máy (Machine Learning) cảnh báo nguy cơ trễ hạn SLA.
 
 ---

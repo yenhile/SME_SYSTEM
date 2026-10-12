@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { RiskLevel } from '@prisma/client';
 
@@ -113,34 +113,8 @@ export class PredictionService {
         topReasons: result.top_reasons || [],
       };
     } catch (err: any) {
-      this.logger.warn(`Không thể kết nối ML Service (${err.message}). Dùng heuristic dự báo cục bộ.`);
-      // Heuristic fallback nếu ML service offline
-      const isHighRisk = loan.supplementCount >= 2 || officerWorkload >= 10;
-      const prob = isHighRisk ? 0.78 : loan.supplementCount === 1 ? 0.45 : 0.08;
-      const riskLevel = isHighRisk ? RiskLevel.CAO : loan.supplementCount === 1 ? RiskLevel.TRUNG_BINH : RiskLevel.THAP;
-      
-      const reasons: string[] = [];
-      if (loan.supplementCount >= 2) {
-        reasons.push(`Hồ sơ đã yêu cầu bổ sung ${loan.supplementCount} lần (+35% nguy cơ)`);
-      } else if (loan.supplementCount === 1) {
-        reasons.push('Hồ sơ đã có 1 lần yêu cầu bổ sung tài liệu');
-      }
-      if (officerWorkload >= 10) {
-        reasons.push(`Cán bộ đang quá tải phụ trách ${officerWorkload} hồ sơ`);
-      }
-      if (reasons.length === 0) {
-        reasons.push('Hồ sơ đảm bảo quy chuẩn xử lý đúng hạn.');
-      }
-
-      return this.prisma.delayPrediction.create({
-        data: {
-          applicationId: loan.id,
-          riskLevel,
-          delayProbability: prob,
-          topReasonsJson: JSON.stringify(reasons),
-          modelVersion: 'v1.0-fallback',
-        },
-      });
+      this.logger.warn('Dịch vụ dự báo không khả dụng: ' + err.message);
+      throw new ServiceUnavailableException('Không lấy được dự báo từ dịch vụ ML. Vui lòng thử lại sau.');
     }
   }
 }

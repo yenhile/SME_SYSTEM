@@ -24,7 +24,7 @@ export class AssignmentsService {
         roles: {
           some: {
             role: {
-              code: { in: [RoleCode.CBTD, RoleCode.THAM_QUYEN] },
+              code: RoleCode.CBTD,
             },
           },
         },
@@ -114,6 +114,7 @@ export class AssignmentsService {
       throw new NotFoundException(`Không tìm thấy hồ sơ với ID: ${applicationId}`);
     }
 
+    if (loan.completedAt || loan.currentStage === 'HOAN_TAT') throw new BadRequestException('Hồ sơ đã kết thúc, không thể điều chuyển.');
     if (loan.assignedTo === dto.newOfficerId) {
       throw new BadRequestException('Cán bộ mới được chọn trùng với cán bộ đang xử lý hiện tại.');
     }
@@ -121,12 +122,14 @@ export class AssignmentsService {
     // Kiểm tra cán bộ mới tồn tại và hoạt động
     const targetOfficer = await this.prisma.user.findUnique({
       where: { id: dto.newOfficerId },
+      include: { roles: { include: { role: true } } },
     });
 
     if (!targetOfficer || !targetOfficer.isActive) {
       throw new NotFoundException('Cán bộ nhận bàn giao không tồn tại hoặc đã bị khóa tài khoản.');
     }
 
+    if (!targetOfficer.roles.some(item => item.role.code === 'CBTD')) throw new BadRequestException('Cán bộ nhận bàn giao phải có vai trò CBTD.');
     const now = new Date();
 
     // 1. Lưu bản ghi lịch sử điều chuyển

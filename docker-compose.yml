@@ -38,6 +38,8 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "3001:3000"
+    volumes:
+      - uploaded_documents:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -64,3 +66,4 @@ services:
 
 volumes:
   postgres_data:
+  uploaded_documents:
