@@ -4,6 +4,7 @@ dist/
 *.log
 .venv/
 __pycache__/
+uploads/
 *.py[cod]
 .pytest_cache/
 .idea/

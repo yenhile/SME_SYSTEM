@@ -4,15 +4,16 @@ import { Clock, AlertTriangle, CheckCircle2, User, Building, DollarSign } from '
 
 interface KanbanBoardProps {
   loans: LoanApplication[];
+  workflowStages: { stageCode: string; stageName: string; standardSlaHours: number }[];
   onSelectLoan: (loanId: string) => void;
 }
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan }) => {
-  const columns: { stage: StageCode; title: string; sla: string; badgeColor: string }[] = [
-    { stage: 'TIEP_NHAN', title: '1. Tiếp nhận hồ sơ', sla: 'SLA: 4 giờ', badgeColor: 'badge-soft-blue' },
-    { stage: 'THAM_DINH', title: '2. Thẩm định tín dụng', sla: 'SLA: 12 giờ', badgeColor: 'badge-soft-amber' },
-    { stage: 'CAP_TREN', title: '3. Hội đồng / Cấp trên', sla: 'SLA: 24 giờ', badgeColor: 'badge-soft-purple' },
-    { stage: 'HOAN_TAT', title: '4. Hoàn tất & Phê duyệt', sla: 'SLA: 4 giờ', badgeColor: 'badge-soft-green' },
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan, workflowStages }) => {
+  const columns: { stage: StageCode; title: string; badgeColor: string }[] = [
+    { stage: 'TIEP_NHAN', title: '1. Tiếp nhận hồ sơ', badgeColor: 'badge-soft-blue' },
+    { stage: 'THAM_DINH', title: '2. Thẩm định tín dụng', badgeColor: 'badge-soft-amber' },
+    { stage: 'CAP_TREN', title: '3. Hội đồng / Cấp trên', badgeColor: 'badge-soft-purple' },
+    { stage: 'HOAN_TAT', title: '4. Hoàn tất & Phê duyệt', badgeColor: 'badge-soft-green' },
   ];
 
   const getLoanTypeClass = (type: string) => {
@@ -82,7 +83,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan })
                 <span className="kanban-col-badge">{colLoans.length}</span>
               </h3>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                {col.sla}
+                {workflowStages.find(stage => stage.stageCode === col.stage)?.standardSlaHours ?? '—'} giờ SLA
               </span>
             </div>
 

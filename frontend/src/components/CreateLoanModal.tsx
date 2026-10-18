@@ -10,20 +10,20 @@ interface CreateLoanModalProps {
 }
 
 export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const [taxCode, setTaxCode] = useState('0312345678');
-  const [companyName, setCompanyName] = useState('Công ty Cổ phần Thép Việt Á');
-  const [industry, setIndustry] = useState('Sản xuất & Chế biến kim loại');
-  const [establishedYear, setEstablishedYear] = useState(2017);
-  const [annualRevenue, setAnnualRevenue] = useState<number>(52000000000);
-  const [charterCapital, setCharterCapital] = useState<number>(15000000000);
-  const [representativeName, setRepresentativeName] = useState('Vũ Mạnh Hùng');
-  const [phone, setPhone] = useState('0908123456');
-  const [address, setAddress] = useState('Khu công nghiệp Tân Bình, TP. Hồ Chí Minh');
+  const [taxCode, setTaxCode] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [establishedYear, setEstablishedYear] = useState<number | ''>('');
+  const [annualRevenue, setAnnualRevenue] = useState<number | ''>('');
+  const [charterCapital, setCharterCapital] = useState<number | ''>('');
+  const [representativeName, setRepresentativeName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
 
-  const [loanPurpose, setLoanPurpose] = useState('Bổ sung vốn lưu động thu mua phôi thép đơn hàng quý 4');
+  const [loanPurpose, setLoanPurpose] = useState('');
   const [loanType, setLoanType] = useState<LoanType>('VAY_VON_LUU_DONG');
-  const [proposedAmount, setProposedAmount] = useState<number>(6000000000);
-  const [loanTermMonths, setLoanTermMonths] = useState<number>(12);
+  const [proposedAmount, setProposedAmount] = useState<number | ''>('');
+  const [loanTermMonths, setLoanTermMonths] = useState<number | ''>('');
 
   const [checkingTax, setCheckingTax] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -33,9 +33,9 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
 
   // Tính tỷ lệ đòn bẩy Nợ/Vốn chủ sở hữu để cảnh báo Risk Alert tức thì
   const debtToEquity =
-    charterCapital > 0 ? (proposedAmount / charterCapital).toFixed(2) : '0';
+    Number(charterCapital) > 0 ? (Number(proposedAmount) / Number(charterCapital)).toFixed(2) : '0';
   const isHighDebt = Number(debtToEquity) > 2.0;
-  const isExceedBranchLimit = proposedAmount > 10000000000;
+  const isExceedBranchLimit = Number(proposedAmount) > 10000000000;
 
   const handleCheckTaxCode = async () => {
     if (!taxCode.trim()) {
@@ -46,7 +46,8 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
     setCheckingTax(true);
     setStatusMsg(null);
     try {
-      const company = await api.get<Company>(`/companies/by-tax-code/${taxCode.trim()}`);
+      const result = await api.get<{ found: boolean; company: Company | null }>(`/companies/check/${encodeURIComponent(taxCode.trim())}`);
+      const company = result.company;
       if (company) {
         setCompanyName(company.companyName);
         setIndustry(company.industry);
@@ -57,9 +58,11 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
         setPhone(company.phone);
         setAddress(company.address);
         setStatusMsg({ text: 'Đã tìm thấy thông tin doanh nghiệp trong hệ thống', type: 'success' });
+      } else {
+        setStatusMsg({ text: 'Doanh nghiệp mới - vui lòng nhập thông tin bên dưới', type: 'success' });
       }
-    } catch {
-      setStatusMsg({ text: 'Doanh nghiệp mới - vui lòng nhập các thông tin chi tiết bên dưới', type: 'success' });
+    } catch (err) {
+      setStatusMsg({ text: (err as Error).message, type: 'error' });
     } finally {
       setCheckingTax(false);
     }
@@ -198,11 +201,13 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
                     Ngành nghề kinh doanh *
                   </label>
-                  <select
+                  <select required
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
                     style={{ width: '100%' }}
                   >
+                    <option value="">Chọn ngành nghề</option>
+                    {industry && !['Sản xuất & Chế biến kim loại', 'Xây dựng & Thi công công trình', 'Thương mại - Bán buôn & Bán lẻ', 'Nông nghiệp & Thủy sản', 'Vận tải, Logistics & Kho bãi'].includes(industry) && <option value={industry}>{industry}</option>}
                     <option value="Sản xuất & Chế biến kim loại">Sản xuất & Chế biến</option>
                     <option value="Xây dựng & Thi công công trình">Xây dựng & Cơ khí</option>
                     <option value="Thương mại - Bán buôn & Bán lẻ">Thương mại & Dịch vụ</option>
@@ -217,10 +222,10 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   </label>
                   <input
                     type="number"
-                    min="1990"
+                    min="1950"
                     max={new Date().getFullYear()}
                     value={establishedYear}
-                    onChange={(e) => setEstablishedYear(Number(e.target.value))}
+                    onChange={(e) => setEstablishedYear(e.target.value === '' ? '' : Number(e.target.value))}
                     required
                     style={{ width: '100%' }}
                   />
@@ -232,9 +237,9 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   </label>
                   <input
                     type="number"
-                    step="100000000"
+                    min="0" step="1"
                     value={charterCapital}
-                    onChange={(e) => setCharterCapital(Number(e.target.value))}
+                    onChange={(e) => setCharterCapital(e.target.value === '' ? '' : Number(e.target.value))}
                     required
                     style={{ width: '100%' }}
                   />
@@ -250,7 +255,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                     type="number"
                     step="100000000"
                     value={annualRevenue}
-                    onChange={(e) => setAnnualRevenue(Number(e.target.value))}
+                    onChange={(e) => setAnnualRevenue(e.target.value === '' ? '' : Number(e.target.value))}
                     required
                     style={{ width: '100%' }}
                   />
@@ -325,9 +330,9 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   </label>
                   <input
                     type="number"
-                    step="50000000"
+                    min="10000000" step="1"
                     value={proposedAmount}
-                    onChange={(e) => setProposedAmount(Number(e.target.value))}
+                    onChange={(e) => setProposedAmount(e.target.value === '' ? '' : Number(e.target.value))}
                     required
                     style={{
                       width: '100%',
@@ -354,7 +359,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                     min="1"
                     max="120"
                     value={loanTermMonths}
-                    onChange={(e) => setLoanTermMonths(Number(e.target.value))}
+                    onChange={(e) => setLoanTermMonths(e.target.value === '' ? '' : Number(e.target.value))}
                     required
                     style={{ width: '100%' }}
                   />

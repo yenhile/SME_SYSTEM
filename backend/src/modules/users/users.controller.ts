@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -11,7 +12,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles(RoleCode.ADMIN, RoleCode.QUAN_LY, RoleCode.CBTD, RoleCode.THAM_QUYEN)
+  @Roles(RoleCode.ADMIN, RoleCode.QUAN_LY)
   findAll(@Query('role') role?: RoleCode) {
     return this.usersService.findAll(role);
   }
@@ -24,13 +25,13 @@ export class UsersController {
 
   @Post()
   @Roles(RoleCode.ADMIN)
-  create(@Body() body: any) {
+  create(@Body() body: CreateUserDto) {
     return this.usersService.create(body);
   }
 
   @Put(':id')
   @Roles(RoleCode.ADMIN)
-  update(@Param('id') id: string, @Body() body: any) {
+  update(@Param('id') id: string, @Body() body: UpdateUserDto) {
     return this.usersService.update(id, body);
   }
 }

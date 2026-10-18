@@ -8,6 +8,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RoleCode } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(RoleCode.QUAN_LY)
 @Controller('assignments')
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}
@@ -32,7 +33,7 @@ export class AssignmentsController {
    * Điều chuyển hồ sơ sang cán bộ tín dụng khác (Chỉ Quản lý hoặc Admin)
    */
   @Post(':applicationId/reassign')
-  @Roles(RoleCode.QUAN_LY, RoleCode.ADMIN)
+  @Roles(RoleCode.QUAN_LY)
   reassign(
     @Param('applicationId') applicationId: string,
     @Body() dto: ReassignOfficerDto,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import { LoanApplication } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -16,20 +16,26 @@ import {
 interface LoanListProps {
   onSelectLoan: (loanId: string) => void;
   onOpenCreate: () => void;
+  refreshKey: number;
 }
 
-export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate }) => {
-  const { user } = useAuth();
+export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, refreshKey }) => {
+  const { activeRole } = useAuth();
   const [loans, setLoans] = useState<LoanApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban'); // Mặc định là Kanban Board theo yêu cầu
+  const [error, setError] = useState('');
   const [keyword, setKeyword] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [myOnly, setMyOnly] = useState(false);
 
+  const requestId = useRef(0);
+  const [workflowStages, setWorkflowStages] = useState<{ stageCode: string; stageName: string; standardSlaHours: number }[]>([]);
   const fetchLoans = async () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
+    setError('');
     try {
       const params = new URLSearchParams();
       if (keyword) params.append('keyword', keyword);
@@ -37,18 +43,18 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate }
       if (statusFilter) params.append('status', statusFilter);
       if (myOnly) params.append('myOnly', 'true');
 
-      const data = await api.get<LoanApplication[]>(`/loan-applications?${params.toString()}`);
-      setLoans(data);
+      const [data, stages] = await Promise.all([api.get<LoanApplication[]>(`/loan-applications?${params.toString()}`), api.get<typeof workflowStages>('/workflow/stages')]);
+      if (currentRequest === requestId.current) { setLoans(data); setWorkflowStages(stages); }
     } catch (err: any) {
-      console.error('Lỗi tải danh sách hồ sơ:', err);
+      if (currentRequest === requestId.current) { setError(err.message); setLoans([]); }
     } finally {
-      setLoading(false);
+      if (currentRequest === requestId.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLoans();
-  }, [stageFilter, statusFilter, myOnly]);
+  }, [stageFilter, statusFilter, myOnly, refreshKey]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,13 +135,13 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate }
             </button>
           </div>
 
-          <button onClick={fetchLoans} className="btn btn-secondary">
+          <button disabled={loading} onClick={fetchLoans} className="btn btn-secondary">
             <RefreshCw size={15} /> Làm mới
           </button>
 
-          <button onClick={onOpenCreate} className="btn btn-primary">
+          {activeRole === 'CBTD' && <button onClick={onOpenCreate} className="btn btn-primary">
             <Plus size={16} /> Tạo hồ sơ vay mới
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -212,9 +218,11 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate }
         </div>
       </div>
 
+      {error && <p role="alert" className="error-message">{error}</p>}
+      {loading && <p role="status">Đang tải dữ liệu hồ sơ…</p>}
       {/* Hiển thị Chế độ KANBAN BOARD hoặc TABLE */}
       {viewMode === 'kanban' ? (
-        <KanbanBoard loans={loans} onSelectLoan={onSelectLoan} />
+        <KanbanBoard workflowStages={workflowStages} loans={loans} onSelectLoan={onSelectLoan} />
       ) : (
         <div className="data-table-container">
           <table className="data-table">

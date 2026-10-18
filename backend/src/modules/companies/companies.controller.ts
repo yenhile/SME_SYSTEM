@@ -1,8 +1,12 @@
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RoleCode } from '@prisma/client';
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN, RoleCode.QUAN_LY)
 @Controller('companies')
 export class CompaniesController {
   constructor(private companiesService: CompaniesService) {}
@@ -18,6 +22,7 @@ export class CompaniesController {
   }
 
   @Post()
+  @Roles(RoleCode.CBTD)
   upsert(@Body() body: any) {
     return this.companiesService.upsert(body);
   }

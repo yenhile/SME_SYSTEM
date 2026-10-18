@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsEnum, Min, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsEnum, Min, Max, IsInt, IsOptional } from 'class-validator';
 import { LoanType } from '@prisma/client';
 
 export class CreateLoanDto {
@@ -18,6 +18,8 @@ export class CreateLoanDto {
   @IsNotEmpty()
   @IsNumber()
   @Min(1950)
+  @IsInt()
+  @Max(new Date().getFullYear())
   establishedYear: number;
 
   @IsNotEmpty()
@@ -59,6 +61,8 @@ export class CreateLoanDto {
   @IsNotEmpty({ message: 'Thời hạn vay không được để trống' })
   @IsNumber()
   @Min(1, { message: 'Thời hạn vay tối thiểu 1 tháng' })
+  @IsInt()
+  @Max(120)
   loanTermMonths: number;
 
   @IsOptional()

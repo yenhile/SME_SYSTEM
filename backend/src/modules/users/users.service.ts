@@ -2,12 +2,14 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma.service';
 import { RoleCode } from '@prisma/client';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(roleFilter?: RoleCode) {
+    if (roleFilter && !Object.values(RoleCode).includes(roleFilter)) throw new BadRequestException('Vai trò không hợp lệ.');
     const users = await this.prisma.user.findMany({
       where: roleFilter
         ? {
@@ -64,20 +66,13 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('Không tìm thấy người dùng.');
     return {
-      ...user,
+      id: user.id, username: user.username, fullName: user.fullName,
+      email: user.email, phone: user.phone, branchName: user.branchName, isActive: user.isActive,
       roles: user.roles.map((r) => r.role.code),
     };
   }
 
-  async create(data: {
-    username: string;
-    password?: string;
-    fullName: string;
-    email: string;
-    phone?: string;
-    role: RoleCode;
-    branchName?: string;
-  }) {
+  async create(data: CreateUserDto) {
     const existing = await this.prisma.user.findFirst({
       where: {
         OR: [{ username: data.username }, { email: data.email }],
@@ -89,12 +84,12 @@ export class UsersService {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(data.password || 'Bank@123', salt);
+    const passwordHash = await bcrypt.hash(data.password, salt);
 
-    const role = await this.prisma.role.findUnique({
-      where: { code: data.role },
+    const roles = await this.prisma.role.findMany({
+      where: { code: { in: data.roles } },
     });
-    if (!role) {
+    if (roles.length !== data.roles.length) {
       throw new BadRequestException('Vai trò không hợp lệ.');
     }
 
@@ -107,9 +102,7 @@ export class UsersService {
         phone: data.phone,
         branchName: data.branchName || 'Chi nhánh TP.HCM',
         roles: {
-          create: {
-            roleId: role.id,
-          },
+          create: roles.map(role => ({ roleId: role.id })),
         },
       },
       include: {
@@ -131,11 +124,17 @@ export class UsersService {
     };
   }
 
-  async update(id: string, data: { fullName?: string; phone?: string; isActive?: boolean; branchName?: string }) {
-    const user = await this.prisma.user.update({
-      where: { id },
-      data,
+  async update(id: string, data: UpdateUserDto) {
+    const { roles, ...profile } = data;
+    await this.prisma.$transaction(async tx => {
+      const selected = roles ? await tx.role.findMany({ where: { code: { in: roles } } }) : null;
+      if (selected && selected.length !== roles!.length) throw new BadRequestException('Vai trò không hợp lệ.');
+      await tx.user.update({ where: { id }, data: profile });
+      if (selected) {
+        await tx.userRole.deleteMany({ where: { userId: id } });
+        await tx.userRole.createMany({ data: selected.map(role => ({ userId: id, roleId: role.id })) });
+      }
     });
-    return { message: 'Cập nhật thành công', user };
+    return { message: 'Cập nhật thành công', user: await this.findOne(id) };
   }
 }

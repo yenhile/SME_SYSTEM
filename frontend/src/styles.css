@@ -139,9 +139,30 @@ input:focus, select:focus, textarea:focus {
 /* Layout */
 .app-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   min-height: 100vh;
 }
+
+.sidebar { width: 250px; flex-shrink: 0; padding: 24px 18px; background: white; border-right: 1px solid var(--border-color); height: 100vh; position: sticky; top: 0; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+.sidebar-caption { color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .6px; }
+.sidebar nav { display: flex; flex-direction: column; gap: 6px; }
+.sidebar .nav-tab-btn { width: 100%; justify-content: flex-start; white-space: normal; text-align: left; }
+.sidebar-account { margin-top: auto; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border-color); padding-top: 20px; }
+.sidebar-account label, .admin-form label, .login-card label { display: flex; flex-direction: column; gap: 6px; }
+.sidebar-account p, .page-heading p, .login-card p { color: var(--text-secondary); font-size: 13px; }
+.app-container > .main-content { flex: 1; min-width: 0; width: auto; max-width: none; margin: 0; padding: 28px; }
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.login-card { width: min(100%, 420px); padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+.login-card form, .admin-form { display: flex; flex-direction: column; gap: 16px; }
+.login-card form > button { justify-content: center; }
+.error-message { background: var(--badge-red-bg); color: var(--badge-red-text); padding: 12px; border: 1px solid var(--badge-red-border); border-radius: 8px; margin: 10px 0; white-space: pre-line; }
+.page-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+.search-row, .sla-row { display: flex; gap: 12px; align-items: end; margin-bottom: 16px; flex-wrap: wrap; }
+.sla-row label:first-child { flex: 1; }
+.admin-form .check-label { flex-direction: row; align-items: center; margin: 8px 0; }
+.admin-form fieldset { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; }
+@media (max-width: 850px) { .sidebar { width: 210px; padding: 18px 12px; } .app-container > .main-content { padding: 18px; } }
+@media (max-width: 600px) { .app-container { flex-direction: column; } .sidebar { width: 100%; height: auto; position: static; } .sidebar nav { flex-direction: row; flex-wrap: wrap; } .sidebar nav .nav-tab-btn { width: auto; } .sidebar-account { margin-top: 0; } .page-heading { flex-wrap: wrap; } .modal-content { max-height: 92vh; } }
 
 /* Navbar Header Tươi sáng */
 .navbar {
@@ -778,6 +799,9 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+.modal-content > form { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.modal-header, .modal-footer { flex-shrink: 0; }
 
 .modal-header {
   padding: 16px 24px;
