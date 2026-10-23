@@ -1,0 +1,15 @@
+{
+  "taxCode": "9990000001",
+  "companyName": "CONG TY TNHH SAN XUAT DEMO SME (DU LIEU TEST)",
+  "industry": "San xuat hang tieu dung - du lieu gia lap",
+  "establishedYear": 2018,
+  "annualRevenue": 45000000000,
+  "charterCapital": 15000000000,
+  "representativeName": "NGUOI DAI DIEN TEST",
+  "phone": "0900000000",
+  "address": "DIA CHI GIA LAP - KHONG PHAI DIA CHI THUC",
+  "loanPurpose": "TEST - Bo sung von luu dong mua nguyen lieu, tra no tu doanh thu ban hang",
+  "loanType": "VAY_VON_LUU_DONG",
+  "proposedAmount": 8000000000,
+  "loanTermMonths": 12
+}

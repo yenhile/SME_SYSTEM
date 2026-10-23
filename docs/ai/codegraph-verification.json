@@ -1,0 +1,495 @@
+{
+  "date": "2026-10-18",
+  "ruleset": "sme-loan-ai-v1.1",
+  "tool": {
+    "name": "@optave/codegraph",
+    "version": "3.17.0"
+  },
+  "host_usage": "PO uses Codex IDE extension and Gemini Antigravity; agents invoke local tooling through terminal tools.",
+  "scope": "Executed isolated local graph/freshness queries and regression checks. No IDE auto-load or application/data-DB validation claimed.",
+  "results": [
+    {
+      "name": "graph_freshness",
+      "command": "npm.cmd run --silent graph:check",
+      "exit_code": 0,
+      "result": "CODEGRAPH OK version=3.17.0 files=80 nodes=923 edges=1605 backend=52 frontend=17 ml=6"
+    },
+    {
+      "name": "stats",
+      "command": "npm.cmd run --silent codegraph -- stats --json",
+      "exit_code": 0,
+      "result": {
+        "nodes": {
+          "total": 923,
+          "byKind": {
+            "class": 55,
+            "constant": 115,
+            "directory": 34,
+            "file": 80,
+            "function": 92,
+            "interface": 18,
+            "method": 108,
+            "parameter": 202,
+            "property": 210,
+            "type": 9
+          }
+        },
+        "edges": {
+          "total": 1605,
+          "byKind": {
+            "calls": 265,
+            "contains": 919,
+            "imports": 180,
+            "imports-type": 28,
+            "parameter_of": 202,
+            "receiver": 11
+          }
+        },
+        "files": {
+          "total": 80,
+          "languages": 4,
+          "byLanguage": {
+            "javascript": 6,
+            "typescript": 55,
+            "tsx": 13,
+            "python": 6
+          }
+        },
+        "cycles": {
+          "fileLevel": 0,
+          "functionLevel": 0
+        },
+        "hotspots": [
+          {
+            "file": "backend/src/prisma.service.ts",
+            "fanIn": 25,
+            "fanOut": 0
+          },
+          {
+            "file": "backend/src/app.module.ts",
+            "fanIn": 1,
+            "fanOut": 14
+          },
+          {
+            "file": "backend/src/modules/supplements/supplements.controller.ts",
+            "fanIn": 1,
+            "fanOut": 14
+          },
+          {
+            "file": "backend/src/modules/loan-applications/loan-applications.controller.ts",
+            "fanIn": 1,
+            "fanOut": 13
+          },
+          {
+            "file": "backend/src/modules/workflow/workflow.controller.ts",
+            "fanIn": 1,
+            "fanOut": 13
+          }
+        ],
+        "embeddings": null,
+        "quality": {
+          "score": 79,
+          "callerCoverage": {
+            "ratio": 0.57,
+            "percentage": 57,
+            "covered": 114,
+            "total": 200,
+            "byTechnique": {
+              "ts-native": 265
+            }
+          },
+          "callConfidence": {
+            "ratio": 0.8981132075471698,
+            "highConf": 238,
+            "total": 265
+          },
+          "falsePositiveWarnings": []
+        },
+        "roles": {
+          "core": 59,
+          "dead-unresolved": 110,
+          "leaf": 334,
+          "test-only": 5,
+          "utility": 40
+        },
+        "deadTotal": 110,
+        "complexity": {
+          "analyzed": 200,
+          "avgCognitive": 4.5,
+          "avgCyclomatic": 4.3,
+          "maxCognitive": 185,
+          "maxCyclomatic": 143,
+          "avgMI": 67.8,
+          "minMI": 0
+        },
+        "communities": {
+          "communityCount": 20,
+          "modularity": 0.5067,
+          "nodeCount": 80,
+          "driftScore": 40
+        }
+      }
+    },
+    {
+      "name": "backend_dependencies",
+      "command": "npm.cmd run --silent codegraph -- deps backend/src/modules/workflow/workflow.service.ts --json",
+      "exit_code": 0,
+      "result": {
+        "file": "backend/src/modules/workflow/workflow.service.ts",
+        "results": [
+          {
+            "file": "backend/src/modules/workflow/workflow.service.ts",
+            "imports": [
+              {
+                "file": "backend/src/modules/prediction/prediction.service.ts",
+                "typeOnly": false
+              },
+              {
+                "file": "backend/src/modules/workflow/dto/transition-stage.dto.ts",
+                "typeOnly": false
+              },
+              {
+                "file": "backend/src/prisma.service.ts",
+                "typeOnly": false
+              }
+            ],
+            "importedBy": [
+              {
+                "file": "backend/src/modules/workflow/workflow.controller.ts"
+              },
+              {
+                "file": "backend/src/modules/workflow/workflow.module.ts"
+              }
+            ],
+            "definitions": [
+              {
+                "name": "WorkflowService",
+                "kind": "class",
+                "line": 7
+              },
+              {
+                "name": "logger",
+                "kind": "property",
+                "line": 8
+              },
+              {
+                "name": "WorkflowService.constructor",
+                "kind": "method",
+                "line": 9
+              },
+              {
+                "name": "prisma",
+                "kind": "parameter",
+                "line": 9
+              },
+              {
+                "name": "predictionService",
+                "kind": "parameter",
+                "line": 9
+              },
+              {
+                "name": "WorkflowService.getWorkflowStages",
+                "kind": "method",
+                "line": 10
+              },
+              {
+                "name": "WorkflowService.getWorkflowHistory",
+                "kind": "method",
+                "line": 11
+              },
+              {
+                "name": "applicationId",
+                "kind": "parameter",
+                "line": 11
+              },
+              {
+                "name": "WorkflowService.transitionStage",
+                "kind": "method",
+                "line": 14
+              },
+              {
+                "name": "applicationId",
+                "kind": "parameter",
+                "line": 14
+              },
+              {
+                "name": "dto",
+                "kind": "parameter",
+                "line": 14
+              },
+              {
+                "name": "user",
+                "kind": "parameter",
+                "line": 14
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "frontend_context",
+      "command": "npm.cmd run --silent codegraph -- context LoanList --no-source --json",
+      "exit_code": 0,
+      "result": {
+        "name": "LoanList",
+        "results": [
+          {
+            "name": "LoanList",
+            "kind": "function",
+            "file": "frontend/src/components/LoanList.tsx",
+            "line": 22,
+            "role": "utility",
+            "endLine": 338,
+            "source": null,
+            "signature": {
+              "params": "{ onSelectLoan, onOpenCreate, refreshKey }",
+              "returnType": null
+            },
+            "complexity": {
+              "cognitive": 60,
+              "cyclomatic": 32,
+              "maxNesting": 7,
+              "maintainabilityIndex": 13.2,
+              "halsteadVolume": 12479.07
+            },
+            "callees": [
+              {
+                "name": "KanbanBoard",
+                "kind": "function",
+                "file": "frontend/src/components/KanbanBoard.tsx",
+                "line": 11,
+                "endLine": 155,
+                "summary": null,
+                "source": null
+              },
+              {
+                "name": "fetchLoans",
+                "kind": "function",
+                "file": "frontend/src/components/LoanList.tsx",
+                "line": 35,
+                "endLine": 53,
+                "summary": null,
+                "source": null
+              },
+              {
+                "name": "formatVnd",
+                "kind": "function",
+                "file": "frontend/src/components/LoanList.tsx",
+                "line": 64,
+                "endLine": 67,
+                "summary": null,
+                "source": null
+              },
+              {
+                "name": "getStatusBadge",
+                "kind": "function",
+                "file": "frontend/src/components/LoanList.tsx",
+                "line": 69,
+                "endLine": 86,
+                "summary": null,
+                "source": null
+              },
+              {
+                "name": "useAuth",
+                "kind": "function",
+                "file": "frontend/src/context/AuthContext.tsx",
+                "line": 52,
+                "endLine": 56,
+                "summary": null,
+                "source": null
+              }
+            ],
+            "callers": [
+              {
+                "name": "Workspace",
+                "kind": "function",
+                "file": "frontend/src/App.tsx",
+                "line": 12
+              }
+            ],
+            "relatedTests": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "python_symbols",
+      "command": "npm.cmd run --silent codegraph -- where DelayPredictor --json",
+      "exit_code": 0,
+      "result": {
+        "target": "DelayPredictor",
+        "mode": "symbol",
+        "results": [
+          {
+            "name": "DelayPredictor",
+            "kind": "class",
+            "file": "ml-service/app/predictor.py",
+            "line": 8,
+            "endLine": 89,
+            "role": "core",
+            "fileHash": "77933992ff1c304296104320d1c72864e7d90b39c5f11fcdc20bb01817f2d036",
+            "exported": false,
+            "uses": [
+              {
+                "name": "ml-service/app/predictor.py",
+                "file": "ml-service/app/predictor.py",
+                "line": 0
+              }
+            ]
+          },
+          {
+            "name": "DelayPredictor.__init__",
+            "kind": "method",
+            "file": "ml-service/app/predictor.py",
+            "line": 9,
+            "endLine": 12,
+            "role": "utility",
+            "fileHash": "77933992ff1c304296104320d1c72864e7d90b39c5f11fcdc20bb01817f2d036",
+            "exported": false,
+            "uses": [
+              {
+                "name": "ml-service/app/predictor.py",
+                "file": "ml-service/app/predictor.py",
+                "line": 0
+              }
+            ]
+          },
+          {
+            "name": "DelayPredictor._load_model",
+            "kind": "method",
+            "file": "ml-service/app/predictor.py",
+            "line": 14,
+            "endLine": 20,
+            "role": "core",
+            "fileHash": "77933992ff1c304296104320d1c72864e7d90b39c5f11fcdc20bb01817f2d036",
+            "exported": false,
+            "uses": [
+              {
+                "name": "DelayPredictor.__init__",
+                "file": "ml-service/app/predictor.py",
+                "line": 9
+              },
+              {
+                "name": "DelayPredictor.predict",
+                "file": "ml-service/app/predictor.py",
+                "line": 22
+              }
+            ]
+          },
+          {
+            "name": "DelayPredictor.predict",
+            "kind": "method",
+            "file": "ml-service/app/predictor.py",
+            "line": 22,
+            "endLine": 89,
+            "role": "leaf",
+            "fileHash": "77933992ff1c304296104320d1c72864e7d90b39c5f11fcdc20bb01817f2d036",
+            "exported": false,
+            "uses": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "prediction_impact",
+      "command": "npm.cmd run --silent codegraph -- fn-impact predictForApplication --file backend/src/modules/prediction/prediction.service.ts --json",
+      "exit_code": 0,
+      "result": {
+        "name": "predictForApplication",
+        "results": [
+          {
+            "name": "PredictionService.predictForApplication",
+            "kind": "method",
+            "file": "backend/src/modules/prediction/prediction.service.ts",
+            "line": 12,
+            "endLine": 119,
+            "role": "dead-unresolved",
+            "fileHash": "e6217386bf856122b0d33d11e69d0895468d02bc4527991c2e357291187d1913",
+            "levels": {
+              "1": [
+                {
+                  "name": "AssignmentsService.reassign",
+                  "kind": "method",
+                  "file": "backend/src/modules/assignments/assignments.service.ts",
+                  "line": 108
+                },
+                {
+                  "name": "PredictionController.predict",
+                  "kind": "method",
+                  "file": "backend/src/modules/prediction/prediction.controller.ts",
+                  "line": 14
+                },
+                {
+                  "name": "SupplementsService.resolveSupplementRequest",
+                  "kind": "method",
+                  "file": "backend/src/modules/supplements/supplements.service.ts",
+                  "line": 91
+                },
+                {
+                  "name": "WorkflowService.transitionStage",
+                  "kind": "method",
+                  "file": "backend/src/modules/workflow/workflow.service.ts",
+                  "line": 14
+                }
+              ],
+              "2": [
+                {
+                  "name": "AssignmentsController.reassign",
+                  "kind": "method",
+                  "file": "backend/src/modules/assignments/assignments.controller.ts",
+                  "line": 37
+                },
+                {
+                  "name": "SupplementsController.resolveRequest",
+                  "kind": "method",
+                  "file": "backend/src/modules/supplements/supplements.controller.ts",
+                  "line": 35
+                },
+                {
+                  "name": "WorkflowController.transitionStage",
+                  "kind": "method",
+                  "file": "backend/src/modules/workflow/workflow.controller.ts",
+                  "line": 29
+                }
+              ]
+            },
+            "totalDependents": 7,
+            "direct": 4,
+            "transitive": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "rules_static",
+      "command": "node scripts/check-ai-rules.mjs",
+      "exit_code": 0,
+      "result": "RESULT passed=341 failed=0\nScope: static configuration and SKILL.md integrity; no live AI, Antigravity or application test."
+    },
+    {
+      "name": "rules_regression",
+      "command": "node scripts/check-ai-rules.test.mjs",
+      "exit_code": 0,
+      "result": "PASS Valid configuration accepted\nPASS Missing Codex entrypoint rejected\nPASS Invalid Antigravity trigger rejected\nPASS Missing routed skill rejected\nPASS Broken local link rejected\nPASS Vendor integrity mismatch rejected\nPASS Body cannot spoof bootstrap trigger\nPASS CodeGraph cannot be downgraded to optional\nPASS Restored configuration accepted\nRESULT validator_integration_cases=9 failed=0"
+    },
+    {
+      "name": "codegraph_regression",
+      "command": "node scripts/check-codegraph.test.mjs",
+      "exit_code": 0,
+      "result": "PASS Child process disables update checks and isolates CodeGraph environment\nPASS Structural query wrapper rejects server command\nPASS Joined, combined and long database overrides rejected\nPASS Missing index rejected\nPASS Real CodeGraph build on three-module fixture\nPASS Fresh source accepted\nPASS Changed source rejected\nPASS Refresh accepts changed source\nPASS New source rejected until indexed\nPASS Refresh indexes new source\nPASS Deleted source rejected until refreshed\nPASS Refresh removes deleted source\nPASS Configuration drift rejected\nPASS Restored configuration accepted\nPASS Private, vendor and data fixtures excluded from actual graph\nRESULT codegraph_integration_cases=15 failed=0"
+    },
+    {
+      "name": "syntax",
+      "command": "$files = @('scripts/check-ai-rules.mjs','scripts/check-ai-rules.test.mjs','scripts/check-codegraph.mjs','scripts/check-codegraph.test.mjs','scripts/run-codegraph.mjs'); foreach ($file in $files) { node --check $file; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }; Write-Output 'Syntax OK: 5 files'",
+      "exit_code": 0,
+      "result": "Syntax OK: 5 files"
+    },
+    {
+      "name": "integrity",
+      "command": "$ErrorActionPreference = 'Stop'; $rootPath = (Get-Location).Path; $baseline = Get-Content -LiteralPath (Join-Path $env:TEMP 'sme-loan-ai-setup-integrity.json') -Raw -Encoding UTF8 | ConvertFrom-Json; foreach ($category in @('product','vendor')) { $changed = @(); foreach ($item in @($baseline.$category)) { $full = Join-Path $rootPath $item.path; if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { $changed += $item.path } elseif ((Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash -ne $item.sha256) { $changed += $item.path } }; $unexpected = @($changed | Where-Object { $category -ne 'product' -or $_ -ne '.gitignore' }); Write-Output ($category + ': checked=' + @($baseline.$category).Count + ' changed=' + $changed.Count + ' unexpected=' + $unexpected.Count); if ($changed.Count) { $changed }; if ($unexpected.Count) { throw 'Unexpected integrity mismatch' } }; git -c safe.directory=T:/KhoaLuanTotNghiep/sme-loan-workflow diff --check; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; git -c safe.directory=T:/KhoaLuanTotNghiep/sme-loan-workflow check-ignore .codegraph/graph.db node_modules/@optave/codegraph/package.json",
+      "exit_code": 0,
+      "result": "product: checked=131 changed=1 unexpected=0\r\n.gitignore\r\nvendor: checked=259 changed=0 unexpected=0\r\n.codegraph/graph.db\nnode_modules/@optave/codegraph/package.json"
+    }
+  ]
+}

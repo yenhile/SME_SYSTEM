@@ -15,6 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(request: any, payload: any) {
+    if (payload.type === 'portal' || payload.aud === 'sme-enterprise-portal' || payload.iss === 'sme-enterprise-portal') throw new UnauthorizedException('Phiên doanh nghiệp không có quyền nội bộ.');
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       include: {

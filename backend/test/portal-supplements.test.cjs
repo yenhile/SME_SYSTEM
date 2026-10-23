@@ -1,0 +1,7 @@
+﻿const test=require('node:test');const assert=require('node:assert/strict');
+const {createMetadata,respond,review,safeView}=require('../dist/modules/supplements/portal-supplement');
+const id='b3c70099-c9d5-479a-9a61-6cb27c357066';
+const item={documentGroup:'A',documentTypeCode:'A_CHARTER',reason:'Bổ sung điều lệ'};
+test('structured items use catalog and require UUID',()=>{assert.throws(()=>createMetadata([item],'bad'));assert.throws(()=>createMetadata([{...item,documentTypeCode:'WRONG'}],id));assert.equal(createMetadata([item],id).items[0].status,'PENDING');});
+test('respond requires exact current file manifest and review requires submitted item',()=>{const m=createMetadata([item],id);const i=m.items[0];assert.throws(()=>review(m,i.id,{accepted:true,message:''}));m.files.push({id:'f',itemId:i.id,version:1,fileName:'a.pdf',filePath:'SECRET',sha256:'hash'});assert.throws(()=>respond(m,[]));respond(m,['f']);assert.equal(i.status,'SUBMITTED');review(m,i.id,{accepted:false,message:'Tải lại'});assert.equal(i.status,'REPLACE_REQUIRED');assert.throws(()=>respond(m,['f']));});
+test('safe projection excludes all internal paths notes hashes and identifiers',()=>{const m=createMetadata([item],id);m.files.push({id:'f',itemId:m.items[0].id,fileName:'a.pdf',filePath:'SECRET',sha256:'hash',clientUploadId:id});const v=safeView({id:'s',notes:'SECRET',requestedBy:'secret',portalSupplement:m});const text=JSON.stringify(v);assert.ok(!text.includes('SECRET'));assert.ok(!text.includes('sha256'));assert.ok(!text.includes('clientUploadId'));});

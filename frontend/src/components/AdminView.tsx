@@ -36,11 +36,11 @@ export function AdminView({ section }: { section: 'users' | 'settings' }) {
     } catch (err) { setError((err as Error).message); }
     finally { setBusy(false); }
   };
-  return <section>
-    <div className="page-heading"><div><h2>{section === 'users' ? 'Tài khoản & Phân quyền' : 'Cấu hình SLA'}</h2><p>Quản trị hệ thống · {section === 'users' ? 'Một tài khoản có thể được cấp nhiều vai trò.' : 'Định mức mới áp dụng cho công đoạn được mở sau khi lưu.'}</p></div><button disabled={busy} className="btn btn-secondary" onClick={() => void load()}>Làm mới</button></div>
+  return <section className="admin-view">
+    <div className="page-heading"><div><h2>{section === 'users' ? 'Liên hệ cá nhân' : 'Cấu hình SLA'}</h2><p>Quản trị hệ thống · {section === 'users' ? 'Một tài khoản có thể được cấp nhiều vai trò.' : 'Định mức mới áp dụng cho công đoạn được mở sau khi lưu.'}</p></div><button disabled={busy} className="btn btn-secondary" onClick={() => void load()}>Làm mới</button></div>
     {error && <p role="alert" className="error-message">{error}</p>}{notice && <p role="status">{notice}</p>}
     {section === 'users' ? <>
-      <button className="btn btn-primary" onClick={() => { setEditId(null); setForm(emptyForm); setOpen(true); setError(''); }}>Tạo tài khoản</button>
+      <button className="btn btn-primary" onClick={() => { setEditId(null); setForm(emptyForm); setOpen(true); setError(''); }}>Tạo mới liên hệ</button>
       <div className="data-table-container"><table className="data-table"><thead><tr><th>Tài khoản</th><th>Họ tên</th><th>Vai trò được cấp</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{accounts.map(account => <tr key={account.id}><td>{account.username}</td><td>{account.fullName}</td><td>{account.roles.map(role => ROLE_NAMES[role]).join(', ')}</td><td>{account.isActive ? 'Hoạt động' : 'Đã khóa'}</td><td><button className="btn btn-secondary" onClick={() => { setEditId(account.id); setForm({ ...emptyForm, ...account, password: '' }); setOpen(true); setError(''); }}>Sửa / Cấp quyền</button></td></tr>)}</tbody></table></div>
       {open && <div className="modal-overlay"><section className="modal-content" style={{ maxWidth: 600 }}><div className="modal-header"><h3>{editId ? 'Cập nhật tài khoản' : 'Tạo tài khoản'}</h3><button className="btn btn-secondary" disabled={busy} onClick={() => setOpen(false)}>Đóng</button></div><form onSubmit={submit}><div className="modal-body admin-form">
         {error && <p role="alert" className="error-message">{error}</p>}

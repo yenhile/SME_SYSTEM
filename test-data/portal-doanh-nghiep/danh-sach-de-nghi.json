@@ -1,0 +1,32 @@
+{
+  "createdDate": "2026-10-21",
+  "email": "doanhnghiep.test@example.test",
+  "company": "CONG TY TNHH SAN XUAT DEMO SME (DU LIEU TEST)",
+  "taxCode": "9990000001",
+  "scenarios": [
+    {
+      "key": "nhap-thieu",
+      "label": "TEST 01 - Nhap thieu D E F",
+      "id": "b2104933-2957-4b96-b86c-ef12ba2270a6",
+      "reference": "DN-20261021-FC6769D5-6F8",
+      "status": "DRAFT",
+      "documents": 4
+    },
+    {
+      "key": "nhap-day-du",
+      "label": "TEST 02 - Du 6 nhom cho PO gui",
+      "id": "7259253e-20e5-4100-88dd-3052e724aa41",
+      "reference": "DN-20261021-B5D0BBC2-BE3",
+      "status": "DRAFT",
+      "documents": 8
+    },
+    {
+      "key": "cho-tiep-nhan",
+      "label": "TEST 03 - Da gui cho CBTD tiep nhan",
+      "id": "c126e77a-1651-4c4a-be76-9af803d1977b",
+      "reference": "DN-20261021-A3E441DB-173",
+      "status": "SUBMITTED",
+      "documents": 8
+    }
+  ]
+}

@@ -8,7 +8,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  return <main className="login-page"><section className="card login-card">
+  return <main className="login-page"><section className="card login-card reference-login">
     <div className="brand-icon"><Landmark size={26} /></div>
     <h1>SME Loan Workflow</h1><p>Đăng nhập để truy cập hệ thống</p>
     {sessionError && <div role="alert" className="error-message">{sessionError}{getAuthToken() && <button className="btn btn-secondary" onClick={() => void restoreSession()}>Thử kết nối lại</button>}<button className="btn" onClick={logout}>Đăng nhập lại</button></div>}

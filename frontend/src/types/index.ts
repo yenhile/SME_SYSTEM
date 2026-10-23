@@ -16,7 +16,7 @@ export type LoanType = 'VAY_VON_LUU_DONG' | 'VAY_DAU_TU_TSCD' | 'THAU_CHI';
 
 export type RiskLevel = 'THAP' | 'TRUNG_BINH' | 'CAO';
 
-export type DocumentType = 'PHAP_LY' | 'TAI_CHINH' | 'PHUONG_AN' | 'TSBD' | 'KHAC';
+export type DocumentType = 'PHAP_LY' | 'TAI_CHINH' | 'HOAT_DONG_SX' | 'PHUONG_AN' | 'TSBD' | 'DU_NO' | 'KHAC';
 
 export interface User {
   id: string;
@@ -113,6 +113,7 @@ export interface ApplicationAssignment {
 }
 
 export interface LoanApplication {
+  portalRequest?: import('../portal/model').PortalRequest | null;
   id: string;
   applicationCode: string;
   companyId: string;

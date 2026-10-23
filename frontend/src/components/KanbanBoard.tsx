@@ -3,12 +3,13 @@ import { LoanApplication, StageCode } from '../types';
 import { Clock, AlertTriangle, CheckCircle2, User, Building, DollarSign } from 'lucide-react';
 
 interface KanbanBoardProps {
+  stageCodes?: StageCode[];
   loans: LoanApplication[];
   workflowStages: { stageCode: string; stageName: string; standardSlaHours: number }[];
   onSelectLoan: (loanId: string) => void;
 }
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan, workflowStages }) => {
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan, workflowStages, stageCodes }) => {
   const columns: { stage: StageCode; title: string; badgeColor: string }[] = [
     { stage: 'TIEP_NHAN', title: '1. Tiếp nhận hồ sơ', badgeColor: 'badge-soft-blue' },
     { stage: 'THAM_DINH', title: '2. Thẩm định tín dụng', badgeColor: 'badge-soft-amber' },
@@ -72,7 +73,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan, w
 
   return (
     <div className="kanban-board">
-      {columns.map((col) => {
+      {columns.filter(col => !stageCodes || stageCodes.includes(col.stage)).map((col) => {
         const colLoans = loans.filter((l) => l.currentStage === col.stage);
 
         return (

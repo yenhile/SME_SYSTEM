@@ -46,11 +46,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
   }, []);
 
   return (
-    <div>
+    <div className="dashboard-view">
       {error && <p role="alert" className="error-message">{error}</p>}
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Dashboard Giám sát SLA & Cảnh báo Sớm (AI)
+          Dashboard tổng quan
         </h2>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
           Theo dõi các chỉ số vận hành chi nhánh và phát hiện sớm các hồ sơ có nguy cơ chậm trễ bằng Học máy
@@ -60,12 +60,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
       {/* KPI Cards Grid Trắng Sáng */}
       <div className="kpi-grid">
         <div className="kpi-card">
-          <div className="kpi-icon-wrap" style={{ color: '#0284c7', background: 'var(--primary-light)' }}>
+          <div className="kpi-icon-wrap" style={{ color: 'var(--primary)', background: 'var(--primary-light)' }}>
             <FileText size={22} />
           </div>
           <div className="kpi-info">
             <h4>Hồ sơ đang xử lý</h4>
-            <div className="kpi-value" style={{ color: '#0284c7' }}>
+            <div className="kpi-value" style={{ color: 'var(--primary)' }}>
               {stats ? stats.activeApplications : '—'}
             </div>
             <div className="kpi-sub">Tổng tích lũy: {stats ? stats.totalApplications : 0} hồ sơ</div>
@@ -190,7 +190,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                           style={{
                             width: `${Math.min(100, st.delayRate)}%`,
                             height: '100%',
-                            background: st.delayRate > 15 ? '#ef4444' : '#0284c7',
+                            background: st.delayRate > 15 ? '#ef4444' : 'var(--primary)',
                           }}
                         />
                       </div>
@@ -272,7 +272,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                     </td>
 
                     <td>
-                      <div style={{ fontWeight: 700, color: '#0369a1', fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--primary-hover)', fontFamily: 'var(--font-mono)' }}>
                         {Number(item.loanAmount).toLocaleString('vi-VN')} VNĐ
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>

@@ -27,10 +27,10 @@ const transition = (stage, status, other = {}) => ({ targetStage: stage, targetS
 async function main() {
   await call('/loan-applications', null, 'GET', undefined, 401);
   await call('/loan-applications', { token: 'demo_jwt_token_123', role: 'CBTD' }, 'GET', undefined, 401);
-  await call('/auth/login', null, 'POST', { username: 'cbtd_nam', password: 'incorrect' }, 401);
-  const admin = await login('admin', 'Admin@123', 'ADMIN');
-  const manager = await login('manager_dung', 'Manager@123', 'QUAN_LY');
-  const other = await login('cbtd_huong', 'Cbtd@123', 'CBTD');
+  await call('/auth/login', null, 'POST', { username: 'test_cbtd', password: 'incorrect' }, 401);
+  const admin = await login('test_admin', '123456', 'ADMIN');
+  const manager = await login('test_quan_ly', '123456', 'QUAN_LY');
+  const other = await login('test_cbtd', '123456', 'CBTD');
   await call('/loan-applications', admin, 'GET', undefined, 403);
   await call('/admin/workflow-stages', other, 'GET', undefined, 403);
   await call('/users', other, 'GET', undefined, 403);

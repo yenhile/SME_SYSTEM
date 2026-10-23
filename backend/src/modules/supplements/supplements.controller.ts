@@ -8,12 +8,24 @@ import { CreateSupplementDto } from './dto/create-supplement.dto';
 import { ResolveSupplementDto } from './dto/resolve-supplement.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { PortalSupplementsService } from './portal-supplements.service';
+import { supplementDownload } from './portal-supplements.controller';
 
 @UseGuards(JwtAuthGuard, RolesGuard, LoanAccessGuard)
 @Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN, RoleCode.QUAN_LY)
 @Controller('supplements')
 export class SupplementsController {
-  constructor(private readonly supplementsService: SupplementsService) {}
+  constructor(private readonly supplementsService: SupplementsService, private readonly portalSupplements:PortalSupplementsService) {}
+
+  @Get(':supplementId/portal-details')
+  portalDetails(@Param('supplementId') id:string) {return this.portalSupplements.details(id);}
+
+  @Put(':supplementId/items/:itemId/review')
+  @Roles(RoleCode.CBTD,RoleCode.THAM_QUYEN)
+  review(@Param('supplementId') id:string,@Param('itemId') itemId:string,@Body() body:any,@CurrentUser() user:{id:string;activeRole:string}) {return this.portalSupplements.review(id,itemId,body,user);}
+
+  @Get(':supplementId/files/:fileId/download')
+  async download(@Param('supplementId') id:string,@Param('fileId') fileId:string) {return supplementDownload(await this.portalSupplements.download(id,fileId));}
 
   @Get('application/:applicationId')
   getSupplements(@Param('applicationId') applicationId: string) {
@@ -26,8 +38,9 @@ export class SupplementsController {
     @Param('applicationId') applicationId: string,
     @Body() dto: CreateSupplementDto,
     @CurrentUser('id') userId: string,
+    @CurrentUser('activeRole') activeRole:string,
   ) {
-    return this.supplementsService.createSupplementRequest(applicationId, dto, userId);
+    return this.supplementsService.createSupplementRequest(applicationId, dto, userId, activeRole);
   }
 
   @Put(':supplementId/resolve')
@@ -36,7 +49,8 @@ export class SupplementsController {
     @Param('supplementId') supplementId: string,
     @Body() dto: ResolveSupplementDto,
     @CurrentUser('id') userId: string,
+    @CurrentUser('activeRole') activeRole:string,
   ) {
-    return this.supplementsService.resolveSupplementRequest(supplementId, dto, userId);
+    return this.supplementsService.resolveSupplementRequest(supplementId, dto, userId, activeRole);
   }
 }

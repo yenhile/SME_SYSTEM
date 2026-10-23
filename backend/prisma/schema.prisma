@@ -48,6 +48,8 @@ enum DocumentType {
   PHUONG_AN
   TSBD
   KHAC
+  HOAT_DONG_SX
+  DU_NO
 }
 
 enum SupplementStatus {
@@ -87,6 +89,13 @@ model User {
   assignmentsFrom        ApplicationAssignment[] @relation("FromUser")
   assignmentsTo          ApplicationAssignment[] @relation("ToUser")
   assignmentsMade        ApplicationAssignment[] @relation("ReassignedBy")
+  acceptedPortalRequests PortalRequest[]
+  assignedPortalRequests PortalRequest[] @relation("PortalAssignedOfficer")
+  portalAssignmentsMade PortalRequest[] @relation("PortalAssigningManager")
+  portalAssignmentsFrom PortalAssignment[] @relation("PortalAssignmentFrom")
+  portalAssignmentsTo PortalAssignment[] @relation("PortalAssignmentTo")
+  portalAssignmentHistory PortalAssignment[] @relation("PortalAssignmentManager")
+  internalNotifications InternalNotification[]
 
   @@map("users")
 }
@@ -170,6 +179,7 @@ model LoanApplication {
   supplementRequests SupplementRequest[]
   assignments        ApplicationAssignment[]
   delayPredictions   DelayPrediction[]
+  portalRequest      PortalRequest?
 
   @@map("loan_applications")
 }
@@ -223,6 +233,8 @@ model Document {
   mimeType      String?      @map("mime_type")
   uploadedBy    String       @map("uploaded_by")
   uploadedAt    DateTime     @default(now()) @map("uploaded_at")
+  portalDocumentId String?    @map("portal_document_id")
+  portalDocument PortalDocument? @relation(fields: [portalDocumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   uploader    User            @relation("UploadedDocuments", fields: [uploadedBy], references: [id])
@@ -230,10 +242,122 @@ model Document {
   @@map("documents")
 }
 
+enum PortalRequestStatus {
+  DRAFT
+  SUBMITTED
+  ASSIGNED
+  ACCEPTED
+}
+
+model PortalAccount {
+  id String @id @default(uuid())
+  email String @unique
+  passwordHash String @map("password_hash")
+  contactName String @map("contact_name")
+  phone String
+  verifiedAt DateTime? @map("verified_at")
+  verificationHash String? @map("verification_hash")
+  verificationExpiresAt DateTime? @map("verification_expires_at")
+  verificationSentAt DateTime? @map("verification_sent_at")
+  verificationAttempts Int @default(0) @map("verification_attempts")
+  loginAttempts Int @default(0) @map("login_attempts")
+  loginLockedUntil DateTime? @map("login_locked_until")
+  createdAt DateTime @default(now()) @map("created_at")
+  requests PortalRequest[]
+  @@map("portal_accounts")
+}
+
+model PortalRequest {
+  id String @id @default(uuid())
+  reference String @unique
+  accountId String @map("account_id")
+  status PortalRequestStatus @default(DRAFT)
+  data Json @default("{}")
+  formVersion Int @default(1) @map("form_version")
+  checklistVersion String @default("legacy-v1") @map("checklist_version")
+  revision Int @default(0)
+  checklistSnapshot Json? @map("checklist_snapshot")
+  submittedAt DateTime? @map("submitted_at")
+  acceptedAt DateTime? @map("accepted_at")
+  acceptedBy String? @map("accepted_by")
+  assignedTo String? @map("assigned_to")
+  assignedBy String? @map("assigned_by")
+  assignedAt DateTime? @map("assigned_at")
+  loanId String? @unique @map("loan_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  account PortalAccount @relation(fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  acceptedUser User? @relation(fields: [acceptedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignedOfficer User? @relation("PortalAssignedOfficer", fields: [assignedTo], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assigningManager User? @relation("PortalAssigningManager", fields: [assignedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  loan LoanApplication? @relation(fields: [loanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  documents PortalDocument[]
+  assignments PortalAssignment[]
+  notifications InternalNotification[]
+  @@index([accountId, status])
+  @@index([assignedTo, status])
+  @@map("portal_requests")
+}
+
+model PortalAssignment {
+  id String @id @default(uuid())
+  requestId String @map("request_id")
+  fromUserId String? @map("from_user_id")
+  toUserId String @map("to_user_id")
+  managerId String @map("manager_id")
+  note String?
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  request PortalRequest @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fromUser User? @relation("PortalAssignmentFrom", fields: [fromUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  toUser User @relation("PortalAssignmentTo", fields: [toUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  manager User @relation("PortalAssignmentManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@index([requestId, assignedAt])
+  @@map("portal_assignments")
+}
+
+model InternalNotification {
+  id String @id @default(uuid())
+  userId String @map("user_id")
+  requestId String @map("request_id")
+  title String
+  message String
+  createdAt DateTime @default(now()) @map("created_at")
+  readAt DateTime? @map("read_at")
+  user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  request PortalRequest @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@index([userId, createdAt])
+  @@map("internal_notifications")
+}
+
+model PortalDocument {
+  id String @id @default(uuid())
+  requestId String @map("request_id")
+  documentGroup String @map("document_group")
+  fileName String @map("file_name")
+  filePath String @map("file_path")
+  fileSize Int @map("file_size")
+  mimeType String @map("mime_type")
+  coverage Json?
+  version Int @default(1)
+  supersedesId String? @unique @map("supersedes_id")
+  withdrawnAt DateTime? @map("withdrawn_at")
+  clientUploadId String? @map("client_upload_id")
+  contentHash String? @map("content_hash")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  request PortalRequest @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  previousVersion PortalDocument? @relation("PortalDocumentVersions", fields: [supersedesId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  nextVersion PortalDocument? @relation("PortalDocumentVersions")
+  internalDocuments Document[]
+  @@unique([requestId, clientUploadId])
+  @@index([requestId])
+  @@map("portal_documents")
+}
+
 model SupplementRequest {
   id             String           @id @default(uuid())
   applicationId  String           @map("application_id")
   requestContent String           @map("request_content")
+  portalSupplement Json?         @map("portal_supplement")
   requestedBy    String           @map("requested_by")
   requestedAt    DateTime         @default(now()) @map("requested_at")
   deadlineAt     DateTime?        @map("deadline_at")

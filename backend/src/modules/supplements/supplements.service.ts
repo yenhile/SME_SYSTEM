@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import { createMetadata, metadata, revision, replay, safeView } from './portal-supplement';
 import { PrismaService } from '../../prisma.service';
 import { PredictionService } from '../prediction/prediction.service';
 import { CreateSupplementDto } from './dto/create-supplement.dto';
@@ -17,7 +19,7 @@ export class SupplementsService {
   /**
    * Tạo yêu cầu bổ sung chứng từ (UC06) - Tạm dừng đồng hồ đo SLA
    */
-  async createSupplementRequest(applicationId: string, dto: CreateSupplementDto, userId: string) {
+  async createSupplementRequest(applicationId: string, dto: CreateSupplementDto, userId: string, activeRole?:string) {
     return this.prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
     const loan = await tx.loanApplication.findUnique({
@@ -27,6 +29,23 @@ export class SupplementsService {
     if (!loan) {
       throw new NotFoundException(`Không tìm thấy hồ sơ với ID: ${applicationId}`);
     }
+
+    let portalSupplement:any;
+    if(dto.items!==undefined) {
+      if(activeRole!==(loan.currentStage===StageCode.TIEP_NHAN?'CBTD':'THAM_QUYEN')) throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
+      if(loan.currentStage===StageCode.TIEP_NHAN && loan.assignedTo!==userId) throw new ForbiddenException('Bạn chỉ được truy cập hồ sơ được phân công.');
+      portalSupplement=createMetadata(dto.items,dto.clientRequestId!);
+      const fingerprint=createHash('sha256').update(JSON.stringify({requestContent:dto.requestContent,deadlineAt:dto.deadlineAt??null,notes:dto.notes??null,items:dto.items.map(item=>({documentGroup:item.documentGroup,documentTypeCode:item.documentTypeCode,period:item.period??null,reason:item.reason}))})).digest('hex');
+      const linked=await tx.portalRequest.findFirst({where:{loanId:applicationId,status:'ACCEPTED'}});
+      if(!linked) throw new BadRequestException('Bổ sung qua portal chỉ áp dụng hồ sơ đã tiếp nhận và liên kết Loan.');
+      const previous=await tx.supplementRequest.findMany({where:{applicationId}});
+      const retry=previous.find(r=>(r.portalSupplement as any)?.createId===dto.clientRequestId);
+      if(retry) {
+        if((retry.portalSupplement as any).createHash!==fingerprint) throw new ConflictException('Mã thao tác đã dùng cho nội dung khác.');
+        return safeView(retry);
+      }
+      portalSupplement.createHash=fingerprint;
+    } else if(dto.clientRequestId!==undefined) throw new BadRequestException('clientRequestId yêu cầu danh sách items.');
 
     if (loan.currentStatus === LoanStatus.SUPPLEMENT_REQUIRED) {
       throw new BadRequestException('Hồ sơ hiện đang trong trạng thái chờ bổ sung chứng từ.');
@@ -45,6 +64,7 @@ export class SupplementsService {
         deadlineAt: dto.deadlineAt ? new Date(dto.deadlineAt) : null,
         status: SupplementStatus.PENDING,
         notes: dto.notes,
+        ...(portalSupplement?{portalSupplement}:{}),
       },
       include: {
         requester: {
@@ -81,18 +101,20 @@ export class SupplementsService {
       this.logger.log(`Tạm dừng đo SLA công đoạn cho hồ sơ ${loan.applicationCode}`);
     }
 
-    return request;
+    return portalSupplement?safeView(request):request;
     });
   }
 
   /**
    * Tiếp nhận và xử lý hoàn tất bổ sung chứng từ (UC07) - Tiếp tục đồng hồ đo SLA & Cập nhật AI
    */
-  async resolveSupplementRequest(supplementId: string, dto: ResolveSupplementDto, userId: string) {
+  async resolveSupplementRequest(supplementId: string, dto: ResolveSupplementDto, userId: string, activeRole?:string) {
     const initial = await this.prisma.supplementRequest.findUnique({ where: { id: supplementId } });
     if (!initial) throw new NotFoundException('Yêu cầu bổ sung không tồn tại.');
+    let changed=false;
     const updatedRequest = await this.prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${initial.applicationId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM supplement_requests WHERE id = ${supplementId} FOR UPDATE`;
     const request = await tx.supplementRequest.findUnique({
       where: { id: supplementId },
       include: { application: true },
@@ -100,6 +122,19 @@ export class SupplementsService {
 
     if (!request) {
       throw new NotFoundException(`Không tìm thấy yêu cầu bổ sung ID: ${supplementId}`);
+    }
+
+    let m:any;
+    if(request.portalSupplement) {
+      if(activeRole!==(request.application.currentStage===StageCode.TIEP_NHAN?'CBTD':'THAM_QUYEN')) throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
+      if(request.application.currentStage===StageCode.TIEP_NHAN && request.application.assignedTo!==userId) throw new ForbiddenException('Bạn chỉ được truy cập hồ sơ được phân công.');
+      m=metadata(request);
+      const fingerprint=createHash('sha256').update(JSON.stringify({notes:dto.notes??null})).digest('hex');
+      if(replay(m,dto.clientRequestId,'resolve',fingerprint)) return safeView(request);
+      revision(m,dto.expectedRevision);
+      if(m.items.some((i:any)=>i.status!=='ACCEPTED')) throw new BadRequestException('Cần chấp nhận tất cả mục bổ sung trước khi hoàn tất.');
+      m.operations.push({id:dto.clientRequestId,kind:'resolve',hash:fingerprint});m.revision++;
+      m.events.push({type:'RESOLVED',at:new Date().toISOString()});
     }
 
     if (request.status !== SupplementStatus.PENDING) {
@@ -111,11 +146,12 @@ export class SupplementsService {
 
     // 1. Cập nhật trạng thái yêu cầu bổ sung
     const updatedRequest = await tx.supplementRequest.update({
-      where: { id: supplementId },
+      where: { id: supplementId, ...(m?{portalSupplement:{equals:request.portalSupplement!}}:{}) },
       data: {
         status: SupplementStatus.RESOLVED,
         resolvedAt: now,
         notes: dto.notes ? `${request.notes ? request.notes + '\n' : ''}${dto.notes}` : request.notes,
+        ...(m?{portalSupplement:m}:{}),
       },
     });
 
@@ -159,10 +195,12 @@ export class SupplementsService {
       },
     });
 
-    return updatedRequest;
+    changed=true;
+    return m?safeView(updatedRequest):updatedRequest;
     });
     // 4. KÍCH HOẠT LẠI DỰ BÁO AI (Vì supplement_count đã tăng, nguy cơ trễ hạn sẽ thay đổi)
     try {
+      if(!changed) return updatedRequest;
       this.logger.log(`Cập nhật dự báo AI sau khi nhận chứng từ bổ sung cho hồ sơ ${initial.applicationId}`);
       await this.predictionService.predictForApplication(initial.applicationId);
     } catch (err: any) {

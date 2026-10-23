@@ -1,0 +1,142 @@
+{
+  "format_version": 2,
+  "project": "sme-loan-workflow",
+  "discovery": "project-routing-index-not-host-configuration",
+  "policy": ".agents/AGENTS.md",
+  "note": "Project task routing only. Hosts discover SKILL.md using their own mechanisms; if a skill is not listed by the host, read its exact path. Routes are conditional on scope and host permissions, not an instruction to invoke every candidate.",
+  "entries": [
+    {
+      "path": ".agents/skills/superpowers/skills",
+      "usage": "select-by-task"
+    },
+    {
+      "path": ".agents/skills/mattpocock/skills/engineering",
+      "usage": "select-by-task"
+    },
+    {
+      "path": ".agents/skills/mattpocock/skills/productivity",
+      "usage": "select-by-task"
+    },
+    {
+      "path": ".agents/skills/mattpocock/skills/misc",
+      "usage": "explicit-task-only"
+    }
+  ],
+  "optional_tools": {
+    "rtk": "optional"
+  },
+  "nondefault_buckets": [
+    ".agents/skills/mattpocock/skills/deprecated",
+    ".agents/skills/mattpocock/skills/in-progress",
+    ".agents/skills/mattpocock/skills/personal"
+  ],
+  "task_routes": [
+    {
+      "type": "info",
+      "applies_when": "Answer or explain from relevant sources, without changing files or data.",
+      "skills": []
+    },
+    {
+      "type": "documentation",
+      "applies_when": "Authorized document/rule changes. Verify sources, links and policy consistency. Use skill-writing only when creating or editing an actual skill.",
+      "skills": []
+    },
+    {
+      "type": "planning",
+      "applies_when": "Explore unresolved design with brainstorming; use writing-plans for multi-step work. Plan-only stops at plan; authorized implementation proceeds under SME-AI-002.",
+      "skills": [
+        ".agents/skills/superpowers/skills/brainstorming/SKILL.md",
+        ".agents/skills/superpowers/skills/writing-plans/SKILL.md"
+      ]
+    },
+    {
+      "type": "coding",
+      "applies_when": "Behavior changes: meaningful regression/behavior tests, preferably test-first; small labels/docs/config use proportionate checks. Read existing plan and choose native execution; do not create mandatory subagents from plan boilerplate.",
+      "skills": [
+        ".agents/skills/superpowers/skills/test-driven-development/SKILL.md",
+        ".agents/skills/superpowers/skills/verification-before-completion/SKILL.md"
+      ]
+    },
+    {
+      "type": "debugging",
+      "applies_when": "Unexpected behavior or failures: evidence and root cause before fixes.",
+      "skills": [
+        ".agents/skills/superpowers/skills/systematic-debugging/SKILL.md",
+        ".agents/skills/superpowers/skills/verification-before-completion/SKILL.md"
+      ]
+    },
+    {
+      "type": "review",
+      "applies_when": "Review a code diff against an explicit base and requirements. For WIP, inspect status, staged and unstaged diffs plus in-scope untracked files; an empty committed diff does not mean no changes. For small policy/document checks use self-review; do not silently install an issue tracker or publish findings.",
+      "skills": [
+        ".agents/skills/mattpocock/skills/engineering/code-review/SKILL.md"
+      ]
+    },
+    {
+      "type": "ui",
+      "applies_when": "Frontend changes whose appearance or interaction needs browser verification.",
+      "skills": [
+        ".agents/skills/superpowers/skills/browser-testing/SKILL.md"
+      ]
+    },
+    {
+      "type": "business-analysis",
+      "applies_when": "Compare PO requirements, specifications and current implementation; preserve unresolved domain decisions.",
+      "skills": []
+    },
+    {
+      "type": "ml",
+      "applies_when": "Model or integration work: inspect contracts and training/evaluation provenance. No automatic retraining, credit decisions or fabricated predictions.",
+      "skills": [
+        ".agents/skills/superpowers/skills/verification-before-completion/SKILL.md"
+      ]
+    },
+    {
+      "type": "operations",
+      "applies_when": "Read scripts and target/side effects first; authorize DB effects separately when not covered. Verification skill does not grant data-write permission.",
+      "skills": [
+        ".agents/skills/superpowers/skills/verification-before-completion/SKILL.md"
+      ]
+    },
+    {
+      "type": "skill-authoring",
+      "applies_when": "Only when an actual SKILL.md is created/edited or skill behavior is being validated. Do not rewrite imported vendors for ordinary tasks.",
+      "skills": [
+        ".agents/skills/superpowers/skills/writing-skills/SKILL.md"
+      ]
+    },
+    {
+      "type": "handoff",
+      "applies_when": "Only when user requests handoff or durable session context, without starting another agent or external service implicitly.",
+      "skills": [
+        ".agents/skills/mattpocock/skills/productivity/handoff/SKILL.md"
+      ]
+    }
+  ],
+  "required_tools": {
+    "codegraph": "required-for-code-tasks"
+  },
+  "codegraph": {
+    "package": "@optave/codegraph",
+    "version": "3.17.0",
+    "host_usage": "Codex extension and Gemini Antigravity invoke the local CLI through terminal tools; PO uses the IDE chat UI.",
+    "freshness": "npm run graph:check",
+    "build": "npm run graph:build",
+    "query": "npm run codegraph --",
+    "guide": "docs/ai/2026-10-18-codegraph.md"
+  },
+  "hard_rules": {
+    "SME-AI-011": {
+      "po_approval_before_alternative": true,
+      "scope_expansion_requires_po": true
+    },
+    "SME-AI-012": {
+      "order": [
+        "horizontal",
+        "depth"
+      ],
+      "transitive": true,
+      "workflow": ".agents/workflow/impact-analysis.md"
+    }
+  }
+}
