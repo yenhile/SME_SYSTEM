@@ -14,6 +14,8 @@ import { SupplementsModule } from './modules/supplements/supplements.module';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { PortalModule } from './modules/portal/portal.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     AssignmentsModule,
     DocumentsModule,
     DashboardModule,
+    PortalModule,
+    NotificationsModule,
   ],
   controllers: [HealthController, AdminController],
   providers: [HealthService, PrismaService],

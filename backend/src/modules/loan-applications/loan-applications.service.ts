@@ -132,6 +132,7 @@ export class LoanApplicationsService {
       where: { id },
       include: {
         company: true,
+        portalRequest: { include: { documents: { where: { withdrawnAt: null, nextVersion: { is: null } }, select: { id: true, documentGroup: true, fileName: true, fileSize: true, uploadedAt: true, coverage: true, version: true, supersedesId: true, withdrawnAt: true } } } },
         assignedUser: {
           select: { id: true, fullName: true, username: true, email: true, phone: true },
         },

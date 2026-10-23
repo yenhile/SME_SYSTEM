@@ -19,21 +19,29 @@ async function request<T>(endpoint: string, options: RequestInit = {}, blob = fa
   const role = localStorage.getItem('sme_active_role');
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (role && !endpoint.startsWith('/auth/')) headers.set('X-Active-Role', role);
-  let response: Response;
-  try { response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers }); }
-  catch { throw new ApiError('Không kết nối được máy chủ. Vui lòng kiểm tra dịch vụ và thử lại.', 0); }
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    if (response.status === 401 && endpoint !== '/auth/login') {
-      setAuthToken(null); setActiveRole(null);
-      window.dispatchEvent(new Event('sme-session-expired'));
+  const timeoutSignal = AbortSignal.timeout(15_000);
+  const signal = options.signal ? AbortSignal.any([options.signal, timeoutSignal]) : timeoutSignal;
+  try {
+    let response: Response;
+    try { response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers, signal }); }
+    catch { throw new ApiError('Không kết nối được máy chủ. Vui lòng kiểm tra dịch vụ và thử lại.', 0); }
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      if (timeoutSignal.aborted) throw timeoutSignal.reason;
+      if (response.status === 401 && endpoint !== '/auth/login') {
+        setAuthToken(null); setActiveRole(null);
+        window.dispatchEvent(new Event('sme-session-expired'));
+      }
+      const message = body?.message;
+      throw new ApiError(Array.isArray(message) ? message.join('\n') : message || `Yêu cầu thất bại (${response.status}).`, response.status);
     }
-    const message = body?.message;
-    throw new ApiError(Array.isArray(message) ? message.join('\n') : message || `Yêu cầu thất bại (${response.status}).`, response.status);
+    if (response.status === 204) return undefined as T;
+    if (blob) return await response.blob() as T;
+    return await response.json();
+  } catch (error) {
+    if (timeoutSignal.aborted) throw new ApiError('Máy chủ phản hồi quá lâu. Vui lòng kiểm tra kết nối và thử lại.', 408);
+    throw error;
   }
-  if (response.status === 204) return undefined as T;
-  if (blob) return await response.blob() as T;
-  return response.json();
 }
 export const api = {
   download: (endpoint: string) => request<Blob>(endpoint, {}, true),

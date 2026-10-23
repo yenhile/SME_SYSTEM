@@ -76,12 +76,12 @@ export const AssignmentsView: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="assignments-view">
       {msg?.type === 'error' && !selectedLoan && <p role="alert" className="error-message">{msg.text}</p>}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div className="page-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Điều phối & Quản lý Tải Cán bộ Tín dụng (CBTD)
+            Điều chuyển & phân công
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
             Theo dõi khối lượng hồ sơ của từng cán bộ và điều chuyển linh hoạt nhằm giảm thiểu nguy cơ tắc nghẽn SLA
@@ -142,7 +142,7 @@ export const AssignmentsView: React.FC = () => {
                   <td>{officer.phone || '0901234567'}</td>
                   <td>{officer.branchName}</td>
                   <td>
-                    <strong style={{ fontSize: '15px', color: '#0369a1' }}>{officer.activeLoanCount}</strong> hồ sơ
+                    <strong style={{ fontSize: '15px', color: 'var(--primary-hover)' }}>{officer.activeLoanCount}</strong> hồ sơ
                   </td>
                   <td>
                     {officer.highRiskLoanCount > 0 ? (

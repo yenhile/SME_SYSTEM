@@ -74,7 +74,7 @@ Pop-Location
 # 4. Khoi chay 3 service trong 3 terminal rieng biet
 Write-Host "`n[Buoc 4/5] Khoi chay Backend, ML-Service, Frontend..." -ForegroundColor Yellow
 
-$backendCmd = "Set-Location '$rootPath\backend'; Write-Host '=== SME LOAN BACKEND (Port 3000) ===' -ForegroundColor Green; npm run start:dev"
+$backendCmd = "Set-Location '$rootPath\backend'; `$env:NODE_ENV = 'development'; `$env:PORTAL_FOUNDATION_PREVIEW = 'true'; Write-Host '=== SME LOAN BACKEND (Port 3000) ===' -ForegroundColor Green; npm run start:dev"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd
 
 $mlCmd = "Set-Location '$rootPath\ml-service'; Write-Host '=== SME ML-SERVICE (Port 8000) ===' -ForegroundColor Magenta; python -m uvicorn app.main:app --reload --port 8000"
@@ -99,8 +99,8 @@ Write-Host "  - Backend API:      http://localhost:3000/api" -ForegroundColor Cy
 Write-Host "  - ML-Service Docs:  http://localhost:8000/docs" -ForegroundColor Cyan
 Write-Host "  - PostgreSQL:       localhost:5432 (DB: sme_loan)" -ForegroundColor Cyan
 Write-Host "`nTai khoan dang nhap thu nghiem:" -ForegroundColor White
-Write-Host "  1. CBTD:       cbtd_nam     /  Cbtd@123     (Lap & kiem tra ho so)" -ForegroundColor Yellow
-Write-Host "  2. Tham quyen: risk_quang   /  Risk@123     (Tham dinh & phe duyet rui ro)" -ForegroundColor Yellow
-Write-Host "  3. Quan ly:    manager_dung /  Manager@123  (Theo doi Dashboard & SLA)" -ForegroundColor Yellow
-Write-Host "  4. Admin:      admin        /  Admin@123    (Quan tri he thong)" -ForegroundColor Yellow
+Write-Host "  1. CBTD:       test_cbtd        /  123456     (Lap & kiem tra ho so)" -ForegroundColor Yellow
+Write-Host "  2. Tham quyen: test_tham_quyen  /  123456     (Tham dinh & phe duyet rui ro)" -ForegroundColor Yellow
+Write-Host "  3. Quan ly:    test_quan_ly     /  123456  (Theo doi Dashboard & SLA)" -ForegroundColor Yellow
+Write-Host "  4. Admin:      test_admin       /  123456    (Quan tri he thong)" -ForegroundColor Yellow
 Write-Host "`n* De dung he thong: Chay .\stop-local.ps1 (hoac click dup stop-local.bat)" -ForegroundColor Gray

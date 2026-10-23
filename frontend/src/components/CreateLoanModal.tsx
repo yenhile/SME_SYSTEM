@@ -380,7 +380,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <AlertCircle size={16} color={isHighDebt ? '#ea580c' : '#0284c7'} />
+                  <AlertCircle size={16} color={isHighDebt ? '#ea580c' : 'var(--primary)'} />
                   <span style={{ fontSize: '12.5px', color: isHighDebt ? '#9a3412' : 'var(--text-secondary)' }}>
                     Chỉ số Đòn bẩy Nợ/Vốn chủ sở hữu sơ bộ: <strong>{debtToEquity} lần</strong>
                     {isHighDebt && ' — Cảnh báo: Tỷ lệ cao (> 2.0), có thể tăng xác suất trễ hạn khi thẩm định!'}

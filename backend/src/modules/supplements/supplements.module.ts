@@ -3,11 +3,16 @@ import { SupplementsService } from './supplements.service';
 import { SupplementsController } from './supplements.controller';
 import { PrismaService } from '../../prisma.service';
 import { PredictionModule } from '../prediction/prediction.module';
+import { JwtModule } from '@nestjs/jwt';
+import { PortalAuthService, PortalGuard } from '../portal/portal.auth';
+import { PortalMailer } from '../portal/portal.mailer';
+import { PortalSupplementsController } from './portal-supplements.controller';
+import { PortalSupplementsService } from './portal-supplements.service';
 
 @Module({
-  imports: [PredictionModule],
-  controllers: [SupplementsController],
-  providers: [SupplementsService, PrismaService],
+  imports: [PredictionModule, JwtModule.register({})],
+  controllers: [SupplementsController,PortalSupplementsController],
+  providers: [SupplementsService, PrismaService,PortalSupplementsService,PortalAuthService,PortalGuard,PortalMailer],
   exports: [SupplementsService],
 })
 export class SupplementsModule {}

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { PortalIntakeDetails } from './PortalIntakeDetails';
+import { SupplementPanel } from './SupplementPanel';
+import type { PortalFormConfig } from '../portal/model';
 import {
   LoanApplication,
   StageCode,
@@ -38,6 +41,8 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 }) => {
   const { activeRole } = useAuth();
   const [loan, setLoan] = useState<LoanApplication | null>(null);
+  const [portalConfig, setPortalConfig] = useState<PortalFormConfig | null>(null);
+  const [portalConfigError, setPortalConfigError] = useState('');
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'timeline' | 'documents' | 'supplements'>('timeline');
@@ -70,6 +75,11 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
     try {
       const data = await api.get<LoanApplication>(`/loan-applications/${applicationId}`);
       setLoan(data);
+      setPortalConfig(null); setPortalConfigError('');
+      if (data.portalRequest) {
+        try { setPortalConfig(await api.get<PortalFormConfig>('/portal-intakes/form-config')); }
+        catch (err) { setPortalConfigError((err as Error).message); }
+      }
       setApprovedAmount(Number(data.officialAmount || data.proposedAmount));
       setOfficialAmountInput(Number(data.officialAmount || data.proposedAmount));
     } catch (err: any) {
@@ -379,6 +389,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
         {/* Body Modal */}
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {loan.portalRequest?.formVersion === 2 && <details className="portal-intake portal-card"><summary>Đề nghị gốc từ cổng doanh nghiệp · {loan.portalRequest.reference}</summary>{portalConfigError && <p className="portal-error" role="alert">Không tải được danh mục tài liệu: {portalConfigError}</p>}<PortalIntakeDetails request={loan.portalRequest} config={portalConfig} busy={actionLoading} /></details>}
           {/* C. THANH TIẾN TRÌNH QUY TRÌNH (WORKFLOW PROGRESS BAR) TRÊN CÙNG MÀN HÌNH */}
           <div className="workflow-progress-bar">
             <div className={`progress-step ${currentStepIdx >= 1 ? (currentStepIdx === 1 ? 'active' : 'completed') : ''}`}>
@@ -540,7 +551,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
             {/* Thẻ Đề xuất vay */}
             <div className="card" style={{ padding: '14px' }}>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>SỐ TIỀN ĐỀ XUẤT</span>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: '#0369a1', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--primary-hover)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
                 {formatVnd(loan.proposedAmount)}
               </div>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
@@ -554,12 +565,12 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>HẠN MỨC CHÍNH THỨC</span>
                 {reception && !waitingSupplement && <button
                   onClick={() => setShowSetAmountForm(!showSetAmountForm)}
-                  style={{ background: 'none', color: '#0284c7', fontSize: '11px', fontWeight: 700, padding: 0 }}
+                  style={{ background: 'none', color: 'var(--primary)', fontSize: '11px', fontWeight: 700, padding: 0 }}
                 >
                   Sửa
                 </button>}
               </div>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: '#0284c7', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--primary)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
                 {loan.officialAmount ? formatVnd(loan.officialAmount) : 'Chưa định mức'}
               </div>
               {isExceedBranchLimit ? (
@@ -822,9 +833,11 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   <select value={docType} onChange={(e) => setDocType(e.target.value as DocumentType)}>
                     <option value="PHAP_LY">Pháp lý (GPKD, Điều lệ)</option>
                     <option value="TAI_CHINH">Tài chính (BCTC, Sao kê)</option>
+                    <option value="HOAT_DONG_SX">Hoạt động sản xuất kinh doanh</option>
                     <option value="PHUONG_AN">Phương án kinh doanh</option>
                     <option value="TSBD">Tài sản bảo đảm (Sổ đỏ, Xe)</option>
                     <option value="KHAC">Khác</option>
+                    <option value="DU_NO">Dư nợ hiện tại</option>
                   </select>
                   <input
                     type="file"
@@ -885,7 +898,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
           {/* Tab 3: Bổ sung hồ sơ & Tạm dừng SLA */}
           {activeTab === 'supplements' && (
-            <div>
+            loan.portalRequest?.status === 'ACCEPTED' ? <SupplementPanel key={loan.id} mode="staff" applicationId={loan.id} supplementIds={(loan.supplementRequests ?? []).map(item => item.id)} canEdit={canEdit} canCreate={!waitingSupplement && !loan.completedAt} config={portalConfig} onChanged={() => { void fetchDetail(); onRefresh(); }} /> : <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                   Khi yêu cầu bổ sung chứng từ, <strong>đồng hồ đo SLA sẽ tự động tạm dừng</strong> cho đến khi doanh nghiệp nộp lại đầy đủ.

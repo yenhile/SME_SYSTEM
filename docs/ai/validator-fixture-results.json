@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-18",
+  "ruleset": "sme-loan-ai-v1",
+  "scope": "Executed static configuration, temporary validator fixtures, syntax and original-file integrity. Not a live host auto-load or application test.",
+  "results": [
+    {
+      "name": "static_validator",
+      "exit_code": 0,
+      "output": "RESULT passed=310 failed=0\nScope: static configuration and SKILL.md integrity; no live AI, Antigravity or application test."
+    },
+    {
+      "name": "validator_integration",
+      "exit_code": 0,
+      "output": "PASS Valid configuration accepted\nPASS Missing Codex entrypoint rejected\nPASS Invalid Antigravity trigger rejected\nPASS Missing routed skill rejected\nPASS Broken local link rejected\nPASS Vendor integrity mismatch rejected\nPASS Body cannot spoof bootstrap trigger\nPASS Restored configuration accepted\nRESULT validator_integration_cases=8 failed=0"
+    },
+    {
+      "name": "syntax",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "name": "integrity_and_status",
+      "exit_code": 0,
+      "output": "product: checked=131 changed_or_missing=0\r\nvendor: checked=259 changed_or_missing=0\r\n?? .agents/\n?? AGENTS.md\n?? GEMINI.md\n?? Project.md\n?? docs/ai/\n?? scripts/"
+    }
+  ]
+}

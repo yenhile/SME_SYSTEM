@@ -1,0 +1,510 @@
+{
+    "captured_date":  "2026-10-18",
+    "scope":  "Imported SKILL.md metadata and integrity, not runtime host discovery",
+    "skills":  [
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/deprecated/design-an-interface/SKILL.md",
+                       "name":  "design-an-interface",
+                       "description":  "Generate multiple radically different interface designs for a module using parallel sub-agents. Use when user wants to design an API, explore interface options, compare module shapes, or mentions \"design it twice\".",
+                       "bucket":  "mattpocock/deprecated",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  false,
+                       "sha256":  "88193AB179032918CDEA0AFE74B8610D6D079AC51191F286C10E9E47839A9E6B"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/deprecated/qa/SKILL.md",
+                       "name":  "qa",
+                       "description":  "Interactive QA session where user reports bugs or issues conversationally, and the agent files GitHub issues. Explores the codebase in the background for context and domain language. Use when user wants to report bugs, do QA, file issues conversationally, or mentions \"QA session\".",
+                       "bucket":  "mattpocock/deprecated",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  false,
+                       "sha256":  "199B4D8CBEA7A2B69DE091E221F42B7835A3D0B3215D4D1EFF53F6E9FD7F3A6C"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/deprecated/request-refactor-plan/SKILL.md",
+                       "name":  "request-refactor-plan",
+                       "description":  "Create a detailed refactor plan with tiny commits via user interview, then file it as a GitHub issue. Use when user wants to plan a refactor, create a refactoring RFC, or break a refactor into safe incremental steps.",
+                       "bucket":  "mattpocock/deprecated",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  false,
+                       "sha256":  "4DE61540351FEE4DB9B18352C53023A9C586F574E7291FAFA0E88793A3F6609A"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/deprecated/ubiquitous-language/SKILL.md",
+                       "name":  "ubiquitous-language",
+                       "description":  "Extract a DDD-style ubiquitous language glossary from the current conversation, flagging ambiguities and proposing canonical terms. Saves to UBIQUITOUS_LANGUAGE.md. Use when user wants to define domain terms, build a glossary, harden terminology, create a ubiquitous language, or mentions \"domain model\" or \"DDD\".",
+                       "bucket":  "mattpocock/deprecated",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "A1EFAFD7EC7A630ED2B0753BE2DDBCF53E50573E5C20A3D43E98056DA25AFCE2"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/ask-matt/SKILL.md",
+                       "name":  "ask-matt",
+                       "description":  "Ask which skill or flow fits your situation. A router over the skills in this repo.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "A0F30D3072DE6121353CD513F1B6BEDD526D0A296EDD9CDDEFAE5B3F27F367B2"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/codebase-design/SKILL.md",
+                       "name":  "codebase-design",
+                       "description":  "Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module\u0027s interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "22D3815E5629DDEA7ED7C9F8E7C330F6A1559466EE904E58371E1E8A10BE0C4B"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/code-review/SKILL.md",
+                       "name":  "code-review",
+                       "description":  "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes — Standards (does the code follow this repo\u0027s documented coding standards?) and Spec (does the code match what the originating issue/PRD asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\".",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "E5507100AC01A04D082AC23AC6311D0FEC8699D1AB00C599DB7064039B819F63"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/diagnosing-bugs/SKILL.md",
+                       "name":  "diagnosing-bugs",
+                       "description":  "Diagnosis loop for hard bugs and performance regressions. Use when the user says \"diagnose\"/\"debug this\", or reports something broken/throwing/failing/slow.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "3DFE5EC16B89A01DBC1BF606A1A1CFC32349E225F3BB75A3FB86117974A83CB8"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/domain-modeling/SKILL.md",
+                       "name":  "domain-modeling",
+                       "description":  "Build and sharpen a project\u0027s domain model. Use when the user wants to pin down domain terminology or a ubiquitous language, record an architectural decision, or when another skill needs to maintain the domain model.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "004D5CB6258658F2E9CBF0D9F90BDC9104F8B83BD296556783800C31D503814F"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/grill-with-docs/SKILL.md",
+                       "name":  "grill-with-docs",
+                       "description":  "A relentless interview to sharpen a plan or design, which also creates docs (ADR\u0027s and glossary) as we go.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "269376D5146332F597C4194FA1ADEF93B879AD62E0183C0D111A447E7AF51BE9"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/implement/SKILL.md",
+                       "name":  "implement",
+                       "description":  "Implement a piece of work based on a spec or set of tickets.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "30CD7BC1EBFB3891E85A1EED3B3B81AEA0FA4AD4553A784DE7F8E421B2D223E0"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/improve-codebase-architecture/SKILL.md",
+                       "name":  "improve-codebase-architecture",
+                       "description":  "Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "411F295E0BF467FA46E8D8FC6AE3742135A5647380A5F9512C339C9FDDB3CB17"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/prototype/SKILL.md",
+                       "name":  "prototype",
+                       "description":  "Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "C2A9CC5492E99B4FABE047DE8AEF02765E241AB77B19DB44A3664D385EC881BD"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/research/SKILL.md",
+                       "name":  "research",
+                       "description":  "Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "0B6597C453178536B50C044A9E57CBC32DBFFA47607A370E40768332F54BF8C2"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/resolving-merge-conflicts/SKILL.md",
+                       "name":  "resolving-merge-conflicts",
+                       "description":  "Use when you need to resolve an in-progress git merge/rebase conflict.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "726CC35E566C3FC7E2D648AA580383B40460ECF99C17448C0282C705C0C5BC1D"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/setup-matt-pocock-skills/SKILL.md",
+                       "name":  "setup-matt-pocock-skills",
+                       "description":  "Configure this repo for the engineering skills — set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "5BB39F7C7468525677CB3CE7B0EF64D596570F9DF489D88CAFC4E302EF08810E"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/tdd/SKILL.md",
+                       "name":  "tdd",
+                       "description":  "Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions \"red-green-refactor\", or wants integration tests.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "2DE14B893E7A1BF7030B9EB778A3714A19DA70C4284AD18A6E43B2402AA693EF"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/to-spec/SKILL.md",
+                       "name":  "to-spec",
+                       "description":  "Turn the current conversation into a spec and publish it to the project issue tracker — no interview, just synthesis of what you\u0027ve already discussed.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "A8FFE2ECD1692F012D310DCA3F3C9A75F61086DF77DBB0A5BC38DDBC0BD2E6BC"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/to-tickets/SKILL.md",
+                       "name":  "to-tickets",
+                       "description":  "Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker — edges as text in one file per ticket locally, or native blocking links on a real tracker.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "B9478FAA82B40C653BBA2EA110682B5AE22A6736E4600768AE158C17DB861AE2"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/triage/SKILL.md",
+                       "name":  "triage",
+                       "description":  "Move issues and external PRs through a state machine of triage roles — categorise, verify, grill if needed, and write agent-ready briefs.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "A1007F142B7C53D1C027D7D5081E430841F997CA4DE6B904126EA6A22E232E02"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/engineering/wayfinder/SKILL.md",
+                       "name":  "wayfinder",
+                       "description":  "Plan a huge chunk of work — more than one agent session can hold — as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear.",
+                       "bucket":  "mattpocock/engineering",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "824E3CBB5BEB15C5B17045070C4664F348ABC506997A781F749258D2DB49872A"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/batch-grill-me/SKILL.md",
+                       "name":  "batch-grill-me",
+                       "description":  "A relentless interview that asks every frontier question at once, round by round.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "23727B2E45B5C11C562EB8405BDA3237546627A0E439A2547CBE03AEA2CC3107"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/claude-handoff/SKILL.md",
+                       "name":  "claude-handoff",
+                       "description":  "Hand the current conversation off to a fresh background agent that picks up the work immediately.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "9609292BAF51009831DEC6397E0F01D7817989C5ABB08BF060BEA36B37658139"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/loop-me/SKILL.md",
+                       "name":  "loop-me",
+                       "description":  "Grill me about specs for the workflows I want to build, within this workspace.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "8214DF9C466030E90172421D1D26F2A71DC3197FFBC7F354BAC20C7D88318169"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/setup-ts-deep-modules/SKILL.md",
+                       "name":  "setup-ts-deep-modules",
+                       "description":  "Wire dependency-cruiser into a TypeScript repo so each package is a deep module — implementation hidden in subfolders, reachable only through its entry-point files. User-invoked.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "3440BA47E2092B28CF771E801BE012845A138FC39C2A48C85628A9507CBB27A0"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/to-questionnaire/SKILL.md",
+                       "name":  "to-questionnaire",
+                       "description":  "Turn a decision you can\u0027t fully answer into a questionnaire for someone else to fill in.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "65D8F34C1E8089119EC07D1B22E5EDE592EBACADBF4D2E76DE7007AF2450414D"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/wizard/SKILL.md",
+                       "name":  "wizard",
+                       "description":  "Generate an interactive bash wizard that walks a human through a manual procedure — third-party setup, a one-off migration, an A→B state transition — opening URLs, capturing values, confirming each step, and writing .env files and GitHub Actions secrets.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "95F87B47DB940D6FFB41A8B85C5B3806EA8F4CD3328F1A4E9212ABCD6BFD3D7C"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/writing-beats/SKILL.md",
+                       "name":  "writing-beats",
+                       "description":  "Writing, exploit — assemble raw material into a journey of beats, grounding each term before a beat leans on it.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "8249958A32DDB95794EA6262D44CED9E29CF327A3E765CCF1BF433DDD33401A4"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/writing-fragments/SKILL.md",
+                       "name":  "writing-fragments",
+                       "description":  "Writing, explore — mine raw fragments, no structure yet.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "1B56725F41C463F562416C820B139E6A582F5165A33F38E65D1F2EA7D18C0BFC"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/in-progress/writing-shape/SKILL.md",
+                       "name":  "writing-shape",
+                       "description":  "Writing, exploit — shape raw material into an article, paragraph by paragraph.",
+                       "bucket":  "mattpocock/in-progress",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "BC89A8A041C35DF2922F0F023A41CDED155055DBA60D61F54CFBFD758B3C0396"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/misc/git-guardrails-claude-code/SKILL.md",
+                       "name":  "git-guardrails-claude-code",
+                       "description":  "Set up Claude Code hooks to block dangerous git commands (push, reset --hard, clean, branch -D, etc.) before they execute. Use when user wants to prevent destructive git operations, add git safety hooks, or block git push/reset in Claude Code.",
+                       "bucket":  "mattpocock/misc",
+                       "adoption":  "explicit-task-only",
+                       "user_invoked_only":  false,
+                       "sha256":  "E8993A2B4453AC7E22E4E5E035E5A519532467A3A7A80C7335B76A25C1ABC819"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/misc/migrate-to-shoehorn/SKILL.md",
+                       "name":  "migrate-to-shoehorn",
+                       "description":  "Migrate test files from `as` type assertions to @total-typescript/shoehorn. Use when user mentions shoehorn, wants to replace `as` in tests, or needs partial test data.",
+                       "bucket":  "mattpocock/misc",
+                       "adoption":  "explicit-task-only",
+                       "user_invoked_only":  false,
+                       "sha256":  "200C11163ECD56D908EC431154E4B452CD6AFEB3DE91E5B54434F543F0822201"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/misc/scaffold-exercises/SKILL.md",
+                       "name":  "scaffold-exercises",
+                       "description":  "Create exercise directory structures with sections, problems, solutions, and explainers that pass linting. Use when user wants to scaffold exercises, create exercise stubs, or set up a new course section.",
+                       "bucket":  "mattpocock/misc",
+                       "adoption":  "explicit-task-only",
+                       "user_invoked_only":  false,
+                       "sha256":  "DE28DB7A0954DB55C11BA1E3CC0FD4C037BF0F5CB8313CB292E319BCCE47F424"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/misc/setup-pre-commit/SKILL.md",
+                       "name":  "setup-pre-commit",
+                       "description":  "Set up Husky pre-commit hooks with lint-staged (Prettier), type checking, and tests in the current repo. Use when user wants to add pre-commit hooks, set up Husky, configure lint-staged, or add commit-time formatting/typechecking/testing.",
+                       "bucket":  "mattpocock/misc",
+                       "adoption":  "explicit-task-only",
+                       "user_invoked_only":  false,
+                       "sha256":  "B2380F2334A7B3CC14521070A41E14D0B5FDCBC1236F872C35F8543FA3E1421B"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/personal/edit-article/SKILL.md",
+                       "name":  "edit-article",
+                       "description":  "Edit and improve articles by restructuring sections, improving clarity, and tightening prose. Use when user wants to edit, revise, or improve an article draft.",
+                       "bucket":  "mattpocock/personal",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  true,
+                       "sha256":  "608E98E8B2277E3A023AB94D925E7EC884FD3A26E50D3171B38E0180943F878D"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/personal/obsidian-vault/SKILL.md",
+                       "name":  "obsidian-vault",
+                       "description":  "Search, create, and manage notes in the Obsidian vault with wikilinks and index notes. Use when user wants to find, create, or organize notes in Obsidian.",
+                       "bucket":  "mattpocock/personal",
+                       "adoption":  "not-default",
+                       "user_invoked_only":  false,
+                       "sha256":  "CF6FE426576D108207FDCF3EF3E6C2BA5DE8E78F2B9C6BFA2D7E0D69D43B15E6"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/productivity/grilling/SKILL.md",
+                       "name":  "grilling",
+                       "description":  "Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any \u0027grill\u0027 trigger phrases.",
+                       "bucket":  "mattpocock/productivity",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "74B36EF0C3C5402681CF821CA20BEDB1B62CC970AE1ABBAB5DBAFE767AD27BD7"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/productivity/grill-me/SKILL.md",
+                       "name":  "grill-me",
+                       "description":  "A relentless interview to sharpen a plan or design.",
+                       "bucket":  "mattpocock/productivity",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "9C71927D4F0FD32D815247B4CA1FC782D4C5F2F3C1D6D023D188D4A7E0299B21"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/productivity/handoff/SKILL.md",
+                       "name":  "handoff",
+                       "description":  "Compact the current conversation into a handoff document for another agent to pick up.",
+                       "bucket":  "mattpocock/productivity",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "65E80725923677F128B1D3CF23397B4BF0CC8659CD408AAEE5AB285D01AA54AF"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/productivity/teach/SKILL.md",
+                       "name":  "teach",
+                       "description":  "Teach the user a new skill or concept, within this workspace.",
+                       "bucket":  "mattpocock/productivity",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "99C077A05F66237C95392DC440974E9D144C1267309E978C7A18AAF065CE7FD3"
+                   },
+                   {
+                       "path":  ".agents/skills/mattpocock/skills/productivity/writing-great-skills/SKILL.md",
+                       "name":  "writing-great-skills",
+                       "description":  "Reference for writing and editing skills well — the vocabulary and principles that make a skill predictable.",
+                       "bucket":  "mattpocock/productivity",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  true,
+                       "sha256":  "8C38389DBCFDB3605690C5CE2FE0FA433E7A2F2371A7F1E697D080D81D15FDEA"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/brainstorming/SKILL.md",
+                       "name":  "brainstorming",
+                       "description":  "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "234BD875C21A4F44A4A37F1CF31F5208FACEDC1567A4AF73A1F59A11A7A073FB"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/browser-testing/SKILL.md",
+                       "name":  "browser-testing",
+                       "description":  "Use when completing frontend or UI work that needs visual verification, before claiming the UI is correct",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "58091CAA33DE3C66E51CA507FC0642F909F365DF83CD80CAC71A02F214F0ABAE"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/dispatching-parallel-agents/SKILL.md",
+                       "name":  "dispatching-parallel-agents",
+                       "description":  "Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "2B9BCB3D78C4BAC23AEDF47FD33B9745C61A4F335DEE27B0AE66C57EA16136FB"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/executing-plans/SKILL.md",
+                       "name":  "executing-plans",
+                       "description":  "Use when you have a written implementation plan to execute in a separate session with review checkpoints",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "C0AE7873ECDC1CFE2897C511ED75DF23112636A92FD38546F610C45CD1597870"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/finishing-a-development-branch/SKILL.md",
+                       "name":  "finishing-a-development-branch",
+                       "description":  "Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "60F1118153A9376242BB50D43A8A9559E146E8F224D8A174AE71CC235A91CDCC"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/receiving-code-review/SKILL.md",
+                       "name":  "receiving-code-review",
+                       "description":  "Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "F75DBD33A1120F0BC3B00D843D3C3C62ABC55B417F7326058B8BE97CE1C8CAAC"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/requesting-code-review/SKILL.md",
+                       "name":  "requesting-code-review",
+                       "description":  "Use when completing tasks, implementing major features, or before merging to verify work meets requirements",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "3C279120E0A34B5346D1CA274B1D120A47C4E8B962DA4E2B2677342DAF145832"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/subagent-driven-development/SKILL.md",
+                       "name":  "subagent-driven-development",
+                       "description":  "Use when executing implementation plans with independent tasks in the current session",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "8E092CB78749E94E7FB5EE710E73B0BC980367D927ED1C649280AF83D7F113FF"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/systematic-debugging/SKILL.md",
+                       "name":  "systematic-debugging",
+                       "description":  "Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "A33FDDE1EB56CB7A47D24E4B76967690A777625FD7D6830375586AB6A8ED6447"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/test-driven-development/SKILL.md",
+                       "name":  "test-driven-development",
+                       "description":  "Use when implementing any feature or bugfix, before writing implementation code",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "4B60247005E526E2CC0C9C049B7FCE4AAA41CDD9B7929969C88F634D5E5F4A84"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/using-git-worktrees/SKILL.md",
+                       "name":  "using-git-worktrees",
+                       "description":  "Use when starting feature work that needs isolation from current workspace or before executing implementation plans - ensures an isolated workspace exists via native tools",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "A3C4E5FD30B547042B5CA9436667A4484200005417519F265EB6BB09E5AB455A"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/using-superpowers/SKILL.md",
+                       "name":  "using-superpowers",
+                       "description":  "Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "0B3854A4184FF15EDE03DDF845057F238DC548712D41097D4F7B5E83F2005BDF"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/verification-before-completion/SKILL.md",
+                       "name":  "verification-before-completion",
+                       "description":  "Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "2D281BC9DD66494730673228A085F7F585FBA32A449AE28302AD9620F1C51837"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/writing-plans/SKILL.md",
+                       "name":  "writing-plans",
+                       "description":  "Use when you have a spec or requirements for a multi-step task, before touching code",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "A6AE58373AC86619B2244EB8DB76D3FFB41A654DCA44C33556B948DD8A7B0673"
+                   },
+                   {
+                       "path":  ".agents/skills/superpowers/skills/writing-skills/SKILL.md",
+                       "name":  "writing-skills",
+                       "description":  "Use when creating new skills, editing existing skills, or verifying skills work before deployment",
+                       "bucket":  "superpowers",
+                       "adoption":  "select-by-task-under-project-policy",
+                       "user_invoked_only":  false,
+                       "sha256":  "1AAFE886FDEAF5468DDE2A0A105143ABB3BA3BD453B296035C74EFB06807CDE0"
+                   }
+               ]
+}

@@ -1,0 +1,53 @@
+{
+  "include": [
+    "backend/src/**",
+    "frontend/src/**",
+    "ml-service/app/**",
+    "ml-service/scripts/**",
+    "backend/scripts/**",
+    "scripts/**"
+  ],
+  "exclude": [
+    "**/.env",
+    "**/.env.*",
+    "**/*.csv",
+    "**/*.joblib",
+    "**/*.docx",
+    "**/*.log"
+  ],
+  "ignoreDirs": [
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    "coverage",
+    ".agents",
+    ".codex",
+    ".aws",
+    ".codegraph",
+    ".dump",
+    ".vault",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "uploads",
+    "data",
+    "model"
+  ],
+  "extensions": [".ts", ".tsx", ".js", ".cjs", ".mjs", ".py"],
+  "build": {
+    "dbPath": ".codegraph/graph.db",
+    "incremental": true,
+    "typescriptResolver": true
+  },
+  "query": {
+    "excludeTests": false
+  },
+  "embeddings": {
+    "provider": null,
+    "llmProvider": null
+  },
+  "llm": {
+    "provider": null
+  }
+}

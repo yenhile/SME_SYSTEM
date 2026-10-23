@@ -89,7 +89,7 @@ export class DocumentsService {
     const deleted = await this.prisma.document.delete({
       where: { id },
     });
-    if (basename(doc.filePath) === doc.filePath) await unlink(join(this.uploadDir, doc.filePath)).catch(() => undefined);
+    if (!doc.portalDocumentId && basename(doc.filePath) === doc.filePath) await unlink(join(this.uploadDir, doc.filePath)).catch(() => undefined);
     return deleted;
   }
 }

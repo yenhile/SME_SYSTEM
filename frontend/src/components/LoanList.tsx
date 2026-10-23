@@ -3,6 +3,8 @@ import { api } from '../api/client';
 import { LoanApplication } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { KanbanBoard } from './KanbanBoard';
+import { filterLoansForView } from '../navigation';
+import { PortalIntakeQueue } from './PortalIntakeQueue';
 import {
   Search,
   Filter,
@@ -14,12 +16,14 @@ import {
 } from 'lucide-react';
 
 interface LoanListProps {
+  scope?: 'all' | 'appraisal';
   onSelectLoan: (loanId: string) => void;
   onOpenCreate: () => void;
   refreshKey: number;
+  intakeTarget?: { id: string; revision: number } | null;
 }
 
-export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, refreshKey }) => {
+export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, refreshKey, scope = 'all', intakeTarget }) => {
   const { activeRole } = useAuth();
   const [loans, setLoans] = useState<LoanApplication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,6 +33,8 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
   const [stageFilter, setStageFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [myOnly, setMyOnly] = useState(false);
+  const [intakeTab, setIntakeTab] = useState(false);
+  useEffect(() => { if (intakeTarget && scope === 'all') setIntakeTab(true); }, [intakeTarget, scope]);
 
   const requestId = useRef(0);
   const [workflowStages, setWorkflowStages] = useState<{ stageCode: string; stageName: string; standardSlaHours: number }[]>([]);
@@ -44,7 +50,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
       if (myOnly) params.append('myOnly', 'true');
 
       const [data, stages] = await Promise.all([api.get<LoanApplication[]>(`/loan-applications?${params.toString()}`), api.get<typeof workflowStages>('/workflow/stages')]);
-      if (currentRequest === requestId.current) { setLoans(data); setWorkflowStages(stages); }
+      if (currentRequest === requestId.current) { setLoans(filterLoansForView(data, scope)); setWorkflowStages(stages); }
     } catch (err: any) {
       if (currentRequest === requestId.current) { setError(err.message); setLoans([]); }
     } finally {
@@ -54,7 +60,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
 
   useEffect(() => {
     fetchLoans();
-  }, [stageFilter, statusFilter, myOnly, refreshKey]);
+  }, [stageFilter, statusFilter, myOnly, refreshKey, scope]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,21 +92,24 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
   };
 
   return (
-    <div>
+    <div className="loan-list-view">
+      {scope === 'all' && <div className="portal-tabs"><button className={`btn ${!intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(false)}>Hồ sơ đang quản lý</button><button className={`btn ${intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(true)}>Chờ tiếp nhận</button></div>}
+      {scope === 'all' && intakeTab ? <PortalIntakeQueue activeRole={activeRole} target={intakeTarget} onSelectLoan={onSelectLoan} onRefresh={fetchLoans} /> : <>
       {/* Top Header & Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div className="page-heading loan-page-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Quản lý Quy trình Hồ sơ Vay vốn SME
+            {scope === 'appraisal' ? 'Thẩm định & phê duyệt' : 'Danh sách hồ sơ'}
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
             Theo dõi tiến trình hồ sơ qua luồng công việc và cảnh báo sớm nguy cơ trễ hạn SLA
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="page-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Nút chuyển đổi View Mode: Kanban vs Table */}
           <div
+            className="view-switcher"
             style={{
               display: 'flex',
               background: '#ffffff',
@@ -147,7 +156,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
 
       {/* Filter & Search Bar Sáng Sủa */}
       <div
-        className="card"
+        className="card loan-filters"
         style={{
           padding: '14px 18px',
           marginBottom: 16,
@@ -158,6 +167,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
           background: '#ffffff',
         }}
       >
+        <div className="filter-heading">Bộ lọc</div>
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: 8, flex: 1, minWidth: '240px' }}>
           <div style={{ position: 'relative', width: '100%' }}>
             <Search size={15} style={{ position: 'absolute', left: 10, top: 10, color: 'var(--text-muted)' }} />
@@ -174,14 +184,14 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
           </button>
         </form>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="filter-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Filter size={15} color="var(--text-muted)" />
           <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
             <option value="">Tất cả công đoạn</option>
-            <option value="TIEP_NHAN">1. Tiếp nhận hồ sơ</option>
+            {scope === 'all' && <option value="TIEP_NHAN">1. Tiếp nhận hồ sơ</option>}
             <option value="THAM_DINH">2. Thẩm định tín dụng</option>
             <option value="CAP_TREN">3. Hội đồng / Cấp trên</option>
-            <option value="HOAN_TAT">4. Hoàn tất & Phê duyệt</option>
+            {scope === 'all' && <option value="HOAN_TAT">4. Hoàn tất & Phê duyệt</option>}
           </select>
 
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -222,7 +232,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
       {loading && <p role="status">Đang tải dữ liệu hồ sơ…</p>}
       {/* Hiển thị Chế độ KANBAN BOARD hoặc TABLE */}
       {viewMode === 'kanban' ? (
-        <KanbanBoard workflowStages={workflowStages} loans={loans} onSelectLoan={onSelectLoan} />
+        <KanbanBoard stageCodes={scope === 'appraisal' ? ['THAM_DINH', 'CAP_TREN'] : undefined} workflowStages={workflowStages} loans={loans} onSelectLoan={onSelectLoan} />
       ) : (
         <div className="data-table-container">
           <table className="data-table">
@@ -268,7 +278,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
                       </td>
 
                       <td>
-                        <div style={{ fontWeight: 700, color: '#0369a1', fontFamily: 'var(--font-mono)' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--primary-hover)', fontFamily: 'var(--font-mono)' }}>
                           {formatVnd(loan.officialAmount || loan.proposedAmount)}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -333,6 +343,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
           </table>
         </div>
       )}
+      </>}
     </div>
   );
 };

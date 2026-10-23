@@ -1,0 +1,21 @@
+{
+  "name": "sme-loan-ai-tooling",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Repository-local AI development tooling for SME Loan Workflow",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "codegraph": "node scripts/check-codegraph.mjs && node scripts/run-codegraph.mjs",
+    "graph:build": "node scripts/check-codegraph.mjs --build",
+    "graph:check": "node scripts/check-codegraph.mjs",
+    "graph:stats": "npm run codegraph -- stats --json",
+    "graph:test": "node scripts/check-codegraph.test.mjs",
+    "ai:check": "node scripts/check-ai-rules.mjs",
+    "ai:test": "node scripts/check-ai-rules.test.mjs"
+  },
+  "devDependencies": {
+    "@optave/codegraph": "3.17.0"
+  }
+}
