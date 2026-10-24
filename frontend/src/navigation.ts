@@ -1,4 +1,4 @@
-export type Tab = 'dashboard' | 'users' | 'companies' | 'loans' | 'appraisal' | 'issues' | 'assignments' | 'activity';
+export type Tab = 'dashboard' | 'users' | 'companies' | 'loans' | 'appraisal' | 'issues' | 'assignments' | 'activity' | 'settings';
 type GroupId = 'overview' | 'operations' | 'loans' | 'system';
 interface NavItem {
   tab: Tab;
@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { tab: 'dashboard', group: 'overview', label: 'Dashboard tổng quan' },
   { tab: 'users', group: 'operations', label: 'Liên hệ cá nhân' },
   { tab: 'companies', group: 'operations', label: 'Liên hệ doanh nghiệp' },
+  { tab: 'settings', group: 'operations', label: 'Cấu hình SLA' },
   { tab: 'loans', group: 'loans', label: 'Danh sách hồ sơ' },
   { tab: 'appraisal', group: 'loans', label: 'Thẩm định & phê duyệt' },
   { tab: 'issues', group: 'loans', label: 'Quản lý vấn đề hồ sơ', unavailable: true },

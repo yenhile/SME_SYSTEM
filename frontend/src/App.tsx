@@ -26,6 +26,7 @@ function Workspace() {
     {activeTab === 'dashboard' && <DashboardView onSelectLoan={setSelectedLoanId} onGoToAssignments={() => setTab('assignments')} />}
     {activeTab === 'assignments' && <AssignmentsView />}
     {activeTab === 'users' && <AdminView section="users" />}
+    {activeTab === 'settings' && <AdminView section="settings" />}
   </main>
     {showCreate && activeRole === 'CBTD' && <CreateLoanModal isOpen onClose={() => setShowCreate(false)} onSuccess={refresh} />}
     {selectedLoanId && <LoanDetailModal applicationId={selectedLoanId} onClose={() => setSelectedLoanId(null)} onRefresh={refresh} />}

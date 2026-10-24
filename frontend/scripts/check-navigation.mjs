@@ -7,16 +7,18 @@ const source = await readFile(new URL('../src/navigation.ts', import.meta.url), 
 const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } });
 const nav = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
-test('navigation contains the approved groups and labels without an SLA settings entry', () => {
+test('navigation contains the approved groups and labels including the SLA settings entry (TK-02)', () => {
   assert.deepEqual(nav.NAV_GROUPS.map(group => group.label), ['Tổng quan', 'Cài đặt vận hành', 'Quản lý hồ sơ', 'Hệ thống']);
-  assert.deepEqual(nav.NAV_ITEMS.map(item => item.label), ['Dashboard tổng quan', 'Liên hệ cá nhân', 'Liên hệ doanh nghiệp', 'Danh sách hồ sơ', 'Thẩm định & phê duyệt', 'Quản lý vấn đề hồ sơ', 'Điều chuyển & phân công', 'Lịch sử hoạt động']);
-  assert.ok(nav.NAV_ITEMS.every(item => item.tab !== 'settings'));
+  assert.deepEqual(nav.NAV_ITEMS.map(item => item.label), ['Dashboard tổng quan', 'Liên hệ cá nhân', 'Liên hệ doanh nghiệp', 'Cấu hình SLA', 'Danh sách hồ sơ', 'Thẩm định & phê duyệt', 'Quản lý vấn đề hồ sơ', 'Điều chuyển & phân công', 'Lịch sử hoạt động']);
+  const sla = nav.NAV_ITEMS.find(item => item.tab === 'settings');
+  assert.equal(sla.group, 'operations');
+  assert.ok(!sla.unavailable);
 });
 
 test('all implemented entries open without a role requirement and share the same landing page', () => {
   assert.ok(nav.NAV_ITEMS.every(item => !('roles' in item)));
   const enabled = nav.NAV_ITEMS.filter(item => nav.canOpenTab(item.tab)).map(item => item.tab);
-  assert.deepEqual(enabled, ['dashboard', 'users', 'companies', 'loans', 'appraisal', 'assignments']);
+  assert.deepEqual(enabled, ['dashboard', 'users', 'companies', 'settings', 'loans', 'appraisal', 'assignments']);
   assert.equal(nav.getDefaultTab(), 'dashboard');
   for (const tab of enabled) assert.equal(nav.resolveTab(tab), tab);
 });
