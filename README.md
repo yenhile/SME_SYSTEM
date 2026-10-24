@@ -14,7 +14,7 @@ Hệ thống quản lý quy trình tiếp nhận, thẩm định và xét duyệ
 
 Hai trang đăng nhập dành riêng cho từng đối tượng, **không có liên kết chuyển cổng trên cả hai trang**. Truy cập trực tiếp đúng URL; tài khoản doanh nghiệp và nhân viên tách biệt. Hai cổng vẫn kết nối cùng backend và database để gửi và tiếp nhận hồ sơ.
 
-Hộp thư kiểm thử local: [http://127.0.0.1:8025](http://127.0.0.1:8025), chỉ hoạt động khi chạy `mail:dev`. Docker Compose hiện chưa cấu hình SMTP cho cổng doanh nghiệp; cần cấu hình dịch vụ gửi mail riêng để đăng ký/xác minh email trên bản Docker.
+Hộp thư kiểm thử local: [http://127.0.0.1:8025](http://127.0.0.1:8025), hoạt động khi chạy `mail:dev` (backend chạy trực tiếp trên máy) hoặc khi chạy Docker Compose, trong đó service `mailpit` nhận email OTP của cổng doanh nghiệp (SMTP 1025, web 8025) và không gửi ra Internet. Không chạy `mail:dev` cùng lúc với Docker vì trùng cổng 1025/8025. Backend trong Docker dùng `DOCKER_SMTP_HOST` (mặc định `mailpit`) thay cho `SMTP_HOST` trong `.env`; để dùng SMTP test cho demo, đặt `DOCKER_SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` qua biến môi trường, không ghi secret vào repo.
 
 ## 2. Tài khoản test
 
