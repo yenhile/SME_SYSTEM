@@ -4,6 +4,7 @@ import { RoleCode } from '@prisma/client';
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(RoleCode.QUAN_LY, RoleCode.THAM_QUYEN)
@@ -22,8 +23,14 @@ export class DashboardController {
   }
 
   @Get('early-warnings')
-  getEarlyWarningList() {
-    return this.dashboardService.getEarlyWarningList();
+  getEarlyWarningList(@CurrentUser() user: any) {
+    return this.dashboardService.getEarlyWarningList(user);
+  }
+
+  @Roles(RoleCode.QUAN_LY)
+  @Get('overdue-supplements')
+  getOverdueSupplements() {
+    return this.dashboardService.getOverdueSupplements();
   }
 
   @Get('stage-distribution')

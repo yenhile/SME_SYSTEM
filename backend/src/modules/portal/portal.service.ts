@@ -9,6 +9,7 @@ import { assertPreviewEnabled, validateDraftV2, validateCoverage, getFormConfig,
 import { evaluatePolicy, resolveTestPolicy, type PortalPolicyContext } from './portal.policy';
 import { createV2Snapshot, readV2Snapshot, sameJson } from './portal.snapshot';
 import { assessReadiness, companyReadiness, mvpPolicy } from './portal.readiness';
+import { buildTracking } from './portal.tracking';
 
 const documentSelect={id:true,documentGroup:true,fileName:true,fileSize:true,uploadedAt:true,coverage:true,version:true,supersedesId:true,withdrawnAt:true};
 const officerSelect={id:true,fullName:true,username:true};
@@ -50,6 +51,13 @@ export class PortalService {
     const r=await this.prisma.portalRequest.findFirst({where:{id,...(accountId?{accountId}:await this.intakeScope(user))},include});
     if(!r) throw new NotFoundException('Không tìm thấy yêu cầu.');
     return r;
+  }
+  /** TK-06: tiến độ công khai cho doanh nghiệp; chỉ đọc đề nghị của chính tài khoản và chọn đúng các trường công khai. */
+  async tracking(id:string,accountId:string) {
+    const r=await this.prisma.portalRequest.findFirst({where:{id,accountId},select:{id:true,reference:true,status:true,submittedAt:true,acceptedAt:true,
+      loan:{select:{currentStage:true,currentStatus:true,completedAt:true,rejectionReasonCode:true,stageHistories:{select:{stage:{select:{stageCode:true}}}}}}}});
+    if(!r) throw new NotFoundException('Không tìm thấy yêu cầu.');
+    return buildTracking(r,r.loan);
   }
   async create(accountId:string,body:any) {
     this.body(body,['data','formVersion','clientRequestId']);

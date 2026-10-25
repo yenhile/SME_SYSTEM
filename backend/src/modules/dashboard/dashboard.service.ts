@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { LoanStatus, StageCode, RiskLevel } from '@prisma/client';
+import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
 
 @Injectable()
 export class DashboardService {
@@ -114,9 +115,47 @@ export class DashboardService {
   }
 
   /**
+   * DEC-02: yêu cầu bổ sung đã quá hạn (ngày 10 hoặc hạn CBTD nhập) mà doanh nghiệp chưa bổ sung.
+   * Chỉ liệt kê để Quản lý xem xét; không đổi trạng thái hồ sơ.
+   */
+  async getOverdueSupplements(now: Date = new Date()) {
+    const rows = await this.prisma.supplementRequest.findMany({
+      where: {
+        status: 'PENDING',
+        overdueAt: { not: null },
+        application: { currentStatus: LoanStatus.SUPPLEMENT_REQUIRED },
+      },
+      select: {
+        id: true, applicationId: true, requestedAt: true, deadlineAt: true, overdueAt: true,
+        application: {
+          select: {
+            applicationCode: true, assignedTo: true,
+            company: { select: { companyName: true } },
+            assignedUser: { select: { fullName: true } },
+          },
+        },
+      },
+      orderBy: { overdueAt: 'asc' },
+    });
+    return rows.map((row: any) => ({
+      id: row.id,
+      applicationId: row.applicationId,
+      applicationCode: row.application.applicationCode,
+      companyName: row.application.company.companyName,
+      assignedOfficer: row.application.assignedUser ? row.application.assignedUser.fullName : 'Chưa phân công',
+      assignedOfficerId: row.application.assignedTo,
+      requestedAt: row.requestedAt,
+      deadlineAt: row.deadlineAt,
+      overdueAt: row.overdueAt,
+      // Tính từ hạn thực tế (ngày 10 hoặc deadlineAt), không phải lúc bộ quét đánh dấu.
+      daysOverdue: Math.max(0, Math.floor((now.getTime() - supplementDueAt(row.requestedAt, row.deadlineAt).getTime()) / 86_400_000)),
+    }));
+  }
+
+  /**
    * UC18: Danh sách cảnh báo hồ sơ có nguy cơ chậm trễ (AI Early Warning)
    */
-  async getEarlyWarningList() {
+  async getEarlyWarningList(user?: { activeRole?: string }) {
     const activeStatuses: LoanStatus[] = [
       LoanStatus.RECEIVED,
       LoanStatus.CHECKED,
@@ -128,6 +167,8 @@ export class DashboardService {
     const activeLoans = await this.prisma.loanApplication.findMany({
       where: {
         currentStatus: { in: activeStatuses },
+        // Thẩm quyền chỉ thấy hồ sơ từ công đoạn Thẩm định trở đi.
+        ...(user?.activeRole === 'THAM_QUYEN' ? { currentStage: { not: StageCode.TIEP_NHAN } } : {}),
       },
       include: {
         company: true,

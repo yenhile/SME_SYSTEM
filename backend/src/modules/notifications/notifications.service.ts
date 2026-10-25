@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 
-const notificationSelect={id:true,requestId:true,title:true,message:true,createdAt:true,readAt:true};
+const notificationSelect={id:true,requestId:true,applicationId:true,title:true,message:true,createdAt:true,readAt:true};
 
 @Injectable()
 export class NotificationsService {

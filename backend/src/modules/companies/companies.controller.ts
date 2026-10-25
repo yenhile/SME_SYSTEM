@@ -4,6 +4,7 @@ import { RoleCode } from '@prisma/client';
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN, RoleCode.QUAN_LY)
@@ -12,18 +13,18 @@ export class CompaniesController {
   constructor(private companiesService: CompaniesService) {}
 
   @Get('check/:taxCode')
-  checkTaxCode(@Param('taxCode') taxCode: string) {
-    return this.companiesService.checkTaxCode(taxCode);
+  checkTaxCode(@Param('taxCode') taxCode: string, @CurrentUser() user: any) {
+    return this.companiesService.checkTaxCode(taxCode, user);
   }
 
   @Get()
-  findAll(@Query('keyword') keyword?: string) {
-    return this.companiesService.findAll(keyword);
+  findAll(@CurrentUser() user: any, @Query('keyword') keyword?: string) {
+    return this.companiesService.findAll(user, keyword);
   }
 
   @Post()
   @Roles(RoleCode.CBTD)
-  upsert(@Body() body: any) {
-    return this.companiesService.upsert(body);
+  upsert(@Body() body: any, @CurrentUser() user: any) {
+    return this.companiesService.upsert(body, user);
   }
 }

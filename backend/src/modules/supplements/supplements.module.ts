@@ -8,11 +8,12 @@ import { PortalAuthService, PortalGuard } from '../portal/portal.auth';
 import { PortalMailer } from '../portal/portal.mailer';
 import { PortalSupplementsController } from './portal-supplements.controller';
 import { PortalSupplementsService } from './portal-supplements.service';
+import { SupplementRemindersService } from './supplement-reminders.service';
 
 @Module({
   imports: [PredictionModule, JwtModule.register({})],
   controllers: [SupplementsController,PortalSupplementsController],
-  providers: [SupplementsService, PrismaService,PortalSupplementsService,PortalAuthService,PortalGuard,PortalMailer],
+  providers: [SupplementsService, PrismaService,PortalSupplementsService,PortalAuthService,PortalGuard,PortalMailer,SupplementRemindersService],
   exports: [SupplementsService],
 })
 export class SupplementsModule {}
