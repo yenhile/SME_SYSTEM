@@ -20,7 +20,7 @@ function Workspace() {
   const [intakeTarget, setIntakeTarget] = useState<{ id: string; revision: number } | null>(null);
   const refresh = () => setRevision(value => value + 1);
   const activeTab = resolveTab(tab);
-  return <div className="app-container"><Navbar activeTab={activeTab} onTabChange={setTab} onOpenIntake={id => { setSelectedLoanId(null); setTab('loans'); setIntakeTarget(previous => ({ id, revision: (previous?.revision ?? 0) + 1 })); }} /><main className="main-content">
+  return <div className="app-container"><Navbar activeTab={activeTab} onTabChange={setTab} onOpenIntake={id => { setSelectedLoanId(null); setTab('loans'); setIntakeTarget(previous => ({ id, revision: (previous?.revision ?? 0) + 1 })); }} onOpenLoan={setSelectedLoanId} /><main className="main-content">
     {(activeTab === 'loans' || activeTab === 'appraisal') && <LoanList key={activeTab} scope={activeTab === 'appraisal' ? 'appraisal' : 'all'} intakeTarget={intakeTarget} refreshKey={revision} onSelectLoan={setSelectedLoanId} onOpenCreate={() => setShowCreate(true)} />}
     {activeTab === 'companies' && <CompaniesView />}
     {activeTab === 'dashboard' && <DashboardView onSelectLoan={setSelectedLoanId} onGoToAssignments={() => setTab('assignments')} />}

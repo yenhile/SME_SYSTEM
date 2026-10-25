@@ -12,7 +12,7 @@ const accountItems = [
   { label: 'Trợ giúp', icon: CircleHelp, divider: true },
   { label: 'Quyền riêng tư', icon: ShieldCheck },
 ];
-export function Navbar({ activeTab, onTabChange, onOpenIntake }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenIntake: (id: string) => void }) {
+export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void }) {
   const { user, activeRole, logout } = useAuth();
   const [accountOpen, setAccountOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -53,7 +53,7 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake }: { activeTab: Ta
     })}</nav>
   </aside>
   <header className="workspace-header">
-    <NotificationBell onOpenIntake={onOpenIntake} />
+    <NotificationBell onOpenIntake={onOpenIntake} onOpenLoan={onOpenLoan} />
     <div className="account-control" ref={accountRef} onBlur={event => {
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setAccountOpen(false);
     }}>

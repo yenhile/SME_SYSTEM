@@ -179,3 +179,15 @@
 .supplement-events { font-size: 13px; }
 .supplement-events li { padding: 4px 0; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .supplement-card { padding: 12px; } .supplement-upload > label { width: 100%; } .supplement-panel .portal-actions { flex-wrap: wrap; } }
+
+.tracking-card { margin-bottom: 16px; }
+.tracking-steps { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0; margin: 16px 0; }
+.tracking-step { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; color: #64748b; font-size: 13px; position: relative; }
+.tracking-step + .tracking-step::before { content: ''; position: absolute; top: 15px; right: 50%; width: 100%; height: 2px; background: #e2e8f0; z-index: 0; }
+.tracking-mark { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; position: relative; z-index: 1; }
+.tracking-step.done .tracking-mark { background: #16a34a; border-color: #16a34a; color: #fff; }
+.tracking-step.done + .tracking-step::before, .tracking-step.current::before { background: #16a34a; }
+.tracking-step.current .tracking-mark { border-color: #4f46e5; color: #4f46e5; }
+.tracking-step.current strong { color: #4f46e5; }
+.tracking-step.stopped .tracking-mark { background: #dc2626; border-color: #dc2626; color: #fff; }
+.tracking-message { margin: 0 0 8px; }
