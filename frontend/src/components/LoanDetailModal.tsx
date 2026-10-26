@@ -3,6 +3,9 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { PortalIntakeDetails } from './PortalIntakeDetails';
 import { SupplementPanel } from './SupplementPanel';
+import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
+import { CloseOverdueForm } from './CloseOverdueForm';
+import { canCloseOverdue } from './closeOverdue';
 import type { PortalFormConfig } from '../portal/model';
 import {
   LoanApplication,
@@ -57,6 +60,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
   const [approvedInterestRate, setApprovedInterestRate] = useState<number>(8.5);
 
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showCloseForm, setShowCloseForm] = useState(false);
   const [rejectionReasonCode, setRejectionReasonCode] = useState('TC02');
   const [rejectionNote, setRejectionNote] = useState('');
 
@@ -145,6 +149,21 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
         notes: `Phê duyệt cấp tín dụng: ${Number(approvedAmount).toLocaleString('vi-VN')} VNĐ, Lãi suất: ${approvedInterestRate}%/năm`,
       });
       setShowApproveForm(false);
+      await fetchDetail();
+      onRefresh();
+    } catch (err: any) {
+      alert(`Lỗi: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Quản lý đóng thủ công hồ sơ quá hạn bổ sung (DEC-02 / TK-08)
+  const handleCloseOverdue = async (reason: string) => {
+    setActionLoading(true);
+    try {
+      await api.post(`/workflow/${loan.id}/close-overdue`, { reason });
+      setShowCloseForm(false);
       await fetchDetail();
       onRefresh();
     } catch (err: any) {
@@ -364,6 +383,8 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   <span className="badge badge-soft-green">🟢 Đã phê duyệt</span>
                 ) : loan.currentStatus === 'REJECTED' ? (
                   <span className="badge badge-soft-red">🔴 Bị từ chối</span>
+                ) : loan.currentStatus === 'CLOSED_TIMEOUT' ? (
+                  <span className="badge badge-soft-gray">⚫ Đã đóng (quá hạn bổ sung)</span>
                 ) : loan.currentStatus === 'SUPPLEMENT_REQUIRED' ? (
                   <span className="badge badge-soft-orange">🟡 Chờ bổ sung (Tạm dừng SLA)</span>
                 ) : loan.currentStatus === 'PENDING_APPRAISAL' ? (
@@ -376,6 +397,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 {loan.supplementCount > 0 && (
                   <span className="badge badge-soft-orange">Đã bổ sung {loan.supplementCount} lần</span>
                 )}
+                {loan.currentStatus === 'SUPPLEMENT_REQUIRED' && <SupplementDeadlineBadge requests={loan.supplementRequests} />}
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                 {loan.company.companyName} • MST: {loan.company.taxCode}
@@ -664,6 +686,10 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 </button>
               </div>
             </div>
+          )}
+
+          {showCloseForm && canCloseOverdue(loan, activeRole) && (
+            <CloseOverdueForm applicationCode={loan.applicationCode} busy={actionLoading} onSubmit={reason => void handleCloseOverdue(reason)} onCancel={() => setShowCloseForm(false)} />
           )}
 
           {/* Form Từ chối */}
@@ -1018,6 +1044,12 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   <Check size={16} /> Phê duyệt Khoản vay
                 </button>}
               </>
+            )}
+
+            {canCloseOverdue(loan, activeRole) && (
+              <button onClick={() => setShowCloseForm(true)} disabled={actionLoading} className="btn btn-danger">
+                Đóng hồ sơ do quá hạn
+              </button>
             )}
 
             <button onClick={onClose} className="btn btn-secondary">

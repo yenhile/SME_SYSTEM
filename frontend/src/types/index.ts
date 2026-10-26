@@ -94,6 +94,8 @@ export interface SupplementRequest {
   requestContent: string;
   requestedAt: string;
   deadlineAt?: string;
+  reminderSentAt?: string | null;
+  overdueAt?: string | null;
   resolvedAt?: string;
   status: 'PENDING' | 'RESOLVED' | 'EXPIRED';
   notes?: string;

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma.service';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { LoanStatus, StageCode, RoleCode } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { assertOfficerMayWriteCompany } from '../companies/company-access';
 
 @Injectable()
 export class LoanApplicationsService {
@@ -11,7 +12,8 @@ export class LoanApplicationsService {
   async create(dto: CreateLoanDto, creatorUserId: string) {
     if (dto.assignedTo && dto.assignedTo !== creatorUserId) throw new BadRequestException('Hồ sơ mới được gán cho cán bộ tiếp nhận. Dùng chức năng điều chuyển để đổi người phụ trách.');
     return this.prisma.$transaction(async tx => {
-    // 1. Tạo hoặc cập nhật thông tin doanh nghiệp
+    // 1. Tạo hoặc cập nhật thông tin doanh nghiệp (không ghi đè doanh nghiệp của cán bộ khác)
+    await assertOfficerMayWriteCompany(tx, dto.taxCode, creatorUserId);
     const company = await tx.company.upsert({
       where: { taxCode: dto.taxCode },
       update: {
@@ -94,11 +96,15 @@ export class LoanApplicationsService {
     if (query.status && !Object.values(LoanStatus).includes(query.status)) throw new BadRequestException('Trạng thái không hợp lệ.');
     const isCbtdOnly = user.roles.length === 1 && user.roles.includes(RoleCode.CBTD);
     const assignedFilter = isCbtdOnly || query.myOnly ? user.id : undefined;
+    // Thẩm quyền chỉ thấy hồ sơ từ công đoạn Thẩm định trở đi (không thấy hồ sơ còn ở Tiếp nhận).
+    const stageFilter = user.activeRole === RoleCode.THAM_QUYEN
+      ? { not: StageCode.TIEP_NHAN, ...(query.stage ? { equals: query.stage } : {}) }
+      : query.stage;
 
     return this.prisma.loanApplication.findMany({
       where: {
         assignedTo: assignedFilter,
-        currentStage: query.stage,
+        currentStage: stageFilter,
         currentStatus: query.status,
         OR: query.keyword
           ? [
@@ -121,6 +127,10 @@ export class LoanApplicationsService {
           orderBy: { enteredAt: 'desc' },
           take: 1,
           include: { stage: true },
+        },
+        supplementRequests: {
+          where: { status: 'PENDING' },
+          select: { id: true, status: true, requestedAt: true, deadlineAt: true, reminderSentAt: true, overdueAt: true },
         },
       },
       orderBy: { createdAt: 'desc' },

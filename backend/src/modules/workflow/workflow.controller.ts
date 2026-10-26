@@ -5,6 +5,7 @@ import { LoanAccessGuard } from '../../common/guards/loan-access.guard';
 import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
 import { WorkflowService } from './workflow.service';
 import { TransitionStageDto } from './dto/transition-stage.dto';
+import { CloseOverdueDto } from './dto/close-overdue.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -32,5 +33,16 @@ export class WorkflowController {
     @CurrentUser() user: any,
   ) {
     return this.workflowService.transitionStage(id, dto, user);
+  }
+
+  // DEC-02: chỉ Quản lý đóng thủ công hồ sơ quá hạn bổ sung; không có đóng tự động.
+  @Post(':id/close-overdue')
+  @Roles(RoleCode.QUAN_LY)
+  closeOverdueSupplement(
+    @Param('id') id: string,
+    @Body() dto: CloseOverdueDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.workflowService.closeOverdueSupplement(id, dto, user);
   }
 }

@@ -28,6 +28,13 @@ services:
       retries: 5
     restart: unless-stopped
 
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -36,6 +43,14 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://sme_user:sme_password@db:5432/sme_loan?schema=public}
       ML_SERVICE_URL: ${ML_SERVICE_URL:-http://ml-service:8000}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      NODE_ENV: ${NODE_ENV:-development}
+      PORTAL_FOUNDATION_PREVIEW: ${PORTAL_FOUNDATION_PREVIEW:-true}
+      SMTP_HOST: ${DOCKER_SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM: ${SMTP_FROM:-noreply@sme-loan.local}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
     ports:
       - "3001:3000"
     volumes:
@@ -45,6 +60,8 @@ services:
         condition: service_healthy
       ml-service:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s

@@ -1,8 +1,10 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
-import { LoanStatus, StageCode } from '@prisma/client';
+import { LoanStatus, StageCode, SupplementStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
 import { PredictionService } from '../prediction/prediction.service';
 import { TransitionStageDto } from './dto/transition-stage.dto';
+import { CloseOverdueDto } from './dto/close-overdue.dto';
+import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
 @Injectable()
 export class WorkflowService {
   private readonly logger = new Logger(WorkflowService.name);
@@ -63,5 +65,52 @@ export class WorkflowService {
       catch (err) { this.logger.warn(`Không cập nhật được dự báo AI: ${(err as Error).message}`); }
     }
     return updated;
+  }
+
+  /**
+   * DEC-02 / TK-08: Quản lý đóng thủ công hồ sơ đã quá hạn bổ sung sang CLOSED_TIMEOUT.
+   * Không có đường đóng tự động. Hồ sơ vào công đoạn HOAN_TAT nên mọi thao tác ghi sau đó bị khóa.
+   */
+  async closeOverdueSupplement(applicationId: string, dto: CloseOverdueDto, user: { id: string; activeRole: string }, now: Date = new Date()) {
+    if (user.activeRole !== 'QUAN_LY') throw new ForbiddenException('Chỉ Quản lý được đóng hồ sơ quá hạn bổ sung.');
+    const reason = dto.reason?.trim();
+    if (!reason) throw new BadRequestException('Cần nhập lý do đóng hồ sơ.');
+    return this.prisma.$transaction(async tx => {
+      // Khóa hồ sơ để không tranh chấp với hoàn tất bổ sung hoặc chuyển bước.
+      await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
+      const loan = await tx.loanApplication.findUnique({ where: { id: applicationId } });
+      if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ.');
+      if (loan.completedAt || loan.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
+      if (loan.currentStatus !== LoanStatus.SUPPLEMENT_REQUIRED) throw new BadRequestException('Chỉ đóng được hồ sơ đang chờ bổ sung.');
+      const pending = await tx.supplementRequest.findMany({ where: { applicationId, status: SupplementStatus.PENDING } });
+      if (!pending.some(item => supplementDueAt(item.requestedAt, item.deadlineAt).getTime() <= now.getTime())) {
+        throw new BadRequestException('Hồ sơ chưa quá hạn bổ sung.');
+      }
+      const target = await tx.workflowStage.findUnique({ where: { stageCode: StageCode.HOAN_TAT } });
+      if (!target) throw new BadRequestException('Chưa cấu hình công đoạn kết thúc.');
+
+      await tx.supplementRequest.updateMany({ where: { applicationId, status: SupplementStatus.PENDING }, data: { status: SupplementStatus.EXPIRED } });
+
+      // Hồ sơ đang chờ bổ sung nên đồng hồ SLA đang tạm dừng: tính nốt thời gian tạm dừng trước khi đóng công đoạn.
+      const current = await tx.applicationStageHistory.findFirst({ where: { applicationId, exitedAt: null }, orderBy: { enteredAt: 'desc' } });
+      if (current) {
+        const pausedNow = current.pausedAt ? (now.getTime() - current.pausedAt.getTime()) / 3600000 : 0;
+        const pausedTotal = current.pausedDurationHours + pausedNow;
+        const actual = (now.getTime() - current.enteredAt.getTime()) / 3600000;
+        const net = Math.max(0, actual - pausedTotal);
+        await tx.applicationStageHistory.update({ where: { id: current.id }, data: {
+          exitedAt: now, pausedAt: null, pausedDurationHours: pausedTotal,
+          actualDurationHours: actual, netWorkDurationHours: net, isDelayed: net > current.slaStandardHours, handledBy: user.id,
+        } });
+      }
+      await tx.applicationStageHistory.create({ data: {
+        applicationId, stageId: target.id, enteredAt: now, exitedAt: now, actualDurationHours: 0, netWorkDurationHours: 0,
+        slaStandardHours: target.standardSlaHours, handledBy: user.id,
+        notes: `Đóng hồ sơ do quá hạn bổ sung: ${reason}`,
+      } });
+      return tx.loanApplication.update({ where: { id: applicationId }, data: {
+        currentStage: StageCode.HOAN_TAT, currentStatus: LoanStatus.CLOSED_TIMEOUT, completedAt: now, rejectionReasonCode: 'TC05', rejectionNote: reason, updatedAt: now,
+      } });
+    });
   }
 }

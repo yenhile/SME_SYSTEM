@@ -27,6 +27,7 @@ export class PortalRequestsController {
   @Post() create(@Req() req:any,@Body() body:any) {return this.service.create(req.portalAccount.id,body);}
   @Get(':id') one(@Req() req:any,@Param('id') id:string) {return this.service.one(id,req.portalAccount.id);}
   @Put(':id') update(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.update(id,req.portalAccount.id,body);}
+  @Get(':id/status') status(@Req() req:any,@Param('id') id:string) {return this.service.tracking(id,req.portalAccount.id);}
   @Get(':id/checklist') checklist(@Req() req:any,@Param('id') id:string) {return this.service.checklist(id,req.portalAccount.id);}
   @Get(':id/readiness') readiness(@Req() req:any,@Param('id') id:string) {return this.service.readiness(id,req.portalAccount.id);}
   @Get(':id/documents') documentHeads(@Req() req:any,@Param('id') id:string) {return this.service.documentHeads(id,req.portalAccount.id);}
@@ -57,7 +58,7 @@ export class PortalRequestsController {
 }
 @Controller('portal-intakes')
 @UseGuards(JwtAuthGuard,RolesGuard)
-@Roles(RoleCode.CBTD,RoleCode.THAM_QUYEN,RoleCode.QUAN_LY)
+@Roles(RoleCode.CBTD,RoleCode.QUAN_LY)
 export class PortalIntakesController {
   constructor(private service:PortalService) {}
   @Get() list(@Req() req:any) {return this.service.list(undefined,req.user);}

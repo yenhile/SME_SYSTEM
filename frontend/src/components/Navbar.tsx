@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth, ROLE_NAMES } from '../context/AuthContext';
-import { BarChart3, Landmark, LogOut, Settings, FolderOpen, History, ChevronDown, CircleUserRound, Languages, CircleHelp, ShieldCheck } from 'lucide-react';
+import { BarChart3, Landmark, LogOut, Settings, FolderOpen, History, ChevronDown, CircleUserRound, Languages, CircleHelp, ShieldCheck, KeyRound } from 'lucide-react';
 import { NAV_GROUPS, NAV_ITEMS, type Tab } from '../navigation';
 import { NotificationBell } from './NotificationBell';
+import { ChangePasswordModal } from './ChangePasswordModal';
 const groupIcons = { overview: BarChart3, operations: Settings, loans: FolderOpen, system: History };
 const accountItems = [
   { label: 'Hồ sơ', icon: CircleUserRound },
@@ -11,9 +12,10 @@ const accountItems = [
   { label: 'Trợ giúp', icon: CircleHelp, divider: true },
   { label: 'Quyền riêng tư', icon: ShieldCheck },
 ];
-export function Navbar({ activeTab, onTabChange, onOpenIntake }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenIntake: (id: string) => void }) {
+export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void }) {
   const { user, activeRole, logout } = useAuth();
   const [accountOpen, setAccountOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -51,7 +53,7 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake }: { activeTab: Ta
     })}</nav>
   </aside>
   <header className="workspace-header">
-    <NotificationBell onOpenIntake={onOpenIntake} />
+    <NotificationBell onOpenIntake={onOpenIntake} onOpenLoan={onOpenLoan} />
     <div className="account-control" ref={accountRef} onBlur={event => {
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setAccountOpen(false);
     }}>
@@ -62,9 +64,10 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake }: { activeTab: Ta
       </button>
       {accountOpen && <div id="account-popup" className="account-popup" role="dialog" aria-label="Tài khoản" tabIndex={-1} ref={popupRef}>
         <div className="account-popup-summary"><span className="account-avatar" aria-hidden="true">{initial}</span><strong>{displayName}</strong><span className="account-role-badge">{activeRole ? ROLE_NAMES[activeRole] : ''}</span><p>{user?.username}</p></div>
-        <div className="account-menu-items">{accountItems.map(item => <button key={item.label} type="button" className={`account-menu-item${item.divider ? ' account-menu-divider' : ''}`} disabled title={`${item.label}: chưa thiết lập chức năng.`}><item.icon size={18} aria-hidden="true" />{item.label}</button>)}</div>
+        <div className="account-menu-items"><button type="button" className="account-menu-item" onClick={() => { setAccountOpen(false); setChangePasswordOpen(true); }}><KeyRound size={18} aria-hidden="true" />Đổi mật khẩu</button>{accountItems.map(item => <button key={item.label} type="button" className={`account-menu-item${item.divider ? ' account-menu-divider' : ''}`} disabled title={`${item.label}: chưa thiết lập chức năng.`}><item.icon size={18} aria-hidden="true" />{item.label}</button>)}</div>
         <button className="account-logout" type="button" onClick={logout}><LogOut size={18} />Đăng xuất</button>
       </div>}
     </div>
-  </header></>;
+  </header>
+  {changePasswordOpen && <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />}</>;
 }

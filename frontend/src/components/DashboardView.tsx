@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { OverdueSupplementsPanel, type OverdueSupplementItem } from './OverdueSupplementsPanel';
 import { OverviewStats, SlaBottleneck, EarlyWarningItem } from '../types';
 import {
   BarChart3,
@@ -17,6 +19,8 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGoToAssignments }) => {
+  const { activeRole } = useAuth();
+  const [overdueSupplements, setOverdueSupplements] = useState<OverdueSupplementItem[]>([]);
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [bottlenecks, setBottlenecks] = useState<SlaBottleneck[]>([]);
   const [warnings, setWarnings] = useState<EarlyWarningItem[]>([]);
@@ -34,6 +38,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
       setStats(statsData);
       setBottlenecks(bottlenecksData);
       setWarnings(warningsData);
+      // Danh sách quá hạn bổ sung chỉ dành cho Quản lý (DEC-02).
+      setOverdueSupplements(activeRole === 'QUAN_LY' ? await api.get<OverdueSupplementItem[]>('/dashboard/overdue-supplements') : []);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -56,6 +62,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
           Theo dõi các chỉ số vận hành chi nhánh và phát hiện sớm các hồ sơ có nguy cơ chậm trễ bằng Học máy
         </p>
       </div>
+
+      <OverdueSupplementsPanel items={overdueSupplements} onSelectLoan={onSelectLoan} />
 
       {/* KPI Cards Grid Trắng Sáng */}
       <div className="kpi-grid">

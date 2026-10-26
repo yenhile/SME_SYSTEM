@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { KanbanBoard } from './KanbanBoard';
 import { filterLoansForView } from '../navigation';
 import { PortalIntakeQueue } from './PortalIntakeQueue';
+import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
 import {
   Search,
   Filter,
@@ -78,6 +79,8 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
         return <span className="badge badge-soft-green">🟢 Đã phê duyệt</span>;
       case 'REJECTED':
         return <span className="badge badge-soft-red">🔴 Bị từ chối</span>;
+      case 'CLOSED_TIMEOUT':
+        return <span className="badge badge-soft-gray">⚫ Đã đóng (quá hạn bổ sung)</span>;
       case 'SUPPLEMENT_REQUIRED':
         return <span className="badge badge-soft-orange">🟡 Chờ bổ sung (Tạm dừng SLA)</span>;
       case 'PENDING_APPRAISAL':
@@ -93,8 +96,8 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
 
   return (
     <div className="loan-list-view">
-      {scope === 'all' && <div className="portal-tabs"><button className={`btn ${!intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(false)}>Hồ sơ đang quản lý</button><button className={`btn ${intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(true)}>Chờ tiếp nhận</button></div>}
-      {scope === 'all' && intakeTab ? <PortalIntakeQueue activeRole={activeRole} target={intakeTarget} onSelectLoan={onSelectLoan} onRefresh={fetchLoans} /> : <>
+      {scope === 'all' && activeRole !== 'THAM_QUYEN' && <div className="portal-tabs"><button className={`btn ${!intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(false)}>Hồ sơ đang quản lý</button><button className={`btn ${intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(true)}>Chờ tiếp nhận</button></div>}
+      {scope === 'all' && activeRole !== 'THAM_QUYEN' && intakeTab ? <PortalIntakeQueue activeRole={activeRole} target={intakeTarget} onSelectLoan={onSelectLoan} onRefresh={fetchLoans} /> : <>
       {/* Top Header & Actions */}
       <div className="page-heading loan-page-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
@@ -203,6 +206,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
             <option value="WAITING_HEAD_OFFICE">Chờ Cấp trên duyệt</option>
             <option value="APPROVED">Đã phê duyệt</option>
             <option value="REJECTED">Bị từ chối</option>
+            <option value="CLOSED_TIMEOUT">Đã đóng (quá hạn bổ sung)</option>
           </select>
 
           <label
@@ -290,7 +294,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
                         <span className="badge badge-soft-gray">{loan.currentStage}</span>
                       </td>
 
-                      <td>{getStatusBadge(loan.currentStatus)}</td>
+                      <td>{getStatusBadge(loan.currentStatus)}<SupplementDeadlineBadge requests={loan.currentStatus === 'SUPPLEMENT_REQUIRED' ? loan.supplementRequests : undefined} /></td>
 
                       <td>
                         {latestPred ? (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
 import { LoanApplication, StageCode } from '../types';
 import { Clock, AlertTriangle, CheckCircle2, User, Building, DollarSign } from 'lucide-react';
 
@@ -35,6 +36,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan, w
         return <span className="badge badge-soft-green">🟢 Đã phê duyệt</span>;
       case 'REJECTED':
         return <span className="badge badge-soft-red">🔴 Từ chối</span>;
+      case 'CLOSED_TIMEOUT':
+        return <span className="badge badge-soft-gray">⚫ Đã đóng (quá hạn bổ sung)</span>;
       case 'SUPPLEMENT_REQUIRED':
         return <span className="badge badge-soft-orange">🟡 Chờ bổ sung</span>;
       case 'PENDING_APPRAISAL':
@@ -114,6 +117,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ loans, onSelectLoan, w
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                         {getStatusBadge(loan.currentStatus)}
+                        {loan.currentStatus === 'SUPPLEMENT_REQUIRED' && <SupplementDeadlineBadge requests={loan.supplementRequests} />}
                         {getRiskBadge(latestPred)}
                       </div>
 

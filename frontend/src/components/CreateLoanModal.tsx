@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 import { Company, LoanType } from '../types';
+import { describeTaxCheck, type TaxCheckResult } from './taxCheck';
 import { X, Search, Building2, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react';
 
 interface CreateLoanModalProps {
@@ -27,6 +28,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
 
   const [checkingTax, setCheckingTax] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [taxBlocked, setTaxBlocked] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   if (!isOpen) return null;
@@ -46,8 +48,10 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
     setCheckingTax(true);
     setStatusMsg(null);
     try {
-      const result = await api.get<{ found: boolean; company: Company | null }>(`/companies/check/${encodeURIComponent(taxCode.trim())}`);
-      const company = result.company;
+      const result = await api.get<TaxCheckResult>(`/companies/check/${encodeURIComponent(taxCode.trim())}`);
+      const outcome = describeTaxCheck(result);
+      const company = outcome.company;
+      setTaxBlocked(outcome.blocked);
       if (company) {
         setCompanyName(company.companyName);
         setIndustry(company.industry);
@@ -57,10 +61,8 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
         setRepresentativeName(company.representativeName);
         setPhone(company.phone);
         setAddress(company.address);
-        setStatusMsg({ text: 'Đã tìm thấy thông tin doanh nghiệp trong hệ thống', type: 'success' });
-      } else {
-        setStatusMsg({ text: 'Doanh nghiệp mới - vui lòng nhập thông tin bên dưới', type: 'success' });
       }
+      setStatusMsg({ text: outcome.text, type: outcome.type });
     } catch (err) {
       setStatusMsg({ text: (err as Error).message, type: 'error' });
     } finally {
@@ -70,6 +72,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (taxBlocked) return;
     setSubmitting(true);
     setStatusMsg(null);
 
@@ -165,7 +168,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                       type="text"
                       placeholder="0312345678"
                       value={taxCode}
-                      onChange={(e) => setTaxCode(e.target.value)}
+                      onChange={(e) => { setTaxCode(e.target.value); setTaxBlocked(false); }}
                       required
                       style={{ flex: 1 }}
                     />
@@ -407,7 +410,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
             <button type="button" onClick={onClose} className="btn btn-secondary">
               Hủy bỏ
             </button>
-            <button type="submit" disabled={submitting} className="btn btn-primary">
+            <button type="submit" disabled={submitting || taxBlocked} className="btn btn-primary">
               {submitting ? 'Đang tạo hồ sơ...' : 'Tạo hồ sơ vay mới'}
             </button>
           </div>

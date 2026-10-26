@@ -26,6 +26,9 @@ export class LoanAccessGuard implements CanActivate {
     if (request.user.activeRole === 'CBTD' && loan.assignedTo !== request.user.id) {
       throw new ForbiddenException('Bạn chỉ được truy cập hồ sơ được phân công.');
     }
+    if (request.user.activeRole === 'THAM_QUYEN' && loan.currentStage === 'TIEP_NHAN') {
+      throw new ForbiddenException('Thẩm quyền chỉ truy cập hồ sơ từ công đoạn Thẩm định trở đi.');
+    }
     request.loan = loan;
     if (request.method !== 'GET') {
       if (loan.completedAt || loan.currentStage === 'HOAN_TAT') throw new ForbiddenException('Hồ sơ đã kết thúc, không thể chỉnh sửa.');

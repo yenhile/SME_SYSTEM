@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     void restoreSession();
     const expired = () => logout();
-    const sync = (event: StorageEvent) => { if (event.key === 'sme_token') logout(); };
+    const sync = (event: StorageEvent) => { if ((event.key === 'sme_token' && event.newValue === null) || event.key === null) logout(); };
     window.addEventListener('sme-session-expired', expired);
     window.addEventListener('storage', sync);
     return () => { window.removeEventListener('sme-session-expired', expired); window.removeEventListener('storage', sync); };

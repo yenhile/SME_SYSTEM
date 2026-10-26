@@ -113,6 +113,8 @@ Hệ thống phân tách rạch ròi giữa 3 hệ thống danh mục enum (`bac
   - Tồn tại nhiều file và thư mục untracked chưa commit (`.agents/`, `.codegraphrc.json`, `AGENTS.md`, `Project.md`, `backend/src/modules/portal/`, `frontend/src/portal/`, `backend/test/`, `docs/ai/`, `docs/superpowers/`).
   - **Chỉ dẫn cho người tiếp nhận:** Tuyệt đối không chạy `git reset --hard` hoặc `git clean -fd` làm mất các module và tài liệu untracked trên. Hãy tạo branch mới để bảo toàn hiện trạng: `git checkout -b feature/handover-work`.
 
+> **Cập nhật 24/10/2026:** nhánh làm việc hiện là `YenTrang` (đồng bộ `origin/YenTrang`). Các file từng untracked đã nằm trong commit `36ce540` và đã vào `main` (PR #5). Working tree chỉ còn `frontend/tsconfig.app.tsbuildinfo` (file build, không commit). Chi tiết ở bảng "Trạng thái thực hiện" cuối Phần 5.
+
 ### 2. Cấu trúc Source Code
 ```
 sme-loan-workflow/
@@ -204,9 +206,9 @@ sme-loan-workflow/
 | Phân hệ | Tính năng cụ thể | Trạng thái kỹ thuật | Bằng chứng kiểm thử / Vị trí Source Code |
 | :--- | :--- | :---: | :--- |
 | **Auth** | Đăng nhập JWT & Switch Role | `[VERIFIED-TEST]` | `backend/src/modules/auth/`, Header `X-Active-Role` xử lý tại `RolesGuard`. Test pass tích hợp qua `test/portal.test.cjs`. |
-| | Đổi mật khẩu cán bộ nội bộ | `[CODE-ONLY]` | Đã có API `POST /auth/change-password` (`backend/src/modules/auth/auth.controller.ts:40`). **Chưa có UI trên Frontend**. |
+| | Đổi mật khẩu cán bộ nội bộ | `[VERIFIED-TEST]` | Đã có API `POST /auth/change-password` (`backend/src/modules/auth/auth.controller.ts:40`). UI đã có từ TK-10 (`0e5b749`, `ChangePasswordModal.tsx`); test `frontend/scripts/check-change-password.mjs`. |
 | **Admin** | Quản lý người dùng nội bộ | `[NEED CONFIRMATION]` | `frontend/src/components/AdminView.tsx` (tạo user, gán role). Đã test manual khi dev; chưa có automated E2E test. |
-| | Cấu hình định mức SLA | `[CODE-ONLY]` | API `GET/PUT /admin/workflow-stages` và Form có trong `AdminView.tsx`. **Lỗi điều hướng FE:** menu `navigation.ts` thiếu route dẫn vào. |
+| | Cấu hình định mức SLA | `[VERIFIED-TEST]` | API `GET/PUT /admin/workflow-stages` và Form có trong `AdminView.tsx`. Menu "Cấu hình SLA" đã có từ TK-02 (`08631b4`); test `frontend/scripts/check-navigation.mjs`. |
 | **Portal DN**| Đăng ký & Xác thực OTP Email | `[VERIFIED-TEST]` | `backend/test/portal.test.cjs`, `backend/test/portal-foundation.test.cjs`. Kiểm tra mailbox test bằng `scripts/check-dev-mailbox.cjs`. |
 | | Nộp hồ sơ V1 (3 bước cơ bản) | `[VERIFIED-TEST]` | `frontend/src/portal/wizard.test.mjs`, `frontend/src/portal/model.test.mjs`, `backend/test/portal-snapshot.test.cjs`. |
 | | Nộp hồ sơ V2 (Chi tiết tài chính)| `[PENDING-POLICY]`| `backend/test/portal-policy.test.cjs`, `backend/test/portal-readiness.test.cjs`. Code xong nhưng bị khóa tại `portal.readiness.ts:3` (`canSubmit: false`). |
@@ -241,6 +243,35 @@ Bảng phân loại dựa trên 12 Task baseline, giữ nguyên mã Task ID, là
 | **TK-10** | Xây dựng giao diện Đổi mật khẩu cá nhân cho cán bộ | **Triển khai kỹ thuật** (Ưu tiên 1) | Không | Header có mục "Đổi mật khẩu"; form popup kết nối thành công với API `POST /auth/change-password` có sẵn ở backend. |
 | **TK-11** | Chốt quy tắc tính toán SLA: Giờ làm việc hay Giờ thực | **Chờ PO phê duyệt** (Ưu tiên 3) | PO duyệt quy chế | Quyết định xem có viết lại thuật toán tính SLA để trừ ngày nghỉ lễ, giờ ngoài hành chính và tạm dừng khi chờ bổ sung không. |
 | **TK-12** | Lập Báo cáo đánh giá mô hình ML trên dữ liệu Synthetic | **Triển khai tài liệu** (Ưu tiên 3) | **DEC-04** (Approved) | Lập báo cáo khoa học đánh giá các chỉ số (Accuracy, Precision, Recall, F1) của mô hình ML, phân tích rõ các giới hạn dữ liệu giả lập. |
+
+---
+
+### Trạng thái thực hiện (cập nhật 24/10/2026, nhánh `YenTrang`)
+
+| Task | Trạng thái | Commit | Ghi chú / bằng chứng |
+| :--- | :---: | :--- | :--- |
+| TK-01 | `DONE` | (không có, chỉ cài môi trường) | `npm ci` ở root và `graph:build`, `graph:check` exit 0 (122 file). CodeGraph lỗi với đường dẫn có dấu cách (`T:\SME SYSTEM`); build qua ổ ảo `subst S: "T:\SME SYSTEM"`. Cần Visual Studio Build Tools (C++) để biên dịch `better-sqlite3`. |
+| TK-02 | `DONE` | `08631b4` | Cần sửa cả `navigation.ts` và `App.tsx` (thiếu nhánh render `AdminView section="settings"`). Đã xác nhận GET/PUT `/admin/workflow-stages` (200, giữ giá trị sau tải lại, CBTD nhận 403) và hai tiêu chí giao diện. Test navigation đã cập nhật (trước đó khẳng định không có mục SLA). Menu chưa lọc theo vai trò (hành vi sẵn có). |
+| TK-03 | `DONE` (chưa commit) | | PO quyết ngày 25/10/2026: Thẩm quyền chỉ xem hồ sơ từ Thẩm định trở đi (phương án B). Ma trận: `docs/Ma_tran_AC_phan_quyen_1_chi_nhanh.md`. Còn chờ PO xác nhận `/companies`. |
+| TK-04 | `DONE` (chưa commit) | | Đổi phạm vi: chặn truy cập chéo đã có sẵn, chỉ viết `backend/test/loan-access.test.cjs` (13 test pass) + triển khai phương án B; kiểm chứng đọc trên Docker. Chưa kiểm thử giao diện trên trình duyệt. |
+| TK-05 | `TODO` | | Chờ PO nghiệm thu chính sách V2. |
+| TK-06 | `DONE` (chưa commit) | | PO giao tự chọn danh mục trạng thái (26/10/2026); danh mục và quy tắc ẩn thông tin nằm ở `docs/ai/2026-10-24-tien-trinh-lam-viec.md` mục 14. `GET /portal/requests/:id/status` + `PortalApplicationTracking.tsx`. Chỉ xem được đề nghị của chính tài khoản; không lộ ghi chú nội bộ/ML/cán bộ; lý do từ chối theo danh mục TC01–TC05. Test: `test:tracking` (7 backend + 4 frontend). |
+| TK-07 | `DONE` (chưa commit; chờ PO xem giao diện) | | PO chốt 26/10/2026: ngày lịch giờ Việt Nam, mốc rơi Thứ Bảy/Chủ nhật lùi sang Thứ Hai, không gia hạn trong TK-07 (hạn lưu ở `deadlineAt` nên thêm gia hạn sau chỉ cần đổi cột này). Bộ quét mỗi giờ (`SupplementRemindersService`), 3 cột mới trên `SupplementRequest` (`reminderSentAt`, `reminderEmailSentAt`, `overdueAt`), `InternalNotification.requestId` tuỳ chọn + `applicationId`. Nhắc ngày 5: thông báo CBTD + email doanh nghiệp (hồ sơ qua Portal); quá hạn: thông báo CBTD, cảnh báo đỏ Dashboard Quản lý (`GET /dashboard/overdue-supplements`), cờ vàng/đỏ trong danh sách hồ sơ. Không đổi trạng thái, không đóng hồ sơ. Chưa có lịch ngày lễ. Test: `test:reminders` (19 test), `test:deadlines`. |
+| TK-08 | `DONE` (chưa commit) | | Endpoint `POST /workflow/:id/close-overdue` chỉ `QUAN_LY`; bắt buộc lý do; chỉ đóng hồ sơ `SUPPLEMENT_REQUIRED` có yêu cầu bổ sung đã đến hạn (tính lại ở backend, không phụ thuộc cờ của bộ quét). Hồ sơ sang `HOAN_TAT` + `CLOSED_TIMEOUT`, `completedAt`, `rejectionReasonCode=TC05` (đã có trong danh mục từ chối), `rejectionNote`=lý do; yêu cầu bổ sung chờ chuyển `EXPIRED`; đồng hồ SLA đang tạm dừng được tính nốt trước khi đóng công đoạn; ghi `ApplicationStageHistory` (người đóng, thời điểm, lý do). Không đổi `transitionStage`, không đổi schema. Giao diện: nút + form trong `LoanDetailModal`, nhãn "Đã đóng (quá hạn bổ sung)" ở danh sách/Kanban/chi tiết, bộ lọc trạng thái. Test: `test:close-overdue` (10 backend + 3 frontend). |
+| TK-09 | `DONE` | `24b4d20` | Service `mailpit` (SMTP 1025, web 8025) trong compose. Backend dùng `DOCKER_SMTP_HOST` (mặc định `mailpit`) vì `SMTP_HOST=127.0.0.1` trong `.env` sẽ ghi đè và không tới được Mailpit trong container. OTP đến Mailpit sau khoảng 0,36 giây, xác minh thành công; PO đã xác nhận trên giao diện. |
+| TK-10 | `DONE` | `0e5b749` | Modal đổi mật khẩu trong menu tài khoản. Mật khẩu mới **tối thiểu 8 ký tự** theo `ChangePasswordDto` của backend (handover ghi 6). Đã xác nhận 400 khi sai mật khẩu hiện tại, đổi thành công, đăng nhập lại bằng mật khẩu mới, mật khẩu cũ bị 401; PO xác nhận trên giao diện. |
+| TK-11 | `TODO` | | Chờ PO chọn PA1 / PA2. |
+| TK-12 | `DONE` (chưa commit; chờ PO đọc) | | Báo cáo `docs/Bao_cao_Mo_hinh_Machine_Learning.md` và script `ml-service/scripts/evaluate_model.py`; nêu rõ giới hạn dữ liệu tổng hợp. |
+| (ngoài danh sách) | `DONE` | `f642e35` | Sửa lỗi hai tab cùng mở tự đăng xuất lẫn nhau: listener `storage` trong `AuthContext.tsx` nay chỉ đăng xuất khi token bị xóa. |
+| (ngoài danh sách) | `DONE` | `bddbd68` | `ml-service/Dockerfile`: tăng timeout và retry cho `pip install`. |
+
+**Điểm lệch phát hiện khi tiếp nhận (Discrepancy Log):**
+- Handover ghi nhánh `LeThiYenNhi`, commit `695d006` và working tree chưa sạch. Thực tế nhánh làm việc là `YenTrang`; các thư mục "untracked" đã được commit trong `36ce540` và đã vào `main` qua PR #5.
+- Công đoạn `HOAN_TAT` trong DB đang tên "Hoàn tất & Phê duyệt giải ngân", trong khi hệ thống không có chức năng giải ngân (dữ liệu seed, chưa đổi).
+- Mật khẩu mới tối thiểu 8 ký tự (backend), không phải 6 như TK-10 ghi.
+- Tài khoản test `123456` không thể đặt lại qua giao diện đổi mật khẩu (dưới 8 ký tự).
+- Cổng đang mở khi chạy Docker: 5173 (web), 3001 (API), 8000 (ML), 5432 (DB), 1025 và 8025 (Mailpit). Không chạy `npm run mail:dev` cùng lúc với Docker (trùng cổng 1025/8025).
+- `frontend/tsconfig.app.tsbuildinfo` là file build đang bị git theo dõi và đổi sau mỗi lần build; không commit.
 
 ---
 

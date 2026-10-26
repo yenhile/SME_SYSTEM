@@ -180,6 +180,7 @@ model LoanApplication {
   assignments        ApplicationAssignment[]
   delayPredictions   DelayPrediction[]
   portalRequest      PortalRequest?
+  internalNotifications InternalNotification[]
 
   @@map("loan_applications")
 }
@@ -318,13 +319,15 @@ model PortalAssignment {
 model InternalNotification {
   id String @id @default(uuid())
   userId String @map("user_id")
-  requestId String @map("request_id")
+  requestId String? @map("request_id")
+  applicationId String? @map("application_id")
   title String
   message String
   createdAt DateTime @default(now()) @map("created_at")
   readAt DateTime? @map("read_at")
   user User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  request PortalRequest @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  request PortalRequest? @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  application LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   @@index([userId, createdAt])
   @@map("internal_notifications")
 }
@@ -361,6 +364,9 @@ model SupplementRequest {
   requestedBy    String           @map("requested_by")
   requestedAt    DateTime         @default(now()) @map("requested_at")
   deadlineAt     DateTime?        @map("deadline_at")
+  reminderSentAt      DateTime? @map("reminder_sent_at")
+  reminderEmailSentAt DateTime? @map("reminder_email_sent_at")
+  overdueAt           DateTime? @map("overdue_at")
   resolvedAt     DateTime?        @map("resolved_at")
   status         SupplementStatus @default(PENDING)
   notes          String?
