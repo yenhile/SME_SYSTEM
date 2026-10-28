@@ -3,9 +3,12 @@ import { groups, validatePortalData } from './portal.validation';
 
 export const LEGACY_CHECKLIST_VERSION = 'legacy-v1';
 export const PREVIEW_CHECKLIST_VERSION = 'sme-preview-v2';
-export type DocumentCoverage = { documentTypeCode: string; period?: string };
+export const FINANCIAL_COMPONENTS = ['BALANCE_SHEET', 'INCOME_STATEMENT', 'CASH_FLOW_STATEMENT', 'NOTES'] as const;
+export type FinancialComponent = typeof FINANCIAL_COMPONENTS[number];
+export type DocumentCoverage = { documentTypeCode: string; period?: string; components?: FinancialComponent[] };
 
-const legacyFields = ['taxCode','companyName','industry','establishedYear','annualRevenue','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths'];
+export const PORTAL_CORE_FIELDS = ['taxCode','companyName','industry','establishedYear','annualRevenue','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths'];
+const legacyFields = PORTAL_CORE_FIELDS;
 const textFields = ['companyType','contactName','contactPosition','contactPhone','contactEmail','preferredBranch'];
 const dateFields = ['establishedDate','neededAt'];
 const capitalText = ['businessActivity','otherFundsSource','repaymentSource'];
@@ -48,7 +51,7 @@ function amount(value: unknown, field: string): void {
 
 /** Validate draft shape only. No v2 requiredness or lending policy is activated here. */
 export function validateDraftV2(input: unknown): Record<string, any> {
-  const data = objectFields(input, [...legacyFields,...textFields,...dateFields,'revenuePeriod','annualRevenueBasis','hasExistingDebt','collateral','capitalPlan'], 'draft');
+  const data = objectFields(input, [...legacyFields,...textFields,...dateFields,'revenuePeriod','annualRevenueBasis','hasExistingDebt','collateral','capitalPlan','businessScope','representative','submissionDeclaration'], 'draft');
   validatePortalData(Object.fromEntries(Object.entries(data).filter(([key]) => legacyFields.includes(key))));
   for (const field of textFields) if (data[field] !== undefined) text(data[field], field);
   for (const field of dateFields) if (data[field] !== undefined) date(data[field], field);
@@ -57,6 +60,17 @@ export function validateDraftV2(input: unknown): Record<string, any> {
   if (data.revenuePeriod !== undefined && (typeof data.revenuePeriod !== 'string' || !/^(?!0000)[0-9]{4}(?:-(?:0[1-9]|1[0-2]|Q[1-4]))?$/.test(data.revenuePeriod))) invalid('revenuePeriod');
   if (data.contactEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactEmail)) invalid('contactEmail');
   if (data.hasExistingDebt !== undefined && typeof data.hasExistingDebt !== 'boolean') invalid('hasExistingDebt');
+  if (data.businessScope !== undefined && !['MANUFACTURING','OTHER'].includes(data.businessScope)) invalid('businessScope');
+  if (data.representative !== undefined) {
+    const representative = objectFields(data.representative, ['mode','name'], 'representative');
+    if (representative.mode !== undefined && !['LEGAL_REPRESENTATIVE','AUTHORIZED'].includes(representative.mode)) invalid('representative.mode');
+    if (representative.name !== undefined) text(representative.name, 'representative.name');
+  }
+  if (data.submissionDeclaration !== undefined) {
+    const declaration = objectFields(data.submissionDeclaration, ['accepted','version'], 'submissionDeclaration');
+    if (declaration.accepted !== undefined && typeof declaration.accepted !== 'boolean') invalid('submissionDeclaration.accepted');
+    if (declaration.version !== undefined) text(declaration.version, 'submissionDeclaration.version');
+  }
   if(data.annualRevenueBasis!==undefined){const basis=objectFields(data.annualRevenueBasis,['documentId','fullYearCompleted'],'annualRevenueBasis');if(basis.documentId!==undefined)text(basis.documentId,'annualRevenueBasis.documentId');if(basis.fullYearCompleted!==undefined&&typeof basis.fullYearCompleted!=='boolean')invalid('annualRevenueBasis.fullYearCompleted');}
   if (data.collateral !== undefined) {
     const collateral = objectFields(data.collateral, ['mode','description'], 'collateral');
@@ -100,13 +114,21 @@ export function validateCoverage(group: string, input: unknown): DocumentCoverag
   const codes = catalog.find(item => item.code === group)!.types.map(item => item[0]);
   const seen = new Set<string>();
   const result: DocumentCoverage[] = input.map(item => {
-    const entry = objectFields(item, ['documentTypeCode','period'], 'coverage');
+    const entry = objectFields(item, ['documentTypeCode','period','components'], 'coverage');
     if (typeof entry.documentTypeCode !== 'string' || !codes.includes(entry.documentTypeCode)) invalid('documentTypeCode');
     if (entry.period !== undefined && (typeof entry.period !== 'string' || !/^(?!0000)[0-9]{4}(?:-(?:0[1-9]|1[0-2]|Q[1-4]))?$/.test(entry.period))) invalid('period');
     const key = `${entry.documentTypeCode}:${entry.period || ''}`;
     if (seen.has(key)) invalid('coverage duplicate');
     seen.add(key);
-    return entry.period === undefined ? {documentTypeCode:entry.documentTypeCode} : {documentTypeCode:entry.documentTypeCode,period:entry.period};
+    const coverage: DocumentCoverage = {documentTypeCode:entry.documentTypeCode,...(entry.period === undefined ? {} : {period:entry.period})};
+    if (entry.components !== undefined) {
+      if (group !== 'B' || entry.documentTypeCode !== 'B_FINANCIAL_STATEMENTS' || !Array.isArray(entry.components)
+        || entry.components.length < 1 || entry.components.length > FINANCIAL_COMPONENTS.length
+        || entry.components.some((part: unknown) => typeof part !== 'string' || !FINANCIAL_COMPONENTS.includes(part as FinancialComponent))
+        || new Set(entry.components).size !== entry.components.length) invalid('coverage.components');
+      coverage.components = [...entry.components].sort();
+    }
+    return coverage;
   });
   return result.sort((a,b) => a.documentTypeCode.localeCompare(b.documentTypeCode) || (a.period || '').localeCompare(b.period || ''));
 }

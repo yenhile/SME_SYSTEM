@@ -21,7 +21,7 @@ function snapshotFor(request: PortalRequest): Snapshot | null {
 export function intakeMoney(value: unknown): string { return typeof value === 'number' && Number.isFinite(value) ? `${value.toLocaleString('vi-VN')} VNĐ` : '—'; }
 export function intakeData(request: PortalRequest): PortalData { return (request.formVersion === 2 ? snapshotFor(request)?.data : null) ?? request.data; }
 export function canAcceptIntake(request: Pick<PortalRequest, 'formVersion'>, config: Pick<PortalFormConfig, 'canAccept'> | null): boolean { return request.formVersion !== 2 || config?.canAccept === true; }
-export function mvpFinancialConfirmationRequired(request:PortalRequest):boolean{return request.formVersion===2&&snapshotFor(request)?.policy.readinessVersion==='MVP1';}
+export function mvpFinancialConfirmationRequired(request:PortalRequest):boolean{return request.formVersion===2&&(snapshotFor(request)?.policy.readinessVersion==='MVP1'||snapshotFor(request)?.policy.status==='APPROVED');}
 const text = (value: unknown): string => typeof value === 'string' && value.trim() ? value : typeof value === 'number' && Number.isFinite(value) ? String(value) : '—';
 function Facts({ rows }: { rows: [string, ReactNode][] }) { return <dl className="intake-facts">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>; }
 

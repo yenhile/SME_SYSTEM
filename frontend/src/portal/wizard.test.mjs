@@ -23,6 +23,25 @@ test('annual source declaration is partial-draft safe and rejects unknown keys o
   assert.ok(validateV2({annualRevenueBasis:{fullYearCompleted:'true'}}).some(x=>x.path==='annualRevenueBasis.fullYearCompleted'));
   assert.ok(validateV2({annualRevenueBasis:{secret:'bad'}}).length);
 });
+
+test('approved policy fields remain partial-draft safe and preserve an explicit unaccepted declaration', () => {
+  const input = { businessScope: 'MANUFACTURING', representative: { mode: 'AUTHORIZED', name: 'Synthetic Sender' }, submissionDeclaration: { accepted: false, version: 'portal-enterprise-submission-v1' } };
+  assert.deepEqual(validateV2(input), []);
+  assert.deepEqual(normalizeV2(input), input);
+  assert.deepEqual(validateV2({ representative: {}, submissionDeclaration: {} }), []);
+});
+
+test('approved policy draft fields reject unknown authority, injected actors and invalid values', () => {
+  for (const [input, path] of [
+    [{ businessScope: 'UNKNOWN' }, 'businessScope'],
+    [{ representative: { mode: 'SIGNED_BY_BANK' } }, 'representative.mode'],
+    [{ representative: { name: 12 } }, 'representative.name'],
+    [{ representative: { verifiedBy: 'x' } }, 'representative.verifiedBy'],
+    [{ submissionDeclaration: { accepted: 'true' } }, 'submissionDeclaration.accepted'],
+    [{ submissionDeclaration: { version: 12 } }, 'submissionDeclaration.version'],
+    [{ submissionDeclaration: { actorId: 'x' } }, 'submissionDeclaration.actorId'],
+  ]) assert.ok(validateV2(input).some(issue => issue.path === path && issue.severity === 'error'), path);
+});
 test('supplied invalid values report their paths and relevant steps', () => {
   const issues = validateV2({ establishedDate: '2025-02-29', revenuePeriod: '2026-Q5', contactEmail: 'bad', contactPhone: 'abc', proposedAmount: 1, loanTermMonths: 1.5, capitalPlan: { ownFunds: -1, otherFunds: 1e16, costs: [{ amount: NaN, plannedAt: '2026-04-31' }] } });
   for (const path of ['establishedDate','revenuePeriod','contactEmail','contactPhone','proposedAmount','loanTermMonths','capitalPlan.ownFunds','capitalPlan.otherFunds','capitalPlan.costs.0.amount','capitalPlan.costs.0.plannedAt']) assert.ok(issues.some(issue => issue.path === path && issue.severity === 'error'), path);

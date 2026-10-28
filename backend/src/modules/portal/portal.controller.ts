@@ -30,6 +30,8 @@ export class PortalRequestsController {
   @Get(':id/status') status(@Req() req:any,@Param('id') id:string) {return this.service.tracking(id,req.portalAccount.id);}
   @Get(':id/checklist') checklist(@Req() req:any,@Param('id') id:string) {return this.service.checklist(id,req.portalAccount.id);}
   @Get(':id/readiness') readiness(@Req() req:any,@Param('id') id:string) {return this.service.readiness(id,req.portalAccount.id);}
+  @Get(':id/intake-cycle') cycle(@Req() req:any,@Param('id') id:string) {return this.service.intakeCycle(id,req.portalAccount.id);}
+  @Post(':id/request-correction') correction(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.requestIntakeCorrection(id,body,req.portalAccount.id);}
   @Get(':id/documents') documentHeads(@Req() req:any,@Param('id') id:string) {return this.service.documentHeads(id,req.portalAccount.id);}
   private uploadOptions(body:any) {
     if(!body || Object.keys(body).some(k=>!['documentGroup','coverage','clientUploadId','expectedRevision'].includes(k))) throw new BadRequestException('Metadata tải tệp không hợp lệ.');
@@ -71,10 +73,17 @@ export class PortalIntakesController {
   history(@Req() req:any,@Param('id') id:string) {return this.service.assignmentHistory(id,req.user);}
   @Get(':id') one(@Req() req:any,@Param('id') id:string) {return this.service.one(id,undefined,req.user);}
   @Get(':id/company-match') match(@Req() req:any,@Param('id') id:string) {return this.service.companyMatch(id,req.user);}
+  @Get(':id/intake-cycle') cycle(@Req() req:any,@Param('id') id:string) {return this.service.intakeCycle(id,undefined,req.user);}
+  @Post(':id/review') @Roles(RoleCode.CBTD)
+  review(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.reviewIntake(id,body,req.user);}
+  @Post(':id/return-correction') @Roles(RoleCode.CBTD)
+  returnCorrection(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.returnIntake(id,body,req.user);}
+  @Post(':id/issues') @Roles(RoleCode.QUAN_LY)
+  issue(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.intakeIssue(id,body,req.user);}
   @Get(':id/documents/:documentId/download') async download(@Req() req:any,@Param('id') id:string,@Param('documentId') documentId:string) {return downloadResponse(await this.service.download(id,documentId,undefined,req.user));}
   @Post(':id/accept') @Roles(RoleCode.CBTD)
   accept(@Req() req:any,@Param('id') id:string,@Body() body:any) {
-    if(body && (Object.keys(body).some(k=>!['confirmExistingCompany','confirmExistingCompanyFinancials'].includes(k)) || ['confirmExistingCompany','confirmExistingCompanyFinancials'].some(k=>body[k]!==undefined&&typeof body[k]!=='boolean'))) throw new BadRequestException('Thông tin xác nhận không hợp lệ.');
-    return this.service.accept(id,req.user.id,body?.confirmExistingCompany===true,body?.confirmExistingCompanyFinancials===true);
+    if(body && (Object.keys(body).some(k=>!['confirmExistingCompany','confirmExistingCompanyFinancials','expectedRevision','submissionId'].includes(k)) || ['confirmExistingCompany','confirmExistingCompanyFinancials'].some(k=>body[k]!==undefined&&typeof body[k]!=='boolean'))) throw new BadRequestException('Thông tin xác nhận không hợp lệ.');
+    return this.service.accept(id,req.user.id,body?.confirmExistingCompany===true,body?.confirmExistingCompanyFinancials===true,body?.expectedRevision,body?.submissionId);
   }
 }

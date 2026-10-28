@@ -8,6 +8,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID, createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
+const os = require('node:os');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
@@ -40,7 +41,7 @@ function verifyTarget(url, schema) {
   return u;
 }
 
-async function startIsolated() {
+async function startIsolated(options={}) {
   const config = dotenv.parse(await fs.readFile(path.join(root,'.env')));
   const baseUrl = process.env.DATABASE_URL || config.DATABASE_URL;
   const u = verifyTarget(baseUrl);
@@ -52,7 +53,7 @@ async function startIsolated() {
   const ownedFiles = new Set();
   const originalWrite = fs.writeFile;
   let app, db, created = false, closed = false;
-  const envKeys = ['DATABASE_URL','NODE_ENV','PORTAL_FOUNDATION_PREVIEW','PORTAL_V2_SUBMIT_ENABLED','ML_SERVICE_URL'];
+  const envKeys = ['DATABASE_URL','NODE_ENV','PORTAL_FOUNDATION_PREVIEW','PORTAL_V2_SUBMIT_ENABLED','PORTAL_V2_INTAKE_ENABLED','ML_SERVICE_URL'];
   const savedEnv = Object.fromEntries(envKeys.map(k=>[k,process.env[k]]));
   const originalCwd = process.cwd();
   const priorFiles = new Set(await fs.readdir(uploadDir).catch(e=>{if(e.code==='ENOENT') return []; throw e;}));
@@ -104,12 +105,40 @@ async function startIsolated() {
     created = true;
     const empty = await admin.$queryRawUnsafe('SELECT table_name FROM information_schema.tables WHERE table_schema=$1',schema);
     assert.equal(empty.length,0);
-    const push = spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','push','--skip-generate','--schema',path.join(root,'prisma/schema.prisma')],{
+    let schemaPath=path.join(root,'prisma/schema.prisma'),migrationDir;
+    if(options.approvedIntake){
+      let legacy=await fs.readFile(schemaPath,'utf8');
+      for(const model of ['PortalSubmission','PortalIntakeOperation','PortalIntakeIssue'])legacy=legacy.replace(new RegExp('model '+model+' \\{[\\s\\S]*?\\n\\}\\r?\\n','g'),'');
+      legacy=legacy.replace(/^  RETURNED\r?\n/m,'').replace(/^  (submissions PortalSubmission\[\]|intakeOperations PortalIntakeOperation\[\]|intakeIssues PortalIntakeIssue\[\]|correctionRequest Json\?[^\r\n]*)\r?\n/gm,'');
+      migrationDir=await fs.mkdtemp(path.join(os.tmpdir(),'sme-intake-schema-'));
+      schemaPath=path.join(migrationDir,'schema.prisma');await fs.writeFile(schemaPath,legacy);
+    }
+    const push = spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','push','--skip-generate','--schema',schemaPath],{
       cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true,
     });
+    if(migrationDir){
+      try{
+        assert.equal(push.status,0,'Legacy isolated schema push failed; output withheld');
+        const sentinelAccount=randomUUID(),sentinelRequest=randomUUID();
+        await admin.$executeRawUnsafe(`INSERT INTO "${schema}".portal_accounts(id,email,password_hash,contact_name,phone) VALUES ($1,$2,$3,$4,$5)`,sentinelAccount,'migration-sentinel@example.test','synthetic-unused-hash','Synthetic migration sentinel','0900000000');
+        await admin.$executeRawUnsafe(`INSERT INTO "${schema}".portal_requests(id,reference,account_id,data,updated_at) VALUES ($1,$2,$3,$4::jsonb,CURRENT_TIMESTAMP)`,sentinelRequest,'MIGRATION-SENTINEL',sentinelAccount,JSON.stringify({companyName:'Synthetic legacy preserved',annualRevenue:0}));
+        const before=JSON.stringify((await admin.$queryRawUnsafe(`SELECT row_to_json(r) AS row FROM "${schema}".portal_requests r WHERE id=$1`,sentinelRequest))[0].row);
+        for(let repeat=0;repeat<2;repeat++){
+          const migration=spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','execute','--file',path.join(root,'prisma/portal-intake-cycle.sql'),'--schema',schemaPath],{cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true});
+          assert.equal(migration.status,0,'Additive SQL migration failed; output withheld');
+        }
+        const after=(await admin.$queryRawUnsafe(`SELECT row_to_json(r) AS row FROM "${schema}".portal_requests r WHERE id=$1`,sentinelRequest))[0].row;
+        assert.equal(after.correction_request,null);delete after.correction_request;
+        assert.equal(JSON.stringify(after),before,'Migration changed legacy request data');
+      }finally{
+        // Only these two known files in this runner-owned temporary directory are removed.
+        await fs.unlink(schemaPath).catch(e=>{if(e.code!=='ENOENT')throw e;});await fs.rmdir(migrationDir);
+      }
+    }
     // Do not echo CLI output: configuration diagnostics can contain connection secrets.
     assert.equal(push.status,0,`Isolated schema push failed (exit ${push.status}); output withheld`);
     Object.assign(process.env,{DATABASE_URL:isolatedUrl,NODE_ENV:'test',PORTAL_FOUNDATION_PREVIEW:'true',PORTAL_V2_SUBMIT_ENABLED:'true',ML_SERVICE_URL:'http://127.0.0.1:8000'});
+    if(options.approvedIntake) process.env.PORTAL_V2_INTAKE_ENABLED='true'; else delete process.env.PORTAL_V2_INTAKE_ENABLED;
     process.chdir(root);
     require('reflect-metadata');
     const {NestFactory} = require('@nestjs/core');

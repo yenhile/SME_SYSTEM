@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { getFormConfig, validateCoverage, validateDraftV2 } from './portal.foundation';
+import { FINANCIAL_COMPONENTS, getFormConfig, validateCoverage, validateDraftV2, type FinancialComponent } from './portal.foundation';
 import { assessReadiness } from './portal.readiness';
 
 export interface PolicyRequirement {
@@ -13,6 +13,7 @@ export interface PolicyRequirement {
   alternatives?: string[];
   deferred?: boolean;
   basis?: string;
+  component?: FinancialComponent;
 }
 
 export interface PortalPolicy {
@@ -63,6 +64,8 @@ function validatePolicy(policy: PortalPolicy): void {
       || new Set(item.alternatives).size !== item.alternatives.length)) invalidPolicy();
     if (item.condition !== undefined && (!item.condition || !safePath(item.condition.field) || !['string','boolean'].includes(typeof item.condition.equals))) invalidPolicy();
     if (item.basis !== undefined && !nonempty(item.basis)) invalidPolicy();
+    if (item.component !== undefined && (item.group !== 'B' || item.documentTypeCode !== 'B_FINANCIAL_STATEMENTS'
+      || !FINANCIAL_COMPONENTS.includes(item.component))) invalidPolicy();
     if (item.deferred !== undefined && typeof item.deferred !== 'boolean') invalidPolicy();
     if (item.deferred && (item.stage === 'SUBMIT' || !nonempty(item.basis))) invalidPolicy();
   }
@@ -103,14 +106,14 @@ export function evaluatePolicy(policy: PortalPolicy, data: unknown, documents: P
     const accepted = [item.documentTypeCode,...(item.alternatives || [])];
     const periods: (string | undefined)[] = item.periods || [undefined];
     const unmet = periods.filter(period => !coverage.some(entry => entry.group === item.group && accepted.includes(entry.documentTypeCode)
-      && (period === undefined || entry.period === period)));
+      && (period === undefined || entry.period === period) && (item.component === undefined || entry.components?.includes(item.component))));
     if (item.required && applies && due) for (const period of unmet) missing.push(period === undefined ? item.id : `${item.id}:${period}`);
     return {...structuredClone(item), applies, due, satisfied:unmet.length === 0};
   });
   return {requirements,missing,formErrors};
 }
 
-/** Environment flags alone never activate V2. There is no approved production registry. */
+/** Isolated test policies never activate normal V2; the approved demo registry is separate. */
 export function resolveTestPolicy(context?: PortalPolicyContext): PortalPolicy {
   const unavailable = () => { throw new ConflictException('Chờ chốt chính sách V2. Submit/Accept chỉ khả dụng với policy test trong môi trường cách ly.'); };
   if (process.env.NODE_ENV !== 'test' || process.env.PORTAL_V2_SUBMIT_ENABLED !== 'true' || context?.mode !== 'isolated-test'

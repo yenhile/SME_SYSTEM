@@ -9,7 +9,11 @@ import { assertPreviewEnabled, validateDraftV2, validateCoverage, getFormConfig,
 import { evaluatePolicy, resolveTestPolicy, type PortalPolicyContext } from './portal.policy';
 import { createV2Snapshot, readV2Snapshot, sameJson } from './portal.snapshot';
 import { assessReadiness, companyReadiness, mvpPolicy } from './portal.readiness';
+import { describeApprovedPolicy, evaluateIntakeReadiness, getApprovedPolicy } from './portal.approved-policy';
 import { buildTracking } from './portal.tracking';
+import { intakeCycleEnabled, isIntakeEditable, approvedCompanyDifferences } from './portal.intake-cycle';
+import { PortalIntakeWorkflow } from './portal.intake-workflow';
+import { APPROVED_MVP_POLICY_VERSION } from './portal.approved-policy';
 
 const documentSelect={id:true,documentGroup:true,fileName:true,fileSize:true,uploadedAt:true,coverage:true,version:true,supersedesId:true,withdrawnAt:true};
 const officerSelect={id:true,fullName:true,username:true};
@@ -20,16 +24,40 @@ const documentTypes: Record<string,DocumentType>={A:DocumentType.PHAP_LY,B:Docum
 export class PortalService {
   private readonly dir=join(process.cwd(),'uploads');
   constructor(private prisma:PrismaService,@Optional() @Inject('PORTAL_POLICY_CONTEXT') private policyContext?:PortalPolicyContext) {}
+  private cycle() {return new PortalIntakeWorkflow(this.prisma,include,docs=>this.physicalFiles(docs));}
+  private usesCycle(r:any) {return r.formVersion===2 && r.checklistVersion===APPROVED_MVP_POLICY_VERSION;}
+  private published(r:any) {const s=r.checklistSnapshot as any;return this.usesCycle(r)&&s?readV2Snapshot({...r,data:s.data,revision:s.revision,submittedAt:s.submittedAt}):readV2Snapshot(r);}
+  private companyComparison(r:any,data:Record<string,any>,company:Record<string,any>) {
+    const base=companyReadiness(data,company);
+    if(!this.usesCycle(r))return base;
+    const differences=approvedCompanyDifferences(data,company);
+    return {...base,differences,compatible:differences.length===0,message:differences.length?'Thông tin trọng yếu khác doanh nghiệp hiện hữu. Cần đối soát riêng, không tự ghi đè.':base.message};
+  }
   formConfig() {
-    const config={...getFormConfig(),mvpPolicy};
+    const config={...getFormConfig(),mvpPolicy,approvedIntakePolicy:describeApprovedPolicy()};
+    if(intakeCycleEnabled()) return {...config,canSubmit:true,canAccept:true,intakeCycleEnabled:true,submitPolicyVersion:APPROVED_MVP_POLICY_VERSION,policyStatus:'APPROVED',approvedIntakePolicy:{...describeApprovedPolicy(),canSubmit:true,canAccept:true,activationStatus:'ENABLED'}};
     try {const policy=resolveTestPolicy(this.policyContext);return {...config,canSubmit:true,canAccept:true,submitPolicyVersion:policy.version,readinessVersion:policy.readinessVersion,policyStatus:'TEST_ONLY'};}
     catch(error) {if(!(error instanceof ConflictException)) throw error;return {...config,canAccept:false,submitPolicyVersion:null};}
   }
   async checklist(id:string,accountId:string) {
     const request=await this.one(id,accountId),base=checklistFor(request);
-    if(request.formVersion!==2 || request.status!=='DRAFT') return base;
-    try {const policy=resolveTestPolicy(this.policyContext);const result=evaluatePolicy(policy,request.data,request.documents,'SUBMIT');return {...base,policyStatus:'TEST_ONLY',cannotSubmit:result.missing.length>0 || result.formErrors.length>0,requirements:result.requirements,missing:result.missing,formErrors:result.formErrors,submitPolicyVersion:policy.version};}
-    catch(error) {if(!(error instanceof ConflictException)) throw error;return base;}
+    if(request.formVersion!==2 || !isIntakeEditable(request)) return base;
+    const preview={...base,approvedIntakeAssessment:this.approvedAssessment(request)};
+    if(intakeCycleEnabled())return {...preview,cannotSubmit:!preview.approvedIntakeAssessment?.dataReady,policyStatus:'APPROVED'};
+    try {const policy=resolveTestPolicy(this.policyContext);const result=evaluatePolicy(policy,request.data,request.documents,'SUBMIT');return {...preview,policyStatus:'TEST_ONLY',cannotSubmit:result.missing.length>0 || result.formErrors.length>0,requirements:result.requirements,missing:result.missing,formErrors:result.formErrors,submitPolicyVersion:policy.version};}
+    catch(error) {if(!(error instanceof ConflictException)) throw error;return preview;}
+  }
+  private approvedAssessment(request:any) {
+    const policy=getApprovedPolicy();
+    // Preview new policy on drafts only. Never reinterpret an older submitted snapshot under a new policy.
+    if(!isIntakeEditable(request)) return null;
+    try {return evaluateIntakeReadiness(policy,request.data,request.documents,{phase:'SUBMIT',submittedAt:new Date()});}
+    catch(error) {
+      if(!(error instanceof BadRequestException)) throw error;
+      return {policyVersion:policy.version,dataReady:false,canSubmit:false,canAccept:false,businessValidity:'NOT_REVIEWED',creditDecision:null,
+        missingFields:[],missingDocuments:[],requirements:[],formErrors:[error.message],
+        issues:[{code:'INVALID_INPUT',path:'data',step:1,message:error.message}],note:'Chưa đánh giá được checklist do dữ liệu hoặc metadata tài liệu không hợp lệ.'};
+    }
   }
   private body(body:any,keys:string[]) {
     if(!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).some(k=>!keys.includes(k))) throw new BadRequestException('Thông tin yêu cầu không hợp lệ.');
@@ -43,13 +71,14 @@ export class PortalService {
     if((r.formVersion??1)!==1 || (r.checklistVersion??LEGACY_CHECKLIST_VERSION)!==LEGACY_CHECKLIST_VERSION) throw new ConflictException('Chờ chốt chính sách checklist trước khi gửi hoặc tiếp nhận hồ sơ phiên bản mới.');
   }
   private async intakeScope(user?:{id:string,roles:string[]}):Promise<Prisma.PortalRequestWhereInput> {
-    if(!user?.roles.includes('CBTD')) return {status:{in:['SUBMITTED','ASSIGNED','ACCEPTED']}};
-    return {OR:[{status:'ASSIGNED',assignedTo:user.id},{status:'ACCEPTED',loan:{is:{assignedTo:user.id}}}]};
+    if(!user?.roles.includes('CBTD')) return {status:{in:['SUBMITTED','ASSIGNED','RETURNED','ACCEPTED']}};
+    return {OR:[{status:{in:['ASSIGNED','RETURNED']},assignedTo:user.id},{status:'ACCEPTED',loan:{is:{assignedTo:user.id}}}]};
   }
   async list(accountId?:string,user?:{id:string,roles:string[]}) {return this.prisma.portalRequest.findMany({where:accountId?{accountId}:await this.intakeScope(user),include,orderBy:{createdAt:'desc'}});}
   async one(id:string,accountId?:string,user?:{id:string,roles:string[]}) {
     const r=await this.prisma.portalRequest.findFirst({where:{id,...(accountId?{accountId}:await this.intakeScope(user))},include});
     if(!r) throw new NotFoundException('Không tìm thấy yêu cầu.');
+    if(!accountId && this.usesCycle(r) && r.status==='RETURNED') {const s=this.published(r);return {...r,data:s.data,documents:s.documents as any};}
     return r;
   }
   /** TK-06: tiến độ công khai cho doanh nghiệp; chỉ đọc đề nghị của chính tài khoản và chọn đúng các trường công khai. */
@@ -92,7 +121,7 @@ export class PortalService {
     if(!r) throw new NotFoundException('Không tìm thấy yêu cầu.');
     return r;
   }
-  private draft(status:string) {if(status!=='DRAFT') throw new ConflictException('Yêu cầu đã gửi, không thể chỉnh sửa.');}
+  private draft(status:string) {if(status!=='DRAFT' && !(status==='RETURNED'&&intakeCycleEnabled())) throw new ConflictException('Yêu cầu chưa được mở chỉnh sửa.');}
   async update(id:string,accountId:string,body:any) {
     this.body(body,['data','expectedRevision']);
     return this.prisma.$transaction(async tx=> {
@@ -100,6 +129,7 @@ export class PortalService {
       if(r.formVersion===2) assertPreviewEnabled();
       this.revision(r,body.expectedRevision);
       const data=r.formVersion===2?validateDraftV2(body.data):validatePortalData(body.data);
+      if(this.usesCycle(r) && data.taxCode!==(r.checklistSnapshot as any)?.data?.taxCode)throw new ConflictException('Thay chủ thể/MST cần lập đề nghị mới.');
       return tx.portalRequest.update({where:{id},data:{data,revision:(r.revision??0)+1},include});
     });
   }
@@ -174,7 +204,11 @@ export class PortalService {
   }
   async download(id:string,documentId:string,accountId?:string,user?:{id:string,roles:string[]}) {
     const request=await this.one(id,accountId,user);
-    const frozen=!accountId && request.formVersion===2 ? readV2Snapshot(request).documents.find(d=>d.id===documentId) : undefined;
+    let frozen=!accountId && request.formVersion===2 ? this.published(request).documents.find(d=>d.id===documentId) : undefined;
+    if(!frozen && this.usesCycle(request)) {
+      const versions=await this.prisma.portalSubmission.findMany({where:{requestId:id},orderBy:{sequence:'desc'}});
+      for(const s of versions){const found=this.cycle().snapshot(s).documents.find(d=>d.id===documentId);if(found){frozen=found;break;}}
+    }
     if(!accountId && request.formVersion===2 && !frozen) throw new NotFoundException('Tệp không thuộc snapshot đề nghị đã gửi.');
     const d=await this.prisma.portalDocument.findFirst({where:{id:documentId,requestId:id}});
     if(!d || basename(d.filePath)!==d.filePath) throw new NotFoundException('Không tìm thấy tệp.');
@@ -204,6 +238,10 @@ export class PortalService {
     return this.prisma.$transaction(async tx=> {
       const r=await this.locked(tx,id,accountId);
       if(r.formVersion===2) {
+        if(intakeCycleEnabled() || this.usesCycle(r)) {
+          if(!intakeCycleEnabled())throw new ConflictException('Chức năng gửi mới đang tạm khóa.');
+          return this.cycle().publish(tx,r,body);
+        }
         const currentPolicy=resolveTestPolicy(this.policyContext);
         if(r.status!=='DRAFT') {const snapshot=readV2Snapshot(r);this.submitManifest(body,snapshot.revision,snapshot.documents.map(d=>d.id));return r;}
         this.submitManifest(body,r.revision,r.documents.map(d=>d.id));
@@ -231,18 +269,18 @@ export class PortalService {
     const r=await this.one(id,undefined,user);
     const data=r.data as Record<string,any>;
     const company=await this.prisma.company.findUnique({where:{taxCode:data.taxCode}});
-    return {found:!!company,company,...(company&&r.formVersion===2?{financialReadiness:companyReadiness(data,company)}:{})};
+    return {found:!!company,company,...(company&&r.formVersion===2?{financialReadiness:this.companyComparison(r,data,company)}:{})};
   }
   async readiness(id:string,accountId?:string,user?:{id:string,roles:string[]}) {
     const request=await this.one(id,accountId,user);
-    return request.formVersion===2?assessReadiness(request.data as Record<string,any>,request.documents):{version:'V1',dataReady:null,canSubmit:false,issues:[],note:'Hồ sơ V1 giữ luồng cũ.'};
+    return request.formVersion===2?{...assessReadiness(request.data as Record<string,any>,request.documents),approvedIntakeAssessment:this.approvedAssessment(request)}:{version:'V1',dataReady:null,canSubmit:false,issues:[],note:'Hồ sơ V1 giữ luồng cũ.'};
   }
   async officers() {
     const officers=await this.prisma.user.findMany({where:{isActive:true,roles:{some:{role:{code:'CBTD'}}}},select:officerSelect,orderBy:{fullName:'asc'}});
     const activeStatuses:LoanStatus[]=['RECEIVED','CHECKED','SUPPLEMENT_REQUIRED','PENDING_APPRAISAL','WAITING_HEAD_OFFICE'];
     return Promise.all(officers.map(async officer=>({...officer,
       activeLoanCount:await this.prisma.loanApplication.count({where:{assignedTo:officer.id,currentStatus:{in:activeStatuses}}}),
-      pendingIntakeCount:await this.prisma.portalRequest.count({where:{assignedTo:officer.id,status:'ASSIGNED'}}),
+      pendingIntakeCount:await this.prisma.portalRequest.count({where:{assignedTo:officer.id,status:{in:['ASSIGNED','RETURNED']}}}),
     })));
   }
   async assignmentHistory(id:string,user:{id:string,roles:string[]}) {
@@ -250,7 +288,7 @@ export class PortalService {
     return this.prisma.portalAssignment.findMany({where:{requestId:id},select:{id:true,fromUser:{select:officerSelect},toUser:{select:officerSelect},manager:{select:officerSelect},note:true,assignedAt:true},orderBy:[{assignedAt:'desc'},{id:'desc'}]});
   }
   async assign(id:string,body:any,managerId:string) {
-    if(!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).some(key=>!['officerId','expectedAssignedTo','note'].includes(key)) || typeof body.officerId!=='string' || !body.officerId.trim() || !Object.prototype.hasOwnProperty.call(body,'expectedAssignedTo') || (body.expectedAssignedTo!==null && (typeof body.expectedAssignedTo!=='string' || !body.expectedAssignedTo.trim())) || (body.note!==undefined && (typeof body.note!=='string' || body.note.length>2000))) throw new BadRequestException('Thông tin phân công không hợp lệ.');
+    if(!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).some(key=>!['officerId','expectedAssignedTo','expectedRevision','note'].includes(key)) || typeof body.officerId!=='string' || !body.officerId.trim() || !Object.prototype.hasOwnProperty.call(body,'expectedAssignedTo') || (body.expectedAssignedTo!==null && (typeof body.expectedAssignedTo!=='string' || !body.expectedAssignedTo.trim())) || (body.note!==undefined && (typeof body.note!=='string' || body.note.length>2000))) throw new BadRequestException('Thông tin phân công không hợp lệ.');
     const note=body.note?.trim() || null;
     return this.prisma.$transaction(async tx=> {
       await tx.$queryRaw`SELECT id FROM portal_requests WHERE id=${id} FOR UPDATE`;
@@ -258,12 +296,13 @@ export class PortalService {
       if(!r || r.status==='DRAFT') throw new NotFoundException('Không tìm thấy yêu cầu đã gửi.');
       if(r.status==='ACCEPTED') throw new ConflictException('Yêu cầu đã tiếp nhận; điều chuyển tại hồ sơ vay.');
       if(r.assignedTo!==body.expectedAssignedTo) throw new ConflictException('Phân công đã thay đổi. Vui lòng tải lại yêu cầu.');
+      if(this.usesCycle(r)&&r.revision!==body.expectedRevision)throw new ConflictException('Phiên bản đề nghị đã đổi; tải lại trước khi phân công.');
       const officer=await tx.user.findFirst({where:{id:body.officerId,isActive:true,roles:{some:{role:{code:'CBTD'}}}},select:{id:true}});
       if(!officer) throw new BadRequestException('Cán bộ nhận phải là CBTD đang hoạt động.');
       if(r.assignedTo===body.officerId) return r;
       if(r.assignedTo && !note) throw new BadRequestException('Cần ghi lý do điều chuyển.');
       const now=new Date();
-      const request=await tx.portalRequest.update({where:{id},data:{status:'ASSIGNED',assignedTo:body.officerId,assignedBy:managerId,assignedAt:now},include});
+      const request=await tx.portalRequest.update({where:{id},data:{status:r.status==='RETURNED'?'RETURNED':'ASSIGNED',assignedTo:body.officerId,assignedBy:managerId,assignedAt:now,...(this.usesCycle(r)?{revision:{increment:1}}:{})},include});
       await tx.portalAssignment.create({data:{requestId:id,fromUserId:r.assignedTo,toUserId:body.officerId,managerId,note,assignedAt:now}});
       const notices=[{userId:body.officerId,requestId:id,title:'Đề nghị được phân công',message:`Bạn được giao đề nghị ${r.reference}. Vui lòng kiểm tra và tiếp nhận.`}];
       if(r.assignedTo) notices.push({userId:r.assignedTo,requestId:id,title:'Đề nghị đã điều chuyển',message:`Đề nghị ${r.reference} đã được chuyển sang CBTD khác.`});
@@ -271,7 +310,7 @@ export class PortalService {
       return request;
     });
   }
-  async accept(id:string,userId:string,confirmExistingCompany=false,confirmExistingCompanyFinancials=false) {
+  async accept(id:string,userId:string,confirmExistingCompany=false,confirmExistingCompanyFinancials=false,expectedRevision?:number,submissionId?:string) {
     return this.prisma.$transaction(async tx=> {
       await tx.$queryRaw`SELECT id FROM portal_requests WHERE id=${id} FOR UPDATE`;
       const r=await tx.portalRequest.findUnique({where:{id},include:{documents:{where:activeDocuments}}});
@@ -284,8 +323,8 @@ export class PortalService {
       if(r.status!=='ASSIGNED' || r.assignedTo!==userId) throw new NotFoundException('Không tìm thấy yêu cầu được phân công.');
       let data:Record<string,any>,intakeDocuments=r.documents;
       if(r.formVersion===2) {
-        resolveTestPolicy(this.policyContext);
-        const snapshot=readV2Snapshot(r);
+        if(!this.usesCycle(r))resolveTestPolicy(this.policyContext);
+        const snapshot=this.usesCycle(r)?await this.cycle().assertAccept(tx,r,expectedRevision,submissionId):readV2Snapshot(r);
         const evaluation=evaluatePolicy(snapshot.policy,snapshot.data,snapshot.documents,'INTAKE');
         if(evaluation.missing.length || evaluation.formErrors.length) throw new BadRequestException('Snapshot chưa đủ điều kiện tiếp nhận theo policy đã chốt lúc gửi.');
         const physical=await this.physicalFiles(intakeDocuments);
@@ -304,8 +343,8 @@ export class PortalService {
       let company=await tx.company.findUnique({where:{taxCode:data.taxCode}});
       if(company && !confirmExistingCompany) throw new ConflictException('Mã số thuế đã tồn tại. Cần xác nhận liên kết doanh nghiệp hiện có; thông tin hiện có sẽ được giữ nguyên.');
       let financialReview='';
-      if(company && r.formVersion===2 && readV2Snapshot(r).policy.readinessVersion==='MVP1'){
-        const comparison=companyReadiness(data,company);
+      if(company && r.formVersion===2 && (this.usesCycle(r) || readV2Snapshot(r).policy.readinessVersion==='MVP1')){
+        const comparison=this.companyComparison(r,data,company);
         if(!comparison.compatible) throw new ConflictException(comparison.message);
         if(!confirmExistingCompanyFinancials) throw new ConflictException('CBTD cần xác nhận đã đối chiếu kỳ và nguồn dữ liệu tài chính Company hiện hữu. Không tự ghi đè.');
         financialReview=`; CBTD ${userId} xác nhận đối chiếu tài chính Company ${company.id}, kỳ ${String((r.data as any).revenuePeriod)}, nguồn ${String((r.data as any).annualRevenueBasis?.documentId)}`;
@@ -322,4 +361,12 @@ export class PortalService {
       return {loanId:loan.id,request};
     },{timeout:15000});
   }
+  async intakeCycle(id:string,accountId?:string,user?:{id:string;roles:string[]}) {
+    const r=await this.one(id,accountId,user);
+    return this.cycle().view(r,!accountId);
+  }
+  reviewIntake(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().review(id,body,user);}
+  returnIntake(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().returnForCorrection(id,body,user);}
+  requestIntakeCorrection(id:string,body:any,accountId:string) {return this.cycle().requestCorrection(id,body,accountId);}
+  intakeIssue(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().issue(id,body,user);}
 }
