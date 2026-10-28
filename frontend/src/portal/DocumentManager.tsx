@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { portalApi, PortalApiError } from './client';
 import { DocumentLink } from './DocumentLink';
-import type { GroupCode, PortalData, PortalDocument, PortalFormConfig, PortalRequest } from './model';
+import type { GroupCode, PortalData, PortalDocument, PortalFormConfig, PortalRequest, FinancialComponent } from './model';
 
-type Coverage = { documentTypeCode: string; period?: string };
+type Coverage = { documentTypeCode: string; period?: string; components?:FinancialComponent[] };
 type QueueItem = {
   id: string;
   file: File;
@@ -72,7 +72,7 @@ export function DocumentManager({ request, config, data, disabled, onMutate, onP
   function enqueue(files: File[]) {
     setFormError('');
     if (!files.length || !group) return;
-    const metadata = coverage.map(entry => ({ documentTypeCode: entry.documentTypeCode, ...(entry.period?.trim() ? { period: entry.period.trim() } : {}) }));
+    const metadata = coverage.map(entry => ({ documentTypeCode: entry.documentTypeCode, ...(entry.period?.trim() ? { period: entry.period.trim() } : {}),...(entry.components?.length?{components:entry.components}:{}) }));
     if (metadata.some(entry => !group.documentTypes.some(type => type.code === entry.documentTypeCode))) {
       setFormError('Chọn loại tài liệu cho từng dòng trước khi chọn tệp.');
       return;
@@ -196,18 +196,18 @@ export function DocumentManager({ request, config, data, disabled, onMutate, onP
   }
 
   return <section className="portal-document-manager" aria-label="Quản lý tài liệu">
-    <div className="portal-section-heading"><div><h2>Tài liệu hồ sơ</h2><p>Danh mục đang chờ chính sách. Tệp đã tải lên chỉ ghi nhận đã cung cấp, chưa phải CBTD xác minh.</p></div></div>
-    <p className="portal-policy-note">Chưa xác định loại tài liệu bắt buộc, kỳ bắt buộc hoặc điều kiện miễn. Tối đa {sizeLabel(maxBytes)}/tệp và {maxFiles} tệp hiện hành.</p>
+    <div className="portal-section-heading"><div><h2>Tài liệu hồ sơ</h2><p>Tệp đã tải lên chỉ ghi nhận đã cung cấp, chưa phải CBTD xác minh. Xem checklist để biết các mục áp dụng.</p></div></div>
+    <p className="portal-policy-note">Tối đa {sizeLabel(maxBytes)}/tệp và {maxFiles} tệp hiện hành. Bộ tài chính dùng năm hoàn thành gần nhất theo chính sách mô phỏng.</p>
     <div className="portal-doc-grid">{config.groups.map(item => {
       const documents = request.documents.filter(document => document.documentGroup === item.code);
       return <section className={`portal-card portal-doc-card${item.code === groupCode ? ' is-selected' : ''}`} key={item.code}>
         <div className="portal-group-heading"><span>{item.code}</span><h3>{item.name}</h3><small>{documents.length} tệp</small></div>
-        <p className="portal-policy-note">Chờ chính sách</p>
-        {item.code === 'E' && data.collateral?.mode === 'NONE_REQUESTED' && <p>Bạn đề nghị không có tài sản bảo đảm. Đây là thông tin chuẩn bị hồ sơ; điều kiện miễn tài liệu chưa được chốt.</p>}
-        {item.code === 'F' && data.hasExistingDebt === false && <p>Bạn khai chưa có dư nợ. Điều kiện tài liệu nhóm này đang chờ chính sách; không cần tạo dư nợ giả để bổ sung tệp.</p>}
+        <p className="portal-policy-note">Xem điều kiện áp dụng trong checklist; cung cấp tệp không có nghĩa đã được kiểm tra đạt.</p>
+        {item.code === 'E' && data.collateral?.mode === 'NONE_REQUESTED' && <p>Bạn đề nghị không có tài sản bảo đảm; việc này chưa phải ngân hàng chấp thuận khoản vay.</p>}
+        {item.code === 'F' && data.hasExistingDebt === false && <p>Bạn khai không có dư nợ; không tạo thông tin dư nợ giả để bổ sung tệp.</p>}
         <ul className="portal-document-types">{item.documentTypes.map(type => {
           const supplied = documents.some(document => document.coverage?.some(entry => entry.documentTypeCode === type.code));
-          return <li key={type.code}><span>{type.name}</span> <small>{supplied ? 'Đã tải' : 'Chưa cung cấp'} · Chờ chính sách</small></li>;
+          return <li key={type.code}><span>{type.name}</span> <small>{supplied ? 'Đã tải' : 'Chưa cung cấp'} · Xem checklist áp dụng</small></li>;
         })}</ul>
         <button type="button" className="btn btn-secondary" disabled={locked} onClick={() => chooseGroup(item.code)}>Chọn tài liệu nhóm {item.code}</button>
       </section>;
@@ -219,14 +219,15 @@ export function DocumentManager({ request, config, data, disabled, onMutate, onP
       <p>Một tệp có thể bao gồm nhiều loại tài liệu và nhiều kỳ trong cùng nhóm. Thông tin dưới đây áp dụng cho từng tệp được chọn.</p>
       <fieldset disabled={locked} className="portal-coverage-fields"><legend>Thông tin tài liệu</legend>
         {coverage.map((entry, index) => <div className="portal-coverage-row" key={index}>
-          <label>Loại tài liệu {index + 1}<select aria-label={`Loại tài liệu ${index + 1}`} value={entry.documentTypeCode} onChange={event => setCoverage(current => current.map((row, rowIndex) => rowIndex === index ? { ...row, documentTypeCode: event.target.value } : row))}>
+          <label>Loại tài liệu {index + 1}<select aria-label={`Loại tài liệu ${index + 1}`} value={entry.documentTypeCode} onChange={event => setCoverage(current => current.map((row, rowIndex) => rowIndex === index ? { ...row, documentTypeCode: event.target.value,components:undefined } : row))}>
             <option value="">Chọn loại tài liệu</option>{group?.documentTypes.map(type => <option value={type.code} key={type.code}>{type.name}</option>)}
           </select></label>
           <label>Kỳ tài liệu (nếu có)<input aria-label={`Kỳ tài liệu ${index + 1}`} placeholder="2026, 2026-09 hoặc 2026-Q3" value={entry.period ?? ''} onChange={event => setCoverage(current => current.map((row, rowIndex) => rowIndex === index ? { ...row, period: event.target.value } : row))} /></label>
+          {groupCode==='B'&&entry.documentTypeCode==='B_FINANCIAL_STATEMENTS'&&<fieldset><legend>Thành phần có trong tệp này</legend>{Object.entries({BALANCE_SHEET:'Bảng cân đối kế toán',INCOME_STATEMENT:'Báo cáo kết quả kinh doanh',CASH_FLOW_STATEMENT:'Báo cáo lưu chuyển tiền tệ',NOTES:'Thuyết minh báo cáo tài chính'}).map(([code,label])=><label key={code}><input type="checkbox" checked={entry.components?.includes(code as FinancialComponent)??false} onChange={e=>setCoverage(current=>current.map((row,i)=>i===index?{...row,components:e.target.checked?[...(row.components??[]),code as FinancialComponent]:(row.components??[]).filter(c=>c!==code)}:row))}/>{label}</label>)}</fieldset>}
           <button type="button" className="portal-link" disabled={coverage.length === 1} onClick={() => setCoverage(current => current.filter((_, rowIndex) => rowIndex !== index))}>Bỏ dòng {index + 1}</button>
         </div>)}
         <button type="button" className="btn btn-secondary" disabled={coverage.length >= 30} onClick={() => setCoverage(current => [...current, { documentTypeCode: '' }])}>Thêm loại / kỳ</button>
-        {(groupCode === 'B' || groupCode === 'F') && <p>Kỳ hỗ trợ năm (YYYY), tháng (YYYY-MM) hoặc quý (YYYY-Q1…Q4); chưa áp dụng kỳ bắt buộc.</p>}
+        {(groupCode === 'B' || groupCode === 'F') && <p>Kỳ hỗ trợ năm (YYYY), tháng (YYYY-MM) hoặc quý (YYYY-Q1…Q4); kỳ bắt buộc khi gửi theo checklist đã duyệt.</p>}
         <label>Chọn {replacement ? 'một tệp thay thế' : 'một hoặc nhiều tệp'}<input ref={fileInput} type="file" accept={accept} multiple={!replacement} aria-label={replacement ? 'Chọn tệp thay thế' : `Chọn tệp nhóm ${groupCode}`} onChange={event => { enqueue(Array.from(event.target.files ?? [])); event.target.value = ''; }} /></label>
         <small>Định dạng: {accept}. Tệp mới được thêm vào hàng chờ trước khi tải lên máy chủ.</small>
       </fieldset>

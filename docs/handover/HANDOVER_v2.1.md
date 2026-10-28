@@ -3,7 +3,11 @@
 **Dự án:** SME Loan Workflow  
 **Mục đích:** Chuyển giao toàn diện hệ thống cho thành viên tiếp nhận kiêm nhiệm hai vai trò Product Owner (PO) và Senior Full-stack Developer (có AI hỗ trợ).  
 **Phiên bản:** Handover v2.1 (Ngày 23/10/2026)  
-**Trạng thái tài liệu:** Tài liệu bàn giao DUY NHẤT & CHÍNH THỨC trong repository (READ-ONLY review)  
+**Cập nhật 28/10/2026 — Nhóm C:** Đã trình bày lại [tình hình triển khai theo nghiệp vụ BA](#task-8-nhom-c): Portal V2 đã có vòng gửi–kiểm tra–trả sửa–gửi lại–tiếp nhận, đã kiểm chứng ngày 27/10 trên môi trường thử riêng; chưa có ghi nhận nghiệm thu/phát hành dùng chung. SLA PA1 chưa triển khai. Phiên xem thử cũ đã quá thời hạn. Bằng chứng kỹ thuật giữ tại [C.8](#portal-intake-cycle-result).
+
+**Bàn giao công việc tiếp theo:** [C.9 — Triển khai SLA PA1 cho PO kiêm Dev](#sla-pa1-next-handover) ghi phạm vi, thứ tự làm, điều kiện nghiệm thu, cấu hình thử đề xuất và mẫu lời giao việc. Đây là kế hoạch tiếp tục, chưa phải kết quả đã triển khai PA1.
+
+**Trạng thái tài liệu:** Đầu mối cập nhật bàn giao theo chỉ định PO. Sau lượt dọn tài liệu, PO đã giao triển khai sáu bước Portal V2; kết quả ghi tại C.8. Không tạo thêm tài liệu bàn giao/test BA riêng.
 **Quy ước nhãn trạng thái:**  
 - `[VERIFIED]`: Đã xác minh qua source code, cấu hình hoặc test file tự động thực tế.  
 - `[APPROVED]`: Quyết định nghiệp vụ chính thức từ PO (chưa đồng nghĩa với đã hoàn thành triển khai kỹ thuật).  
@@ -93,12 +97,12 @@ Hệ thống phân tách rạch ròi giữa 3 hệ thống danh mục enum (`bac
   - **Ngày 10:** Hệ thống đánh dấu quá hạn và chuyển danh sách lên Quản lý chi nhánh xem xét.
   - **Quyền hạn đóng:** Chỉ **Quản lý (QUAN_LY)** mới có quyền đóng hồ sơ thủ công sang trạng thái `CLOSED_TIMEOUT`. **Tuyệt đối không tự động đóng hồ sơ bằng cron job**.
   - **Yêu cầu bắt buộc:** Ghi nhận đầy đủ định danh người đóng, thời điểm đóng, lý do đóng và ghi log vào lịch sử công đoạn (`ApplicationStageHistory`).
-  - *Ràng buộc kỹ thuật:* **Không được tự triển khai logic đếm ngày** khi quy tắc ngày lịch vs ngày làm việc chưa được PO chốt.
+  - *Cập nhật quyết định:* TK-07 đã chốt ngày lịch theo giờ Việt Nam; mốc rơi vào Thứ Bảy/Chủ nhật chuyển sang Thứ Hai. Giữ `deadlineAt`, chưa thêm gia hạn. Đây là thời hạn phản hồi, khác với đồng hồ SLA giờ làm việc. Khi tích hợp pha chờ doanh nghiệp/ngân hàng phải tránh nhắc hoặc đóng hồ sơ chỉ vì ngân hàng chưa kiểm tra phản hồi đã gửi đủ.
 
-### 4. Các nội dung nghiệp vụ còn PENDING
-1. `[PENDING]` **Mở nộp hồ sơ Portal V2:** File `backend/src/modules/portal/portal.readiness.ts:3` đang khóa cứng `canSubmit: false`. Cần PO nghiệm thu chính thức 6 tiêu chí chính sách trong `backend/src/modules/portal/portal.policy.ts` mới được mở cờ cho phép nộp V2.
-2. `[PENDING]` **Phương pháp tính thời gian SLA:** Hiện tại tính 24/7 theo giờ thực. Cần PO chốt: Có tính theo giờ làm việc (8h/ngày, trừ Thứ 7, CN, ngày lễ) hay không, và có tạm dừng (pause) đếm giờ SLA trong thời gian hồ sơ chờ doanh nghiệp bổ sung chứng từ hay không.
-3. `[PENDING]` **Chi tiết quy tắc đếm ngày quá hạn (DEC-02):** Chưa chốt quy tắc tính 5 ngày nhắc nhở / 10 ngày quá hạn là ngày làm việc hay ngày lịch; chưa chốt cơ chế xử lý trường hợp bổ sung một phần hoặc xin gia hạn nộp hồ sơ.
+### 4. Quyết định đã duyệt và phần còn triển khai
+1. `[IMPLEMENTED / ISOLATED VERIFIED / PO ACCEPTANCE PENDING]` **Portal V2:** Đã có vòng kiểm tra–trả sửa–gửi lại–tiếp nhận, kiểm chứng Chrome/API/PostgreSQL trong schema Docker riêng. Chưa áp SQL vào public hoặc phát hành dùng chung; PO nghiệm thu theo luồng tại Nhóm C; C.8 lưu bằng chứng đã kiểm chứng.
+2. `[APPROVED / NOT IMPLEMENTED]` **SLA PA1:** Thứ Hai–thứ Sáu, 08:00–12:00 và 13:00–17:00 giờ Việt Nam, loại ngày nghỉ theo lịch có phiên bản được xác nhận. Chưa có lịch ngày nghỉ cụ thể được nghiệm thu và chưa tích hợp thuật toán mới.
+3. `[APPROVED]` **Thời hạn bổ sung:** Giữ quy tắc TK-07 về ngày lịch và cuối tuần; không tự thêm gia hạn. Pha chờ doanh nghiệp/ngân hàng theo phương án mới chưa triển khai. Chi tiết và điểm cần PO quyết định tiếp nằm tại Task 8 — Nhóm C.
 
 ---
 
@@ -235,13 +239,13 @@ Bảng phân loại dựa trên 12 Task baseline, giữ nguyên mã Task ID, là
 | **TK-02** | Khai báo route cấu hình SLA trong `navigation.ts` | **Kỹ thuật khẩn cấp** (Ưu tiên 1) | Không | Thêm mục "Cấu hình SLA" vào menu Admin; click mở được form cài đặt SLA trong `AdminView.tsx` và lưu thành công qua API. |
 | **TK-03** | Rà soát và hoàn thiện AC phân quyền trong phạm vi 1 chi nhánh | **Làm rõ AC nghiệp vụ** (Ưu tiên 1) | **DEC-01** (Approved) | Văn bản chốt: Giữ nguyên phân quyền theo vai trò (RBAC); CBTD chỉ xem hồ sơ mình được phân công; Quản lý/Thẩm quyền xem hồ sơ toàn chi nhánh. |
 | **TK-04** | Củng cố filter truy vấn theo phân công hồ sơ tại Backend | **Triển khai kỹ thuật** (Ưu tiên 2) | **TK-03** | Backend siết chặt điều kiện `where: { assignedTo: user.id }` đối với CBTD trong `loan-applications.service.ts`. |
-| **TK-05** | Nghiệm thu 6 tiêu chí chính sách để mở nộp Portal V2 | **Chờ PO phê duyệt** (Ưu tiên 2) | PO duyệt Policy | PO rà soát `portal.policy.ts`; Dev chuyển cờ `canSubmit: true` tại `portal.readiness.ts:3` để mở nộp V2. |
+| **TK-05** | Hoàn thiện vòng gửi–kiểm tra–trả sửa–gửi lại–tiếp nhận Portal V2 | **Đã duyệt nghiệp vụ / Đang triển khai** (Ưu tiên 2) | Quy tắc đã có; cần phiên bản hồ sơ, kiểm tra CBTD và UI | Nghiệm thu xuyên suốt, bảo toàn bản đã gửi, không tạo Loan trùng; chưa mở nộp chỉ bằng đổi cờ. |
 | **TK-06** | Xây dựng giao diện theo dõi tiến độ hồ sơ trên Portal DN | **Cần làm rõ AC & UI** (Ưu tiên 2) | PO duyệt thiết kế | Khách hàng SME đăng nhập Portal thấy danh sách hồ sơ đã nộp và trạng thái công đoạn hiện tại (ẩn các ghi chú nội bộ). |
 | **TK-07** | Hoàn thiện AC, logic nhắc ngày 5 và đánh dấu quá hạn ngày 10 | **Triển khai kỹ thuật** (Ưu tiên 2) | **DEC-02** (Approved) | Hệ thống tự động gửi thông báo nhắc ở mốc ngày 5; đánh dấu quá hạn ở mốc ngày 10 và chuyển danh sách lên Quản lý chi nhánh. *(Không tự triển khai logic đếm ngày khi quy tắc ngày lịch/ngày làm việc chưa chốt)*. |
 | **TK-08** | Triển khai chức năng Quản lý đóng hồ sơ quá hạn thủ công | **Triển khai kỹ thuật** (Ưu tiên 2) | **TK-07** | Quản lý có nút bấm và popup đóng hồ sơ sang `CLOSED_TIMEOUT` trên `LoanDetailModal.tsx`; bắt buộc ghi nhận người đóng, thời gian, lý do và log lịch sử công đoạn. |
 | **TK-09** | Cấu hình Mailpit local & SMTP test cho Docker | **Triển khai kỹ thuật** (Ưu tiên 1) | **DEC-03** (Approved) | Tích hợp Mailpit vào `docker-compose.yml` hoặc truyền biến môi trường SMTP để test luồng OTP email thông suốt trên container. |
 | **TK-10** | Xây dựng giao diện Đổi mật khẩu cá nhân cho cán bộ | **Triển khai kỹ thuật** (Ưu tiên 1) | Không | Header có mục "Đổi mật khẩu"; form popup kết nối thành công với API `POST /auth/change-password` có sẵn ở backend. |
-| **TK-11** | Chốt quy tắc tính toán SLA: Giờ làm việc hay Giờ thực | **Chờ PO phê duyệt** (Ưu tiên 3) | PO duyệt quy chế | Quyết định xem có viết lại thuật toán tính SLA để trừ ngày nghỉ lễ, giờ ngoài hành chính và tạm dừng khi chờ bổ sung không. |
+| **TK-11** | Triển khai SLA PA1 theo giờ làm việc | **Đã duyệt nghiệp vụ / Chưa triển khai** (Ưu tiên 3) | Lịch có phiên bản, khoảng pause và tích hợp các điểm dùng SLA | Dùng chung phép tính; không tính lại lịch sử cũ; phân biệt chờ doanh nghiệp và chờ ngân hàng. |
 | **TK-12** | Lập Báo cáo đánh giá mô hình ML trên dữ liệu Synthetic | **Triển khai tài liệu** (Ưu tiên 3) | **DEC-04** (Approved) | Lập báo cáo khoa học đánh giá các chỉ số (Accuracy, Precision, Recall, F1) của mô hình ML, phân tích rõ các giới hạn dữ liệu giả lập. |
 
 ---
@@ -254,13 +258,13 @@ Bảng phân loại dựa trên 12 Task baseline, giữ nguyên mã Task ID, là
 | TK-02 | `DONE` | `08631b4` | Cần sửa cả `navigation.ts` và `App.tsx` (thiếu nhánh render `AdminView section="settings"`). Đã xác nhận GET/PUT `/admin/workflow-stages` (200, giữ giá trị sau tải lại, CBTD nhận 403) và hai tiêu chí giao diện. Test navigation đã cập nhật (trước đó khẳng định không có mục SLA). Menu chưa lọc theo vai trò (hành vi sẵn có). |
 | TK-03 | `DONE` (chưa commit) | | PO quyết ngày 25/10/2026: Thẩm quyền chỉ xem hồ sơ từ Thẩm định trở đi (phương án B). Ma trận: `docs/Ma_tran_AC_phan_quyen_1_chi_nhanh.md`. Còn chờ PO xác nhận `/companies`. |
 | TK-04 | `DONE` (chưa commit) | | Đổi phạm vi: chặn truy cập chéo đã có sẵn, chỉ viết `backend/test/loan-access.test.cjs` (13 test pass) + triển khai phương án B; kiểm chứng đọc trên Docker. Chưa kiểm thử giao diện trên trình duyệt. |
-| TK-05 | `TODO` | | Chờ PO nghiệm thu chính sách V2. |
+| TK-05 | `IMPLEMENTED / PO ACCEPTANCE PENDING` | | Ngày 27/10 đã có vòng Portal đầy đủ, lưu nhiều lần gửi, kiểm tra, trả sửa, gửi lại, tiếp nhận và UI. 118 backend, 42 frontend tests đạt trong phạm vi ghi ở C.8; 90 điểm kiểm tra API/DB và 11 điểm kiểm tra Chrome đạt. Chưa migrate public/phát hành; chờ PO nghiệm thu. |
 | TK-06 | `DONE` (chưa commit) | | PO giao tự chọn danh mục trạng thái (26/10/2026); danh mục và quy tắc ẩn thông tin nằm ở `docs/ai/2026-10-24-tien-trinh-lam-viec.md` mục 14. `GET /portal/requests/:id/status` + `PortalApplicationTracking.tsx`. Chỉ xem được đề nghị của chính tài khoản; không lộ ghi chú nội bộ/ML/cán bộ; lý do từ chối theo danh mục TC01–TC05. Test: `test:tracking` (7 backend + 4 frontend). |
 | TK-07 | `DONE` (chưa commit; chờ PO xem giao diện) | | PO chốt 26/10/2026: ngày lịch giờ Việt Nam, mốc rơi Thứ Bảy/Chủ nhật lùi sang Thứ Hai, không gia hạn trong TK-07 (hạn lưu ở `deadlineAt` nên thêm gia hạn sau chỉ cần đổi cột này). Bộ quét mỗi giờ (`SupplementRemindersService`), 3 cột mới trên `SupplementRequest` (`reminderSentAt`, `reminderEmailSentAt`, `overdueAt`), `InternalNotification.requestId` tuỳ chọn + `applicationId`. Nhắc ngày 5: thông báo CBTD + email doanh nghiệp (hồ sơ qua Portal); quá hạn: thông báo CBTD, cảnh báo đỏ Dashboard Quản lý (`GET /dashboard/overdue-supplements`), cờ vàng/đỏ trong danh sách hồ sơ. Không đổi trạng thái, không đóng hồ sơ. Chưa có lịch ngày lễ. Test: `test:reminders` (19 test), `test:deadlines`. |
 | TK-08 | `DONE` (chưa commit) | | Endpoint `POST /workflow/:id/close-overdue` chỉ `QUAN_LY`; bắt buộc lý do; chỉ đóng hồ sơ `SUPPLEMENT_REQUIRED` có yêu cầu bổ sung đã đến hạn (tính lại ở backend, không phụ thuộc cờ của bộ quét). Hồ sơ sang `HOAN_TAT` + `CLOSED_TIMEOUT`, `completedAt`, `rejectionReasonCode=TC05` (đã có trong danh mục từ chối), `rejectionNote`=lý do; yêu cầu bổ sung chờ chuyển `EXPIRED`; đồng hồ SLA đang tạm dừng được tính nốt trước khi đóng công đoạn; ghi `ApplicationStageHistory` (người đóng, thời điểm, lý do). Không đổi `transitionStage`, không đổi schema. Giao diện: nút + form trong `LoanDetailModal`, nhãn "Đã đóng (quá hạn bổ sung)" ở danh sách/Kanban/chi tiết, bộ lọc trạng thái. Test: `test:close-overdue` (10 backend + 3 frontend). |
 | TK-09 | `DONE` | `24b4d20` | Service `mailpit` (SMTP 1025, web 8025) trong compose. Backend dùng `DOCKER_SMTP_HOST` (mặc định `mailpit`) vì `SMTP_HOST=127.0.0.1` trong `.env` sẽ ghi đè và không tới được Mailpit trong container. OTP đến Mailpit sau khoảng 0,36 giây, xác minh thành công; PO đã xác nhận trên giao diện. |
 | TK-10 | `DONE` | `0e5b749` | Modal đổi mật khẩu trong menu tài khoản. Mật khẩu mới **tối thiểu 8 ký tự** theo `ChangePasswordDto` của backend (handover ghi 6). Đã xác nhận 400 khi sai mật khẩu hiện tại, đổi thành công, đăng nhập lại bằng mật khẩu mới, mật khẩu cũ bị 401; PO xác nhận trên giao diện. |
-| TK-11 | `TODO` | | Chờ PO chọn PA1 / PA2. |
+| TK-11 | `APPROVED / NOT IMPLEMENTED` | | PO chọn PA1 giờ làm việc, cơ chế phiên bản và pause/resume theo bên chờ. Khung tuần đã chốt; danh sách ngày nghỉ cụ thể chưa nghiệm thu. Chưa triển khai source PA1. |
 | TK-12 | `DONE` (chưa commit; chờ PO đọc) | | Báo cáo `docs/Bao_cao_Mo_hinh_Machine_Learning.md` và script `ml-service/scripts/evaluate_model.py`; nêu rõ giới hạn dữ liệu tổng hợp. |
 | (ngoài danh sách) | `DONE` | `f642e35` | Sửa lỗi hai tab cùng mở tự đăng xuất lẫn nhau: listener `storage` trong `AuthContext.tsx` nay chỉ đăng xuất khi token bị xóa. |
 | (ngoài danh sách) | `DONE` | `bddbd68` | `ml-service/Dockerfile`: tăng timeout và retry cho `pip install`. |
@@ -295,11 +299,11 @@ Bảng phân loại dựa trên 12 Task baseline, giữ nguyên mã Task ID, là
   - ML chỉ đóng vai trò cảnh báo sớm nguy cơ trễ SLA, tuyệt đối không ra quyết định cấp tín dụng.
   - Yêu cầu bổ sung báo cáo đánh giá mô hình và nêu rõ giới hạn.
 
-### 2. Các quyết định còn PENDING cần PO chốt trước khi làm
-1. **Nghiệm thu chính sách mở nộp Portal V2 (`TK-05`):** PO cần rà soát lại 6 điều kiện trong `backend/src/modules/portal/portal.policy.ts` và ký duyệt để Dev mở cờ nộp hồ sơ.
-2. **Quy tắc đếm ngày quá hạn (DEC-02 / `TK-07`):** Mốc 5 ngày nhắc nhở và 10 ngày quá hạn tính theo ngày lịch thông thường hay ngày làm việc của ngân hàng? Có cơ chế cho phép Quản lý gia hạn thêm thời gian nộp chứng từ không?
-3. **Thiết kế màn hình theo dõi Portal (`TK-06`):** PO cần phê duyệt danh sách các trạng thái hiển thị cho khách hàng SME (đảm bảo không làm lộ thông tin/ghi chú thẩm định nội bộ).
-4. **Quy tắc đếm giờ SLA (`TK-11`):** Giữ cách tính liên tục 24/7 như hiện tại hay chuyển sang tính theo giờ làm việc (working hours) và có cơ chế tạm dừng (pause) khi chờ bổ sung hồ sơ không?
+### 2. Các điểm quyết định tiếp theo của PO
+1. **Không xin duyệt lại:** Chính sách TK-05, lựa chọn PA1 của TK-11, thời hạn TK-07 và danh mục theo dõi TK-06 đã có quyết định. Cần mở rộng hiển thị trạng thái trả sửa theo vòng mới, không coi danh mục cũ là chưa được duyệt.
+2. **Trước thao tác dữ liệu:** Trình môi trường API/DB đích, SQL bổ sung, dữ liệu thử, ảnh hưởng dữ liệu cũ và cách dọn đúng dữ liệu thử. Chỉ xin quyền nếu chưa có quyền bao phủ đúng tác động.
+3. **Trước kích hoạt PA1:** Trình lịch ngày nghỉ cụ thể, phiên bản, thời điểm hiệu lực và ví dụ tính hạn. Không mặc định lịch ngày nghỉ chính thức hoặc chỉ bật PA1 từ khung tuần.
+4. **Trước mở sử dụng:** Lead BA kết luận đạt/chưa đạt theo nghiệp vụ đã duyệt; Lead FullStack cung cấp bằng chứng kỹ thuật; PO nghiệm thu phạm vi và môi trường mở. Mở rộng nghiệp vụ hoặc train/ghi đè model phải trình riêng nếu phát sinh.
 
 ---
 
@@ -322,11 +326,11 @@ Bảng phân loại dựa trên 12 Task baseline, giữ nguyên mã Task ID, là
 - **Nhóm Ưu tiên 2 — Nghiệp vụ Cốt lõi & Xử lý Quá hạn:**
   5. `TK-03` & `TK-04`: Rà soát và củng cố kiểm tra phân công hồ sơ (`assignedTo`) cho CBTD trong phạm vi 1 chi nhánh.
   6. `TK-07` & `TK-08`: Hoàn thiện AC mốc ngày 5/ngày 10 và lập trình chức năng Quản lý đóng hồ sơ quá hạn thủ công.
-  7. `TK-05`: Họp nghiệm thu chính sách nộp V2 với PO để kích hoạt `canSubmit: true`.
+  7. `TK-05`: Hoàn thiện và nghiệm thu trọn vòng Portal V2 theo Task 8 — Nhóm C; chưa mở bằng đổi cờ đơn lẻ.
   8. `TK-06`: Xây dựng giao diện theo dõi tiến độ hồ sơ cho doanh nghiệp trên Portal.
 - **Nhóm Ưu tiên 3 — Hoàn thiện Báo cáo & Tối ưu hóa:**
   9. `TK-12`: Viết Báo cáo đánh giá mô hình ML trên dữ liệu synthetic.
-  10. `TK-11`: Làm việc với PO chốt quy tắc tính giờ SLA (working hours vs continuous hours).
+  10. `TK-11`: Triển khai PA1 đã duyệt; xác nhận lịch ngày nghỉ cụ thể và kiểm chứng tích hợp trước kích hoạt.
 
 ### 3. Cảnh báo rủi ro & Các module "nhạy cảm"
 - **Không tự ý sửa đổi `workflow.service.ts`:** Nơi chứa transaction quản lý trạng thái, khóa bi quan `SELECT FOR UPDATE` và chặn duyệt > 10 tỷ.
@@ -386,7 +390,7 @@ Ngay sau khi tiếp nhận dự án, thành viên mới phải thực hiện tu�
 12 task công việc được phân chia theo 3 nhóm dựa trên tính độc lập và điều kiện kích hoạt:
 
 ```
-[Nhóm A: Triển khai ngay độc lập] ──> [Nhóm B: Nghiệp vụ cốt lõi & Quá hạn] ──> [Nhóm C: Chờ quyết định PO]
+[Nhóm A: Triển khai ngay độc lập] ──> [Nhóm B: Nghiệp vụ cốt lõi & Quá hạn] ──> [Nhóm C: Portal V2 đã kiểm chứng thử; SLA PA1 chưa triển khai]
     (TK-01, TK-02, TK-09, TK-10)          (TK-03, TK-04, TK-06, TK-07, TK-08, TK-12)       (TK-05, TK-11)
 ```
 
@@ -571,41 +575,246 @@ Ngay sau khi tiếp nhận dự án, thành viên mới phải thực hiện tu�
 
 ---
 
-#### NHÓM C. ĐANG BỊ CHẶN BỞI QUYẾT ĐỊNH PO (BLOCKED BY PO DECISIONS)
+<a id="task-8-nhom-c"></a>
+#### NHÓM C. TÌNH HÌNH TRIỂN KHAI PORTAL V2 VÀ SLA — GÓC NHÌN NGHIỆP VỤ BA
 
-##### Task TK-05: Nghiệm thu 6 tiêu chí chính sách để mở nộp Portal V2
-- **Mục tiêu:** Mở khóa tính năng nộp hồ sơ vay chi tiết V2 cho khách hàng SME sau khi chính sách được phê duyệt chính thức.
-- **Trạng thái hiện tại:** `[PENDING]` (Code FE/BE Wizard V2 đã xong nhưng bị khóa cứng tại `backend/src/modules/portal/portal.readiness.ts:3` với `canSubmit: false`).
-- **Mức ưu tiên:** **P0 (Bị chặn bởi PO)**.
-- **Điều kiện được bắt đầu:** PO rà soát và ký duyệt văn bản nghiệm thu 6 tiêu chí trong `portal.policy.ts`.
-- **Các bước thực hiện chính:**
-  1. PO rà soát 6 tiêu chí: Báo cáo tài chính, checklist chứng từ, định dạng số liệu, ràng buộc người đại diện, điều kiện khoản vay và chính sách bổ sung.
-  2. Khi PO duyệt: Đổi cờ `mvpPolicy.status = 'APPROVED'` và `canSubmit = true` trong `portal.readiness.ts`.
-  3. Bật cờ `PORTAL_V2_SUBMIT_ENABLED=true` trên môi trường kiểm thử.
-  4. Kiểm thử luồng nộp hồ sơ V2 end-to-end từ Portal vào hàng đợi Intake.
-- **Kết quả đầu ra mong đợi:** Doanh nghiệp nộp được hồ sơ vay V2 chi tiết và ngân hàng tiếp nhận thành công.
-- **Acceptance Criteria:**
-  - Khách hàng SME hoàn thành Wizard V2 và bấm "Nộp hồ sơ" thành công.
-  - Backend tạo bản ghi `PortalRequest` ở trạng thái `SUBMITTED`, lưu snapshot dữ liệu tài chính.
-  - Quản lý nhìn thấy hồ sơ V2 trong `IntakeView` và phân công được cho CBTD.
-- **Phụ thuộc:** Quyết định phê duyệt chính sách từ PO.
-- **Bằng chứng cần cung cấp:** Biên bản duyệt chính sách của PO và kết quả chạy test script nộp V2 thành công.
+**Ngày cập nhật cách trình bày: 28/10/2026.** Nội dung tổng hợp kết quả triển khai và kiểm chứng đã ghi nhận ngày 27/10. Lượt cập nhật này chỉ chỉnh tài liệu, không sửa chức năng, chạy lại kiểm thử, truy cập DB hoặc mở lại môi trường thử.
 
-##### Task TK-11: Chốt quy tắc tính toán SLA: Giờ làm việc hay Giờ thực
-- **Mục tiêu:** Xác định phương pháp đo lường thời gian xử lý hồ sơ công đoạn để cảnh báo trễ hạn đúng thực tế ngân hàng.
-- **Trạng thái hiện tại:** `[PENDING]` (Hệ thống đang tính 24/7 theo giờ thực liên tục).
-- **Mức ưu tiên:** **P2 (Bị chặn bởi PO)**.
-- **Điều kiện được bắt đầu:** PO ban hành quy chế tính thời gian SLA chi nhánh.
-- **Các bước thực hiện chính:**
-  1. PO lựa chọn: (PA1) Tính giờ làm việc hành chính (8h/ngày, trừ Thứ 7, CN, ngày lễ) và tạm dừng đếm khi chờ chứng từ; hoặc (PA2) Giữ nguyên giờ thực 24/7.
-  2. Nếu chọn PA1: Thiết kế lại thuật toán tính net SLA trong `workflow.service.ts` để trừ ngày nghỉ và cộng dồn `pausedDurationHours`.
-  3. Cập nhật Dashboard hiển thị thời gian net SLA.
-- **Kết quả đầu ra mong đợi:** Thời gian SLA đo lường phản ánh đúng thời gian làm việc thực tế của cán bộ ngân hàng.
-- **Acceptance Criteria:**
-  - Nếu chọn PA1: Hồ sơ nộp lúc 17h thứ 6 và xử lý lúc 9h thứ 2 tuần sau chỉ tính 1 giờ làm việc.
-  - Khi hồ sơ ở trạng thái `SUPPLEMENT_REQUIRED`: Đồng hồ SLA tạm dừng đếm.
-- **Phụ thuộc:** Quyết định chính sách đo lường SLA từ PO.
-- **Bằng chứng cần cung cấp:** Quyết định bằng văn bản của PO và unit test thuật toán tính giờ làm việc.
+##### C.1. Người đọc cần nắm ngay điều gì?
+
+**Portal V2 đã có vòng xử lý từ doanh nghiệp gửi đề nghị đến CBTD tiếp nhận thành hồ sơ vay, bao gồm trả sửa và gửi lại. Chức năng đã được kiểm chứng trên môi trường thử riêng; chưa có ghi nhận PO nghiệm thu cuối hoặc phát hành dùng chung trong phạm vi cập nhật này. SLA theo giờ làm việc đã được duyệt về nghiệp vụ nhưng chưa triển khai.**
+
+| Hạng mục | Tình hình đã ghi nhận | Ý nghĩa đối với người sử dụng |
+| :--- | :--- | :--- |
+| TK-05 — Tiếp nhận hồ sơ Portal V2 | Đã triển khai vòng gửi–phân công–kiểm tra–trả sửa–gửi lại–tiếp nhận; đã chạy kiểm chứng bằng trình duyệt và cơ sở dữ liệu trên môi trường thử riêng | Có chức năng để nghiệm thu nghiệp vụ; không còn dừng ở bộ quy tắc hoặc bản thiết kế. Chưa đồng nghĩa người dùng trên môi trường chung đã sử dụng được. |
+| Mở sử dụng trên môi trường chung | Chưa có ghi nhận hoàn tất nâng cấp DB và mở sử dụng tại checkpoint 27/10; lượt này chưa xác minh lại môi trường | Cần hoàn tất việc đưa phiên bản mới lên đúng môi trường và có kết quả PO nghiệm thu trước khi công bố sử dụng. |
+| TK-11 — SLA theo giờ làm việc (PA1) | PO đã chọn phương án, chưa triển khai phép tính và các xử lý liên quan | Hoàn thành Portal không có nghĩa SLA giờ làm việc đã có hiệu lực. |
+| Phiên PO xem thử ngày 27/10 | Đã quá thời hạn 23:18 ngày 27/10 | Không coi phiên đó vẫn đang mở. Cần chuẩn bị lại môi trường thử nếu PO muốn thao tác trực tiếp. |
+
+**Ba mức kết quả cần phân biệt:** doanh nghiệp khai đủ để gửi → CBTD kiểm tra đạt để tiếp nhận → hồ sơ vay được kiểm tra/thẩm định/phê duyệt theo quy trình nội bộ. Mức trước không tự thay thế mức sau.
+
+##### C.2. Phạm vi nghiệp vụ đã đưa vào chức năng
+
+Phạm vi hiện tại là kịch bản mô phỏng doanh nghiệp sản xuất đề nghị vay vốn lưu động trong đồ án, không phải tuyên bố áp dụng đầy đủ cho mọi sản phẩm/ngân hàng thực tế.
+
+| Nhóm hồ sơ | Điều kiện trước khi gửi | Phần được yêu cầu làm rõ sau tiếp nhận |
+| :--- | :--- | :--- |
+| A — Pháp lý và đại diện | Đăng ký doanh nghiệp, điều lệ, định danh và căn cứ đại diện; có văn bản ủy quyền nếu người gửi là người được ủy quyền | Tài liệu làm rõ theo kết quả kiểm tra. |
+| B — Tài chính | Bộ báo cáo năm lịch hoàn thành gần nhất gồm bảng cân đối, kết quả kinh doanh, lưu chuyển tiền tệ, thuyết minh; có thể một hoặc nhiều tệp. Khai đúng kỳ và tài liệu nguồn doanh thu | Chi tiết công nợ, tồn kho, báo cáo kỳ gần nhất. |
+| C — Hoạt động sản xuất | Kế hoạch sản xuất kinh doanh và ít nhất một bằng chứng đầu ra phù hợp: hợp đồng, hóa đơn hoặc đơn đặt hàng | Báo giá, hợp đồng nguyên vật liệu và nội dung làm rõ phương án. |
+| D — Đề nghị và phương án vốn | Đề nghị vay và phương án sử dụng vốn | Chi tiết dòng tiền trả nợ phục vụ thẩm định. |
+| E — Bảo đảm | Khai rõ có/không đề xuất tài sản bảo đảm; nếu có thì mô tả. Chưa xác định thì tiếp tục lưu nháp | Hồ sơ quyền tài sản, thông tin định giá theo yêu cầu. |
+| F — Dư nợ | Khai rõ có/không dư nợ; có dư nợ thì cung cấp thông tin dư nợ | Lịch trả nợ, sao kê chi tiết theo yêu cầu. |
+
+- Người gửi xác nhận tư cách đại diện và cam kết khi gửi; chưa tích hợp ký số.
+- Ví dụ: gửi trong năm 2026 thì kỳ năm hoàn thành gần nhất là 2025. Không quy đổi số liệu tháng/quý thành năm; không tự điền doanh thu 0 khi chưa khai. Giá trị 0 thực vẫn được ghi nhận.
+- Hệ thống xác định đủ theo dữ liệu và danh mục do doanh nghiệp khai; CBTD phải đọc/đối chiếu nội dung. Tải tệp thành công chưa phải chứng từ hợp lệ.
+- Các mục được yêu cầu sau tiếp nhận là phạm vi hoãn đã duyệt, không phải quyền cho cán bộ tự miễn hoặc bỏ qua tài liệu.
+
+##### C.3. Luồng chính đã triển khai — hồ sơ đi như thế nào?
+
+**Chuẩn bị → Gửi đề nghị → Quản lý phân công → CBTD kiểm tra → Trả sửa nếu cần → Doanh nghiệp sửa và gửi lại → CBTD kiểm tra lại → Tiếp nhận thành hồ sơ vay.**
+
+| Bước | Người thực hiện và thao tác | Kết quả hệ thống ghi nhận | Người dùng cần hiểu |
+| :--- | :--- | :--- | :--- |
+| 1. Chuẩn bị | Doanh nghiệp khai thông tin, chọn kỳ, cung cấp tài liệu và nguồn doanh thu | Bản nháp; checklist chỉ rõ mục thiếu, mục đã cung cấp/chờ kiểm tra, mục không áp dụng hoặc cung cấp sau | Chưa gửi đến ngân hàng; chưa tạo hồ sơ vay hoặc bắt đầu SLA của hồ sơ vay. |
+| 2. Gửi | Doanh nghiệp rà soát, xác nhận cam kết và bấm gửi | Lưu riêng dữ liệu/tài liệu của lần gửi; khóa chỉnh sửa bản đã gửi; đưa vào hàng chờ phân công | Mới là đề nghị gửi đến ngân hàng, chưa phải được ngân hàng tiếp nhận hoặc duyệt vay. |
+| 3. Phân công | Quản lý chọn CBTD phụ trách | Ghi nhận người được giao và lịch sử phân công | CBTD đúng phân công mới kiểm tra, trả sửa hoặc tiếp nhận. |
+| 4. Kiểm tra | CBTD mở tài liệu và đối chiếu từng mục: chủ thể, đại diện, kỳ, thành phần, nội dung đọc được và thông tin trọng yếu | Mỗi mục có kết luận đạt/cần sửa, người kiểm tra, thời điểm và lý do tương ứng với đúng lần gửi/tài liệu | Đây là kiểm tra điều kiện tiếp nhận, chưa phải kết luận thẩm định tín dụng. |
+| 5. Trả sửa | CBTD ghi rõ mục sai và yêu cầu sửa, sau đó gửi danh sách tổng hợp | Đề nghị chuyển sang cần chỉnh sửa; bản đã gửi và kết quả kiểm tra được giữ lại; mở bản làm việc cho doanh nghiệp | Doanh nghiệp biết cụ thể sửa gì, vì sao và không phải tạo lại đề nghị. |
+| 6. Sửa và gửi lại | Doanh nghiệp sửa thông tin/tài liệu cần thiết rồi gửi lại | Giữ nguyên mã đề nghị, thêm lần gửi mới và hiển thị nội dung thay đổi; không yêu cầu tải lại tệp không đổi | Mục bị thay đổi hoặc chịu ảnh hưởng phải kiểm tra lại. Chỉ giữ kết quả đạt của mục có nội dung/căn cứ không đổi. |
+| 7. Tiếp nhận | CBTD kiểm tra đủ các mục bắt buộc, đối chiếu doanh nghiệp hiện có và xác nhận tiếp nhận | Chỉ tạo một hồ sơ vay ở công đoạn Tiếp nhận, trạng thái Đã tiếp nhận; giữ liên kết với các lần gửi trước | Hồ sơ bắt đầu đi vào quy trình vay nội bộ. Chưa tự hoàn tất kiểm tra chứng từ, chuyển thẩm định hoặc phê duyệt khoản vay. |
+
+Nếu lần đầu CBTD kiểm tra đã đạt thì đi thẳng từ bước 4 sang bước 7, không cần trả sửa. Nếu sau gửi lại vẫn chưa đạt thì tiếp tục vòng kiểm tra–trả sửa trên cùng mã đề nghị.
+
+**Ví dụ nghiệp vụ:** doanh nghiệp gửi đủ danh mục nhưng nội dung báo cáo kết quả kinh doanh sai → CBTD ghi lý do và trả sửa → doanh nghiệp thay tài liệu, chọn lại nguồn doanh thu nếu cần, giữ các giấy tờ pháp lý không đổi và gửi lại → ngân hàng kiểm tra lại các mục tài chính liên quan → tiếp nhận khi các điều kiện còn lại đã đạt. Báo cáo cũ vẫn nằm trong lịch sử; tài liệu mới không tự mang kết luận đạt của tài liệu cũ.
+
+##### C.4. Mỗi vai trò hiện đã có những chức năng gì?
+
+| Vai trò | Chức năng đã có trong vòng Portal V2 | Giới hạn trách nhiệm |
+| :--- | :--- | :--- |
+| Doanh nghiệp | Khai và lưu nháp; xem checklist; gửi; xem lý do cần sửa; chỉnh sửa khi được trả; gửi lại; xem các lần gửi/tài liệu cũ; đề nghị ngân hàng cho sửa khi tự phát hiện sai | Chỉ thao tác đề nghị của mình; không tự mở khóa bản đã gửi, tự xác nhận tài liệu hợp lệ hoặc sửa trực tiếp bản gốc sau tiếp nhận. |
+| CBTD được giao | Xem thông tin/tài liệu; kiểm tra từng mục; ghi kết luận/lý do; trả một danh sách sửa tổng hợp; kiểm tra lại thay đổi; đối chiếu doanh nghiệp và tiếp nhận | Không kiểm tra/tiếp nhận ngoài phân công; không bỏ qua mục bắt buộc, vướng mắc đang mở hoặc khác biệt thông tin doanh nghiệp. |
+| Quản lý | Phân công/điều chuyển; theo dõi đề nghị đang chờ xử lý; ghi nhận vướng mắc, phương án và đầu mối; ghi kết quả xử lý; tách thông báo cho doanh nghiệp khỏi ghi chú nội bộ | Không kiểm tra thay CBTD hoặc dùng vai trò quản lý để tiếp nhận, bỏ checklist hay ghi đè dữ liệu doanh nghiệp để vượt chặn. |
+
+Lead BA chịu trách nhiệm đối chiếu yêu cầu và kết luận đạt/chưa đạt nghiệp vụ. Lead Tech/FullStack chịu trách nhiệm triển khai và bằng chứng kỹ thuật. PO quyết định thay đổi nghiệp vụ/phạm vi và nghiệm thu cuối. Đây là trách nhiệm làm việc của nhóm phát triển, không phải bổ sung vai trò người dùng trong ứng dụng; không tổ chức Lead Tester riêng.
+
+##### C.5. Các nhánh ngoại lệ đã được xử lý
+
+| Tình huống | Hệ thống xử lý | Kết quả/bảo đảm nghiệp vụ |
+| :--- | :--- | :--- |
+| Doanh nghiệp tự phát hiện sai sau gửi | Gửi đề nghị chỉnh sửa cho ngân hàng, chưa tự mở khóa. Nếu chưa phân công, quản lý cần giao CBTD xử lý | Có người chịu trách nhiệm xem xét việc trả sửa; giữ được bản đã gửi. |
+| Thay tài liệu hoặc thông tin trọng yếu | Lưu bản mới, xác định mục thay đổi/phụ thuộc và yêu cầu kiểm tra lại | Không sử dụng kết luận của tài liệu cũ để xác nhận tài liệu mới. |
+| Thông tin khác dữ liệu doanh nghiệp ngân hàng đang có | Chặn tiếp nhận; đưa vào đối soát, quản lý ghi vướng mắc và phương án/đầu mối xử lý | Không tự ghi đè doanh nghiệp. Ghi đã xử lý vướng mắc không tự bỏ điều kiện đối soát khi tiếp nhận. |
+| Muốn đổi MST sang một doanh nghiệp khác | Chặn sửa chủ thể trên đề nghị đã gửi và hướng dẫn lập đề nghị mới | Không trộn lịch sử, tài liệu và kết quả kiểm tra của hai doanh nghiệp. |
+| Điều chuyển CBTD khi đang chờ doanh nghiệp sửa | Giữ tình trạng chờ sửa và lịch sử, chuyển trách nhiệm cho CBTD mới; người cũ không tiếp tục thao tác | Không làm mất vòng sửa hoặc biến hồ sơ đang thiếu thành đủ điều kiện. |
+| Bấm gửi/tiếp nhận lặp hoặc mất phản hồi sau khi hệ thống đã lưu | Thử lại không tạo thêm lần gửi, thao tác kiểm tra hoặc hồ sơ vay tương ứng | Tránh hồ sơ trùng và giảm việc người dùng phải tự xác định lần trước đã lưu hay chưa. |
+| Hai người thao tác hoặc dùng màn hình đã cũ | Kiểm tra lại người phụ trách và phiên bản; từ chối thao tác không còn phù hợp, yêu cầu tải lại | Tránh kết quả cũ ghi đè kết quả mới hoặc người đã bị điều chuyển vẫn xử lý được. |
+| Hồ sơ đã được tiếp nhận thành hồ sơ vay | Giữ nguyên bản gửi gốc; yêu cầu bổ sung tiếp theo dùng chức năng bổ sung của hồ sơ vay | Tách rõ chỉnh sửa trước tiếp nhận và bổ sung sau tiếp nhận. |
+
+##### C.6. Phần đã làm tác động thế nào đến luồng vay chính?
+
+| Điểm trong luồng | Tác động của phần Portal V2 đã làm |
+| :--- | :--- |
+| Trước khi tiếp nhận | Bổ sung vòng chuẩn bị, kiểm tra và chỉnh sửa có lịch sử. Chưa tạo hồ sơ vay và chưa bắt đầu SLA của hồ sơ vay. |
+| Khi CBTD tiếp nhận | Tạo một hồ sơ vay từ đúng bản đã kiểm tra đạt; bắt đầu công đoạn Tiếp nhận theo cơ chế SLA đang có. Không mặc nhiên áp SLA PA1. |
+| Kiểm tra chứng từ/chuyển thẩm định | Tiếp tục các điều kiện của quy trình nội bộ hiện có. Đủ để tiếp nhận không tự tương đương đủ để chuyển thẩm định. |
+| Chờ bổ sung sau tiếp nhận | Tiếp tục đi qua hồ sơ vay; không quay lại sửa bản đề nghị gốc. Cơ chế chạy lại SLA theo bên đang chờ của PA1 chưa được triển khai trong đợt này. |
+| Phê duyệt/cấp trên | Không thay quyền tín dụng, ngưỡng vượt 10 tỷ phải qua cấp trên hoặc điều kiện phê duyệt. |
+| Dữ liệu doanh nghiệp | Không tự ghi đè thông tin doanh nghiệp đã có. |
+| ML | Không đổi ý nghĩa dự báo trễ SLA thành đánh giá khả năng trả nợ hoặc tự duyệt/từ chối khoản vay. Không phát sinh xác suất giả. |
+
+**Lợi ích đã hình thành:** doanh nghiệp biết mục cần sửa; CBTD kiểm tra theo một danh mục chung; quản lý nắm trách nhiệm xử lý; ngân hàng có lịch sử để đối chiếu từng lần gửi. Phạm vi đã hoàn thành là vòng tiếp nhận Portal V2, không phải toàn bộ chương trình nâng cấp SLA/ML.
+
+##### C.7. Những việc còn lại và điểm PO cần quyết định
+
+Người nhận tiếp tục triển khai theo [nội dung bàn giao C.9](#sla-pa1-next-handover); bảng dưới đây là tổng quan các phần còn lại.
+
+| Việc còn lại | Phần triển khai phải chuẩn bị | PO cần quyết định/nghiệm thu |
+| :--- | :--- | :--- |
+| Nghiệm thu vòng Portal V2 | Chuẩn bị lại phiên thử, một hồ sơ mẫu và trình trực tiếp cả đường nhận ngay lẫn đường trả sửa–gửi lại; báo lỗi/giới hạn còn lại | Xác nhận trải nghiệm và kết quả nghiệp vụ đã đáp ứng yêu cầu hay cần chỉnh điểm cụ thể. Không yêu cầu chọn lại checklist/quyền đã duyệt. |
+| Đưa phiên bản lên môi trường dùng chung | Xác minh DB đích, cấu trúc hiện có, kế hoạch nâng cấp tương thích dữ liệu cũ, khôi phục và kiểm tra sau cập nhật | Quyết định đúng môi trường, phạm vi người sử dụng và tác động dữ liệu chưa được cấp quyền. Không chỉ bật nút gửi để thay bước nâng cấp/nghiệm thu. |
+| TK-11 — Tính SLA theo giờ làm việc | Xây dựng bộ tính và lịch có phiên bản; tích hợp chuyển công đoạn, bổ sung, đóng quá hạn, báo cáo | Phương án PA1 đã duyệt; chỉ còn chốt lịch ngày nghỉ cụ thể/thời điểm hiệu lực và nghiệm thu kết quả, không chọn lại PA1 hay 24/7. |
+| Phân biệt chờ doanh nghiệp/chờ ngân hàng khi tính SLA | Pause khi chờ doanh nghiệp; chính thức gửi đủ phản hồi thì chạy SLA trong lúc ngân hàng kiểm tra; trả sửa tổng hợp thì pause mới. Đồng bộ nhắc/đóng theo bên đang chờ | Nghiệm thu theo quy tắc đã duyệt; không tự đổi thời hạn phản hồi hoặc cho chuyển bước khi chứng từ chưa kiểm tra đạt. |
+| Báo cáo và dự báo sau thay đổi SLA | Báo cáo phân biệt cách tính cũ/mới và thời gian chờ từng bên; đánh giá dự báo ML có phù hợp thước đo mới | Chỉ duyệt thêm nếu phát sinh thay đổi phạm vi hoặc cần huấn luyện/ghi đè model; không mặc định kết quả ML cũ đã phù hợp PA1. |
+
+**Quy tắc SLA đã duyệt, đang chờ hiện thực:** thứ Hai–thứ Sáu, 08:00–12:00 và 13:00–17:00 giờ Việt Nam, loại ngày nghỉ theo lịch được xác nhận; giữ định mức giờ hiện có. Công đoạn cũ giữ cách tính cũ, công đoạn mới áp dụng chính sách/lịch có hiệu lực. Giữ mốc nhắc 5 ngày/quá hạn 10 ngày và quy tắc ngày lịch của TK-07; không lẫn thời hạn doanh nghiệp phản hồi với đồng hồ SLA giờ làm việc, không tự gia hạn khi gửi lại.
+
+Bộ kiểm tra hồ sơ đã có cung cấp căn cứ cho CBTD; lịch sử gửi–trả sửa cung cấp dấu vết trách nhiệm xử lý. Phần SLA tiếp sau dùng các mốc nghiệp vụ liên quan khi được tích hợp, không được coi vòng Portal hiện tại đã tự thay phép tính SLA.
+
+<a id="portal-intake-cycle-result"></a>
+##### C.8. Bằng chứng kiểm chứng và thông tin kỹ thuật
+
+<details>
+<summary>Xem chi tiết đợt kiểm chứng ngày 27/10/2026</summary>
+
+**Kết luận:** đã triển khai và kiểm chứng luồng trong môi trường cách ly. Lead BA đã đối chiếu luồng nghiệp vụ được duyệt trong các tình huống đã chạy ngày 27/10; PO giữ quyền nghiệm thu cuối. Chưa phát hành lên schema public, chưa triển khai SLA PA1. Review đợt này là tự rà soát source/diff và kiểm thử, không tuyên bố có reviewer độc lập.
+
+###### Hành vi nghiệp vụ đã có
+
+| Bước PO giao | Kết quả đã triển khai |
+| :--- | :--- |
+| 1. Lưu lần gửi/bản đang sửa | Thêm PortalSubmission với số lần gửi và revision nguồn duy nhất theo đề nghị; lưu snapshot dữ liệu/policy/kỳ/tệp/hash. Giữ nguyên snapshot trước; bản làm việc chỉ sửa khi DRAFT hoặc RETURNED. Tệp thay thế có bytes riêng; tệp cũ còn tải được. Gửi lặp cùng revision/manifest không sinh lần gửi trùng. |
+| 2. Kiểm tra/trả sửa | CBTD đúng phân công kiểm tra từng mục bắt buộc đến hạn; ghi kết luận, lý do, người và thời điểm. Trả một danh sách sửa tổng hợp, giữ nguyên bản đã gửi, mở RETURNED. Quản lý không có quyền kiểm tra thay CBTD. |
+| 3. Gửi lại | Cùng mã đề nghị, lần gửi mới; kiểm tra lại policy và tệp thực. So sánh trường/tài liệu thay đổi; chỉ giữ kết luận đạt khi dấu vết nội dung và các dữ liệu phụ thuộc không đổi. Đổi nguồn/tệp tài chính buộc kiểm tra lại các mục tài chính liên quan; mục pháp lý không đổi giữ được kết quả cũ. |
+| 4. Tiếp nhận | Bắt buộc đúng phiên bản/lần gửi, mọi mục cần kiểm tra đạt và không còn vướng mắc mở. Đối soát Company cả nhận diện và dữ liệu tài chính; xác nhận không vượt được chặn khác biệt. Tạo đúng một Loan TIEP_NHAN/RECEIVED trong transaction, chưa CHECKED hoặc chuyển thẩm định. |
+| 5. Giao diện | Portal có khai phạm vi/đại diện/cam kết, thành phần BCTC, checklist, danh sách sửa, gửi lại, lịch sử/tải bản cũ và đề nghị tự xin sửa. CBTD có kiểm tra từng mục, mở tài liệu, trả sửa; quản lý có phân công/điều chuyển và vướng mắc với phương án/đầu mối. Phản hồi công khai tách ghi chú nội bộ. |
+| 6. Kiểm chứng | Đã chạy API/PostgreSQL thật, SQL nâng cấp, Chrome desktop 1365px và Portal mobile 375px. Đã thử gửi/nhận lặp, sai quyền, revision cũ, tranh chấp kiểm tra–điều chuyển và mất phản hồi sau khi máy chủ đã lưu. |
+
+Điều chuyển giữ RETURNED, tăng revision và chặn người cũ; số đề nghị chờ tính cả RETURNED. Thay MST sau gửi bị chặn để lập đề nghị mới. Sau tiếp nhận, bổ sung tiếp tục đi theo Loan; bản gửi gốc không mở sửa. Chưa đổi ngưỡng 10 tỷ, quyền tín dụng, thuật toán SLA hay ý nghĩa ML.
+
+###### Phạm vi source và dữ liệu
+
+- Backend: `portal.intake-cycle.ts` xác định checklist/dấu vết thay đổi; `portal.intake-workflow.ts` xử lý công bố lần gửi, review, trả sửa, yêu cầu tự xin sửa và vướng mắc. `portal.service.ts`/controller nối vào gửi, tải tài liệu, phân công, đối soát Company, accept và tracking.
+- Schema: thêm trạng thái RETURNED, `correction_request`, các bảng `portal_submissions`, `portal_intake_operations`, `portal_intake_issues`; unique/FK bảo vệ liên kết và chống trùng. Kết quả review/return được lưu riêng với snapshot đã gửi. SQL bổ sung tại `backend/prisma/portal-intake-cycle.sql`, không xóa dữ liệu cũ.
+- Frontend: `IntakeCyclePanel.tsx`, điều kiện sửa/gửi trong `intake-cycle.ts`, Wizard, quản lý tài liệu, hàng đợi tiếp nhận, phân công và hiển thị trạng thái. Phản hồi bất đồng bộ kiểm tra đúng request/revision/role và tình trạng mount trước cập nhật UI.
+- Mở chính sách mô phỏng bằng `PORTAL_V2_INTAKE_ENABLED=true`, `PORTAL_FOUNDATION_PREVIEW=true`, NODE_ENV development/test. Mặc định chưa mở; TEST_ONLY cũ vẫn tách biệt. Các cờ không thay cho việc áp SQL đúng DB trước khi chạy backend mới.
+- Đã sinh lại Prisma Client 6.19 từ schema mới; build backend/frontend chuẩn đã đạt. Không sửa quyền máy, dùng client giả hoặc dist cũ để chứng minh luồng cuối.
+
+###### Bằng chứng đã ghi nhận ngày 27/10/2026
+
+| Kiểm chứng | Kết quả | Giới hạn |
+| :--- | :--- | :--- |
+| Backend hồi quy Portal/phân công/snapshot/policy/bổ sung/tracking và cycle | 118/118 đạt | Unit/contract/service fixture, gồm 11 ca cycle mới; không cộng lại với các tập con. |
+| Frontend Portal/client/wizard/cycle/Intake/tracking/bổ sung | 42/42 đạt khi chạy `--test-concurrency=1` | Có một lần client fixture thất bại khi chạy song song; chạy riêng client 6/6 và toàn bộ tuần tự 42/42 đạt. Fixture timeout 100ms chưa thay đổi; không gọi đó là lỗi sản phẩm đã sửa. |
+| API/PostgreSQL thật | 90 điểm kiểm tra đạt | Trong schema Docker riêng; gồm tranh chấp review–điều chuyển, gửi/nhận lặp, trả sửa, giữ tệp/snapshot, không lộ nội bộ, chặn Company không phù hợp. |
+| SQL nâng cấp | Áp hai lần trên schema cũ giả lập có bản ghi trước nâng cấp; dữ liệu bản ghi đối chiếu giữ nguyên | Chưa áp hoặc kiểm chứng migration trên dữ liệu public thực tế; không suy rộng thành đã kiểm tra mọi dữ liệu cũ. |
+| Chrome thực | 11 điểm kiểm tra đạt, không Runtime exception | Gửi, quản lý phân công, CBTD trả sửa, thay PDF trên UI, chọn lại nguồn, gửi lại, kiểm tra và tiếp nhận. Chặn phản hồi review sau khi server commit rồi thử lại: chỉ một thao tác được lưu. |
+| Desktop/mobile | Đã quan sát ảnh 1365x1000 và 375x900, Portal mobile không tràn ngang | Không thay thế kiểm thử mọi thiết bị/trình duyệt. |
+| Build chuẩn | Backend Nest và frontend TypeScript/Vite đạt; 1627 modules | Không phải bằng chứng đã phát hành. |
+| CodeGraph | Build/check đạt, 142 files, 2648 nodes, 5139 edges | Một số lời gọi qua `cycle()` không được graph nối caller; đã đọc call site/controller thủ công, không kết luận code chết. |
+
+Bộ chạy: `backend/scripts/check-portal-intake-cycle.cjs`, `frontend/scripts/check-portal-intake-cycle-browser.mjs`; tận dụng harness chỉ tạo schema `portal_v2_it_*` mới trong PostgreSQL Docker localhost/sme_loan. Các lượt tự động đã dọn schema/tệp sở hữu và giữ 21 tệp upload có sẵn. Một lần bộ giả lập mất phản hồi bị lỗi đã dọn thủ công đúng schema/tệp xác nhận thuộc lượt đó; không để lại dữ liệu thử của lượt lỗi.
+
+Ảnh đợt kiểm chứng cuối: [CBTD trả sửa](../../.codex_tmp/portal-intake-cycle/1793116102957/02-officer-returned.png), [doanh nghiệp nhận yêu cầu sửa](../../.codex_tmp/portal-intake-cycle/1793116102957/03-portal-correction.png), [Portal mobile sau tiếp nhận](../../.codex_tmp/portal-intake-cycle/1793116102957/05-mobile-accepted.png). Đây là artifact cục bộ, không phải tài liệu bàn giao mới.
+
+###### Phiên xem thử cũ và điều kiện phát hành
+
+- Phiên xem thử ngày 27/10/2026 có thời hạn đến 23:18 giờ Việt Nam cùng ngày. Đến ngày cập nhật tài liệu 28/10, phiên đã quá thời hạn; không dùng lại đường dẫn, tài khoản hay mã hồ sơ cũ như một môi trường đang hoạt động. Lượt biên tập này không mở lại phiên hoặc xác minh việc dọn dữ liệu sau khi phiên kết thúc.
+- Checkpoint kỹ thuật ngày 27/10 ghi nhận DB dùng chung `sme_loan/public` chưa có `correction_request`; chưa áp SQL mới vào public. Không dùng kết quả kiểm tra ngày 27/10 để khẳng định trạng thái DB hiện tại nếu chưa xác minh lại.
+- Trước khi chạy backend mới trên DB dùng chung cần xác minh cấu trúc DB và áp `backend/prisma/portal-intake-cycle.sql` nếu chưa áp, kể cả khi cờ mở Portal còn tắt. Không dùng seed/reset/schema push thay cho kế hoạch nâng cấp đã được kiểm tra.
+- Có thể tạo lại phiên bằng build backend rồi chạy `node frontend/scripts/check-portal-intake-cycle-browser.mjs --review` từ root khi Docker PostgreSQL sẵn sàng và quyền tạo/dọn schema thử còn hiệu lực. Không chạy đồng thời hai bộ thử trên cổng 3002/5174. Đây là hướng dẫn cho người triển khai, không yêu cầu PO tự vận hành.
+- Không tạo lại các file bàn giao/test BA đã được PO yêu cầu xóa; chỉ cập nhật bàn giao tại HANDOVER_v2.1.md.
+
+</details>
+
+<a id="sla-pa1-next-handover"></a>
+##### C.9. Công việc tiếp theo — bàn giao triển khai SLA PA1 cho PO kiêm Dev
+
+**Ngày ghi nhận: 28/10/2026. Trạng thái: đã xác định nội dung cần làm; chưa triển khai PA1.** Lượt này chỉ cập nhật bàn giao. Người nhận dùng các quy tắc đã được PO duyệt dưới đây làm căn cứ thực hiện, không yêu cầu chọn lại PA1 hay tự thêm nghiệp vụ.
+
+###### C.9.1. Mục tiêu và điểm bắt đầu
+
+Hoàn thiện cách đo thời gian xử lý hồ sơ vay theo giờ làm việc, phân biệt đúng lúc chờ doanh nghiệp với lúc ngân hàng kiểm tra. Sau đó đồng bộ kết quả trên các công đoạn, nhắc hạn, đóng quá hạn, chi tiết hồ sơ và Dashboard.
+
+- Điểm bắt đầu là **bộ tính thời gian dùng chung và cách lưu lịch/khoảng tạm dừng**, rồi nối vào các thao tác hiện có. Chưa cần xây một phân hệ quản lý lịch hoặc luồng phê duyệt mới.
+- Portal V2 đã có vòng gửi–kiểm tra–trả sửa–gửi lại–tiếp nhận và bằng chứng thử ngày 27/10 tại C.8. Người nhận giữ phần này, kiểm tra hồi quy điểm nối tiếp nhận và chuẩn bị lại phiên cho PO nghiệm thu; không coi phiên thử cũ vẫn hoạt động.
+- Tài liệu, kết quả thực hiện, lỗi còn lại và trạng thái nghiệm thu chỉ cập nhật vào HANDOVER_v2.1.md. Không tạo thêm file bàn giao hoặc bộ test BA riêng; test tự động phục vụ việc triển khai vẫn nằm cùng source theo quy ước dự án.
+
+###### C.9.2. Quy tắc nghiệp vụ đã được duyệt — phải giữ nguyên
+
+| Luồng | Quy tắc thực hiện |
+| :--- | :--- |
+| Giờ làm việc | Thứ Hai–thứ Sáu, 08:00–12:00 và 13:00–17:00 giờ Việt Nam; loại ngày nghỉ theo lịch được xác nhận. Giữ định mức giờ hiện có của từng công đoạn. |
+| Bắt đầu/kết thúc công đoạn | SLA hồ sơ vay bắt đầu khi tiếp nhận thành hồ sơ vay. Chuyển bước phải chốt đúng thời gian công đoạn trước. Thời gian doanh nghiệp chờ từ lúc gửi Portal theo dõi riêng, chưa áp thêm định mức mới. |
+| Bảo toàn lịch sử | Công đoạn mở trước thời điểm PA1 có hiệu lực giữ cách tính cũ, kể cả có bổ sung đang mở. Công đoạn mở mới sau hiệu lực dùng PA1 và lưu phiên bản lịch/chính sách áp dụng. Không tính lại lịch sử hoặc dựng khoảng dừng từ tổng giờ cũ. |
+| Chờ doanh nghiệp | CBTD gửi yêu cầu bổ sung thì dừng SLA. Upload một phần chưa làm chạy lại SLA. Doanh nghiệp chính thức gửi đủ các mục đang được yêu cầu thì SLA chạy trong lúc ngân hàng kiểm tra. |
+| Ngân hàng kiểm tra | Đánh dấu từng mục khi còn đang kiểm tra không tự dừng SLA. CBTD hoàn tất lượt kiểm tra và gửi danh sách sửa tổng hợp thì dừng lại để chờ doanh nghiệp. Hoàn tất bổ sung không tính thời gian dừng lần hai. |
+| Điều kiện chuyển bước | Hồ sơ đang yêu cầu bổ sung vẫn bị chặn chuyển bước đến khi kiểm tra hoàn tất. Chạy lại SLA không đồng nghĩa hồ sơ đã đủ điều kiện chuyển công đoạn. |
+| Nhắc/đóng quá hạn | Giữ mốc nhắc 5 ngày, quá hạn 10 ngày và cách đếm ngày lịch/quy tắc cuối tuần của TK-07. Không reset hạn, tự gia hạn hoặc đóng vì ngân hàng chưa kiểm tra phản hồi đã gửi đủ. Quản lý tiếp tục quyết định đóng thủ công, có lý do và lịch sử. |
+| Điều chuyển/thử lại | Điều chuyển CBTD không xóa thời gian đã dùng hoặc tự dừng SLA. Thao tác lặp/mất phản hồi không tạo khoảng dừng trùng. Số lượt bổ sung tăng theo lượt yêu cầu, không theo số tệp, phản hồi hay lượt trả sửa. |
+| Dữ liệu, quyền và ML | Giữ vòng vay, quyền vai trò, ngưỡng phê duyệt, dữ liệu doanh nghiệp và lịch sử hiện có. ML chỉ cảnh báo trễ SLA; chưa có dự báo tương thích PA1 thì hiển thị rõ chưa có, không tạo xác suất giả hoặc tự huấn luyện/ghi đè model. Không tự thêm lần gọi ML chỉ vì doanh nghiệp phản hồi. |
+
+###### C.9.3. Cấu hình đợt nghiệm thu đề xuất — cần PO xác nhận trước khi kích hoạt
+
+**PA1 và các quy tắc C.9.2 đã có phê duyệt. Lịch mô phỏng cụ thể dưới đây mới là đề xuất; việc ghi vào bàn giao không tự biến thành cấu hình đã được PO duyệt hoặc đã có hiệu lực.** Có thể xây dựng bộ tính và kiểm thử logic theo quy tắc đã duyệt trong khi chờ chốt cấu hình kích hoạt.
+
+| Nội dung | Đề xuất cho đợt nghiệm thu |
+| :--- | :--- |
+| Môi trường | Docker PostgreSQL trên máy phát triển, database `sme_loan`, schema thử mới theo cơ chế `portal_v2_it_*` đã có. Chỉ tạo/dọn dữ liệu mô phỏng và tệp thuộc lượt thử; xác minh lại đúng đích trước thao tác. |
+| Lịch thử | Lịch mô phỏng phiên bản 1, bao phủ 26/10–08/11/2026, dùng khung giờ C.9.2; ngoài cuối tuần, đặt **30/10/2026 là ngày nghỉ giả lập** để kiểm tra ngày nghỉ nối cuối tuần. Không gọi đây là lịch nghỉ chính thức của ngân hàng. |
+| Hiệu lực | Ghi nhận mốc **T0 khi kích hoạt PA1 trên phiên thử**, không hồi tố. Công đoạn mở trước T0 giữ cách tính cũ; công đoạn mở từ T0 dùng PA1, bao gồm công đoạn mới trên hồ sơ cũ. |
+| Ngoài kỳ lịch | Khoảng ngày trên là dữ liệu nghiệm thu cố định. Nếu phiên thao tác thực tế nằm ngoài kỳ bao phủ, trình phiên bản lịch thử kế tiếp trước khi kích hoạt; không tự thay lịch đã áp dụng hoặc quay về tính 24/7. |
+| Môi trường chung | Chưa tự áp SQL vào schema `public` hoặc mở dùng chung. Sau kiểm chứng phải trình đích DB, thay đổi dữ liệu, cách khôi phục, phạm vi người dùng và thời điểm mở để quyết định bước phát hành. |
+
+###### C.9.4. Thứ tự triển khai và đầu ra từng mốc
+
+| Mốc | Nội dung cần hoàn thành | Đầu ra để kiểm tra/nghiệm thu |
+| :--- | :--- | :--- |
+| **1 — Tính đúng thời gian** | Dùng một bộ tính cho giờ làm việc và các khoảng dừng; lưu phiên bản lịch/chính sách của công đoạn; nối vào tiếp nhận, chuyển bước và kết thúc công đoạn. Chỉ loại phần thời gian dừng giao với giờ làm việc, tránh trừ giờ nghỉ hai lần. | Tính đúng nghỉ trưa, cuối tuần, ngày nghỉ, khoảng dừng đang mở/đã kết thúc và giá trị 0 giờ thực. Công đoạn cũ giữ kết quả cũ; điều chuyển không đặt lại đồng hồ. |
+| **2 — Đúng trách nhiệm chờ** | Nối bộ tính vào yêu cầu bổ sung, phản hồi đủ, kiểm tra, trả sửa tổng hợp và hoàn tất; đồng bộ nhắc hạn/đánh dấu quá hạn/đóng quá hạn. | Cùng hồ sơ đi được trọn vòng chờ doanh nghiệp → ngân hàng kiểm tra → trả sửa hoặc hoàn tất. Không dừng/chạy trùng khi thao tác lặp, không chuyển bước sớm hoặc đóng do ngân hàng chậm xem phản hồi. |
+| **3 — Hiển thị và nghiệm thu toàn luồng** | Đồng bộ chi tiết hồ sơ và Dashboard; phân biệt cách tính cũ/PA1, thời gian xử lý với thời gian chờ; kiểm tra khả năng sử dụng dự báo ML. Chạy hồi quy Portal và quy trình vay trên API/DB/trình duyệt. | Người dùng thấy đúng thời gian/định mức, đang chờ ai và tình trạng dự báo. Có hồ sơ mẫu để PO trực tiếp đánh giá, kết quả kiểm tra và giới hạn còn lại; chưa gọi là đã phát hành khi mới đạt trên schema thử. |
+
+Mỗi mốc phải có kiểm tra hành vi và hồi quy liên quan; không chỉ hoàn thiện màn hình hoặc đổi nhãn SLA. Dùng lại bộ chạy môi trường thử hiện có nếu phù hợp, không viết lại phần Portal đã đạt chỉ để triển khai PA1.
+
+###### C.9.5. Những tình huống bắt buộc phải chứng minh
+
+1. **Nghỉ trưa:** cùng một ngày làm việc không nghỉ, từ 11:00 đến 14:00, không có khoảng dừng khác, tính **2 giờ**.
+2. **Ngày nghỉ nối cuối tuần:** theo lịch mô phỏng đề xuất, từ 16:00 ngày 29/10 đến 09:00 ngày 02/11/2026, không có khoảng dừng khác, tính **2 giờ**. Đây là tình huống kiểm thử cố định, không thay đồng hồ hệ thống để giả vận hành.
+3. **Bổ sung:** tạo yêu cầu thì dừng; tải một tệp vẫn dừng; gửi chính thức đủ thì chạy; ngân hàng kiểm tra vẫn tính giờ; gửi danh sách sửa tổng hợp thì dừng mới; hoàn tất không trừ thời gian lần hai.
+4. **Chặn đúng nghiệp vụ:** đang yêu cầu bổ sung vẫn không chuyển bước; phản hồi đủ chờ ngân hàng kiểm tra không bị nhắc thiếu/đóng chỉ vì cán bộ chưa kiểm tra. Giữ đúng dấu vết nộp muộn và hạn 5/10 ngày.
+5. **Lịch sử/đồng thời:** công đoạn cũ trước T0 giữ cách tính cũ; công đoạn mới sau T0 dùng PA1. Gửi lặp, mất phản hồi, điều chuyển hoặc thao tác đồng thời không làm mất thời gian hoặc tạo hai khoảng dừng đang mở.
+6. **Thông tin người dùng:** chi tiết và Dashboard khớp nhau; phân biệt thời gian chờ với thời gian xử lý, cách tính cũ với PA1; dự báo chưa tương thích được thể hiện rõ. Vòng Portal và dữ liệu doanh nghiệp cũ không bị ảnh hưởng ngoài phạm vi được duyệt.
+
+###### C.9.6. Cách người nhận tiếp tục công việc và trình kết quả
+
+- Đọc hướng dẫn dự án `.agents/AGENTS.md`, `Project.md` và phần C trước khi sửa. Kiểm tra lại source/môi trường thực tế; dùng CodeGraph theo quy định khi phân tích/sửa code. C.8 là bằng chứng đợt trước, không thay kết quả kiểm chứng mới.
+- Truy vết các điểm dùng SLA trong luồng vay, bổ sung, nhắc hạn, đóng quá hạn, Dashboard và dự báo trước khi đổi; thực hiện xuyên suốt phần được giao. Chưa tự đặt thêm hạn kiểm tra nội bộ, quyền gia hạn, luồng phê duyệt hoặc mô hình dự báo mới.
+- Kiểm thử có ghi dữ liệu dùng đúng schema Docker riêng đã được cho phép; xác minh quyền sở hữu trước dọn. Trước chạy API phải bảo đảm cấu trúc DB, Prisma Client và bản build khớp mã nguồn mới. Không dùng dữ liệu/bản chạy cũ để kết luận bản mới đã đạt.
+- Nếu phát hiện xung đột nghiệp vụ hoặc cần vượt phạm vi, báo ngay: tình huống, ảnh hưởng, bằng chứng và phương án đề xuất. Dừng phần phụ thuộc quyết định đó, tiếp tục phần độc lập đã được giao; không xin duyệt lặp quy tắc đã có.
+- Bàn giao bằng hồ sơ thao tác được: Portal → tiếp nhận → bổ sung/trả sửa → chuyển bước → hoàn tất hoặc quản lý đóng quá hạn. Ghi tại file này: mốc nào đã làm, môi trường, kết quả thật, lỗi/giới hạn, lịch và T0 thực tế, cách mở phiên PO xem thử và việc dọn dữ liệu. PO giữ quyền nghiệm thu cuối.
+
+###### C.9.7. Mẫu lời giao việc để PO gửi khi tiếp tục triển khai
+
+Nội dung dưới đây là **mẫu để PO xem và gửi**, chưa được coi là lệnh đã thực thi trong lượt cập nhật tài liệu này. Câu xác nhận lịch mô phỏng chỉ có hiệu lực khi PO thực sự gửi/chấp thuận.
+
+> Bạn tiếp nhận vai trò PO kiêm Dev cho SME Loan Workflow. Đọc HANDOVER_v2.1.md, mục C.9 và hướng dẫn dự án, rồi triển khai SLA PA1 theo ba mốc: tính đúng thời gian → đúng trách nhiệm chờ bổ sung → đồng bộ hiển thị và nghiệm thu toàn luồng.
+>
+> Tôi đồng ý dùng lịch mô phỏng 26/10–08/11/2026, thứ Hai–thứ Sáu 08:00–12:00 và 13:00–17:00 giờ Việt Nam; ngày 30/10 là ngày nghỉ giả lập chỉ để nghiệm thu. Ghi T0 lúc kích hoạt trên phiên thử; công đoạn cũ giữ cách tính cũ, công đoạn mới từ T0 dùng PA1. Nếu lịch không còn bao phủ thời gian thao tác thực tế, trình lịch thử kế tiếp trước khi bật.
+>
+> Kiểm thử trên Docker PostgreSQL `sme_loan`, schema thử riêng `portal_v2_it_*`, chỉ tạo/dọn dữ liệu mô phỏng và tệp thuộc lượt thử. Giữ nguyên vòng Portal đã có, quyền xử lý, ngưỡng phê duyệt, định mức SLA và hạn bổ sung 5/10 ngày; không tự thêm nghiệp vụ hoặc thay đổi model ML.
+>
+> Hoàn thành kiểm tra các tình huống tại C.9.5, chuẩn bị hồ sơ để tôi thao tác nghiệm thu và cập nhật kết quả đúng vào HANDOVER_v2.1.md. Chưa tự áp thay đổi vào dữ liệu dùng chung/phát hành. Nếu có lỗi logic hoặc cần vượt phạm vi, báo ngay kèm ảnh hưởng và phương án. Tôi giữ quyền nghiệm thu cuối.
 
 ---
 
@@ -615,7 +824,7 @@ Thành viên tiếp nhận khi sử dụng AI trợ lý (Antigravity / Codex) đ
 
 1. **Đọc tài liệu và Source code trước khi sửa:** AI phải đọc kỹ các file liên quan và kiểm tra CodeGraph (`npm run graph:check`) trước khi đề xuất bất kỳ dòng code nào. Không được sửa code dựa trên suy đoán.
 2. **Không tự phát minh Business Rule:** Tuyệt đối không để AI tự đặt ra các quy định nghiệp vụ mới ngoài phạm vi tài liệu hoặc các quyết định đã được PO phê duyệt.
-3. **Không tự ý thay đổi các nghiệp vụ PENDING:** Khi một tính năng đang ở trạng thái `[PENDING]` (như nộp Portal V2 hay quy tắc đếm ngày SLA), AI không được tự ý đổi cờ hoặc viết code mặc định phương án thay thế.
+3. **Không tự thay nghiệp vụ hoặc mở tính năng chưa nghiệm thu:** TK-05/TK-11 đã có quyết định, còn triển khai và kiểm chứng; không xin chọn lại hoặc bật cờ thay cho hoàn thiện chức năng.
 4. **Một task tại một thời điểm:** Không yêu cầu AI triển khai nhiều task cùng lúc. Thực hiện dứt điểm từng task theo đúng thứ tự ưu tiên.
 5. **Phân tích ảnh hưởng toàn diện (SME-AI-012):** Trước khi sửa bất kỳ module nào, AI phải phân tích ảnh hưởng theo chiều ngang (các tính năng liên quan) và chiều sâu đệ quy (Frontend <-> Backend API <-> Prisma Schema/Database).
 6. **Không sửa module ngoài phạm vi:** Tuyệt đối không chạm vào các module nhạy cảm như `workflow.service.ts` hay `schema.prisma` nếu task đang làm không yêu cầu trực tiếp.
@@ -693,9 +902,9 @@ Thành viên mới tiếp nhận dự án cần tích chọn xác nhận từng 
 - [ ] Xác nhận tính năng "Giải ngân" không có code và nằm ngoài phạm vi cốt lõi của đồ án.
 
 #### C. Nắm bắt các Hạng mục PENDING & An toàn Dữ liệu
-- [ ] Nắm rõ tính năng Portal V2 nộp hồ sơ đang bị khóa cứng tại `portal.readiness.ts:3` do chờ PO nghiệm thu chính sách (`TK-05`).
-- [ ] Nắm rõ quy tắc tính giờ SLA (giờ làm việc hành chính hay 24/7 continuous hours) đang chờ PO quyết định (`TK-11`).
-- [ ] Nắm rõ quy tắc đếm ngày quá hạn (ngày làm việc vs ngày lịch) đang chờ PO quyết định (`DEC-02` / `TK-07`).
+- [ ] Nắm rõ TK-05 đã triển khai trọn vòng Portal và kiểm chứng thử; còn PO nghiệm thu/đưa lên môi trường chung. Phân biệt với TK-11 chưa triển khai theo Nhóm C.
+- [ ] Nắm rõ TK-11 đã chọn PA1, chưa triển khai; cần lịch ngày nghỉ có phiên bản và kiểm chứng tích hợp trước hiệu lực.
+- [ ] Nắm rõ TK-07 đã chọn ngày lịch/quy tắc cuối tuần; không tự gia hạn hoặc lẫn hạn phản hồi với SLA giờ làm việc.
 - [ ] Nắm rõ danh sách các script có nguy cơ ghi/xóa database trong thư mục `backend/scripts/` và cam kết không chạy tùy tiện trên DB có dữ liệu thật.
 
 ---

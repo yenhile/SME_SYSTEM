@@ -17,7 +17,8 @@
     "test:deadlines": "node --test scripts/check-supplement-deadline-ui.mjs",
     "test:intake": "node --test scripts/check-intake-ui.mjs scripts/check-intake-v2-ui.mjs",
     "test:supplements": "node --experimental-strip-types --test scripts/check-supplements-ui.mjs src/portal/supplements.test.mjs",
-    "test:portal": "node --experimental-strip-types --test src/portal/model.test.mjs src/portal/client.test.mjs src/portal/wizard.test.mjs",
+    "test:portal": "node --experimental-strip-types --test src/portal/model.test.mjs src/portal/client.test.mjs src/portal/wizard.test.mjs src/portal/intake-cycle.test.mjs",
+    "check:portal-intake-cycle": "node scripts/check-portal-intake-cycle-browser.mjs",
     "check:portal-v2": "node scripts/check-portal-v2-browser.mjs",
     "check:portal-v2-intake": "node scripts/check-portal-v2-intake-browser.mjs",
     "check:portal-mvp": "node scripts/check-portal-mvp-supplements-browser.mjs"

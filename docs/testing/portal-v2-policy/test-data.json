@@ -1,0 +1,134 @@
+{
+  "datasetId": "TD-01",
+  "purpose": "Synthetic metadata fixture for pure logic and service-fixture tests; not a live API payload.",
+  "baseline": {
+    "options": {
+      "phase": "SUBMIT",
+      "submittedAt": "2026-10-26T09:00:00+07:00"
+    },
+    "data": {
+      "taxCode": "1234567890",
+      "companyName": "DOANH NGHIEP MO PHONG QA",
+      "industry": "Sản xuất",
+      "establishedYear": 2020,
+      "annualRevenue": 0,
+      "charterCapital": 500000000,
+      "representativeName": "Người đại diện giả lập",
+      "phone": "0900000000",
+      "address": "Địa chỉ giả lập phục vụ kiểm thử",
+      "loanPurpose": "Nguyên vật liệu",
+      "loanType": "VAY_VON_LUU_DONG",
+      "proposedAmount": 100000000,
+      "loanTermMonths": 12,
+      "businessScope": "MANUFACTURING",
+      "revenuePeriod": "2025",
+      "annualRevenueBasis": {
+        "documentId": "finance",
+        "fullYearCompleted": true
+      },
+      "representative": {
+        "mode": "LEGAL_REPRESENTATIVE"
+      },
+      "submissionDeclaration": {
+        "accepted": true,
+        "version": "portal-enterprise-submission-v1"
+      },
+      "hasExistingDebt": false,
+      "collateral": {
+        "mode": "NONE_REQUESTED"
+      }
+    },
+    "documents": [
+      {
+        "id": "registration",
+        "documentGroup": "A",
+        "coverage": [
+          {
+            "documentTypeCode": "A_BUSINESS_REGISTRATION"
+          }
+        ]
+      },
+      {
+        "id": "charter",
+        "documentGroup": "A",
+        "coverage": [
+          {
+            "documentTypeCode": "A_CHARTER"
+          }
+        ]
+      },
+      {
+        "id": "authority",
+        "documentGroup": "A",
+        "coverage": [
+          {
+            "documentTypeCode": "A_REPRESENTATIVE_AUTHORITY"
+          }
+        ]
+      },
+      {
+        "id": "identity",
+        "documentGroup": "A",
+        "coverage": [
+          {
+            "documentTypeCode": "A_REPRESENTATIVE_ID"
+          }
+        ]
+      },
+      {
+        "id": "finance",
+        "documentGroup": "B",
+        "coverage": [
+          {
+            "documentTypeCode": "B_FINANCIAL_STATEMENTS",
+            "period": "2025",
+            "components": [
+              "BALANCE_SHEET",
+              "INCOME_STATEMENT",
+              "CASH_FLOW_STATEMENT",
+              "NOTES"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "production",
+        "documentGroup": "C",
+        "coverage": [
+          {
+            "documentTypeCode": "C_PRODUCTION_PLAN"
+          }
+        ]
+      },
+      {
+        "id": "output",
+        "documentGroup": "C",
+        "coverage": [
+          {
+            "documentTypeCode": "C_BUSINESS_CONTRACT"
+          }
+        ]
+      },
+      {
+        "id": "request",
+        "documentGroup": "D",
+        "coverage": [
+          {
+            "documentTypeCode": "D_LOAN_REQUEST"
+          }
+        ]
+      },
+      {
+        "id": "plan",
+        "documentGroup": "D",
+        "coverage": [
+          {
+            "documentTypeCode": "D_CAPITAL_PLAN"
+          }
+        ]
+      }
+    ]
+  },
+  "caseCount": 48
+}
+

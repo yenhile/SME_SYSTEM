@@ -19,7 +19,7 @@ test('CBTD queue includes only assigned intakes and current linked loan ownershi
   let query;
   const service=new PortalService({portalRequest:{findMany:async args=>{query=args;return[];}},loanApplication:{findMany:async()=>[]}});
   await service.list(undefined,{id:'officer',roles:['CBTD']});
-  assert.deepEqual(query.where,{OR:[{status:'ASSIGNED',assignedTo:'officer'},{status:'ACCEPTED',loan:{is:{assignedTo:'officer'}}}]});
+  assert.deepEqual(query.where,{OR:[{status:{in:['ASSIGNED','RETURNED']},assignedTo:'officer'},{status:'ACCEPTED',loan:{is:{assignedTo:'officer'}}}]});
   assert.deepEqual(query.include.assignedOfficer,{select:{id:true,fullName:true,username:true}});
 });
 test('unassigned intake cannot be accepted by a CBTD',async()=>{
@@ -78,7 +78,7 @@ test('officer workload uses active loan statuses and assigned requests only',asy
   assert.deepEqual(await service.officers(),[{id:'officer',fullName:'Demo',username:'demo',activeLoanCount:4,pendingIntakeCount:2}]);
   assert.deepEqual(queries[0].where,{isActive:true,roles:{some:{role:{code:'CBTD'}}}});
   assert.deepEqual(queries[1].where.currentStatus.in,['RECEIVED','CHECKED','SUPPLEMENT_REQUIRED','PENDING_APPRAISAL','WAITING_HEAD_OFFICE']);
-  assert.deepEqual(queries[2].where,{assignedTo:'officer',status:'ASSIGNED'});
+  assert.deepEqual(queries[2].where,{assignedTo:'officer',status:{in:['ASSIGNED','RETURNED']}});
 });
 
 test('history checks current request visibility before returning internal notes',async()=>{

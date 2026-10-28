@@ -247,6 +247,7 @@ enum PortalRequestStatus {
   DRAFT
   SUBMITTED
   ASSIGNED
+  RETURNED
   ACCEPTED
 }
 
@@ -295,9 +296,60 @@ model PortalRequest {
   documents PortalDocument[]
   assignments PortalAssignment[]
   notifications InternalNotification[]
+  submissions PortalSubmission[]
+  intakeOperations PortalIntakeOperation[]
+  intakeIssues PortalIntakeIssue[]
+  correctionRequest Json? @map("correction_request")
   @@index([accountId, status])
   @@index([assignedTo, status])
   @@map("portal_requests")
+}
+
+model PortalSubmission {
+  id String @id @default(uuid())
+  requestId String @map("request_id")
+  sequence Int
+  sourceRevision Int @map("source_revision")
+  snapshot Json
+  reviews Json @default("[]")
+  changes Json @default("{}")
+  returnItems Json @default("[]") @map("return_items")
+  returnedAt DateTime? @map("returned_at")
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  request PortalRequest @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@unique([requestId, sequence])
+  @@unique([requestId, sourceRevision])
+  @@map("portal_submissions")
+}
+
+model PortalIntakeOperation {
+  id String @id @default(uuid())
+  requestId String @map("request_id")
+  clientRequestId String @map("client_request_id")
+  actorId String @map("actor_id")
+  kind String
+  payloadHash String @map("payload_hash")
+  createdAt DateTime @default(now()) @map("created_at")
+  request PortalRequest @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@unique([requestId, clientRequestId])
+  @@map("portal_intake_operations")
+}
+
+model PortalIntakeIssue {
+  id String @id @default(uuid())
+  requestId String @map("request_id")
+  description String
+  proposal String
+  publicMessage String @map("public_message")
+  status String @default("OPEN")
+  resolution String?
+  createdBy String @map("created_by")
+  updatedBy String @map("updated_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  request PortalRequest @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@index([requestId, status])
+  @@map("portal_intake_issues")
 }
 
 model PortalAssignment {

@@ -36,6 +36,7 @@ const PRE_ACCEPTANCE: Record<string, { label: string; message: string }> = {
   DRAFT: { label: 'Bản nháp', message: 'Đề nghị chưa được gửi. Hoàn tất thông tin và tài liệu rồi gửi cho ngân hàng.' },
   SUBMITTED: { label: 'Đã gửi, chờ phân công', message: 'Ngân hàng đã nhận đề nghị và đang phân công cán bộ xử lý.' },
   ASSIGNED: { label: 'Chờ ngân hàng tiếp nhận', message: 'Đề nghị đã được phân công và đang chờ ngân hàng tiếp nhận chính thức.' },
+  RETURNED: {label:'Cần chỉnh sửa đề nghị',message:'Ngân hàng đã gửi danh sách yêu cầu chỉnh sửa. Mở đề nghị để sửa và gửi lại trên cùng mã.'},
 };
 
 const LOAN_STATUS: Record<string, { code: string; label: string; message: string }> = {

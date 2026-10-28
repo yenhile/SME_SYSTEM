@@ -15,7 +15,7 @@ export function IntakeAssignment({ request, activeRole, disabled, onUpdated }: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const canAssign = activeRole === 'QUAN_LY' && ['SUBMITTED', 'ASSIGNED'].includes(request.status);
+  const canAssign = activeRole === 'QUAN_LY' && ['SUBMITTED', 'ASSIGNED', 'RETURNED'].includes(request.status);
   useEffect(() => {
     let disposed = false;
     setLoading(true);
@@ -31,7 +31,7 @@ export function IntakeAssignment({ request, activeRole, disabled, onUpdated }: {
       if (reassign && !note.trim()) { setError('Vui lòng nhập lý do điều chuyển.'); return; }
       if (!window.confirm(reassign ? 'Xác nhận điều chuyển đề nghị sang cán bộ đã chọn?' : 'Xác nhận phân công đề nghị cho cán bộ đã chọn?')) return;
       setBusy(true);
-      try { const updated = await api.post<PortalRequest>(`/portal-intakes/${request.id}/assign`, { officerId, expectedAssignedTo: request.assignedTo ?? null, ...(note.trim() ? { note: note.trim() } : {}) }); await onUpdated(updated); setNotice('Đã lưu phân công.'); window.dispatchEvent(new Event('sme-notifications-refresh')); }
+      try { const updated = await api.post<PortalRequest>(`/portal-intakes/${request.id}/assign`, { officerId, expectedAssignedTo: request.assignedTo ?? null, expectedRevision:request.revision, ...(note.trim() ? { note: note.trim() } : {}) }); await onUpdated(updated); setNotice('Đã lưu phân công.'); window.dispatchEvent(new Event('sme-notifications-refresh')); }
       catch (err) { setError((err as Error).message); }
       finally { setBusy(false); }
     }}><h3>{request.assignedTo ? 'Điều chuyển trước tiếp nhận' : 'Phân công cán bộ tín dụng'}</h3>

@@ -1,4 +1,6 @@
 export type GroupCode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export type FinancialComponent = 'BALANCE_SHEET' | 'INCOME_STATEMENT' | 'CASH_FLOW_STATEMENT' | 'NOTES';
+export interface DocumentCoverage { documentTypeCode: string; period?: string; components?: FinancialComponent[] }
 export interface PortalData {
   taxCode?: string; companyName?: string; industry?: string; establishedYear?: number;
   annualRevenue?: number; charterCapital?: number; representativeName?: string; phone?: string;
@@ -7,28 +9,50 @@ export interface PortalData {
   contactPhone?: string; contactEmail?: string; revenuePeriod?: string; neededAt?: string; preferredBranch?: string;
   hasExistingDebt?: boolean;
   annualRevenueBasis?: {documentId?:string;fullYearCompleted?:boolean};
+  businessScope?: 'MANUFACTURING' | 'OTHER';
+  representative?: { mode?: 'LEGAL_REPRESENTATIVE' | 'AUTHORIZED'; name?: string };
+  submissionDeclaration?: { accepted?: boolean; version?: string };
   collateral?: { mode?: 'PROPOSED' | 'NONE_REQUESTED' | 'UNDECIDED'; description?: string };
   capitalPlan?: { businessActivity?: string; costs?: { name?: string; amount?: number; plannedAt?: string }[]; ownFunds?: number; otherFunds?: number; otherFundsSource?: string; useFrom?: string; useTo?: string; repaymentSource?: string; recoveryDate?: string };
 }
-export interface PortalDocument { id: string; documentGroup: GroupCode; fileName: string; fileSize: number; uploadedAt: string; coverage?: { documentTypeCode: string; period?: string }[] | null; version?: number; supersedesId?: string | null; withdrawnAt?: string | null; mimeType?: string; contentHash?: string; sha256?: string }
+export interface PortalDocument { id: string; documentGroup: GroupCode; fileName: string; fileSize: number; uploadedAt: string; coverage?: DocumentCoverage[] | null; version?: number; supersedesId?: string | null; withdrawnAt?: string | null; mimeType?: string; contentHash?: string; sha256?: string }
+export interface ApprovedIntakeRequirement {
+  id: string; group: GroupCode; documentTypeCode: string; label: string; guidance: string; reviewCriteria: string[]; step: 4;
+  required: boolean; stage: 'SUBMIT' | 'INTAKE' | 'LATER'; periods?: string[]; component?: FinancialComponent;
+  alternatives?: string[]; condition?: { field: string; equals: string | boolean }; deferred?: boolean; basis?: string;
+}
+export interface ApprovedIntakeAssessment {
+  policyVersion: string; annualPeriod?: string; phase?: 'SUBMIT' | 'INTAKE'; dataReady: boolean;
+  missingFields: string[]; missingDocuments: string[]; formErrors: string[];
+  issues: { code: string; path: string; step: number; message: string }[];
+  requirements: (ApprovedIntakeRequirement & { applies: boolean; due: boolean; satisfied: boolean;
+    state: 'NOT_APPLICABLE' | 'LATER' | 'PROVIDED_PENDING_REVIEW' | 'MISSING' })[];
+  canSubmit: false; canAccept: false; businessValidity: 'NOT_REVIEWED'; creditDecision: null; note: string;
+}
 export interface IntakeUser { id: string; fullName: string; username: string }
-export interface PortalRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'ACCEPTED'; data: PortalData; documents: PortalDocument[]; submittedAt?: string; acceptedAt?: string; loanId?: string; assignedTo?: string | null; assignedBy?: string | null; assignedAt?: string | null; assignedOfficer?: IntakeUser | null; formVersion?: number; checklistVersion?: string; revision?: number; account?: PortalAccount; checklistSnapshot?: Record<string, unknown> | null }
+export interface PortalRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'RETURNED' | 'ACCEPTED'; data: PortalData; documents: PortalDocument[]; submittedAt?: string; acceptedAt?: string; loanId?: string; assignedTo?: string | null; assignedBy?: string | null; assignedAt?: string | null; assignedOfficer?: IntakeUser | null; formVersion?: number; checklistVersion?: string; revision?: number; account?: PortalAccount; checklistSnapshot?: Record<string, unknown> | null }
 export interface PortalAccount { id: string; email: string; contactName: string; phone: string }
 export interface PortalFormConfig {
+  intakeCycleEnabled?: boolean;
   readinessVersion?:'MVP1';
   mvpPolicy?: {version:string;status:string;canSubmit:boolean};
+  approvedIntakePolicy?: { canSubmit: boolean; canAccept: boolean; activationStatus: 'IMPLEMENTATION_INCOMPLETE' | 'ENABLED'; note: string;
+    policy: { version: string; status: 'APPROVED'; formVersion: 2; scope: 'MANUFACTURING_WORKING_CAPITAL_DEMO';
+      annualPeriodRule: 'PREVIOUS_COMPLETED_CALENDAR_YEAR'; timezone: 'Asia/Ho_Chi_Minh';
+      declaration: { version: string; text: string }; requiredFields: string[]; requirements: ApprovedIntakeRequirement[] } };
   submitPolicyVersion?: string | null;
   formVersion: number; checklistVersion: string; legacyChecklistVersion: string; previewEnabled: boolean;
   policyStatus: string; canSubmit: boolean; canAccept?: boolean; technicalLimits: { maxFileBytes: number; maxActiveFiles: number };
   groups: { code: GroupCode; name: string; policyStatus: string; documentTypes: { code: string; name: string; purpose: string; formats: string[]; requiredness: string; stage: string; applicability: string; periodRequirement: string; deferralStatus: string; substituteStatus: string; versionRule: string; sendRule: string; policyStatus: string }[] }[];
 }
 export interface PortalChecklist {
+  approvedIntakeAssessment?: ApprovedIntakeAssessment | null;
   submitPolicyVersion?: string; missing?: string[]; formErrors?: string[];
   requirements?: {id:string;group:string;documentTypeCode:string;periods?:string[];applies:boolean;required:boolean;stage:string;satisfied:boolean}[];
   formVersion: number; checklistVersion: string; policyStatus: string; cannotSubmit: boolean;
   groups: { code: GroupCode; name: string; required: boolean | null; status: string; documents: { id: string; coverage: PortalDocument['coverage'] }[] }[];
 }
-export const requestStatus = { DRAFT: 'Bản nháp', SUBMITTED: 'Chờ phân công', ASSIGNED: 'Đã phân công — chờ tiếp nhận', ACCEPTED: 'Đã tiếp nhận' };
+export const requestStatus = { DRAFT: 'Bản nháp', SUBMITTED: 'Chờ phân công', ASSIGNED: 'Đã phân công — chờ tiếp nhận', RETURNED: 'Cần chỉnh sửa đề nghị', ACCEPTED: 'Đã tiếp nhận' };
 export const groups: { code: GroupCode; name: string; description: string; accept: string }[] = [
   { code: 'A', name: 'Pháp lý', description: 'Giấy đăng ký doanh nghiệp, điều lệ, giấy tờ người đại diện; giấy ủy quyền hoặc nghị quyết nếu cần.', accept: '.pdf' },
   { code: 'B', name: 'Tài chính', description: 'Báo cáo tài chính 2–3 năm và kỳ gần nhất, công nợ phải thu/phải trả, tồn kho.', accept: '.pdf,.xlsx' },
