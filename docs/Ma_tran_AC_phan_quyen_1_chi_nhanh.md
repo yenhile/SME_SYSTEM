@@ -58,6 +58,8 @@
 | AC-18 | Quản lý hoặc Thẩm quyền hoặc CBTD gọi `GET /users` | HTTP 403 (chỉ Admin được xem và quản lý người dùng) |
 | AC-19 | CBTD mở hồ sơ **của mình** ở bất kỳ công đoạn nào (Thẩm định, Cấp trên, Hoàn tất): chi tiết, chứng từ, bổ sung, lịch sử | HTTP 200, chỉ xem |
 | AC-20 | CBTD tải/xóa chứng từ, tạo hoặc xử lý bổ sung, chuyển bước hồ sơ **của mình** khi hồ sơ đã rời Tiếp nhận | HTTP 403 "Vai trò đang dùng không được xử lý công đoạn này" (hồ sơ đã Hoàn tất: "Hồ sơ đã kết thúc") |
+| AC-21 | Người đang phụ trách hồ sơ (CBTD) dùng vai trò Thẩm quyền để thẩm định, từ chối hoặc phê duyệt chính hồ sơ đó; Quản lý đóng quá hạn hồ sơ mình phụ trách; Quản lý giao hồ sơ cho chính mình | HTTP 403 (hai trường hợp đầu) hoặc 400 (tự giao); khóa bằng  |
+| AC-22 | Admin tự khóa mình hoặc tự bỏ vai trò Admin; khóa hoặc bỏ vai trò CBTD của người còn hồ sơ chưa hoàn tất | HTTP 400, yêu cầu điều chuyển hồ sơ trước |
 
 ### Menu và trang đầu theo vai trò (giao diện)
 

@@ -118,6 +118,7 @@ export interface ApplicationAssignment {
 
 export interface LoanApplication {
   portalRequest?: import('../portal/model').PortalRequest | null;
+  source?: 'PORTAL' | 'QUAY';
   id: string;
   applicationCode: string;
   companyId: string;

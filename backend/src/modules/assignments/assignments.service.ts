@@ -119,6 +119,7 @@ export class AssignmentsService {
     }
 
     if (loan.completedAt || loan.currentStage === 'HOAN_TAT') throw new BadRequestException('Hồ sơ đã kết thúc, không thể điều chuyển.');
+    if (dto.newOfficerId === managerId) throw new BadRequestException('Quản lý không được tự giao hồ sơ cho chính mình.');
     if (loan.assignedTo === dto.newOfficerId) {
       throw new BadRequestException('Cán bộ mới được chọn trùng với cán bộ đang xử lý hiện tại.');
     }

@@ -26,6 +26,8 @@ export class WorkflowService {
       const fromReception = loan.currentStage === StageCode.TIEP_NHAN;
       if (user.activeRole !== (fromReception ? 'CBTD' : 'THAM_QUYEN')) throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
       if (fromReception && loan.assignedTo !== user.id) throw new ForbiddenException('Hồ sơ chưa được phân công cho bạn.');
+      if (!fromReception && loan.assignedTo === user.id) throw new ForbiddenException('Bạn đã xử lý hồ sơ này ở công đoạn Tiếp nhận nên không được tự thẩm định hoặc phê duyệt.');
+      if (!fromReception && loan.assignedTo === user.id) throw new ForbiddenException('Bạn đã xử lý hồ sơ này ở công đoạn Tiếp nhận nên không được tự thẩm định hoặc phê duyệt.');
       const amount = Number(loan.officialAmount || loan.proposedAmount);
       if (fromReception) {
         if (dto.targetStage !== StageCode.THAM_DINH || dto.targetStatus !== LoanStatus.PENDING_APPRAISAL) throw new BadRequestException('Tiếp nhận chỉ được chuyển sang Thẩm định.');
@@ -83,6 +85,7 @@ export class WorkflowService {
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
       const loan = await tx.loanApplication.findUnique({ where: { id: applicationId } });
       if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ.');
+      if (loan.assignedTo === user.id) throw new ForbiddenException('Bạn đang phụ trách hồ sơ này nên không được tự đóng hồ sơ.');
       if (loan.completedAt || loan.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
       if (loan.currentStatus !== LoanStatus.SUPPLEMENT_REQUIRED) throw new BadRequestException('Chỉ đóng được hồ sơ đang chờ bổ sung.');
       const pending = await tx.supplementRequest.findMany({ where: { applicationId, status: SupplementStatus.PENDING } });

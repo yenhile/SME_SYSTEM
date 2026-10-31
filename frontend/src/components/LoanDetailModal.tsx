@@ -381,6 +381,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 <h3 style={{ fontSize: '17px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                   {loan.applicationCode}
                 </h3>
+                {loan.source === 'QUAY' && <span className="badge badge-soft-gray" title="Hồ sơ do CBTD tạo trực tiếp, không qua vòng kiểm tra Portal">Tạo tại quầy</span>}
                 {loan.currentStatus === 'APPROVED' ? (
                   <span className="badge badge-soft-green">🟢 Đã phê duyệt</span>
                 ) : loan.currentStatus === 'REJECTED' ? (

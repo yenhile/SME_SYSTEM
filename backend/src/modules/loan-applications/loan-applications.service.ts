@@ -211,6 +211,7 @@ export class LoanApplicationsService {
     };
     return {
       ...loan,
+      source: loan.portalRequest ? 'PORTAL' : 'QUAY',
       predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, loan.stageHistories[0]?.slaPolicy),
       slaState,
       liveSla,
