@@ -106,7 +106,11 @@ export class AssignmentsService {
    * Thực hiện điều chuyển cán bộ xử lý hồ sơ (UC19)
    */
   async reassign(applicationId: string, dto: ReassignOfficerDto, managerId: string) {
-    const loan = await this.prisma.loanApplication.findUnique({
+    // Toàn bộ kiểm tra, ghi lịch sử và đổi người phụ trách chạy trong một giao dịch có khóa hồ sơ:
+    // lỗi giữa chừng hoặc hai lần điều chuyển đồng thời không làm lịch sử lệch với người phụ trách.
+    const { loan, targetOfficer, assignmentRecord, updatedLoan } = await this.prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
+    const loan = await tx.loanApplication.findUnique({
       where: { id: applicationId },
     });
 
@@ -115,12 +119,13 @@ export class AssignmentsService {
     }
 
     if (loan.completedAt || loan.currentStage === 'HOAN_TAT') throw new BadRequestException('Hồ sơ đã kết thúc, không thể điều chuyển.');
+    if (dto.newOfficerId === managerId) throw new BadRequestException('Quản lý không được tự giao hồ sơ cho chính mình.');
     if (loan.assignedTo === dto.newOfficerId) {
       throw new BadRequestException('Cán bộ mới được chọn trùng với cán bộ đang xử lý hiện tại.');
     }
 
     // Kiểm tra cán bộ mới tồn tại và hoạt động
-    const targetOfficer = await this.prisma.user.findUnique({
+    const targetOfficer = await tx.user.findUnique({
       where: { id: dto.newOfficerId },
       include: { roles: { include: { role: true } } },
     });
@@ -133,7 +138,7 @@ export class AssignmentsService {
     const now = new Date();
 
     // 1. Lưu bản ghi lịch sử điều chuyển
-    const assignmentRecord = await this.prisma.applicationAssignment.create({
+    const assignmentRecord = await tx.applicationAssignment.create({
       data: {
         applicationId,
         fromUserId: loan.assignedTo,
@@ -150,7 +155,7 @@ export class AssignmentsService {
     });
 
     // 2. Cập nhật cán bộ phụ trách mới cho hồ sơ
-    const updatedLoan = await this.prisma.loanApplication.update({
+    const updatedLoan = await tx.loanApplication.update({
       where: { id: applicationId },
       data: {
         assignedTo: dto.newOfficerId,
@@ -160,6 +165,8 @@ export class AssignmentsService {
         company: true,
         assignedUser: { select: { id: true, fullName: true, username: true } },
       },
+    });
+    return { loan, targetOfficer, assignmentRecord, updatedLoan };
     });
 
     // 3. KÍCH HOẠT LẠI DỰ BÁO AI

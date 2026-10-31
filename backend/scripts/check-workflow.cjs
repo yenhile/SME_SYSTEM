@@ -41,7 +41,7 @@ async function main() {
   assert.deepEqual([...created.user.roles].sort(), ['CBTD', 'THAM_QUYEN']);
   const cbtd = await login(tag, 'Check@12345', 'CBTD');
   const risk = { ...cbtd, role: 'THAM_QUYEN' };
-  const expired = new JwtService({ secret: process.env.JWT_SECRET || 'sme_loan_workflow_secret_key_2026' }).sign({ sub: cbtd.user.id }, { expiresIn: -1 });
+  const expired = new JwtService({ secret: process.env.JWT_SECRET || (() => { throw new Error('Cần đặt JWT_SECRET trùng với backend đang chạy để tạo token hết hạn.'); })() }).sign({ sub: cbtd.user.id }, { expiresIn: -1 });
   await call('/auth/me', { token: expired, role: 'CBTD' }, 'GET', undefined, 401);
   await call('/loan-applications', { ...cbtd, role: 'QUAN_LY' }, 'GET', undefined, 403);
   await call('/loan-applications', manager, 'POST', loanDto(500000000), 403);

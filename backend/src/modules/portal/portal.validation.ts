@@ -8,8 +8,9 @@ import * as yauzl from 'yauzl';
 import { crc32 } from 'node:zlib';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { LoanType } from '@prisma/client';
+import { jwtSecret } from '../../common/security/jwt-secret';
 
-export const portalSecret = () => createHmac('sha256', process.env.JWT_SECRET || 'sme_loan_workflow_secret_key_2026').update('sme-enterprise-portal-v1').digest('hex');
+export const portalSecret = () => createHmac('sha256', jwtSecret()).update('sme-enterprise-portal-v1').digest('hex');
 export const groups = ['A','B','C','D','E','F'];
 export type PortalFile = {buffer: Buffer; originalname: string; size: number; mimetype: string};
 const fields = ['taxCode','companyName','industry','establishedYear','annualRevenue','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths'];

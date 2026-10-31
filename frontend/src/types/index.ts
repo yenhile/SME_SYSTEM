@@ -69,6 +69,8 @@ export interface WorkflowStageHistory {
   slaStandardHours: number;
   isDelayed: boolean;
   notes?: string;
+  slaPolicy?: string | null;
+  slaCalendarVersion?: string | null;
   handler?: {
     fullName: string;
     username: string;
@@ -116,6 +118,7 @@ export interface ApplicationAssignment {
 
 export interface LoanApplication {
   portalRequest?: import('../portal/model').PortalRequest | null;
+  source?: 'PORTAL' | 'QUAY';
   id: string;
   applicationCode: string;
   companyId: string;
@@ -149,6 +152,9 @@ export interface LoanApplication {
   supplementRequests?: SupplementRequest[];
   assignments?: ApplicationAssignment[];
   delayPredictions?: DelayPrediction[];
+  predictionStatus?: 'AVAILABLE' | 'INCOMPATIBLE_PA1' | 'NONE';
+  slaState?: { policy: string | null; calendarVersion: string | null; waiting: 'ENTERPRISE' | 'BANK' | null; slaRunning: boolean };
+  liveSla?: { historyId: string; actualDurationHours?: number; pausedDurationHours?: number; netWorkDurationHours?: number; isDelayed?: boolean; error?: string } | null;
 }
 
 export interface OverviewStats {
@@ -161,6 +167,9 @@ export interface OverviewStats {
   delayedStages: number;
   slaOnTimeRate: number;
   highRiskLoans: number;
+  totalCompletedStagesPa1: number;
+  delayedStagesPa1: number;
+  slaOnTimeRatePa1: number | null;
 }
 
 export interface SlaBottleneck {
@@ -172,6 +181,7 @@ export interface SlaBottleneck {
   delayRate: number;
   avgNetWorkHours: number;
   isBottleneck: boolean;
+  pa1?: { totalHandled: number; delayedCount: number; delayRate: number; avgNetWorkHours: number; isBottleneck: boolean };
 }
 
 export interface EarlyWarningItem {
@@ -185,8 +195,9 @@ export interface EarlyWarningItem {
   supplementCount: number;
   assignedOfficer: string;
   assignedOfficerId?: string;
-  riskLevel: RiskLevel;
-  delayProbability: number;
+  riskLevel: RiskLevel | null;
+  delayProbability: number | null;
+  predictionStatus?: 'AVAILABLE' | 'INCOMPATIBLE_PA1' | 'NONE';
   predictedAt: string | null;
   topReasons: string[];
 }

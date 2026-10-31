@@ -13,13 +13,13 @@ import { CompaniesView } from './components/CompaniesView';
 import { PortalApp } from './portal/PortalApp';
 function Workspace() {
   const { activeRole } = useAuth();
-  const [tab, setTab] = useState<Tab>(getDefaultTab);
+  const [tab, setTab] = useState<Tab>(() => getDefaultTab(activeRole));
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [revision, setRevision] = useState(0);
   const [intakeTarget, setIntakeTarget] = useState<{ id: string; revision: number } | null>(null);
   const refresh = () => setRevision(value => value + 1);
-  const activeTab = resolveTab(tab);
+  const activeTab = resolveTab(tab, activeRole);
   return <div className="app-container"><Navbar activeTab={activeTab} onTabChange={setTab} onOpenIntake={id => { setSelectedLoanId(null); setTab('loans'); setIntakeTarget(previous => ({ id, revision: (previous?.revision ?? 0) + 1 })); }} onOpenLoan={setSelectedLoanId} /><main className="main-content">
     {(activeTab === 'loans' || activeTab === 'appraisal') && <LoanList key={activeTab} scope={activeTab === 'appraisal' ? 'appraisal' : 'all'} intakeTarget={intakeTarget} refreshKey={revision} onSelectLoan={setSelectedLoanId} onOpenCreate={() => setShowCreate(true)} />}
     {activeTab === 'companies' && <CompaniesView />}

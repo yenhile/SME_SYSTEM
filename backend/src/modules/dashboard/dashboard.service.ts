@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { LoanStatus, StageCode, RiskLevel } from '@prisma/client';
+import { waitingOn } from '../supplements/portal-supplement';
+import { firstStagePolicies, predictionStatusOf } from '../prediction/prediction-status';
+import { SLA_POLICY_PA1 } from '../workflow/sla/sla-policy';
 import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
 
 @Injectable()
@@ -28,14 +31,17 @@ export class DashboardService {
       totalCompletedStages,
       delayedStages,
       highRiskLoans,
+      totalCompletedStagesPa1,
+      delayedStagesPa1,
     ] = await Promise.all([
       this.prisma.loanApplication.count(),
       this.prisma.loanApplication.count({ where: { currentStatus: { in: activeStatuses } } }),
       this.prisma.loanApplication.count({ where: { currentStatus: LoanStatus.APPROVED } }),
       this.prisma.loanApplication.count({ where: { currentStatus: LoanStatus.REJECTED } }),
       this.prisma.loanApplication.count({ where: { currentStatus: LoanStatus.CLOSED_TIMEOUT } }),
-      this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null } } }),
-      this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, isDelayed: true } }),
+      // Cách tính cũ (giờ thực 24/7) và PA1 (giờ làm việc) khác thước đo nên không cộng chung.
+      this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: null } }),
+      this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: null, isDelayed: true } }),
       // Số hồ sơ active có dự báo nguy cơ trễ cao
       this.prisma.loanApplication.count({
         where: {
@@ -45,6 +51,8 @@ export class DashboardService {
           },
         },
       }),
+      this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: SLA_POLICY_PA1 } }),
+      this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: SLA_POLICY_PA1, isDelayed: true } }),
     ]);
 
     // Tỷ lệ đúng hạn SLA các công đoạn (%)
@@ -52,6 +60,11 @@ export class DashboardService {
       totalCompletedStages > 0
         ? Math.round(((totalCompletedStages - delayedStages) / totalCompletedStages) * 1000) / 10
         : 100;
+
+    const slaOnTimeRatePa1 =
+      totalCompletedStagesPa1 > 0
+        ? Math.round(((totalCompletedStagesPa1 - delayedStagesPa1) / totalCompletedStagesPa1) * 1000) / 10
+        : null;
 
     return {
       totalApplications,
@@ -61,7 +74,11 @@ export class DashboardService {
       timeoutApplications,
       totalCompletedStages,
       delayedStages,
-      slaOnTimeRate, // e.g. 88.5%
+      slaOnTimeRate, // e.g. 88.5% (cách tính cũ, giờ thực)
+      // Số liệu theo giờ làm việc (PA1), tách riêng; null khi chưa có công đoạn PA1 nào kết thúc.
+      totalCompletedStagesPa1,
+      delayedStagesPa1,
+      slaOnTimeRatePa1,
       highRiskLoans, // Số hồ sơ cảnh báo đỏ AI
     };
   }
@@ -76,7 +93,7 @@ export class DashboardService {
 
     const analysis = await Promise.all(
       stages.map(async (st) => {
-        const histories = await this.prisma.applicationStageHistory.findMany({
+        let histories = await this.prisma.applicationStageHistory.findMany({
           where: {
             stageId: st.id,
             exitedAt: { not: null },
@@ -85,8 +102,18 @@ export class DashboardService {
             actualDurationHours: true,
             netWorkDurationHours: true,
             isDelayed: true,
+            slaPolicy: true,
           },
         });
+        const summarize = (rows: typeof histories) => {
+          const handled = rows.length;
+          const delayed = rows.filter(h => h.isDelayed).length;
+          const rate = handled > 0 ? Math.round((delayed / handled) * 1000) / 10 : 0;
+          const avg = handled > 0 ? Math.round((rows.reduce((acc, h) => acc + (h.netWorkDurationHours || 0), 0) / handled) * 10) / 10 : 0;
+          return { totalHandled: handled, delayedCount: delayed, delayRate: rate, avgNetWorkHours: avg, isBottleneck: rate >= 15 || avg > st.standardSlaHours };
+        };
+        const pa1 = summarize(histories.filter(h => h.slaPolicy === SLA_POLICY_PA1));
+        histories = histories.filter(h => h.slaPolicy !== SLA_POLICY_PA1);
 
         const totalHandled = histories.length;
         const delayedCount = histories.filter((h) => h.isDelayed).length;
@@ -107,6 +134,8 @@ export class DashboardService {
           delayRate, // Tỷ lệ trễ %
           avgNetWorkHours, // Thời gian trung bình ngân hàng trực tiếp xử lý
           isBottleneck: delayRate >= 15 || avgNetWorkHours > st.standardSlaHours,
+          // Cùng các chỉ số nhưng theo giờ làm việc (PA1); các trường phía trên là cách tính cũ (giờ thực).
+          pa1,
         };
       }),
     );
@@ -126,7 +155,7 @@ export class DashboardService {
         application: { currentStatus: LoanStatus.SUPPLEMENT_REQUIRED },
       },
       select: {
-        id: true, applicationId: true, requestedAt: true, deadlineAt: true, overdueAt: true,
+        id: true, applicationId: true, requestedAt: true, deadlineAt: true, overdueAt: true, portalSupplement: true,
         application: {
           select: {
             applicationCode: true, assignedTo: true,
@@ -147,6 +176,7 @@ export class DashboardService {
       requestedAt: row.requestedAt,
       deadlineAt: row.deadlineAt,
       overdueAt: row.overdueAt,
+      waitingOn: waitingOn(row),
       // Tính từ hạn thực tế (ngày 10 hoặc deadlineAt), không phải lúc bộ quét đánh dấu.
       daysOverdue: Math.max(0, Math.floor((now.getTime() - supplementDueAt(row.requestedAt, row.deadlineAt).getTime()) / 86_400_000)),
     }));
@@ -180,6 +210,7 @@ export class DashboardService {
       },
     });
 
+    const policies = await firstStagePolicies(this.prisma, activeLoans.map(loan => loan.id));
     const warnings = activeLoans.map((loan) => {
       const latestPred = loan.delayPredictions[0] || null;
       let topReasons: string[] = [];
@@ -202,15 +233,17 @@ export class DashboardService {
         supplementCount: loan.supplementCount,
         assignedOfficer: loan.assignedUser ? loan.assignedUser.fullName : 'Chưa phân công',
         assignedOfficerId: loan.assignedTo,
-        riskLevel: latestPred ? latestPred.riskLevel : RiskLevel.THAP,
-        delayProbability: latestPred ? latestPred.delayProbability : 0.05,
+        // Không có dự báo thì để trống và nêu tình trạng, không bịa mức/xác suất.
+        riskLevel: latestPred ? latestPred.riskLevel : null,
+        delayProbability: latestPred ? latestPred.delayProbability : null,
+        predictionStatus: predictionStatusOf(!!latestPred, policies.get(loan.id)),
         predictedAt: latestPred ? latestPred.predictionTimestamp : null,
         topReasons,
       };
     });
 
     // Sắp xếp: Xác suất trễ giảm dần (nguy cơ cao nhất lên đầu)
-    return warnings.sort((a, b) => b.delayProbability - a.delayProbability);
+    return warnings.sort((a, b) => (b.delayProbability ?? -1) - (a.delayProbability ?? -1));
   }
 
   /**

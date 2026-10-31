@@ -3,6 +3,7 @@ import { LoanStatus, SupplementStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
 import { PortalMailer } from '../portal/portal.mailer';
 import { overdueAt, reminderAt } from './supplement-deadlines';
+import { waitingOn } from './portal-supplement';
 
 const DEFAULT_SCAN_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -50,7 +51,7 @@ export class SupplementRemindersService implements OnModuleInit, OnModuleDestroy
         application: { currentStatus: LoanStatus.SUPPLEMENT_REQUIRED, completedAt: null },
       },
       select: {
-        id: true, applicationId: true, requestedAt: true, deadlineAt: true,
+        id: true, applicationId: true, requestedAt: true, deadlineAt: true, portalSupplement: true,
         reminderSentAt: true, reminderEmailSentAt: true, overdueAt: true,
         application: {
           select: {
@@ -64,6 +65,8 @@ export class SupplementRemindersService implements OnModuleInit, OnModuleDestroy
     for (const row of rows) {
       try {
         if (row.overdueAt) continue;
+        // Doanh nghiệp đã gửi đủ và đang chờ ngân hàng kiểm tra: không nhắc thiếu, không đánh dấu quá hạn. Hạn gốc không bị reset.
+        if (waitingOn(row) === 'BANK') continue;
         if (now >= overdueAt(row.requestedAt, row.deadlineAt)) {
           if (await this.markOverdue(row, now)) result.overdue++;
           continue;

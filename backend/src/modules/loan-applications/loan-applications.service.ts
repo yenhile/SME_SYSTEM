@@ -4,12 +4,14 @@ import { CreateLoanDto } from './dto/create-loan.dto';
 import { LoanStatus, StageCode, RoleCode } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { assertOfficerMayWriteCompany } from '../companies/company-access';
+import { SLA_POLICY_PA1, computeStageClosing, resolveStageSla } from '../workflow/sla/sla-policy';
+import { firstStagePolicies, predictionStatusOf } from '../prediction/prediction-status';
 
 @Injectable()
 export class LoanApplicationsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateLoanDto, creatorUserId: string) {
+  async create(dto: CreateLoanDto, creatorUserId: string, clock: Date = new Date()) {
     if (dto.assignedTo && dto.assignedTo !== creatorUserId) throw new BadRequestException('Hồ sơ mới được gán cho cán bộ tiếp nhận. Dùng chức năng điều chuyển để đổi người phụ trách.');
     return this.prisma.$transaction(async tx => {
     // 1. Tạo hoặc cập nhật thông tin doanh nghiệp (không ghi đè doanh nghiệp của cán bộ khác)
@@ -50,6 +52,8 @@ export class LoanApplicationsService {
     });
     if (!stageTiepNhan) throw new BadRequestException('Chưa cấu hình công đoạn Tiếp nhận. Vui lòng liên hệ Admin.');
     const standardSla = stageTiepNhan.standardSlaHours;
+    // SLA hồ sơ vay bắt đầu từ lúc tiếp nhận; cách tính được chốt tại đây (cũ hoặc PA1 theo mốc kích hoạt).
+    const slaMode = await resolveStageSla(tx, clock);
 
     // 3. Tạo hồ sơ vay
     const assignedUser = dto.assignedTo || creatorUserId;
@@ -69,8 +73,9 @@ export class LoanApplicationsService {
         stageHistories: {
           create: {
             stageId: stageTiepNhan.id,
-            enteredAt: new Date(),
+            enteredAt: clock,
             slaStandardHours: standardSla,
+            ...slaMode,
             handledBy: assignedUser,
             notes: 'Tiếp nhận hồ sơ mới vào hệ thống',
           },
@@ -101,7 +106,7 @@ export class LoanApplicationsService {
       ? { not: StageCode.TIEP_NHAN, ...(query.stage ? { equals: query.stage } : {}) }
       : query.stage;
 
-    return this.prisma.loanApplication.findMany({
+    const loans = await this.prisma.loanApplication.findMany({
       where: {
         assignedTo: assignedFilter,
         currentStage: stageFilter,
@@ -135,9 +140,11 @@ export class LoanApplicationsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    const policies = await firstStagePolicies(this.prisma, loans.map(loan => loan.id));
+    return loans.map(loan => ({ ...loan, predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, policies.get(loan.id)) }));
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, now: Date = new Date()) {
     const loan = await this.prisma.loanApplication.findUnique({
       where: { id },
       include: {
@@ -181,7 +188,34 @@ export class LoanApplicationsService {
     });
 
     if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ vay.');
-    return loan;
+    // Trạng thái SLA hiện tại: công đoạn đang mở dùng cách tính nào, đang chạy hay đang chờ ai (C.9.2, mốc 3).
+    const open = loan.stageHistories.find(h => h.exitedAt === null);
+    const isPa1 = open?.slaPolicy === SLA_POLICY_PA1;
+    const pauses = isPa1 ? await this.prisma.applicationStagePause.findMany({ where: { historyId: open!.id }, orderBy: { startedAt: 'asc' } }) : [];
+    const pauseOpen = pauses.some(pause => pause.endedAt === null);
+    let liveSla: Record<string, unknown> | null = null;
+    if (open && isPa1) {
+      try {
+        liveSla = { historyId: open.id, ...computeStageClosing(open, pauses.map(p => ({ start: p.startedAt, end: p.endedAt })), now) };
+      } catch (error) {
+        liveSla = { historyId: open.id, error: (error as Error).message };
+      }
+    }
+    const supplementOpen = loan.currentStatus === LoanStatus.SUPPLEMENT_REQUIRED;
+    const slaState = {
+      policy: open?.slaPolicy ?? null,
+      calendarVersion: open?.slaCalendarVersion ?? null,
+      // Cách PA1: có khoảng dừng mở = chờ doanh nghiệp; không có mà hồ sơ còn yêu cầu bổ sung = ngân hàng đang kiểm tra (SLA chạy).
+      waiting: supplementOpen ? (isPa1 ? (pauseOpen ? 'ENTERPRISE' : 'BANK') : 'ENTERPRISE') : null,
+      slaRunning: open ? (isPa1 ? !pauseOpen : !open.pausedAt) : false,
+    };
+    return {
+      ...loan,
+      source: loan.portalRequest ? 'PORTAL' : 'QUAY',
+      predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, loan.stageHistories[0]?.slaPolicy),
+      slaState,
+      liveSla,
+    };
   }
 
   async checkDocuments(id: string, isComplete: boolean) {

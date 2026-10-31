@@ -6,6 +6,7 @@ import { PredictionService } from '../prediction/prediction.service';
 import { CreateSupplementDto } from './dto/create-supplement.dto';
 import { ResolveSupplementDto } from './dto/resolve-supplement.dto';
 import { LoanStatus, SupplementStatus, StageCode } from '@prisma/client';
+import { SLA_POLICY_PA1, closeStagePause, openStagePause } from '../workflow/sla/sla-policy';
 
 @Injectable()
 export class SupplementsService {
@@ -19,7 +20,7 @@ export class SupplementsService {
   /**
    * Tạo yêu cầu bổ sung chứng từ (UC06) - Tạm dừng đồng hồ đo SLA
    */
-  async createSupplementRequest(applicationId: string, dto: CreateSupplementDto, userId: string, activeRole?:string) {
+  async createSupplementRequest(applicationId: string, dto: CreateSupplementDto, userId: string, activeRole?:string, clock: Date = new Date()) {
     return this.prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
     const loan = await tx.loanApplication.findUnique({
@@ -52,7 +53,7 @@ export class SupplementsService {
     }
 
     if (loan.completedAt || loan.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
-    const now = new Date();
+    const now = clock;
 
     // 1. Tạo bản ghi yêu cầu bổ sung
     const request = await tx.supplementRequest.create({
@@ -100,6 +101,8 @@ export class SupplementsService {
       });
       this.logger.log(`Tạm dừng đo SLA công đoạn cho hồ sơ ${loan.applicationCode}`);
     }
+    // PA1: ghi khoảng chờ doanh nghiệp (gọi lặp an toàn). Công đoạn tính theo cách cũ chỉ dùng pausedAt ở trên.
+    await openStagePause(tx, applicationId, now, 'WAIT_ENTERPRISE', request.id);
 
     return portalSupplement?safeView(request):request;
     });
@@ -108,7 +111,7 @@ export class SupplementsService {
   /**
    * Tiếp nhận và xử lý hoàn tất bổ sung chứng từ (UC07) - Tiếp tục đồng hồ đo SLA & Cập nhật AI
    */
-  async resolveSupplementRequest(supplementId: string, dto: ResolveSupplementDto, userId: string, activeRole?:string) {
+  async resolveSupplementRequest(supplementId: string, dto: ResolveSupplementDto, userId: string, activeRole?:string, clock: Date = new Date()) {
     const initial = await this.prisma.supplementRequest.findUnique({ where: { id: supplementId } });
     if (!initial) throw new NotFoundException('Yêu cầu bổ sung không tồn tại.');
     let changed=false;
@@ -142,7 +145,7 @@ export class SupplementsService {
     }
 
     if (request.application.completedAt || request.application.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
-    const now = new Date();
+    const now = clock;
 
     // 1. Cập nhật trạng thái yêu cầu bổ sung
     const updatedRequest = await tx.supplementRequest.update({
@@ -164,7 +167,10 @@ export class SupplementsService {
       orderBy: { enteredAt: 'desc' },
     });
 
-    if (activeStage && activeStage.pausedAt) {
+    if (activeStage && activeStage.slaPolicy === SLA_POLICY_PA1) {
+      // PA1: khoảng chờ được đóng khi doanh nghiệp gửi đủ; hoàn tất bổ sung không tính thêm thời gian dừng lần hai.
+      await closeStagePause(tx, request.applicationId, now);
+    } else if (activeStage && activeStage.pausedAt) {
       const pausedTime = new Date(activeStage.pausedAt).getTime();
       const additionalPausedHours = Math.round(((now.getTime() - pausedTime) / (1000 * 60 * 60)) * 10) / 10;
       const totalPausedHours = Math.round((activeStage.pausedDurationHours + additionalPausedHours) * 10) / 10;

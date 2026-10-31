@@ -44,6 +44,8 @@ services:
       ML_SERVICE_URL: ${ML_SERVICE_URL:-http://ml-service:8000}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       NODE_ENV: ${NODE_ENV:-development}
+      # Khóa ký đăng nhập: bắt buộc cấu hình trong .env (không có giá trị mặc định).
+      JWT_SECRET: ${JWT_SECRET:?Thiếu JWT_SECRET trong .env}
       PORTAL_FOUNDATION_PREVIEW: ${PORTAL_FOUNDATION_PREVIEW:-true}
       SMTP_HOST: ${DOCKER_SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}

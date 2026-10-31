@@ -14,6 +14,8 @@ const loans={
   review:{id:'review',assignedTo:'cbtd-b',currentStage:'THAM_DINH',completedAt:null},
   senior:{id:'senior',assignedTo:'cbtd-b',currentStage:'CAP_TREN',completedAt:null},
   done:{id:'done',assignedTo:'cbtd-a',currentStage:'HOAN_TAT',completedAt:new Date()},
+  ownReview:{id:'ownReview',assignedTo:'cbtd-a',currentStage:'THAM_DINH',completedAt:null},
+  ownSenior:{id:'ownSenior',assignedTo:'cbtd-a',currentStage:'CAP_TREN',completedAt:null},
 };
 const prisma={
   loanApplication:{findUnique:async({where})=>loans[where.id]||null},
@@ -118,4 +120,20 @@ test('findAll includes the pending supplement deadline markers for the list badg
   const include=calls[0].include.supplementRequests;
   assert.deepEqual(include.where,{status:'PENDING'});
   assert.deepEqual(include.select,{id:true,status:true,requestedAt:true,deadlineAt:true,reminderSentAt:true,overdueAt:true});
+});
+
+// PO chốt 30/10/2026: CBTD vẫn xem được hồ sơ của mình sau khi chuyển Thẩm định, nhưng chỉ xem.
+test('CBTD views own loans at every stage, including after the hand-over to appraisal',async()=>{
+  for(const id of ['own','ownReview','ownSenior','done']) assert.equal(await run('CBTD',{params:{id}}),true,id);
+  for(const [id,url] of [['ownReview','/api/documents/ownReview'],['ownSenior','/api/supplements/application/ownSenior']])
+    assert.equal(await run('CBTD',{params:{applicationId:id},url}),true,`read ${id}`);
+});
+test('CBTD cannot change documents or supplements of an own loan once it left reception',async()=>{
+  for(const id of ['ownReview','ownSenior'])
+    for(const url of [`/api/documents/${id}`,`/api/supplements/${id}`])
+      await assert.rejects(run('CBTD',{params:{applicationId:id},method:'POST',url}),e=>status(e)===403&&/công đoạn này/.test(e.message),`${id} ${url}`);
+  await assert.rejects(run('CBTD',{params:{applicationId:'done'},method:'POST',url:'/api/documents/done'}),e=>status(e)===403&&/đã kết thúc/.test(e.message));
+});
+test('CBTD still cannot open another officer loan at appraisal or head-office stage',async()=>{
+  for(const id of ['review','senior']) await assert.rejects(run('CBTD',{params:{id}}),e=>status(e)===403,id);
 });

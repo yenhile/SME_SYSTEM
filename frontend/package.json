@@ -10,6 +10,7 @@
     "test:api": "node --test scripts/check-api-client.mjs",
     "test:navigation": "node --test scripts/check-navigation.mjs",
     "test:auth-sync": "node --test scripts/check-auth-sync.mjs",
+    "test:sla-display": "node --test scripts/check-sla-display.mjs",
     "test:password": "node --test scripts/check-change-password.mjs",
     "test:close-overdue": "node --test scripts/check-close-overdue-ui.mjs",
     "test:tracking": "node --test scripts/check-portal-tracking-ui.mjs",

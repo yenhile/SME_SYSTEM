@@ -5,6 +5,8 @@ import { PredictionService } from '../prediction/prediction.service';
 import { TransitionStageDto } from './dto/transition-stage.dto';
 import { CloseOverdueDto } from './dto/close-overdue.dto';
 import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
+import { waitingOn } from '../supplements/portal-supplement';
+import { computeStageClosing, loadPauseIntervals, resolveStageSla } from './sla/sla-policy';
 @Injectable()
 export class WorkflowService {
   private readonly logger = new Logger(WorkflowService.name);
@@ -13,7 +15,7 @@ export class WorkflowService {
   async getWorkflowHistory(applicationId: string) {
     return this.prisma.applicationStageHistory.findMany({ where: { applicationId }, include: { stage: true, handler: { select: { id: true, fullName: true, username: true } } }, orderBy: { enteredAt: 'asc' } });
   }
-  async transitionStage(applicationId: string, dto: TransitionStageDto, user: { id: string; activeRole: string }) {
+  async transitionStage(applicationId: string, dto: TransitionStageDto, user: { id: string; activeRole: string }, clock: Date = new Date()) {
     const updated = await this.prisma.$transaction(async tx => {
       // Serialize competing transitions of the same application.
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
@@ -24,6 +26,8 @@ export class WorkflowService {
       const fromReception = loan.currentStage === StageCode.TIEP_NHAN;
       if (user.activeRole !== (fromReception ? 'CBTD' : 'THAM_QUYEN')) throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
       if (fromReception && loan.assignedTo !== user.id) throw new ForbiddenException('Hồ sơ chưa được phân công cho bạn.');
+      if (!fromReception && loan.assignedTo === user.id) throw new ForbiddenException('Bạn đã xử lý hồ sơ này ở công đoạn Tiếp nhận nên không được tự thẩm định hoặc phê duyệt.');
+      if (!fromReception && loan.assignedTo === user.id) throw new ForbiddenException('Bạn đã xử lý hồ sơ này ở công đoạn Tiếp nhận nên không được tự thẩm định hoặc phê duyệt.');
       const amount = Number(loan.officialAmount || loan.proposedAmount);
       if (fromReception) {
         if (dto.targetStage !== StageCode.THAM_DINH || dto.targetStatus !== LoanStatus.PENDING_APPRAISAL) throw new BadRequestException('Tiếp nhận chỉ được chuyển sang Thẩm định.');
@@ -40,17 +44,18 @@ export class WorkflowService {
       if (dto.officialAmount !== undefined) throw new BadRequestException('Xác định hạn mức ở công đoạn tiếp nhận, trước khi chuyển thẩm định.');
       const target = await tx.workflowStage.findUnique({ where: { stageCode: dto.targetStage } });
       if (!target) throw new BadRequestException('Chưa cấu hình công đoạn đích.');
-      const now = new Date();
+      const now = clock;
+      const terminal = dto.targetStage === StageCode.HOAN_TAT;
+      // Cách tính của công đoạn mới được chốt ngay lúc mở; công đoạn đang mở giữ cách tính đã lưu của nó.
+      const mode = await resolveStageSla(tx, now, !terminal);
       const current = await tx.applicationStageHistory.findFirst({ where: { applicationId, exitedAt: null }, orderBy: { enteredAt: 'desc' } });
       if (current) {
-        const actual = (now.getTime() - current.enteredAt.getTime()) / 3600000;
-        const net = Math.max(0, actual - current.pausedDurationHours);
-        await tx.applicationStageHistory.update({ where: { id: current.id }, data: { exitedAt: now, actualDurationHours: actual, netWorkDurationHours: net, isDelayed: net > current.slaStandardHours, handledBy: user.id } });
+        const closing = computeStageClosing(current, await loadPauseIntervals(tx, current.id, current.slaPolicy), now);
+        await tx.applicationStageHistory.update({ where: { id: current.id }, data: { exitedAt: now, ...closing, handledBy: user.id } });
       }
-      const terminal = dto.targetStage === StageCode.HOAN_TAT;
       await tx.applicationStageHistory.create({ data: {
         applicationId, stageId: target.id, enteredAt: now, slaStandardHours: target.standardSlaHours,
-        handledBy: user.id, notes: dto.notes,
+        handledBy: user.id, notes: dto.notes, ...mode,
         ...(terminal ? { exitedAt: now, actualDurationHours: 0, netWorkDurationHours: 0 } : {}),
       } });
       return tx.loanApplication.update({ where: { id: applicationId }, data: {
@@ -80,10 +85,12 @@ export class WorkflowService {
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
       const loan = await tx.loanApplication.findUnique({ where: { id: applicationId } });
       if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ.');
+      if (loan.assignedTo === user.id) throw new ForbiddenException('Bạn đang phụ trách hồ sơ này nên không được tự đóng hồ sơ.');
       if (loan.completedAt || loan.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
       if (loan.currentStatus !== LoanStatus.SUPPLEMENT_REQUIRED) throw new BadRequestException('Chỉ đóng được hồ sơ đang chờ bổ sung.');
       const pending = await tx.supplementRequest.findMany({ where: { applicationId, status: SupplementStatus.PENDING } });
-      if (!pending.some(item => supplementDueAt(item.requestedAt, item.deadlineAt).getTime() <= now.getTime())) {
+      // Chỉ yêu cầu còn chờ doanh nghiệp mới được tính quá hạn; doanh nghiệp đã gửi đủ thì ngân hàng phải kiểm tra, không đóng thay.
+      if (!pending.some(item => waitingOn(item) === 'ENTERPRISE' && supplementDueAt(item.requestedAt, item.deadlineAt).getTime() <= now.getTime())) {
         throw new BadRequestException('Hồ sơ chưa quá hạn bổ sung.');
       }
       const target = await tx.workflowStage.findUnique({ where: { stageCode: StageCode.HOAN_TAT } });
@@ -92,20 +99,17 @@ export class WorkflowService {
       await tx.supplementRequest.updateMany({ where: { applicationId, status: SupplementStatus.PENDING }, data: { status: SupplementStatus.EXPIRED } });
 
       // Hồ sơ đang chờ bổ sung nên đồng hồ SLA đang tạm dừng: tính nốt thời gian tạm dừng trước khi đóng công đoạn.
+      const mode = await resolveStageSla(tx, now, false);
       const current = await tx.applicationStageHistory.findFirst({ where: { applicationId, exitedAt: null }, orderBy: { enteredAt: 'desc' } });
       if (current) {
-        const pausedNow = current.pausedAt ? (now.getTime() - current.pausedAt.getTime()) / 3600000 : 0;
-        const pausedTotal = current.pausedDurationHours + pausedNow;
-        const actual = (now.getTime() - current.enteredAt.getTime()) / 3600000;
-        const net = Math.max(0, actual - pausedTotal);
-        await tx.applicationStageHistory.update({ where: { id: current.id }, data: {
-          exitedAt: now, pausedAt: null, pausedDurationHours: pausedTotal,
-          actualDurationHours: actual, netWorkDurationHours: net, isDelayed: net > current.slaStandardHours, handledBy: user.id,
-        } });
+        const closing = computeStageClosing(current, await loadPauseIntervals(tx, current.id, current.slaPolicy), now);
+        await tx.applicationStageHistory.update({ where: { id: current.id }, data: { exitedAt: now, pausedAt: null, ...closing, handledBy: user.id } });
+        // Khoảng dừng PA1 còn mở được đóng cùng công đoạn để không còn khoảng "đang dừng" trên công đoạn đã kết thúc.
+        await tx.applicationStagePause.updateMany({ where: { historyId: current.id, endedAt: null }, data: { endedAt: now } });
       }
       await tx.applicationStageHistory.create({ data: {
         applicationId, stageId: target.id, enteredAt: now, exitedAt: now, actualDurationHours: 0, netWorkDurationHours: 0,
-        slaStandardHours: target.standardSlaHours, handledBy: user.id,
+        slaStandardHours: target.standardSlaHours, handledBy: user.id, ...mode,
         notes: `Đóng hồ sơ do quá hạn bổ sung: ${reason}`,
       } });
       return tx.loanApplication.update({ where: { id: applicationId }, data: {

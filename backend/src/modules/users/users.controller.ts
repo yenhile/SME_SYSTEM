@@ -4,6 +4,7 @@ import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RoleCode } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -12,13 +13,13 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles(RoleCode.ADMIN, RoleCode.QUAN_LY)
+  @Roles(RoleCode.ADMIN)
   findAll(@Query('role') role?: RoleCode) {
     return this.usersService.findAll(role);
   }
 
   @Get(':id')
-  @Roles(RoleCode.ADMIN, RoleCode.QUAN_LY)
+  @Roles(RoleCode.ADMIN)
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
@@ -31,7 +32,7 @@ export class UsersController {
 
   @Put(':id')
   @Roles(RoleCode.ADMIN)
-  update(@Param('id') id: string, @Body() body: UpdateUserDto) {
-    return this.usersService.update(id, body);
+  update(@Param('id') id: string, @Body() body: UpdateUserDto, @CurrentUser('id') actorId: string) {
+    return this.usersService.update(id, body, actorId);
   }
 }

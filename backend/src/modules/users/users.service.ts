@@ -124,11 +124,19 @@ export class UsersService {
     };
   }
 
-  async update(id: string, data: UpdateUserDto) {
+  async update(id: string, data: UpdateUserDto, actorId?: string) {
     const { roles, ...profile } = data;
     await this.prisma.$transaction(async tx => {
       const selected = roles ? await tx.role.findMany({ where: { code: { in: roles } } }) : null;
       if (selected && selected.length !== roles!.length) throw new BadRequestException('Vai trò không hợp lệ.');
+      if (actorId === id && (profile.isActive === false || (roles && !roles.includes(RoleCode.ADMIN)))) {
+        throw new BadRequestException('Không thể tự khóa tài khoản hoặc tự bỏ quyền Quản trị của chính mình.');
+      }
+      const losesCbtd = profile.isActive === false || (roles && !roles.includes(RoleCode.CBTD));
+      if (losesCbtd) {
+        const open = await tx.loanApplication.count({ where: { assignedTo: id, completedAt: null } });
+        if (open > 0) throw new BadRequestException(`Người này đang phụ trách ${open} hồ sơ chưa hoàn tất. Hãy điều chuyển hồ sơ cho CBTD khác trước khi khóa hoặc bỏ vai trò CBTD.`);
+      }
       await tx.user.update({ where: { id }, data: profile });
       if (selected) {
         await tx.userRole.deleteMany({ where: { userId: id } });

@@ -19,6 +19,9 @@ function fixture({loan={},supplements,history}={}) {
     supplementRequest:{findMany:async()=>state.supplements,updateMany:async({where,data})=>{state.supplementUpdates.push({where,data});return{count:1};}},
     workflowStage:{findUnique:async()=>({id:'stage-done',standardSlaHours:8})},
     applicationStageHistory:{findFirst:async()=>state.history,update:async({data})=>{state.historyUpdates.push(data);},create:async({data})=>{state.historyCreates.push(data);}},
+    // SLA PA1: chưa có mốc kích hoạt nên công đoạn dùng cách tính cũ; không có khoảng dừng PA1.
+    slaPolicyActivation:{findFirst:async()=>null},
+    applicationStagePause:{findMany:async()=>[],updateMany:async()=>({count:0})},
   };
   const prisma={$transaction:async fn=>fn(tx)};
   const prediction={predictForApplication:async()=>{state.predicted++;}};

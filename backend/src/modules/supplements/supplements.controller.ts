@@ -24,6 +24,10 @@ export class SupplementsController {
   @Roles(RoleCode.CBTD,RoleCode.THAM_QUYEN)
   review(@Param('supplementId') id:string,@Param('itemId') itemId:string,@Body() body:any,@CurrentUser() user:{id:string;activeRole:string}) {return this.portalSupplements.review(id,itemId,body,user);}
 
+  @Post(':supplementId/return')
+  @Roles(RoleCode.CBTD,RoleCode.THAM_QUYEN)
+  returnCorrections(@Param('supplementId') id:string,@Body() body:any,@CurrentUser() user:{id:string;activeRole:string}) {return this.portalSupplements.returnCorrections(id,body,user);}
+
   @Get(':supplementId/files/:fileId/download')
   async download(@Param('supplementId') id:string,@Param('fileId') fileId:string) {return supplementDownload(await this.portalSupplements.download(id,fileId));}
 

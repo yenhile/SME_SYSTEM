@@ -216,12 +216,45 @@ model ApplicationStageHistory {
   isDelayed            Boolean   @default(false) @map("is_delayed")
   handledBy            String?   @map("handled_by")
   notes                String?
+  slaPolicy            String?   @map("sla_policy") // null = cách tính cũ (24/7); 'PA1' = giờ làm việc, chốt lúc mở công đoạn
+  slaCalendarVersion   String?   @map("sla_calendar_version") // phiên bản lịch áp dụng khi slaPolicy = 'PA1'
 
   application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   stage       WorkflowStage   @relation(fields: [stageId], references: [id])
   handler     User?           @relation("HandledHistories", fields: [handledBy], references: [id])
+  pauses      ApplicationStagePause[]
 
   @@map("application_stage_history")
+}
+
+/// Khoảng tạm dừng SLA của công đoạn theo PA1 (mỗi công đoạn tối đa một khoảng đang mở, ràng buộc bằng sla-pa1.sql).
+model ApplicationStagePause {
+  id           String    @id @default(uuid())
+  historyId    String    @map("history_id")
+  startedAt    DateTime  @map("started_at")
+  endedAt      DateTime? @map("ended_at")
+  reason       String
+  supplementId String?   @map("supplement_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  history ApplicationStageHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+
+  @@index([historyId])
+  @@map("application_stage_pauses")
+}
+
+/// Mốc hiệu lực chính sách SLA (T0). Công đoạn mở từ T0 trở đi dùng chính sách này; công đoạn mở trước đó giữ cách tính cũ.
+model SlaPolicyActivation {
+  id              String   @id @default(uuid())
+  policyCode      String   @map("policy_code")
+  calendarVersion String   @map("calendar_version")
+  activatedAt     DateTime @map("activated_at")
+  activatedBy     String?  @map("activated_by")
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([activatedAt])
+  @@map("sla_policy_activations")
 }
 
 model Document {

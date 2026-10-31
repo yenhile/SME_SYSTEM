@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { predictionLabel } from '../slaDisplay';
 import { OverdueSupplementsPanel, type OverdueSupplementItem } from './OverdueSupplementsPanel';
 import { OverviewStats, SlaBottleneck, EarlyWarningItem } from '../types';
 import {
@@ -90,7 +91,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
               {stats ? `${stats.slaOnTimeRate}%` : '—'}
             </div>
             <div className="kpi-sub">
-              {stats ? `${stats.totalCompletedStages - stats.delayedStages}/${stats.totalCompletedStages} lượt đúng hạn` : ''}
+              {stats ? `${stats.totalCompletedStages - stats.delayedStages}/${stats.totalCompletedStages} lượt đúng hạn (giờ thực, cách cũ)` : ''}
+              {stats && stats.totalCompletedStagesPa1 > 0 && <div>{`Giờ làm việc (PA1): ${stats.slaOnTimeRatePa1}% · ${stats.totalCompletedStagesPa1 - stats.delayedStagesPa1}/${stats.totalCompletedStagesPa1} lượt đúng hạn`}</div>}
             </div>
           </div>
         </div>
@@ -179,6 +181,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                     <strong style={{ color: st.avgNetWorkHours > st.standardSlaHours ? '#dc2626' : 'inherit' }}>
                       {st.avgNetWorkHours} giờ
                     </strong>
+                    {st.pa1 && st.pa1.totalHandled > 0 && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>PA1 (giờ làm việc): {st.pa1.avgNetWorkHours} giờ · {st.pa1.totalHandled} lượt · {st.pa1.delayRate}% trễ</div>}
                   </td>
                   <td>{st.totalHandled} lượt</td>
                   <td>{st.delayedCount} lượt</td>
@@ -295,7 +298,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                     <td>
                       <span
                         className={`badge ${
-                          item.riskLevel === 'CAO'
+                          !item.riskLevel
+                            ? 'badge-soft-gray'
+                            : item.riskLevel === 'CAO'
                             ? 'badge-soft-red'
                             : item.riskLevel === 'TRUNG_BINH'
                             ? 'badge-soft-amber'
@@ -303,7 +308,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                         }`}
                       >
                         {item.riskLevel === 'CAO' ? '⚠️ ' : ''}
-                        {item.riskLevel}
+                        {item.riskLevel ?? predictionLabel(item.predictionStatus)}
                       </span>
                     </td>
 
@@ -320,7 +325,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                               : '#059669',
                         }}
                       >
-                        {(item.delayProbability * 100).toFixed(1)}%
+                        {item.delayProbability === null ? '—' : `${(item.delayProbability * 100).toFixed(1)}%`}
                       </strong>
                     </td>
 

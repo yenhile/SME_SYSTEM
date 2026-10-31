@@ -11,7 +11,7 @@ const previous = require.extensions['.ts'];
 let rules = {};
 try {
   require.extensions['.ts'] = (module, filename) => {
-    if (!filename.startsWith(path.dirname(source) + path.sep)) {
+    if (!filename.startsWith(path.dirname(source) + path.sep) && !filename.startsWith(path.resolve(__dirname, '../src/common/security') + path.sep)) {
       if (previous) return previous(module, filename);
       throw new Error('Unexpected TypeScript dependency');
     }

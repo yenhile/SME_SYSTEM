@@ -42,7 +42,8 @@ function verifyTarget(url, schema) {
 }
 
 async function startIsolated(options={}) {
-  const config = dotenv.parse(await fs.readFile(path.join(root,'.env')));
+  // backend/.env là file cục bộ (không nằm trong git); khi thiếu thì dùng DATABASE_URL từ biến môi trường, vẫn qua verifyTarget.
+  const config = dotenv.parse(await fs.readFile(path.join(root,'.env')).catch(e=>{if(e.code!=='ENOENT') throw e;return '';}));
   const baseUrl = process.env.DATABASE_URL || config.DATABASE_URL;
   const u = verifyTarget(baseUrl);
   const schema = `portal_v2_it_${randomUUID().replaceAll('-','')}`;
@@ -152,7 +153,7 @@ async function startIsolated(options={}) {
     Module({imports:[IsolatedPolicyModule,AppModule]})(IsolatedRoot);
     app = await NestFactory.create(IsolatedRoot,{logger:false});
     app.setGlobalPrefix('api');
-    app.enableCors({origin:'http://localhost:5174',credentials:true});
+    app.enableCors({origin:process.env.SESSION_WEB_ORIGIN||'http://localhost:5174',credentials:true});
     app.useGlobalPipes(new ValidationPipe({transform:true,whitelist:true,forbidNonWhitelisted:false}));
     await app.listen(3002,'127.0.0.1');
     db = new PrismaClient({datasources:{db:{url:isolatedUrl}}});
