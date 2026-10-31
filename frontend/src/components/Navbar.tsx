@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth, ROLE_NAMES } from '../context/AuthContext';
 import { BarChart3, Landmark, LogOut, Settings, FolderOpen, History, ChevronDown, CircleUserRound, Languages, CircleHelp, ShieldCheck, KeyRound } from 'lucide-react';
-import { NAV_GROUPS, NAV_ITEMS, type Tab } from '../navigation';
+import { NAV_GROUPS, visibleNavItems, type Tab } from '../navigation';
 import { NotificationBell } from './NotificationBell';
 import { ChangePasswordModal } from './ChangePasswordModal';
 const groupIcons = { overview: BarChart3, operations: Settings, loans: FolderOpen, system: History };
@@ -43,7 +43,7 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan }: { a
   return <><aside className="sidebar">
     <div className="brand-section"><div className="brand-icon"><Landmark size={22} /></div><strong>SME LOAN<br />WORKFLOW</strong></div>
     <nav aria-label="Menu chính" className="grouped-navigation">{NAV_GROUPS.map(group => {
-      const items = NAV_ITEMS.filter(item => item.group === group.id);
+      const items = visibleNavItems(activeRole).filter(item => item.group === group.id);
       if (!items.length) return null;
       const Icon = groupIcons[group.id];
       return <section className="nav-group" key={group.id} aria-labelledby={`nav-group-${group.id}`}>

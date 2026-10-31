@@ -12,13 +12,13 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles(RoleCode.ADMIN, RoleCode.QUAN_LY)
+  @Roles(RoleCode.ADMIN)
   findAll(@Query('role') role?: RoleCode) {
     return this.usersService.findAll(role);
   }
 
   @Get(':id')
-  @Roles(RoleCode.ADMIN, RoleCode.QUAN_LY)
+  @Roles(RoleCode.ADMIN)
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }

@@ -29,7 +29,7 @@
 | Danh sách doanh nghiệp (`GET /companies`) | Chỉ doanh nghiệp có hồ sơ gán cho mình | Xem toàn chi nhánh | Xem toàn chi nhánh | Không |
 | Tra MST khi tạo hồ sơ (`GET /companies/check/:mst`) | Doanh nghiệp của mình: đủ thông tin và hồ sơ của mình; doanh nghiệp của cán bộ khác: chỉ báo "đã tồn tại", không có chi tiết | Đủ thông tin | Đủ thông tin | Không |
 | Tạo/cập nhật doanh nghiệp (`POST /companies`, và khi tạo hồ sơ vay) | Chỉ doanh nghiệp mới hoặc doanh nghiệp có hồ sơ của mình; doanh nghiệp của cán bộ khác bị 403 | Không | Không | Không |
-| Danh sách người dùng (`GET /users`) | Không | Không | Có | Có |
+| Danh sách người dùng (`GET /users`) | Không | Không | Không | Có |
 | Tạo/sửa người dùng, gán vai trò, khóa | Không | Không | Không | Có |
 | Cấu hình SLA (`/admin/workflow-stages`) | Không | Không | Không | Có |
 | Đổi mật khẩu của chính mình | Có | Có | Có | Có |
@@ -54,6 +54,23 @@
 | AC-15 | CBTD tra MST của doanh nghiệp không thuộc hồ sơ của mình | `{found:true, restricted:true, company:null}`, không có thông tin hay hồ sơ nào |
 | AC-16 | CBTD gọi `POST /companies` hoặc tạo hồ sơ vay với MST của doanh nghiệp thuộc cán bộ khác | HTTP 403 "Doanh nghiệp này thuộc hồ sơ do cán bộ khác phụ trách...", dữ liệu doanh nghiệp không đổi |
 | AC-10 | Token doanh nghiệp (Portal) dùng cho API nội bộ | HTTP 401 "Phiên doanh nghiệp không có quyền nội bộ" |
+| AC-17 | Giao diện: vai trò mở trang không thuộc quyền (menu, hoặc trạng thái trang còn lưu khi đổi vai trò) | Không hiện mục menu; trang được thay bằng trang đầu của vai trò đó |
+| AC-18 | Quản lý hoặc Thẩm quyền hoặc CBTD gọi `GET /users` | HTTP 403 (chỉ Admin được xem và quản lý người dùng) |
+| AC-19 | CBTD mở hồ sơ **của mình** ở bất kỳ công đoạn nào (Thẩm định, Cấp trên, Hoàn tất): chi tiết, chứng từ, bổ sung, lịch sử | HTTP 200, chỉ xem |
+| AC-20 | CBTD tải/xóa chứng từ, tạo hoặc xử lý bổ sung, chuyển bước hồ sơ **của mình** khi hồ sơ đã rời Tiếp nhận | HTTP 403 "Vai trò đang dùng không được xử lý công đoạn này" (hồ sơ đã Hoàn tất: "Hồ sơ đã kết thúc") |
+
+### Menu và trang đầu theo vai trò (giao diện)
+
+Giao diện chỉ hiển thị và cho mở các mục thuộc quyền của vai trò đang dùng, khớp với quyền của backend. Backend vẫn là lớp chặn cuối cùng; việc ẩn trên giao diện không thay cho kiểm tra ở backend.
+
+| Vai trò | Các mục thấy và mở được | Trang đầu |
+|---|---|---|
+| CBTD | Liên hệ doanh nghiệp, Danh sách hồ sơ (hồ sơ được phân công). **Không** thấy Dashboard, Thẩm định & phê duyệt, Điều chuyển, Liên hệ cá nhân, Cấu hình SLA | Danh sách hồ sơ |
+| Thẩm quyền | Dashboard, Liên hệ doanh nghiệp, Danh sách hồ sơ, Thẩm định & phê duyệt (từ Thẩm định trở đi) | Dashboard |
+| Quản lý | Dashboard, Liên hệ doanh nghiệp, Danh sách hồ sơ, Thẩm định & phê duyệt (chỉ theo dõi), Điều chuyển & phân công | Dashboard |
+| Admin | Liên hệ cá nhân, Cấu hình SLA | Liên hệ cá nhân |
+
+Hai mục "Quản lý vấn đề hồ sơ" và "Lịch sử hoạt động" chưa triển khai: chỉ hiển thị (không bấm được) cho vai trò liên quan (hồ sơ: CBTD, Quản lý, Thẩm quyền; lịch sử: Admin, Quản lý). Việc gán hai mục này cho vai trò chỉ là giả định hiển thị, chưa phải quyết định của PO.
 
 ## 4. Quyết định của PO (25/10/2026)
 1. **Doanh nghiệp (`/companies`):** PO quyết 26/10/2026: **CBTD chỉ xem doanh nghiệp có hồ sơ gán cho mình**; tra MST của doanh nghiệp người khác chỉ báo đã tồn tại. Quản lý và Thẩm quyền giữ phạm vi toàn chi nhánh. Ghi dữ liệu doanh nghiệp: **ai làm người nấy**, CBTD không ghi đè hay tạo hồ sơ cho doanh nghiệp của cán bộ khác.
@@ -61,7 +78,8 @@
 3. **Thẩm quyền: phương án B** — chỉ xem hồ sơ từ công đoạn Thẩm định trở đi, không xem hồ sơ còn ở Tiếp nhận. Đây là thay đổi hành vi so với bản đề xuất trước (xem toàn bộ).
 4. **Dự báo ML:** CBTD chỉ xem kết quả; hệ thống tự tính khi hồ sơ vào Thẩm định/Cấp trên; nút tính lại thủ công chỉ dành cho Thẩm quyền và Quản lý. Với Thẩm quyền, dự báo chỉ giúp sắp xếp ưu tiên.
 5. **TK-04** chỉ viết kiểm thử tự động, không sửa logic chặn truy cập chéo (đã có).
-6. Các mục chưa chốt trong `docs/Phan_quyen_va_luong_nghiep_vu.md` (tách vai trò cấp trên khỏi THAM_QUYEN, người đóng hồ sơ quá hạn) vẫn **ngoài phạm vi** tài liệu này.
+6. **CBTD sau khi chuyển Thẩm định (PO chốt 30/10/2026):** CBTD **vẫn xem được hồ sơ của chính mình** ở Thẩm định, Cấp trên và Hoàn tất, nhưng **chỉ xem**, không thao tác (AC-19, AC-20; khóa bằng `backend/test/loan-access.test.cjs`). CBTD không vào khu làm việc của Thẩm quyền (menu "Thẩm định & phê duyệt", Dashboard) và không thấy hồ sơ của CBTD khác ở bất kỳ công đoạn nào.
+7. Các mục chưa chốt trong `docs/Phan_quyen_va_luong_nghiep_vu.md` (tách vai trò cấp trên khỏi THAM_QUYEN, người đóng hồ sơ quá hạn) vẫn **ngoài phạm vi** tài liệu này.
 
 ## 5. Phạm vi đã và chưa kiểm chứng
 - **Test tự động (đã chạy, pass):** `backend/test/loan-access.test.cjs` (`npm --prefix backend run test:access`) phủ AC-01, AC-02, AC-03, AC-04, AC-08, AC-09, AC-11, AC-12, AC-13 bằng Prisma giả lập, gồm truy cập chéo giữa hai CBTD qua ID hồ sơ, chứng từ và yêu cầu bổ sung. Toàn bộ 92 test backend `.cjs` pass.
