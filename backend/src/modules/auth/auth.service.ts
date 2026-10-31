@@ -1,19 +1,28 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { LoginThrottle } from './login-throttle';
 
 @Injectable()
 export class AuthService {
+  private readonly loginThrottle = new LoginThrottle();
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, now: number = Date.now()) {
     const { username, password } = loginDto;
+    // Giới hạn thử mật khẩu theo tên đăng nhập; đang bị khóa thì từ chối cả khi mật khẩu đúng, tới hết thời gian chờ.
+    const throttleKey = username.trim().toLowerCase();
+    const waitMs = this.loginThrottle.retryAfterMs(throttleKey, now);
+    if (waitMs > 0) {
+      throw new HttpException(`Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau ${Math.ceil(waitMs / 60000)} phút.`, HttpStatus.TOO_MANY_REQUESTS);
+    }
 
     const user = await this.prisma.user.findUnique({
       where: { username },
@@ -25,6 +34,7 @@ export class AuthService {
     });
 
     if (!user) {
+      this.loginThrottle.recordFailure(throttleKey, now);
       throw new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
 
@@ -34,8 +44,10 @@ export class AuthService {
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
+      this.loginThrottle.recordFailure(throttleKey, now);
       throw new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
+    this.loginThrottle.reset(throttleKey);
 
     const userRoles = user.roles.map((r) => r.role.code);
 

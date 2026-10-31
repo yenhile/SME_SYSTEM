@@ -5,12 +5,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { PrismaService } from '../../prisma.service';
+import { jwtSecret } from '../../common/security/jwt-secret';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'sme_loan_workflow_secret_key_2026',
+      secret: jwtSecret(),
       signOptions: { expiresIn: '7d' }, // Token có hiệu lực 7 ngày
     }),
   ],
