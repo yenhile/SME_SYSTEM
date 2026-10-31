@@ -50,6 +50,16 @@ export function review(m:SupplementMetadata,itemId:string,body:any) {
   const at=new Date().toISOString();item.status=body.accepted?'ACCEPTED':'REPLACE_REQUIRED';item.message=body.message.trim();item.reviewedAt=at;
   m.events.push({type:item.status,at,itemId,message:item.message});
 }
+/**
+ * Bên đang phải hành động trong yêu cầu bổ sung (C.9.2).
+ * - ENTERPRISE: còn mục chờ doanh nghiệp (chưa gửi hoặc bị yêu cầu thay). Yêu cầu quy trình cũ (không có danh sách mục) luôn chờ doanh nghiệp.
+ * - BANK: doanh nghiệp đã gửi đủ; ngân hàng kiểm tra hoặc hoàn tất. Không được nhắc thiếu hay đóng quá hạn vì lý do này.
+ */
+export function waitingOn(request:{portalSupplement?:any}):'ENTERPRISE'|'BANK' {
+  const items=request.portalSupplement?.items;
+  if(!Array.isArray(items) || !items.length) return 'ENTERPRISE';
+  return items.some((i:any)=>i.status==='PENDING' || i.status==='REPLACE_REQUIRED') ? 'ENTERPRISE' : 'BANK';
+}
 export function safeView(r:any) {
   const m=r.portalSupplement;
   const pick=(obj:any,keys:string[])=>Object.fromEntries(keys.filter(k=>obj[k]!==undefined).map(k=>[k,obj[k]]));

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { hoursText, predictionLabel, slaPolicyLabel, slaStateLabel } from '../slaDisplay';
 import { PortalIntakeDetails } from './PortalIntakeDetails';
 import { SupplementPanel } from './SupplementPanel';
 import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
@@ -257,7 +258,8 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
   const handleRePredict = async () => {
     setActionLoading(true);
     try {
-      await api.post(`/prediction/predict/${loan.id}`);
+      const result = await api.post<{ unavailable?: boolean; message?: string }>(`/prediction/predict/${loan.id}`);
+      if (result?.unavailable) alert(result.message || predictionLabel('INCOMPATIBLE_PA1'));
       await fetchDetail();
       onRefresh();
     } catch (err: any) {
@@ -386,7 +388,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 ) : loan.currentStatus === 'CLOSED_TIMEOUT' ? (
                   <span className="badge badge-soft-gray">⚫ Đã đóng (quá hạn bổ sung)</span>
                 ) : loan.currentStatus === 'SUPPLEMENT_REQUIRED' ? (
-                  <span className="badge badge-soft-orange">🟡 Chờ bổ sung (Tạm dừng SLA)</span>
+                  <span className="badge badge-soft-orange">🟡 {slaStateLabel(loan.slaState) ?? 'Chờ bổ sung (Tạm dừng SLA)'}</span>
                 ) : loan.currentStatus === 'PENDING_APPRAISAL' ? (
                   <span className="badge badge-soft-amber">🟡 Đang thẩm định</span>
                 ) : loan.currentStatus === 'WAITING_HEAD_OFFICE' ? (
@@ -500,7 +502,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   }`}
                   style={{ fontSize: '12px', padding: '4px 10px', fontWeight: 700 }}
                 >
-                  MỨC RỦI RO: {latestPrediction ? latestPrediction.riskLevel : 'CHƯA ĐÁNH GIÁ'}
+                  MỨC RỦI RO: {latestPrediction && loan.predictionStatus !== 'INCOMPATIBLE_PA1' ? latestPrediction.riskLevel : loan.predictionStatus === 'INCOMPATIBLE_PA1' ? predictionLabel(loan.predictionStatus).toUpperCase() : 'CHƯA ĐÁNH GIÁ'}
                 </span>
                 {canPredict && <button
                   onClick={handleRePredict}
@@ -529,7 +531,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                         : '#065f46',
                   }}
                 >
-                  {latestPrediction ? `${(latestPrediction.delayProbability * 100).toFixed(1)}%` : '0%'}
+                  {latestPrediction && loan.predictionStatus !== 'INCOMPATIBLE_PA1' ? `${(latestPrediction.delayProbability * 100).toFixed(1)}%` : '—'}
                 </div>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
                   Mô hình: {latestPrediction?.modelVersion || 'RandomForest-v1'}
@@ -780,6 +782,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 <thead>
                   <tr>
                     <th>Công đoạn</th>
+                    <th>Cách tính</th>
                     <th>Bắt đầu</th>
                     <th>Kết thúc</th>
                     <th>Thực tế</th>
@@ -791,31 +794,38 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 </thead>
                 <tbody>
                   {loan.stageHistories && loan.stageHistories.length > 0 ? (
-                    loan.stageHistories.map((h, i) => (
+                    loan.stageHistories.map((h, i) => {
+                      // Công đoạn PA1 đang mở: lấy số giờ tính tại thời điểm xem (giờ làm việc), vì chưa có số liệu đóng công đoạn.
+                      const live = loan.liveSla && loan.liveSla.historyId === h.id && !loan.liveSla.error ? loan.liveSla : null;
+                      const actual = live ? live.actualDurationHours : h.actualDurationHours;
+                      const paused = live ? live.pausedDurationHours : h.pausedDurationHours;
+                      const net = live ? live.netWorkDurationHours : h.netWorkDurationHours;
+                      return (
                       <tr key={i}>
                         <td>
                           <strong>{h.stage?.stageName || h.stageId}</strong>
                         </td>
+                        <td style={{ fontSize: '12px' }}>{slaPolicyLabel(h.slaPolicy)}</td>
                         <td style={{ fontSize: '12px' }}>
                           {new Date(h.enteredAt).toLocaleString('vi-VN')}
                         </td>
                         <td style={{ fontSize: '12px' }}>
                           {h.exitedAt ? new Date(h.exitedAt).toLocaleString('vi-VN') : 'Đang xử lý...'}
                         </td>
-                        <td>{h.actualDurationHours !== null ? `${h.actualDurationHours}h` : '—'}</td>
+                        <td>{hoursText(actual)}</td>
                         <td>
-                          {h.pausedDurationHours > 0 ? (
-                            <span style={{ color: '#ea580c', fontWeight: 600 }}>{h.pausedDurationHours}h</span>
+                          {(paused ?? 0) > 0 ? (
+                            <span style={{ color: '#ea580c', fontWeight: 600 }}>{hoursText(paused)}</span>
                           ) : (
                             '0h'
                           )}
                         </td>
                         <td>
-                          <strong>{h.netWorkDurationHours !== null ? `${h.netWorkDurationHours}h` : '—'}</strong>
+                          <strong>{hoursText(net)}</strong>
                         </td>
                         <td>{h.slaStandardHours}h</td>
                         <td>
-                          {h.isDelayed ? (
+                          {(live ? live.isDelayed : h.isDelayed) ? (
                             <span className="badge badge-soft-red">Trễ hạn SLA</span>
                           ) : h.exitedAt ? (
                             <span className="badge badge-soft-green">Đúng hạn</span>
@@ -824,16 +834,21 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                           )}
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                         Chưa có lịch sử công đoạn
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '8px 4px 0' }}>
+                Cách cũ: giờ thực 24/7. PA1: giờ làm việc thứ Hai–thứ Sáu, 08:00–12:00 và 13:00–17:00 giờ Việt Nam, loại ngày nghỉ theo lịch; với công đoạn PA1, "Tạm dừng SLA" là thời gian chờ doanh nghiệp và "Thời gian tính SLA" là thời gian ngân hàng xử lý.
+                {loan.liveSla?.error && <span style={{ color: '#dc2626' }}> {loan.liveSla.error}</span>}
+              </p>
             </div>
           )}
 

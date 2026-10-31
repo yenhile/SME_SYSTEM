@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { PrismaService } from '../../prisma.service';
 import { PortalFile, validatePortalFile } from '../portal/portal.validation';
 import { metadata, revision, replay, review, respond, heads, safeView } from './portal-supplement';
+import { closeStagePause, openStagePause } from '../workflow/sla/sla-policy';
 
 const hash=(value:any)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 @Injectable()
@@ -61,7 +62,27 @@ export class PortalSupplementsService {
       return this.save(tx,r,m,body.clientRequestId,'review',fingerprint);
     });
   }
-  async respond(requestId:string,accountId:string,id:string,body:any) {
+  /**
+   * CBTD (hoặc Thẩm quyền ở công đoạn sau) hoàn tất lượt kiểm tra và gửi danh sách sửa tổng hợp cho doanh nghiệp.
+   * Chỉ có tác dụng bắt đầu khoảng chờ doanh nghiệp mới (PA1); không đổi quy tắc tải lại tệp của Portal.
+   */
+  async returnCorrections(id:string,body:any,user:{id:string;activeRole:string},clock:Date=new Date()) {
+    this.body(body,['expectedRevision','clientRequestId']);
+    return this.prisma.$transaction(async tx=> {
+      const r=await this.locked(tx,id),m=metadata(r),fingerprint=hash({kind:'return'});
+      if(!user?.id || (user.activeRole==='CBTD' && r.application.assignedTo!==user.id)) throw new ForbiddenException('Bạn chỉ được truy cập hồ sơ được phân công.');
+      const expectedRole=r.application.currentStage==='TIEP_NHAN'?'CBTD':'THAM_QUYEN';
+      if(user.activeRole!==expectedRole || r.application.completedAt || r.application.currentStage==='HOAN_TAT') throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
+      if(replay(m,body.clientRequestId,'return',fingerprint)) return safeView(r);
+      this.pending(r);revision(m,body.expectedRevision);
+      if(m.items.some(i=>i.status==='SUBMITTED')) throw new ConflictException('Còn mục doanh nghiệp đã gửi chưa được kiểm tra. Hoàn tất kiểm tra trước khi gửi danh sách sửa.');
+      if(!m.items.some(i=>i.status==='REPLACE_REQUIRED')) throw new BadRequestException('Không có mục nào cần doanh nghiệp sửa.');
+      m.events.push({type:'RETURNED',at:clock.toISOString(),actorId:user.id});
+      await openStagePause(tx,r.applicationId,clock,'WAIT_ENTERPRISE',r.id);
+      return this.save(tx,r,m,body.clientRequestId,'return',fingerprint);
+    });
+  }
+  async respond(requestId:string,accountId:string,id:string,body:any,clock:Date=new Date()) {
     this.body(body,['expectedRevision','clientRequestId','documentIds']);
     return this.prisma.$transaction(async tx=> {
       const r=await this.locked(tx,id,{requestId,accountId}),m=metadata(r),fingerprint=hash({documentIds:Array.isArray(body.documentIds)?[...body.documentIds].sort():body.documentIds});
@@ -69,6 +90,8 @@ export class PortalSupplementsService {
       this.pending(r);revision(m,body.expectedRevision);respond(m,body.documentIds);
       // Freeze a manifest only after checking the actual bytes, not metadata alone.
       for(const fileId of body.documentIds) await this.fileBytes(m,m.files.find(f=>f.id===fileId));
+      // Doanh nghiệp đã gửi đủ: kết thúc khoảng chờ doanh nghiệp (PA1); ngân hàng kiểm tra tiếp tục tính giờ. Gửi lặp đã được `replay` chặn ở trên.
+      await closeStagePause(tx,r.applicationId,clock);
       return this.save(tx,r,m,body.clientRequestId,'respond',fingerprint);
     },{timeout:30000});
   }

@@ -6,6 +6,7 @@ import { KanbanBoard } from './KanbanBoard';
 import { filterLoansForView } from '../navigation';
 import { PortalIntakeQueue } from './PortalIntakeQueue';
 import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
+import { predictionLabel } from '../slaDisplay';
 import {
   Search,
   Filter,
@@ -311,7 +312,7 @@ export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, 
                             {latestPred.riskLevel} ({(latestPred.delayProbability * 100).toFixed(0)}%)
                           </span>
                         ) : (
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Chưa dự báo</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{predictionLabel(loan.predictionStatus)}</span>
                         )}
                       </td>
 

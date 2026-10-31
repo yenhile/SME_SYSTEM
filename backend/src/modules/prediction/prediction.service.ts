@@ -1,6 +1,8 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { RiskLevel } from '@prisma/client';
+import { SLA_POLICY_PA1 } from '../workflow/sla/sla-policy';
+import { PREDICTION_PA1_MESSAGE } from './prediction-status';
 
 @Injectable()
 export class PredictionService {
@@ -23,6 +25,14 @@ export class PredictionService {
 
     if (!loan) {
       throw new Error(`Không tìm thấy hồ sơ với id: ${applicationId}`);
+    }
+
+    // C.9.2: đặc trưng previous_stage_duration_hours lấy từ công đoạn Tiếp nhận. Nếu công đoạn đó tính theo giờ làm việc (PA1)
+    // thì khác nghĩa với dữ liệu huấn luyện: không gọi ML, không tạo xác suất giả, không đổi model.
+    const firstStageOfLoan = loan.stageHistories[loan.stageHistories.length - 1];
+    if (firstStageOfLoan?.slaPolicy === SLA_POLICY_PA1) {
+      this.logger.log(`Bỏ qua dự báo cho hồ sơ ${loan.applicationCode}: công đoạn Tiếp nhận tính theo PA1, chưa có mô hình tương thích.`);
+      return { unavailable: true as const, reason: 'PA1_INCOMPATIBLE' as const, message: PREDICTION_PA1_MESSAGE };
     }
 
     // 1. Tính toán officer_workload (Số hồ sơ đang xử lý của cán bộ)

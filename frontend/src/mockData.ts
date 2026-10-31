@@ -475,6 +475,9 @@ export const DEMO_STATS: OverviewStats = {
   delayedStages: 6,
   slaOnTimeRate: 90.6,
   highRiskLoans: 3,
+  totalCompletedStagesPa1: 0,
+  delayedStagesPa1: 0,
+  slaOnTimeRatePa1: null,
 };
 
 export const DEMO_BOTTLENECKS: SlaBottleneck[] = [

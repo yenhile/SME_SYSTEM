@@ -37,6 +37,12 @@ export function canRespond(view: SupplementView) {
 export function canResolve(view: SupplementView) {
   return view.status === 'PENDING' && view.items.length > 0 && view.items.every(item => item.status === 'ACCEPTED');
 }
+/** Đã kiểm tra hết các mục, còn mục cần doanh nghiệp sửa và chưa gửi danh sách sửa cho lượt kiểm tra này (C.9.2: gửi danh sách mới dừng SLA chờ doanh nghiệp). */
+export function canReturn(view: SupplementView) {
+  if (view.status !== 'PENDING' || view.items.some(item => item.status === 'SUBMITTED') || !view.items.some(item => item.status === 'REPLACE_REQUIRED')) return false;
+  const lastReturn = view.events.map(event => event.type).lastIndexOf('RETURNED');
+  return view.events.slice(lastReturn + 1).some(event => event.type === 'REPLACE_REQUIRED');
+}
 export function supplementError(error: unknown) {
   const value = error as { message?: string; status?: number };
   return `${value?.message || 'Thao tác thất bại. Vui lòng thử lại.'}${value?.status === 409 ? ' Dữ liệu đã thay đổi; tải lại yêu cầu trước khi thử lại.' : ''}`;

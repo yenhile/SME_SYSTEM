@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { currentManifest, canRespond, canResolve, supplementError, loadStaffSupplements } from './supplements.ts';
+import { currentManifest, canRespond, canResolve, canReturn, supplementError, loadStaffSupplements } from './supplements.ts';
 
 const view = { status: 'PENDING', items: [{ id: 'a', status: 'PENDING' }, { id: 'b', status: 'REPLACE_REQUIRED' }, { id: 'c', status: 'ACCEPTED' }], files: [
   { id: 'a1', itemId: 'a', version: 1, submittedAt: 'before' }, { id: 'a2', itemId: 'a', version: 2 },
@@ -40,4 +40,18 @@ test('staff refresh discovers a committed request after its create response was 
   assert.deepEqual(calls, ['/supplements/application/loan', '/supplements/newly-created/portal-details']);
   assert.equal(result.some(item => item.status === 'PENDING'), true);
   assert.doesNotMatch(JSON.stringify(result), /PRIVATE|secret/);
+});
+
+test('return list is offered only after every item is checked, once per review round', () => {
+  const reviewed = { status: 'PENDING', items: [{ id: 'a', status: 'ACCEPTED' }, { id: 'b', status: 'REPLACE_REQUIRED' }], events: [{ type: 'REQUESTED' }, { type: 'RESPONDED' }, { type: 'REPLACE_REQUIRED' }, { type: 'ACCEPTED' }] };
+  assert.equal(canReturn(reviewed), true);
+  // Còn mục doanh nghiệp đã gửi chưa kiểm tra: chưa hoàn tất lượt kiểm tra.
+  assert.equal(canReturn({ ...reviewed, items: [{ id: 'a', status: 'SUBMITTED' }, { id: 'b', status: 'REPLACE_REQUIRED' }] }), false);
+  // Không có mục cần sửa thì không có gì để gửi.
+  assert.equal(canReturn({ ...reviewed, items: [{ id: 'a', status: 'ACCEPTED' }] }), false);
+  // Đã gửi cho lượt kiểm tra này thì không gửi lại.
+  assert.equal(canReturn({ ...reviewed, events: [...reviewed.events, { type: 'RETURNED' }] }), false);
+  // Vòng kiểm tra mới sau khi doanh nghiệp gửi lại lại cho phép gửi.
+  assert.equal(canReturn({ ...reviewed, events: [...reviewed.events, { type: 'RETURNED' }, { type: 'RESPONDED' }, { type: 'REPLACE_REQUIRED' }] }), true);
+  assert.equal(canReturn({ ...reviewed, status: 'RESOLVED' }), false);
 });

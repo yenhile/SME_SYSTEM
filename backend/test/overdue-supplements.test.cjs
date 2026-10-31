@@ -15,7 +15,7 @@ test('overdue supplement list reads only flagged pending requests of loans still
   assert.equal(args.where.status,'PENDING');
   assert.deepEqual(args.where.overdueAt,{not:null});
   assert.equal(args.where.application.currentStatus,'SUPPLEMENT_REQUIRED');
-  assert.deepEqual(list,[{id:'s1',applicationId:'loan1',applicationCode:'HS-001',companyName:'ABC',assignedOfficer:'Nguyen A',assignedOfficerId:'cbtd',requestedAt:row.requestedAt,deadlineAt:null,overdueAt:row.overdueAt,daysOverdue:3}]);
+  assert.deepEqual(list,[{id:'s1',applicationId:'loan1',applicationCode:'HS-001',companyName:'ABC',assignedOfficer:'Nguyen A',assignedOfficerId:'cbtd',requestedAt:row.requestedAt,deadlineAt:null,overdueAt:row.overdueAt,waitingOn:'ENTERPRISE',daysOverdue:3}]);
 });
 test('overdue supplement list shows unassigned loans and is ordered oldest overdue first',async()=>{
   let args;

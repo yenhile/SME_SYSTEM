@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { OfficerWorkload, LoanApplication } from '../types';
 import { Users, ArrowRightLeft, RefreshCw } from 'lucide-react';
+import { predictionLabel } from '../slaDisplay';
 
 export const AssignmentsView: React.FC = () => {
   const [workloads, setWorkloads] = useState<OfficerWorkload[]>([]);
@@ -243,7 +244,7 @@ export const AssignmentsView: React.FC = () => {
                           {latestPred.riskLevel} ({(latestPred.delayProbability * 100).toFixed(0)}%)
                         </span>
                       ) : (
-                        '—'
+                        loan.predictionStatus === 'INCOMPATIBLE_PA1' ? predictionLabel(loan.predictionStatus) : '—'
                       )}
                     </td>
                     <td>

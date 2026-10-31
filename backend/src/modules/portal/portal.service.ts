@@ -14,6 +14,7 @@ import { buildTracking } from './portal.tracking';
 import { intakeCycleEnabled, isIntakeEditable, approvedCompanyDifferences } from './portal.intake-cycle';
 import { PortalIntakeWorkflow } from './portal.intake-workflow';
 import { APPROVED_MVP_POLICY_VERSION } from './portal.approved-policy';
+import { resolveStageSla } from '../workflow/sla/sla-policy';
 
 const documentSelect={id:true,documentGroup:true,fileName:true,fileSize:true,uploadedAt:true,coverage:true,version:true,supersedesId:true,withdrawnAt:true};
 const officerSelect={id:true,fullName:true,username:true};
@@ -310,7 +311,7 @@ export class PortalService {
       return request;
     });
   }
-  async accept(id:string,userId:string,confirmExistingCompany=false,confirmExistingCompanyFinancials=false,expectedRevision?:number,submissionId?:string) {
+  async accept(id:string,userId:string,confirmExistingCompany=false,confirmExistingCompanyFinancials=false,expectedRevision?:number,submissionId?:string,clock:Date=new Date()) {
     return this.prisma.$transaction(async tx=> {
       await tx.$queryRaw`SELECT id FROM portal_requests WHERE id=${id} FOR UPDATE`;
       const r=await tx.portalRequest.findUnique({where:{id},include:{documents:{where:activeDocuments}}});
@@ -354,8 +355,9 @@ export class PortalService {
       if(!company) company=await tx.company.create({data:companyData as Prisma.CompanyCreateInput});
       const stage=await tx.workflowStage.findUnique({where:{stageCode:'TIEP_NHAN'}});
       if(!stage) throw new BadRequestException('Chưa cấu hình công đoạn Tiếp nhận.');
-      const now=new Date();
-      const loan=await tx.loanApplication.create({data:{applicationCode:`SME-${now.toISOString().slice(0,10).replace(/-/g,'')}-${randomUUID().replace(/-/g,'').slice(0,12).toUpperCase()}`,companyId:company.id,loanPurpose,loanType,proposedAmount,loanTermMonths,assignedTo:userId,currentStage:'TIEP_NHAN',currentStatus:'RECEIVED',stageHistories:{create:{stageId:stage.id,enteredAt:now,slaStandardHours:stage.standardSlaHours,handledBy:userId,notes:`Tiếp nhận yêu cầu doanh nghiệp ${r.reference}${financialReview}`}}}});
+      const now=clock;
+      const slaMode=await resolveStageSla(tx,now);
+      const loan=await tx.loanApplication.create({data:{applicationCode:`SME-${now.toISOString().slice(0,10).replace(/-/g,'')}-${randomUUID().replace(/-/g,'').slice(0,12).toUpperCase()}`,companyId:company.id,loanPurpose,loanType,proposedAmount,loanTermMonths,assignedTo:userId,currentStage:'TIEP_NHAN',currentStatus:'RECEIVED',stageHistories:{create:{stageId:stage.id,enteredAt:now,slaStandardHours:stage.standardSlaHours,...slaMode,handledBy:userId,notes:`Tiếp nhận yêu cầu doanh nghiệp ${r.reference}${financialReview}`}}}});
       await tx.document.createMany({data:r.documents.map(d=>({applicationId:loan.id,documentType:documentTypes[d.documentGroup],fileName:d.fileName,filePath:d.filePath,fileSize:d.fileSize,mimeType:d.mimeType,uploadedBy:userId,uploadedAt:d.uploadedAt,portalDocumentId:d.id}))});
       const request=await tx.portalRequest.update({where:{id},data:{status:'ACCEPTED',acceptedAt:now,acceptedBy:userId,loanId:loan.id},include});
       return {loanId:loan.id,request};
