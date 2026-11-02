@@ -4,10 +4,10 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { notificationTarget } from './notificationTarget';
 
-interface Notification { id: string; requestId: string | null; applicationId?: string | null; title: string; message: string; createdAt: string; readAt: string | null }
+interface Notification { id: string; requestId: string | null; applicationId?: string | null;assignmentChangeRequestId?:string|null; title: string; message: string; createdAt: string; readAt: string | null }
 interface Inbox { items: Notification[]; unreadCount: number }
 
-export function NotificationBell({ onOpenIntake, onOpenLoan }: { onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void }) {
+export function NotificationBell({ onOpenIntake, onOpenLoan,onOpenCoordination }: { onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void;onOpenCoordination?:(id:string)=>void }) {
   const { user, activeRole } = useAuth();
   const [open, setOpen] = useState(false);
   const [inbox, setInbox] = useState<Inbox>({ items: [], unreadCount: 0 });
@@ -47,7 +47,7 @@ export function NotificationBell({ onOpenIntake, onOpenLoan }: { onOpenIntake: (
       {!error && !inbox.items.length && <p>Chưa có thông báo.</p>}
       <ul>{inbox.items.map(item => <li key={item.id}><button disabled={busy} type="button" className={`notification-item${item.readAt ? '' : ' unread'}`} onClick={async () => {
         setBusy(true); setError('');
-        try { await api.post(`/notifications/${item.id}/read`); setOpen(false); const target = notificationTarget(item); if (target?.kind === 'intake') onOpenIntake(target.id); else if (target) onOpenLoan(target.id); refresh.current(); }
+        try { await api.post(`/notifications/${item.id}/read`); setOpen(false); const target = notificationTarget(item); if (target?.kind === 'coordination')onOpenCoordination?.(target.id);else if (target?.kind === 'intake') onOpenIntake(target.id); else if (target) onOpenLoan(target.id); refresh.current(); }
         catch (err) { setError((err as Error).message); }
         finally { setBusy(false); }
       }}><strong>{item.title}{!item.readAt && <span className="notification-unread"> • Chưa đọc</span>}</strong><span>{item.message}</span><small>{new Date(item.createdAt).toLocaleString('vi-VN')}</small></button></li>)}</ul>

@@ -1,3 +1,4 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 require('reflect-metadata');
@@ -8,7 +9,7 @@ const {UsersService}=require('../dist/modules/users/users.service');
 const status=code=>e=>e.getStatus()===code;
 function workflow(loan) {
   const tx={$queryRaw:async()=>[],loanApplication:{findUnique:async()=>({id:'l1',currentStage:'THAM_DINH',currentStatus:'PENDING_APPRAISAL',completedAt:null,proposedAmount:1000,...loan})}};
-  return new WorkflowService({$transaction:async fn=>fn(tx)},{predictForApplication:async()=>{}});
+  return new WorkflowService(withCoordination({$transaction:async fn=>fn(tx)}),{predictForApplication:async()=>{}});
 }
 const approve={targetStage:'HOAN_TAT',targetStatus:'APPROVED',approvedAmount:1000,interestRate:10};
 
@@ -22,24 +23,26 @@ test('another approver is not blocked by the self-approval rule',async()=>{
 });
 test('a manager cannot close a loan they are assigned to',async()=>{
   const tx={$queryRaw:async()=>[],loanApplication:{findUnique:async()=>({id:'l1',assignedTo:'m1',currentStage:'TIEP_NHAN',currentStatus:'SUPPLEMENT_REQUIRED',completedAt:null})}};
-  const service=new WorkflowService({$transaction:async fn=>fn(tx)},{predictForApplication:async()=>{}});
+  const service=new WorkflowService(withCoordination({$transaction:async fn=>fn(tx)}),{predictForApplication:async()=>{}});
   await assert.rejects(service.closeOverdueSupplement('l1',{reason:'quá hạn'},{id:'m1',activeRole:'QUAN_LY'}),status(403));
 });
 test('a manager cannot assign a loan to themselves',async()=>{
-  const tx={$queryRaw:async()=>[],loanApplication:{findUnique:async()=>({id:'l1',assignedTo:'old',completedAt:null,currentStage:'TIEP_NHAN'})}};
-  const service=new AssignmentsService({$transaction:async fn=>fn(tx)},{predictForApplication:async()=>{}});
-  await assert.rejects(service.reassign('l1',{newOfficerId:'m1'},'m1'),status(400));
+  const tx={$queryRaw:async()=>[],applicationAssignment:{findUnique:async()=>null},loanApplication:{findUnique:async()=>({id:'l1',assignedTo:'old',completedAt:null,currentStage:'TIEP_NHAN'})}};
+  const service=new AssignmentsService(withCoordination({$transaction:async fn=>fn(tx)}),{predictForApplication:async()=>{}});
+  await assert.rejects(service.reassign('l1',{newOfficerId:'m1',reason:'Synthetic',expectedAssignmentVersion:0,clientRequestId:require('node:crypto').randomUUID()},'m1'),status(400));
 });
 
-function users({openLoans=0}={}) {
+function users({openLoans=0,pendingPortal=0}={}) {
   const writes=[];
   const tx={
+    $queryRaw:async()=>[],
+    portalRequest:{count:async()=>pendingPortal},
     role:{findMany:async({where})=>where.code.in.map(code=>({id:code,code}))},
     loanApplication:{count:async()=>openLoans},
     user:{update:async()=>{writes.push('user');},findUnique:async()=>({id:'x',roles:[]})},
     userRole:{deleteMany:async()=>{writes.push('roles');},createMany:async()=>{}},
   };
-  return {writes,service:new UsersService({$transaction:async fn=>fn(tx),user:tx.user})};
+  return {writes,service:new UsersService(withCoordination({$transaction:async fn=>fn(tx),user:tx.user}))};
 }
 test('an admin cannot lock themselves or drop their own admin role',async()=>{
   for(const body of [{isActive:false},{roles:['CBTD']}]) {

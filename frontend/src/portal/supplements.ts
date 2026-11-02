@@ -47,3 +47,45 @@ export function supplementError(error: unknown) {
   const value = error as { message?: string; status?: number };
   return `${value?.message || 'Thao tác thất bại. Vui lòng thử lại.'}${value?.status === 409 ? ' Dữ liệu đã thay đổi; tải lại yêu cầu trước khi thử lại.' : ''}`;
 }
+
+/** D4-03: Lọc tập tệp hiện hành theo semantics heads: tệp nào có id nằm trong supersedesId của tệp khác thì bị loại bỏ. */
+export function supplementHeads<T extends { id: string; supersedesId?: string }>(files: T[]): T[] {
+  const superseded = new Set((files ?? []).map(f => f.supersedesId).filter(Boolean));
+  return (files ?? []).filter(f => !superseded.has(f.id));
+}
+
+export interface AcceptedSupplementFile {
+  id: string;
+  supplementId: string;
+  documentType: string;
+  fileName: string;
+  fileSize: number;
+  uploadedAt: string;
+  version: number;
+}
+
+/** D4-03: Trích xuất các tệp bổ sung hiện hành (heads) đã được ngân hàng chấp nhận (ACCEPTED) để hiển thị hợp nhất trong tab Chứng từ, không nhân đôi bảng Document. */
+export function extractAcceptedSupplementFiles(supplementRequests?: any[]): AcceptedSupplementFile[] {
+  if (!Array.isArray(supplementRequests)) return [];
+  const results: AcceptedSupplementFile[] = [];
+  for (const supp of supplementRequests) {
+    const m = supp.portalSupplement;
+    if (!m || !Array.isArray(m.files) || !Array.isArray(m.items)) continue;
+    const currentHeads = supplementHeads<SupplementFile>(m.files);
+    for (const file of currentHeads) {
+      const item = m.items.find((i: any) => i.id === file.itemId);
+      if (file.submittedAt && item?.status === 'ACCEPTED') {
+        results.push({
+          id: file.id,
+          supplementId: supp.id,
+          documentType: item.documentGroup ? `${item.documentGroup} · ${item.documentTypeCode}${item.period ? ` (${item.period})` : ''}` : 'BỔ SUNG',
+          fileName: file.fileName,
+          fileSize: file.fileSize,
+          uploadedAt: file.uploadedAt || supp.requestedAt,
+          version: file.version,
+        });
+      }
+    }
+  }
+  return results;
+}

@@ -1,0 +1,23 @@
+{
+  "pass": true,
+  "browserChecks": 40,
+  "apiChecks": 136,
+  "portalRegressionChecks": 90,
+  "assignmentSafety": {
+    "pass": true,
+    "checks": 62,
+    "schema": "portal_v2_it_bf539577f5a847e8b67ebd69b7a7a9ca"
+  },
+  "coordination": {
+    "pass": true,
+    "checks": 132,
+    "schema": "portal_v2_it_bf539577f5a847e8b67ebd69b7a7a9ca"
+  },
+  "migration": {
+    "pass": true,
+    "repeated": 2,
+    "legacyPreserved": true
+  },
+  "evidence": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\.codex_tmp\\sme-rollout\\1793587961693",
+  "schema": "portal_v2_it_bf539577f5a847e8b67ebd69b7a7a9ca"
+}

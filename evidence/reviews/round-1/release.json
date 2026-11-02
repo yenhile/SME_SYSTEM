@@ -1,0 +1,11 @@
+{
+  "target": "localhost:5432/sme_loan?schema=public",
+  "backup": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\.codex_tmp\\round1-release\\backup-9c21bc345fe544e1984dd495f4c2900e",
+  "restoreVerified": true,
+  "trialMigrationRepeated": 2,
+  "migrationApplied": true,
+  "schemaMatches": true,
+  "existingRowsPreserved": true,
+  "sqlSha256": "9dcddf7d7c8c8fb6b64180a90b7144a34a1ed4335b5655acc16079e64088c400",
+  "portalRecoveryEnabled": true
+}

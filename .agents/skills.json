@@ -123,7 +123,7 @@
     "freshness": "npm run graph:check",
     "build": "npm run graph:build",
     "query": "npm run codegraph --",
-    "guide": "docs/ai/2026-10-18-codegraph.md"
+    "guide": "docs/SME_KY_THUAT.md#quy-trinh-codegraph"
   },
   "hard_rules": {
     "SME-AI-011": {

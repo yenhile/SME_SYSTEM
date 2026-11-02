@@ -1,20 +1,30 @@
+import {assertNoCompanyConflict} from '../assignments/assignment-coordination';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { LoanStatus, StageCode, RoleCode } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { assertOfficerMayWriteCompany } from '../companies/company-access';
+import { companySnapshot, lockCompany, withLoanCompany } from '../companies/company-snapshot';
 import { SLA_POLICY_PA1, computeStageClosing, resolveStageSla } from '../workflow/sla/sla-policy';
 import { firstStagePolicies, predictionStatusOf } from '../prediction/prediction-status';
+
+import { assertLoanWrite, assertBranchAmount, BRANCH_POLICY, lockOfficer } from '../workflow/loan-policy';
 
 @Injectable()
 export class LoanApplicationsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateLoanDto, creatorUserId: string, clock: Date = new Date()) {
+    assertBranchAmount(dto.proposedAmount);
     if (dto.assignedTo && dto.assignedTo !== creatorUserId) throw new BadRequestException('Hồ sơ mới được gán cho cán bộ tiếp nhận. Dùng chức năng điều chuyển để đổi người phụ trách.');
     return this.prisma.$transaction(async tx => {
+    await lockOfficer(tx,creatorUserId);
+    const actor=await tx.user.findFirst({where:{id:creatorUserId,isActive:true,roles:{some:{role:{code:'CBTD'}}}}});
+    if(!actor) throw new BadRequestException('CBTD không còn hoạt động hoặc đã mất quyền.');
     // 1. Tạo hoặc cập nhật thông tin doanh nghiệp (không ghi đè doanh nghiệp của cán bộ khác)
+    await assertNoCompanyConflict(tx,creatorUserId,dto.taxCode);
+    await lockCompany(tx,dto.taxCode);
     await assertOfficerMayWriteCompany(tx, dto.taxCode, creatorUserId);
     const company = await tx.company.upsert({
       where: { taxCode: dto.taxCode },
@@ -60,7 +70,9 @@ export class LoanApplicationsService {
     const loan = await tx.loanApplication.create({
       data: {
         applicationCode,
+        businessPolicyVersion: BRANCH_POLICY, intakeOfficerId: creatorUserId,
         companyId: company.id,
+        companySnapshot: companySnapshot(company),
         loanPurpose: dto.loanPurpose,
         loanType: dto.loanType,
         proposedAmount: dto.proposedAmount,
@@ -91,7 +103,7 @@ export class LoanApplicationsService {
 
     return {
       message: 'Tiếp nhận hồ sơ thành công',
-      loan,
+      loan:withLoanCompany(loan),
     };
     });
   }
@@ -115,6 +127,7 @@ export class LoanApplicationsService {
           ? [
               { applicationCode: { contains: query.keyword, mode: 'insensitive' } },
               { company: { companyName: { contains: query.keyword, mode: 'insensitive' } } },
+              { companySnapshot: { path: ['companyName'], string_contains: query.keyword, mode: 'insensitive' } },
               { company: { taxCode: { contains: query.keyword } } },
             ]
           : undefined,
@@ -141,10 +154,10 @@ export class LoanApplicationsService {
       orderBy: { createdAt: 'desc' },
     });
     const policies = await firstStagePolicies(this.prisma, loans.map(loan => loan.id));
-    return loans.map(loan => ({ ...loan, predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, policies.get(loan.id)) }));
+    return loans.map(loan => ({ ...withLoanCompany(loan), predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, policies.get(loan.id)) }));
   }
 
-  async findOne(id: string, now: Date = new Date()) {
+  async findOne(id: string, now: Date = new Date(),actor?:{id:string}) {
     const loan = await this.prisma.loanApplication.findUnique({
       where: { id },
       include: {
@@ -210,19 +223,80 @@ export class LoanApplicationsService {
       slaRunning: open ? (isPa1 ? !pauseOpen : !open.pausedAt) : false,
     };
     return {
-      ...loan,
+      ...withLoanCompany(loan),
       source: loan.portalRequest ? 'PORTAL' : 'QUAY',
+      coordinationRestrictions:await this.coordinationRestrictions(id,actor?.id),
+      makerCheckerRestrictions:await this.makerCheckerRestrictions(loan,actor?.id),
       predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, loan.stageHistories[0]?.slaPolicy),
       slaState,
       liveSla,
     };
   }
 
-  async checkDocuments(id: string, isComplete: boolean) {
+  private async makerCheckerRestrictions(loan: { id: string; assignedTo?: string | null; intakeOfficerId?: string | null }, actorId?: string) {
+    if (!actorId) {
+      return {
+        isIndependent: true,
+        decisionBlocked: false,
+        decisionBlockReason: null,
+        canCloseOverdue: true,
+        closeOverdueBlockReason: null,
+      };
+    }
+
+    // D4-04: Close Overdue restrictions for QLCN
+    let canCloseOverdue = true;
+    let closeOverdueBlockReason: string | null = null;
+    if (loan.assignedTo === actorId) {
+      canCloseOverdue = false;
+      closeOverdueBlockReason = 'Bạn đang phụ trách hồ sơ này nên không được đóng hồ sơ quá hạn (Maker-Checker).';
+    } else if (loan.intakeOfficerId && loan.intakeOfficerId === actorId) {
+      canCloseOverdue = false;
+      closeOverdueBlockReason = 'Bạn là người tiếp nhận ban đầu của hồ sơ này nên không được đóng hồ sơ quá hạn (Maker-Checker).';
+    }
+
+    // D5-04: Decision (Approve / Reject) & Clarification restrictions
+    let isIndependent = true;
+    let decisionBlockReason: string | null = null;
+    if (loan.assignedTo === actorId) {
+      isIndependent = false;
+      decisionBlockReason = 'Bạn đang phụ trách hồ sơ này nên không được tự quyết định hoặc yêu cầu làm rõ (Maker-Checker).';
+    } else if (loan.intakeOfficerId && loan.intakeOfficerId === actorId) {
+      isIndependent = false;
+      decisionBlockReason = 'Bạn là người tiếp nhận ban đầu của hồ sơ này nên không được tự quyết định hoặc yêu cầu làm rõ (Maker-Checker).';
+    } else {
+      const authored = await this.prisma.appraisalReportEvent.findFirst({
+        where: {
+          report: { applicationId: loan.id },
+          actorId,
+          kind: { in: ['DRAFT_SAVED', 'SUBMITTED'] },
+        },
+      });
+      if (authored) {
+        isIndependent = false;
+        decisionBlockReason = 'Bạn đã tham gia lập hoặc sửa tờ trình nên không được tự quyết định hoặc yêu cầu làm rõ (Maker-Checker).';
+      }
+    }
+
+    return {
+      isIndependent,
+      decisionBlocked: !isIndependent,
+      decisionBlockReason,
+      canCloseOverdue,
+      closeOverdueBlockReason,
+    };
+  }
+
+  private async coordinationRestrictions(id:string,actorId?:string){
+    const pending=await this.prisma.assignmentChangeRequest.findMany({where:{applicationId:id,status:'PENDING',reasonCode:'CONFLICT_OF_INTEREST'},select:{requestedById:true}});
+    return{writeBlocked:pending.some(r=>r.requestedById===actorId),decisionBlocked:pending.length>0};
+  }
+  async checkDocuments(id: string, isComplete: boolean, actor: {id:string;activeRole:string}) {
     return this.prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${id} FOR UPDATE`;
     const loan = await tx.loanApplication.findUnique({ where: { id } });
     if (!loan) throw new NotFoundException('Hồ sơ không tồn tại.');
+    await assertLoanWrite(tx,loan,actor,true);
     if (typeof isComplete !== 'boolean') throw new BadRequestException('isComplete phải là giá trị boolean.');
     if (loan.currentStage !== StageCode.TIEP_NHAN || loan.currentStatus === LoanStatus.SUPPLEMENT_REQUIRED) throw new BadRequestException('Chỉ kiểm tra chứng từ tại công đoạn Tiếp nhận khi không chờ bổ sung.');
 
@@ -241,13 +315,15 @@ export class LoanApplicationsService {
     });
   }
 
-  async setOfficialAmount(id: string, officialAmount: number) {
+  async setOfficialAmount(id: string, officialAmount: number, actor: {id:string;activeRole:string}) {
     return this.prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${id} FOR UPDATE`;
     const loan = await tx.loanApplication.findUnique({ where: { id } });
     if (!loan) throw new NotFoundException('Hồ sơ không tồn tại.');
+    await assertLoanWrite(tx,loan,actor,true);
 
     if (loan.currentStage !== StageCode.TIEP_NHAN || loan.currentStatus === LoanStatus.SUPPLEMENT_REQUIRED) throw new BadRequestException('Chỉ xác định hạn mức tại công đoạn Tiếp nhận khi không chờ bổ sung.');
+    if (loan.businessPolicyVersion) assertBranchAmount(officialAmount);
     if (!Number.isFinite(officialAmount) || officialAmount <= 0) {
       throw new BadRequestException('Hạn mức vay phải là số dương hợp lệ.');
     }

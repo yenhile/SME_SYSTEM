@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma.service';
 import { RoleCode } from '@prisma/client';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
+import { lockOfficer } from '../workflow/loan-policy';
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -127,6 +129,7 @@ export class UsersService {
   async update(id: string, data: UpdateUserDto, actorId?: string) {
     const { roles, ...profile } = data;
     await this.prisma.$transaction(async tx => {
+      await lockOfficer(tx,id);
       const selected = roles ? await tx.role.findMany({ where: { code: { in: roles } } }) : null;
       if (selected && selected.length !== roles!.length) throw new BadRequestException('Vai trò không hợp lệ.');
       if (actorId === id && (profile.isActive === false || (roles && !roles.includes(RoleCode.ADMIN)))) {
@@ -135,6 +138,8 @@ export class UsersService {
       const losesCbtd = profile.isActive === false || (roles && !roles.includes(RoleCode.CBTD));
       if (losesCbtd) {
         const open = await tx.loanApplication.count({ where: { assignedTo: id, completedAt: null } });
+        const pending = await tx.portalRequest.count({where:{assignedTo:id,status:{in:['ASSIGNED','RETURNED']}}});
+        if(pending>0) throw new BadRequestException(`Người này còn ${pending} đề nghị Portal cần xử lý. Hãy điều chuyển trước khi khóa hoặc bỏ vai trò CBTD.`);
         if (open > 0) throw new BadRequestException(`Người này đang phụ trách ${open} hồ sơ chưa hoàn tất. Hãy điều chuyển hồ sơ cho CBTD khác trước khi khóa hoặc bỏ vai trò CBTD.`);
       }
       await tx.user.update({ where: { id }, data: profile });

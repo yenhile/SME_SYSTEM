@@ -46,8 +46,10 @@ test('a rejected loan shows only the general reason from the catalogue, never th
   assert.deepEqual(t.rejection,{code:'TC02',label:'Năng lực tài chính không đảm bảo'});
   assert.equal(states(t),'done,done,pending,stopped');
   assert.ok(!JSON.stringify(t).includes('SECRET'));
-  const unknown=buildTracking(req('ACCEPTED'),loan({currentStage:'HOAN_TAT',currentStatus:'REJECTED',completedAt:new Date(),rejectionReasonCode:'ZZ9',stageHistories:hist('TIEP_NHAN','HOAN_TAT')}));
-  assert.deepEqual(unknown.rejection,{code:null,label:'Hồ sơ không được chấp thuận'});
+  for (const badCode of ['ZZ9', 'constructor', 'toString', '__proto__', 'valueOf', 'hasOwnProperty', 'TC99']) {
+    const unknown = buildTracking(req('ACCEPTED'), loan({ currentStage: 'HOAN_TAT', currentStatus: 'REJECTED', completedAt: new Date(), rejectionReasonCode: badCode, stageHistories: hist('TIEP_NHAN', 'HOAN_TAT') }));
+    assert.deepEqual(unknown.rejection, { code: null, label: 'Hồ sơ không được chấp thuận' });
+  }
 });
 test('a loan closed for overdue supplement shows a general message without the manager reason',()=>{
   const l=loan({currentStage:'HOAN_TAT',currentStatus:'CLOSED_TIMEOUT',completedAt:new Date(),rejectionReasonCode:'TC05',rejectionNote:'SECRET-MANAGER-REASON',stageHistories:hist('TIEP_NHAN','HOAN_TAT')});

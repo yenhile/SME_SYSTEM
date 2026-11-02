@@ -1,0 +1,12 @@
+{
+  "pass": true,
+  "totalChecks": 123,
+  "criteria": {
+    "calendarActivation": "VERIFIED: Before T0 uses legacy 24/7; After T0 uses PA1 with SIMULATED_CALENDAR_V1 bank hours",
+    "stageSnapshot": "VERIFIED: ApplicationStageHistory snapshots slaStandardHours, slaPolicy PA1 and calendarVersion at entry",
+    "pauseInterval": "VERIFIED: Supplement pending creates open interval in application_stage_pauses",
+    "resumeCalculation": "VERIFIED: Enterprise fulfillment closes pause interval and extends deadline by net banking hours",
+    "internalClarificationNoPause": "VERIFIED: Clarification leaves pausedAt = null with 0 pause intervals recorded"
+  },
+  "schema": "portal_v2_it_5b4ae5511ac4458e952c97b47edb5c41"
+}

@@ -1,40 +1,21 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { PortalWizard, activeDraftKey } from './PortalWizard';
 import type { PortalFormConfig } from './model';
-import { ArrowLeft, Building2, FileText, LogOut, Plus, ShieldCheck } from 'lucide-react';
-import { portalApi, PORTAL_TOKEN_KEY, setPortalToken } from './client';
+import { ArrowLeft, Building2, CheckCircle2, Clock, FileEdit, FileText, LogOut, Plus, RefreshCw } from 'lucide-react';
+import { portalApi, PORTAL_TOKEN_KEY, setPortalToken, syncPortalSession, portalSessionVersion, isPortalSessionCurrent } from './client';
 import { draftPayload, fields, groups, loanTypes, requestStatus, validateRequest, type GroupCode, type PortalAccount, type PortalData, type PortalRequest } from './model';
 import '../portal.css';
+import { PortalAuth } from './PortalAuth';
 import { DocumentLink } from './DocumentLink';
 import { SupplementPanel } from '../components/SupplementPanel';
 import { PortalApplicationTracking } from './PortalApplicationTracking';
 import type { SupplementView } from './supplements';
 
-function PortalAuth({ onLogin }: { onLogin: (account: PortalAccount) => void }) {
-  const [mode, setMode] = useState<'login' | 'register' | 'verify'>('login');
-  const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
-  const [contactName, setContactName] = useState(''); const [phone, setPhone] = useState(''); const [code, setCode] = useState('');
-  const [error, setError] = useState(''); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
-  const changeMode = (next: typeof mode) => { setMode(next); setError(''); setMessage(''); };
-  return <div className="portal-auth-layout"><section className="portal-intro"><span className="portal-eyebrow">SME • CỔNG DOANH NGHIỆP</span><h1>Khởi đầu nhu cầu vốn của doanh nghiệp</h1><p>Khai thông tin, chuẩn bị tài liệu và gửi đề nghị vay trực tuyến. Bạn có thể lưu nháp và tiếp tục bất cứ lúc nào.</p><div className="portal-intro-note"><ShieldCheck size={22} /><span>Hồ sơ của bạn được quản lý riêng trong tài khoản doanh nghiệp.</span></div></section><section className="portal-card portal-auth"><h2>{mode === 'login' ? 'Đăng nhập doanh nghiệp' : mode === 'register' ? 'Tạo tài khoản' : 'Xác minh email'}</h2><p>{mode === 'verify' ? 'Nhập mã xác minh được gửi đến email của bạn.' : 'Dùng email đã xác minh để quản lý đề nghị vay.'}</p>
-    <form onSubmit={async e => { e.preventDefault(); setBusy(true); setError(''); setMessage(''); try {
-      if (mode === 'login') { const result = await portalApi.post<{ accessToken: string; account: PortalAccount }>('/auth/login', { email: email.trim(), password }); setPortalToken(result.accessToken); onLogin(result.account); }
-      else if (mode === 'register') { await portalApi.post('/auth/register', { email: email.trim(), password, contactName: contactName.trim(), phone: phone.trim() }); setMode('verify'); setPassword(''); setMessage('Tài khoản đã được tạo. Vui lòng kiểm tra email để xác minh.'); }
-      else { await portalApi.post('/auth/verify-email', { email: email.trim(), code: code.trim() }); setMode('login'); setCode(''); setMessage('Email đã được xác minh. Bạn có thể đăng nhập.'); }
-    } catch (err) { setError((err as Error).message); } finally { setBusy(false); } }}>
-      <label>Email<input required type="email" autoComplete="email" maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>
-      {mode === 'register' && <><label>Người liên hệ<input required maxLength={200} value={contactName} onChange={e => setContactName(e.target.value)} /></label><label>Số điện thoại<input required type="tel" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} /></label></>}
-      {mode !== 'verify' ? <label>Mật khẩu<input required type="password" minLength={mode === 'register' ? 8 : undefined} maxLength={72} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} value={password} onChange={e => setPassword(e.target.value)} />{mode === 'register' && <small>Tối thiểu 8 ký tự, gồm chữ và số; tối đa 72 byte.</small>}</label> : <label>Mã xác minh<input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" value={code} onChange={e => setCode(e.target.value)} /></label>}
-      {error && <p className="portal-error" role="alert">{error}</p>}{message && <p className="portal-notice" role="status">{message}</p>}
-      <button className="btn btn-primary" disabled={busy}>{busy ? 'Đang xử lý…' : mode === 'login' ? 'Đăng nhập' : mode === 'register' ? 'Đăng ký' : 'Xác minh email'}</button>
-    </form><div className="portal-auth-links"><button className="portal-link" disabled={busy} onClick={() => changeMode(mode === 'register' ? 'login' : 'register')}>{mode === 'register' ? 'Đã có tài khoản? Đăng nhập' : 'Tạo tài khoản doanh nghiệp'}</button><button className="portal-link" disabled={busy} onClick={() => changeMode(mode === 'verify' ? 'login' : 'verify')}>{mode === 'verify' ? 'Quay lại đăng nhập' : 'Xác minh email'}</button>{mode === 'verify' && <button className="portal-link" disabled={busy || !email.trim()} onClick={async () => { setBusy(true); setError(''); try { await portalApi.post('/auth/resend-verification', { email: email.trim() }); setMessage('Đã yêu cầu gửi lại mã. Vui lòng kiểm tra email.'); } catch (err) { setError((err as Error).message); } finally { setBusy(false); } }}>Gửi lại mã xác minh</button>}</div></section></div>;
-}
-
 export function RequestFields({ data, errors = {}, readOnly = false, onChange }: { data: PortalData; errors?: Record<string, string>; readOnly?: boolean; onChange?: (data: PortalData) => void }) {
   return <div className="portal-field-grid">{fields.map(field => <label key={field.key}>{field.label}<span className="portal-required"> *</span>{field.key === 'loanType' ? <select value={data.loanType ?? ''} disabled={readOnly} aria-invalid={!!errors[field.key]} onChange={e => onChange?.({ ...data, loanType: e.target.value })}><option value="">Chọn loại vay</option>{Object.entries(loanTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <input type={field.type || 'text'} value={(data[field.key] as string | number | undefined) ?? ''} readOnly={readOnly} min={field.min} max={field.max} step={field.type === 'number' ? '1' : undefined} maxLength={field.key === 'taxCode' ? 13 : 1000} aria-invalid={!!errors[field.key]} onChange={e => onChange?.({ ...data, [field.key]: field.type === 'number' ? e.target.value === '' ? undefined : Number(e.target.value) : e.target.value })} />}{errors[field.key] && <small className="portal-error">{errors[field.key]}</small>}</label>)}</div>;
 }
 
-function RequestEditor({ initial, onBack, onSaved }: { initial: PortalRequest | null; onBack: () => void; onSaved: () => void }) {
+function RequestEditor({ initial, onBack, onSaved, onClone }: { onClone?: (r:PortalRequest)=>Promise<void>; initial: PortalRequest | null; onBack: () => void; onSaved: () => void }) {
   const [request, setRequest] = useState(initial); const [data, setData] = useState<PortalData>(initial?.data ?? {});
   const [dirty, setDirty] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({}); const [confirmSubmit, setConfirmSubmit] = useState(false);
@@ -49,6 +30,7 @@ function RequestEditor({ initial, onBack, onSaved }: { initial: PortalRequest | 
   }
   async function run(action: () => Promise<void>) { setBusy(true); setError(''); setNotice(''); try { await action(); } catch (err) { setError((err as Error).message); } finally { setBusy(false); } }
   return <section className="portal-editor"><button className="portal-link portal-back" disabled={busy} onClick={() => { if (!dirty || window.confirm('Thông tin chưa lưu sẽ bị mất. Quay lại danh sách?')) onBack(); }}><ArrowLeft size={16} /> Danh sách đề nghị</button><div className="portal-section-heading"><div><span className="portal-eyebrow">ĐỀ NGHỊ VAY DOANH NGHIỆP</span><h1>{request?.reference || 'Tạo đề nghị vay'}</h1></div><span className={`portal-status ${request?.status === 'ACCEPTED' ? 'accepted' : ''}`}>{requestStatus[request?.status ?? 'DRAFT']}</span></div>
+    {request?.formVersion!==2&&request?.status==='DRAFT'&&onClone&&<div className="portal-notice"><p>Bản nháp V1 được giữ nguyên. Chuyển sang V2 bằng bản sao dữ liệu; tài liệu cần tải lại và khai bổ sung theo checklist mới.</p><button className="btn btn-primary" disabled={busy} onClick={()=>void run(()=>onClone(request))}>Tạo đề nghị V2 từ nháp này</button></div>}
     {!editable && <p className="portal-notice">Đề nghị đã gửi và được khóa chỉnh sửa.{request?.submittedAt && ` Ngày gửi: ${new Date(request.submittedAt).toLocaleString('vi-VN')}.`}{request?.status === 'ACCEPTED' && ' Ngân hàng đã tiếp nhận để xử lý.'}</p>}
     {error && <p role="alert" className="portal-error portal-alert">{error}</p>}{notice && <p role="status" className="portal-notice">{notice}</p>}
     <fieldset disabled={busy} className="portal-fieldset"><section className="portal-card"><div className="portal-card-title"><Building2 size={20} /><div><h2>Thông tin doanh nghiệp & nhu cầu vốn</h2><p>Có thể lưu nháp khi chưa điền đủ. Các trường có dấu * cần hoàn tất trước khi gửi.</p></div></div><RequestFields data={data} errors={errors} readOnly={!editable} onChange={next => { setData(next); setDirty(true); setConfirmSubmit(false); }} /></section>
@@ -72,6 +54,7 @@ function RequestEditor({ initial, onBack, onSaved }: { initial: PortalRequest | 
 }
 
 export function PortalApp() {
+  const [resetToken,setResetToken]=useState<string|null>(()=>new URL(location.href).searchParams.get('reset'));
   const [account, setAccount] = useState<PortalAccount | null>(null); const [checking, setChecking] = useState(!!localStorage.getItem(PORTAL_TOKEN_KEY));
   const [requests, setRequests] = useState<PortalRequest[]>([]); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
   const [supplementCounts, setSupplementCounts] = useState<Record<string, number>>({});
@@ -81,12 +64,22 @@ export function PortalApp() {
   const [editor, setEditor] = useState<PortalRequest | null | undefined>(undefined);
   const [config, setConfig] = useState<PortalFormConfig | null>(null); const [draftId, setDraftId] = useState('');
   const accountRef = useRef(account); accountRef.current = account;
-  const logout = () => { accountRef.current = null; loadSequence.current++; openSequence.current++; setPortalToken(null); setAccount(null); setRequests([]); setSupplementCounts({}); setSupplementErrors([]); setLoading(false); setEditor(undefined); setConfig(null); };
+  const clearView = () => { accountRef.current = null; loadSequence.current++; openSequence.current++; setAccount(null); setRequests([]); setSupplementCounts({}); setSupplementErrors([]); setLoading(false); setChecking(false); setEditor(undefined); setConfig(null); };
+  const logout = () => { setPortalToken(null); clearView(); };
   useEffect(() => {
-    const expired = () => { logout(); setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'); };
+    let live = true;
+    const url=new URL(location.href);
+    if(url.searchParams.has('reset')){url.searchParams.delete('reset');history.replaceState(history.state,'',url.pathname+url.search+url.hash);}
+    const expired = () => { clearView(); setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'); };
+    const changed = () => { clearView(); setError('Phiên doanh nghiệp đã thay đổi ở tab khác. Vui lòng đăng nhập lại; bản nháp được giữ riêng theo tài khoản.'); };
+    const storage = (event: StorageEvent) => { if (event.key === PORTAL_TOKEN_KEY || event.key === null) syncPortalSession(); };
     window.addEventListener('sme-portal-session-expired', expired);
-    if (localStorage.getItem(PORTAL_TOKEN_KEY)) portalApi.get<PortalAccount>('/auth/me').then(setAccount).catch(err => setError((err as Error).message)).finally(() => setChecking(false));
-    return () => window.removeEventListener('sme-portal-session-expired', expired);
+    window.addEventListener('sme-portal-session-changed', changed);
+    window.addEventListener('storage', storage);
+    const version = portalSessionVersion();
+    if (resetToken) setChecking(false);
+    else if (localStorage.getItem(PORTAL_TOKEN_KEY)) portalApi.get<PortalAccount>('/auth/me').then(value => { if (live && isPortalSessionCurrent(version)) setAccount(value); }).catch(err => { if (live && isPortalSessionCurrent(version)) setError((err as Error).message); }).finally(() => { if (live) setChecking(false); });
+    return () => { live = false; window.removeEventListener('sme-portal-session-expired', expired); window.removeEventListener('sme-portal-session-changed', changed); window.removeEventListener('storage', storage); };
   }, []);
   async function load() {
     const owner = accountRef.current?.id; if (!owner) return;
@@ -133,11 +126,107 @@ export function PortalApp() {
     catch (err) { if (current()) setError((err as Error).message); } finally { if (current()) setLoading(false); }
   }
   function saved(value: PortalRequest) { if (accountRef.current?.id === account?.id) { setRequests(current => [value, ...current.filter(item => item.id !== value.id)]); setEditor(current=>current?.id===value.id?value:current); } }
-  return <div className="portal-shell"><header className="portal-header"><a className="portal-brand" href="/portal"><span><Building2 size={23} /></span><div>SME Loan<small>Cổng doanh nghiệp</small></div></a><div className="portal-header-actions">{account && <><span>{account.contactName}<small>{account.email}</small></span><button className="btn btn-secondary" onClick={() => { if (editor === undefined || window.confirm('Đăng xuất khỏi cổng doanh nghiệp? File chưa tải lên sẽ cần chọn lại. Nội dung nháp V2 chưa lưu được giữ để khôi phục trong tab này.')) logout(); }}><LogOut size={15} /> Đăng xuất</button></>}</div></header>
-    <main className="portal-main">{checking ? <p role="status">Đang kiểm tra phiên đăng nhập…</p> : !account ? <>{error && <p role="alert" className="portal-error">{error}</p>}<PortalAuth onLogin={setAccount} /></> : editor !== undefined ? <Fragment key="editor">{editor && editor.status !== 'DRAFT' && <PortalApplicationTracking key={editor.id+':'+editor.revision} requestId={editor.id} />}{((editor?.formVersion ?? (editor ? 1 : 2)) === 1 ? <RequestEditor key={editor?.id ?? 'new'} initial={editor} onBack={back} onSaved={() => void load()} /> : config ? <PortalWizard key={draftId} initial={editor} draftId={draftId} account={account} config={config} onBack={back} onSaved={saved} /> : <section className="portal-card"><p role="status">{error || 'Đang tải cấu hình biểu mẫu…'}</p><button className="btn btn-secondary" onClick={back}>Về danh sách</button></section>)}{editor?.status === 'ACCEPTED' && editor.loanId && <details className="portal-card supplement-entry" open><summary>Bổ sung hồ sơ sau tiếp nhận</summary><SupplementPanel key={editor.id} mode="portal" requestId={editor.id} config={config} /></details>}</Fragment> : <Fragment key="list">
-      <div className="portal-section-heading"><div><span className="portal-eyebrow">KHÔNG GIAN DOANH NGHIỆP</span><h1>Đề nghị vay của bạn</h1><p>Chuẩn bị hồ sơ, lưu nháp và theo dõi kết quả tiếp nhận.</p></div><button className="btn btn-primary" disabled={!config?.previewEnabled || loading} onClick={() => { const id = crypto.randomUUID(); setDraftId(id); remember(id); setEditor(null); }}><Plus size={17} /> Tạo đề nghị vay</button></div>
+  return <div className="portal-shell"><header className="portal-header"><a className="portal-brand" href="/portal"><span className="portal-brand-icon"><Building2 size={22} /></span><div className="portal-brand-text"><span className="portal-brand-title">SME</span><small className="portal-brand-subtitle">Cổng doanh nghiệp</small></div></a><div className="portal-header-actions">{account && <div className="portal-account-box"><div className="portal-account-meta"><span className="portal-account-name">{account.contactName}</span><small className="portal-account-email">{account.email}</small></div><button className="btn btn-secondary portal-logout-btn" onClick={() => { if (editor === undefined || window.confirm('Đăng xuất khỏi cổng doanh nghiệp? File chưa tải lên sẽ cần chọn lại. Nội dung nháp V2 chưa lưu được giữ để khôi phục trong tab này.')) logout(); }}><LogOut size={15} /> Đăng xuất</button></div>}</div></header>
+    <main className="portal-main">{checking ? <p role="status">Đang kiểm tra phiên đăng nhập…</p> : !account ? <>{error && <p role="alert" className="portal-error">{error}</p>}<PortalAuth resetToken={resetToken} onResetConsumed={()=>setResetToken(null)} onLogin={setAccount} /></> : editor !== undefined ? <Fragment key="editor">{editor && editor.status !== 'DRAFT' && <PortalApplicationTracking key={editor.id+':'+editor.revision} requestId={editor.id} />}{((editor?.formVersion ?? (editor ? 1 : 2)) === 1 ? <RequestEditor key={editor?.id ?? 'new'} initial={editor} onBack={back} onSaved={() => void load()} onClone={config?.rolloutEnabled?async old=>{const r=await portalApi.post<PortalRequest>('/requests',{formVersion:2,clientRequestId:crypto.randomUUID(),data:old.data});setDraftId(r.id);remember(r.id);saved(r);setEditor(r);}:undefined} /> : config ? <PortalWizard key={draftId} initial={editor} draftId={draftId} account={account} config={config} onBack={back} onSaved={saved} /> : <section className="portal-card"><p role="status">{error || 'Đang tải cấu hình biểu mẫu…'}</p><button className="btn btn-secondary" onClick={back}>Về danh sách</button></section>)}{editor?.status === 'ACCEPTED' && editor.loanId && <details className="portal-card supplement-entry" open><summary>Bổ sung hồ sơ sau tiếp nhận</summary><SupplementPanel key={editor.id} mode="portal" requestId={editor.id} config={config} /></details>}</Fragment> : <Fragment key="list">
+      <div className="portal-section-heading portal-dashboard-heading"><div><span className="portal-eyebrow">KHÔNG GIAN DOANH NGHIỆP</span><h1>Đề nghị vay của bạn</h1><p>Chuẩn bị hồ sơ, lưu nháp và theo dõi kết quả tiếp nhận.</p></div><button className="btn btn-primary portal-create-cta" disabled={!config?.previewEnabled || loading} onClick={() => { const id = crypto.randomUUID(); setDraftId(id); remember(id); setEditor(null); }}><Plus size={17} /> Tạo đề nghị vay</button></div>
       {error && <p role="alert" className="portal-error">{error}</p>}{config && !config.previewEnabled && <p className="v2-policy">Tạo bản nháp V2 chưa mở trong môi trường này. Bạn vẫn có thể xem các đề nghị hiện có.</p>}
-      {supplementErrors.length > 0 && <div className="portal-error portal-alert" role="alert"><p>Không tải được tình trạng bổ sung. Bấm Làm mới để thử lại.</p><ul>{supplementErrors.map(message => <li key={message}>{message}</li>)}</ul></div>}{Object.values(supplementCounts).some(count => count > 0) && <p className="portal-notice" role="status">Có {Object.values(supplementCounts).reduce((sum, count) => sum + count, 0)} yêu cầu bổ sung đang mở. Chọn đề nghị đã tiếp nhận để xem chi tiết và gửi tài liệu.</p>}<div className="v2-dashboard-stats"><section><strong>{requests.filter(item => item.status === 'DRAFT').length}</strong><span>Bản nháp đang chuẩn bị</span></section><section><strong>{requests.filter(item => ['SUBMITTED', 'ASSIGNED', 'RETURNED'].includes(item.status)).length}</strong><span>Đã gửi, chờ ngân hàng tiếp nhận</span></section><section><strong>{requests.filter(item => item.status === 'ACCEPTED').length}</strong><span>Ngân hàng đã tiếp nhận</span></section></div>
-      <section className="portal-card"><div className="portal-section-heading"><h2>Danh sách đề nghị</h2><button className="btn btn-secondary" disabled={loading} onClick={() => void load()}>Làm mới</button></div>{loading && <p role="status">Đang tải đề nghị…</p>}{!loading && requests.length === 0 && !error && <div className="portal-empty"><FileText size={32} /><h3>Bạn chưa có đề nghị vay</h3><p>Tạo bản nháp và chuẩn bị hồ sơ theo từng bước.</p></div>}<div className="portal-request-list">{requests.map(item => <button className="portal-request-row" key={item.id} disabled={loading} onClick={() => void open(item)}><div><strong>{item.reference} <small className="v2-version">V{item.formVersion ?? 1}</small></strong><span>{item.data.companyName || 'Chưa nhập tên doanh nghiệp'}</span>{item.status === 'ACCEPTED' && item.loanId && <small className="supplement-dashboard-status">{supplementCounts[item.id] === undefined ? (loading ? 'Đang tải tình trạng bổ sung…' : 'Chưa tải được tình trạng bổ sung') : supplementCounts[item.id] > 0 ? `${supplementCounts[item.id]} yêu cầu bổ sung đang mở` : 'Không có yêu cầu bổ sung đang mở'}</small>}</div><span>{item.data.proposedAmount !== undefined ? `${Number(item.data.proposedAmount).toLocaleString('vi-VN')} VNĐ` : 'Chưa nhập số tiền'}</span><span className="portal-status">{requestStatus[item.status]}</span><span>{item.status === 'RETURNED'?'Chỉnh sửa và gửi lại →':item.status === 'DRAFT' ? 'Tiếp tục khai →' : 'Xem chi tiết →'}</span></button>)}</div></section>
+      {supplementErrors.length > 0 && <div className="portal-error portal-alert" role="alert"><p>Không tải được tình trạng bổ sung. Bấm Làm mới để thử lại.</p><ul>{supplementErrors.map(message => <li key={message}>{message}</li>)}</ul></div>}{Object.values(supplementCounts).some(count => count > 0) && <p className="portal-notice" role="status">Có {Object.values(supplementCounts).reduce((sum, count) => sum + count, 0)} yêu cầu bổ sung đang mở. Chọn đề nghị đã tiếp nhận để xem chi tiết và gửi tài liệu.</p>}
+      <div className="v2-dashboard-stats portal-stats-grid">
+        <section className="portal-stat-card stat-draft">
+          <div className="portal-stat-header"><span className="portal-stat-label">Bản nháp đang chuẩn bị</span><span className="portal-stat-icon"><FileEdit size={16} /></span></div>
+          <strong className="portal-stat-number">{requests.filter(item => item.status === 'DRAFT').length}</strong>
+          <span className="portal-stat-hint">Hồ sơ chưa gửi, có thể chỉnh sửa tiếp</span>
+        </section>
+        <section className="portal-stat-card stat-submitted">
+          <div className="portal-stat-header"><span className="portal-stat-label">Đã gửi, chờ ngân hàng tiếp nhận</span><span className="portal-stat-icon"><Clock size={16} /></span></div>
+          <strong className="portal-stat-number">{requests.filter(item => ['SUBMITTED', 'ASSIGNED', 'RETURNED'].includes(item.status)).length}</strong>
+          <span className="portal-stat-hint">Hồ sơ đang trong quy trình rà soát</span>
+        </section>
+        <section className="portal-stat-card stat-accepted">
+          <div className="portal-stat-header"><span className="portal-stat-label">Ngân hàng đã tiếp nhận</span><span className="portal-stat-icon"><CheckCircle2 size={16} /></span></div>
+          <strong className="portal-stat-number">{requests.filter(item => item.status === 'ACCEPTED').length}</strong>
+          <span className="portal-stat-hint">Đã khởi tạo hồ sơ vay nội bộ chi nhánh</span>
+        </section>
+      </div>
+      <section className="portal-card portal-table-card">
+        <div className="portal-table-header">
+          <div>
+            <h2>Danh sách đề nghị</h2>
+            <p className="portal-table-subtitle">Tất cả đề nghị vay trực tuyến của doanh nghiệp tại chi nhánh</p>
+          </div>
+          <button className="btn btn-secondary portal-refresh-btn" disabled={loading} onClick={() => void load()}>
+            <RefreshCw size={14} className={loading ? 'spinning' : ''} /> Làm mới
+          </button>
+        </div>
+        {loading && <p className="portal-table-loading" role="status">Đang tải đề nghị…</p>}
+        {!loading && requests.length === 0 && !error && (
+          <div className="portal-empty">
+            <FileText size={36} />
+            <h3>Bạn chưa có đề nghị vay</h3>
+            <p>Tạo bản nháp và chuẩn bị hồ sơ theo từng bước.</p>
+          </div>
+        )}
+        {requests.length > 0 && (
+          <div className="portal-table-responsive">
+            <table className="portal-data-table">
+              <thead>
+                <tr>
+                  <th scope="col" className="col-ref">Mã hồ sơ &amp; Tên đề nghị</th>
+                  <th scope="col" className="col-amount">Số tiền đề nghị</th>
+                  <th scope="col" className="col-status">Trạng thái</th>
+                  <th scope="col" className="col-action text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="portal-request-list">
+                {requests.map(item => (
+                  <tr
+                    className="portal-request-row"
+                    key={item.id}
+                    onClick={() => void open(item)}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void open(item); } }}
+                  >
+                    <td className="col-ref">
+                      <div className="portal-row-info">
+                        <div className="portal-ref-line">
+                          <strong className="portal-ref-code">{item.reference}</strong>
+                          <span className="v2-version">V{item.formVersion ?? 1}</span>
+                        </div>
+                        <span className="portal-company-text">{item.data.companyName || 'Chưa nhập tên doanh nghiệp'}</span>
+                        {item.status === 'ACCEPTED' && item.loanId && (
+                          <small className="supplement-dashboard-status">
+                            {supplementCounts[item.id] === undefined ? (loading ? 'Đang tải tình trạng bổ sung…' : 'Chưa tải được tình trạng bổ sung') : supplementCounts[item.id] > 0 ? `${supplementCounts[item.id]} yêu cầu bổ sung đang mở` : 'Không có yêu cầu bổ sung đang mở'}
+                          </small>
+                        )}
+                      </div>
+                    </td>
+                    <td className="col-amount">
+                      <span className="portal-amount-value">
+                        {item.data.proposedAmount !== undefined ? `${Number(item.data.proposedAmount).toLocaleString('vi-VN')} VNĐ` : 'Chưa nhập số tiền'}
+                      </span>
+                    </td>
+                    <td className="col-status">
+                      <span className={`portal-status status-${item.status.toLowerCase()}`}>
+                        {requestStatus[item.status]}
+                      </span>
+                    </td>
+                    <td className="col-action text-right">
+                      <button
+                        type="button"
+                        className="portal-table-action-link"
+                        disabled={loading}
+                        onClick={e => { e.stopPropagation(); void open(item); }}
+                      >
+                        {item.status === 'RETURNED' ? 'Chỉnh sửa và gửi lại →' : item.status === 'DRAFT' ? 'Tiếp tục khai →' : 'Xem chi tiết →'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </Fragment>}</main><footer className="portal-footer">SME Loan • Tiếp nhận đề nghị vay doanh nghiệp</footer></div>;
 }

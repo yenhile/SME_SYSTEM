@@ -1,23 +1,40 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
+const {randomUUID}=require('node:crypto');
 require('reflect-metadata');
 const {PortalService}=require('../dist/modules/portal/portal.service');
 
 function fixture(status='SUBMITTED',assignedTo=null) {
-  const state={request:{id:'request',reference:'DN-test',status,assignedTo,data:{},documents:[]},history:[],notices:[],locks:[]};
+  const state={request:{id:'request',reference:'DN-test',status,assignedTo,assignmentVersion:0,data:{},documents:[]},history:[],notices:[],locks:[]};
   const tx={
     $queryRaw:async(strings,...values)=>{state.locks.push(strings.join('?'));return[];},
-    portalRequest:{findFirst:async()=>({...state.request}),findUnique:async()=>({...state.request}),findUniqueOrThrow:async()=>({...state.request}),update:async({data})=>Object.assign(state.request,data)},
+    portalRequest:{findFirst:async()=>({...state.request}),findUnique:async()=>({...state.request}),findUniqueOrThrow:async()=>({...state.request}),update:async({data})=>{for(const[k,v]of Object.entries(data))state.request[k]=v&&typeof v==='object'&&'increment'in v?(state.request[k]??0)+v.increment:v;return{...state.request};}},
     user:{findFirst:async({where})=>where.id==='inactive'?null:{id:where.id},findMany:async()=>[{id:'manager'}]},
-    portalAssignment:{create:async({data})=>{state.history.push(data);return data;}},
+    portalAssignment:{findUnique:async({where})=>state.history.find(r=>r.clientRequestId===where.requestId_clientRequestId.clientRequestId)||null,create:async({data})=>{const row={id:randomUUID(),...data};state.history.push(row);return row;}},
     internalNotification:{createMany:async({data})=>{state.notices.push(...data);return{count:data.length};}},
     loanApplication:{findFirst:async({where})=>where.assignedTo==='new-owner'?{id:'loan'}:null},
   };
-  return {state,tx,service:new PortalService({...tx,$transaction:async fn=>fn(tx)})};
+  return {state,tx,operation:body=>({expectedAssignmentVersion:state.request.assignmentVersion,clientRequestId:randomUUID(),...body}),service:new PortalService(withCoordination({...tx,$transaction:async fn=>fn(tx)}))};
 }
+
+test('Portal assignment replay preserves the current owner after further transfers',async()=>{
+  const {service,state}=fixture(),operation={officerId:'A',expectedAssignedTo:null,expectedAssignmentVersion:0,clientRequestId:randomUUID()};
+  await service.assign('request',operation,'manager');
+  await service.assign('request',{officerId:'B',expectedAssignedTo:'A',expectedAssignmentVersion:1,clientRequestId:randomUUID(),note:'Balance work'},'manager');
+  const result=await service.assign('request',operation,'manager');assert.equal(result.assignedTo,'B');assert.equal(result.assignmentReceipt.replayed,true);assert.equal(result.assignmentReceipt.toUserId,'A');
+  assert.equal(state.history.length,2);assert.equal(state.notices.length,3);
+});
+test('Portal assignment version catches ABA even on legacy requests without revision',async()=>{
+  const {service,state}=fixture('ASSIGNED','A');
+  await service.assign('request',{officerId:'B',expectedAssignedTo:'A',expectedAssignmentVersion:0,clientRequestId:randomUUID(),note:'Balance'},'manager');
+  await service.assign('request',{officerId:'A',expectedAssignedTo:'B',expectedAssignmentVersion:1,clientRequestId:randomUUID(),note:'Return'},'manager');
+  await assert.rejects(service.assign('request',{officerId:'C',expectedAssignedTo:'A',expectedAssignmentVersion:0,clientRequestId:randomUUID(),note:'Old screen'},'manager'),e=>e.getStatus?.()===409);
+  assert.equal(state.request.assignmentVersion,2);
+});
 test('CBTD queue includes only assigned intakes and current linked loan ownership',async()=>{
   let query;
-  const service=new PortalService({portalRequest:{findMany:async args=>{query=args;return[];}},loanApplication:{findMany:async()=>[]}});
+  const service=new PortalService(withCoordination({portalRequest:{findMany:async args=>{query=args;return[];}},loanApplication:{findMany:async()=>[]}}));
   await service.list(undefined,{id:'officer',roles:['CBTD']});
   assert.deepEqual(query.where,{OR:[{status:{in:['ASSIGNED','RETURNED']},assignedTo:'officer'},{status:'ACCEPTED',loan:{is:{assignedTo:'officer'}}}]});
   assert.deepEqual(query.include.assignedOfficer,{select:{id:true,fullName:true,username:true}});
@@ -34,29 +51,29 @@ test('accepted request retry follows current loan owner after transfer',async()=
   await assert.rejects(service.accept('request','old-owner'),e=>e.getStatus()===404);
 });
 test('assignment locks request, changes status and atomically records history and notification',async()=>{
-  const {service,state}=fixture();
-  const result=await service.assign('request',{officerId:'officer',expectedAssignedTo:null},'manager');
+  const {service,state,operation}=fixture();
+  const result=await service.assign('request',operation({officerId:'officer',expectedAssignedTo:null}),'manager');
   assert.equal(result.status,'ASSIGNED');assert.equal(result.assignedTo,'officer');
   assert.ok(state.locks.some(sql=>sql.includes('FOR UPDATE')));
   assert.equal(state.history.length,1);assert.equal(state.history[0].managerId,'manager');
   assert.equal(state.notices.length,1);assert.equal(state.notices[0].userId,'officer');
-  await assert.rejects(service.assign('request',{officerId:'other',expectedAssignedTo:null},'manager'),e=>e.getStatus()===409);
+  await assert.rejects(service.assign('request',operation({officerId:'other',expectedAssignedTo:null}),'manager'),e=>e.getStatus()===409);
   assert.equal(state.history.length,1);assert.equal(state.notices.length,1);
 });
 test('reassignment requires reason and notifies old and new officers only once',async()=>{
-  const {service,state}=fixture('ASSIGNED','old');
-  await assert.rejects(service.assign('request',{officerId:'new',expectedAssignedTo:'old'},'manager'),e=>e.getStatus()===400);
-  await service.assign('request',{officerId:'new',expectedAssignedTo:'old',note:'Balance workload'},'manager');
+  const {service,state,operation}=fixture('ASSIGNED','old');
+  await assert.rejects(service.assign('request',operation({officerId:'new',expectedAssignedTo:'old'}),'manager'),e=>e.getStatus()===400);
+  await service.assign('request',operation({officerId:'new',expectedAssignedTo:'old',note:'Balance workload'}),'manager');
   assert.deepEqual(state.notices.map(n=>n.userId).sort(),['new','old']);
   assert.equal(state.history[0].fromUserId,'old');
-  await service.assign('request',{officerId:'new',expectedAssignedTo:'new'},'manager');
+  await service.assign('request',operation({officerId:'new',expectedAssignedTo:'new'}),'manager');
   assert.equal(state.history.length,1);assert.equal(state.notices.length,2);
 });
 test('assignment rejects inactive officers, malformed concurrency token and accepted requests',async()=>{
-  const {service}=fixture();
-  for(const body of [{officerId:'inactive',expectedAssignedTo:null},{officerId:'officer'},{officerId:'officer',expectedAssignedTo:null,unexpected:true}]) await assert.rejects(service.assign('request',body,'manager'),e=>e.getStatus()===400);
+  const {service,operation}=fixture();
+  for(const body of [{officerId:'inactive',expectedAssignedTo:null},{officerId:'officer'},{officerId:'officer',expectedAssignedTo:null,unexpected:true}]) await assert.rejects(service.assign('request',operation(body),'manager'),e=>e.getStatus()===400);
   const accepted=fixture('ACCEPTED');
-  await assert.rejects(accepted.service.assign('request',{officerId:'officer',expectedAssignedTo:null},'manager'),e=>e.getStatus()===409);
+  await assert.rejects(accepted.service.assign('request',accepted.operation({officerId:'officer',expectedAssignedTo:null}),'manager'),e=>e.getStatus()===409);
 });
 
 test('submit notifies active managers transactionally and retry does not duplicate notices',async()=>{
@@ -74,8 +91,9 @@ test('submit notifies active managers transactionally and retry does not duplica
 
 test('officer workload uses active loan statuses and assigned requests only',async()=>{
   const queries=[];
-  const service=new PortalService({user:{findMany:async query=>{queries.push(query);return[{id:'officer',fullName:'Demo',username:'demo'}];}},loanApplication:{count:async query=>{queries.push(query);return 4;}},portalRequest:{count:async query=>{queries.push(query);return 2;}}});
-  assert.deepEqual(await service.officers(),[{id:'officer',fullName:'Demo',username:'demo',activeLoanCount:4,pendingIntakeCount:2}]);
+  const service=new PortalService(withCoordination({user:{findMany:async query=>{queries.push(query);return[{id:'officer',fullName:'Demo',username:'demo',roles:[{role:{code:'CBTD'}}]}];}},loanApplication:{findMany:async query=>{queries.push(query);return Array.from({length:4},(_,id)=>({id,delayPredictions:id===0?[{riskLevel:'CAO'}]:[]}));}},portalRequest:{count:async query=>{queries.push(query);return 2;}}}));
+  assert.deepEqual(await service.officers(),[{id:'officer',fullName:'Demo',username:'demo',roles:['CBTD'],activeLoanCount:4,pendingIntakeCount:2,totalAssignedCount:6,highRiskLoanCount:1,workloadStatus:'BẬN RỘN'}]);
+  assert.deepEqual(queries[1].select.delayPredictions.orderBy,[{predictionTimestamp:'desc'},{id:'desc'}]);
   assert.deepEqual(queries[0].where,{isActive:true,roles:{some:{role:{code:'CBTD'}}}});
   assert.deepEqual(queries[1].where.currentStatus.in,['RECEIVED','CHECKED','SUPPLEMENT_REQUIRED','PENDING_APPRAISAL','WAITING_HEAD_OFFICE']);
   assert.deepEqual(queries[2].where,{assignedTo:'officer',status:{in:['ASSIGNED','RETURNED']}});
@@ -83,7 +101,7 @@ test('officer workload uses active loan statuses and assigned requests only',asy
 
 test('history checks current request visibility before returning internal notes',async()=>{
   let called=false;
-  const service=new PortalService({portalRequest:{findFirst:async()=>null},portalAssignment:{findMany:async()=>{called=true;return[];}}});
+  const service=new PortalService(withCoordination({portalRequest:{findFirst:async()=>null},portalAssignment:{findMany:async()=>{called=true;return[];}}}));
   await assert.rejects(service.assignmentHistory('request',{id:'old',roles:['CBTD']}),e=>e.getStatus()===404);
   assert.equal(called,false);
 });

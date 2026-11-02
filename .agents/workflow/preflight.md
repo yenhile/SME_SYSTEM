@@ -8,7 +8,7 @@ Nguồn quyền và quy tắc: [policy](../AGENTS.md). Bảng này là cách ch�
 2. Kiểm tra phạm vi/quyền đã có, môi trường và side effect. Tách việc code cục bộ khỏi thao tác dữ liệu/app/deploy.
    **SME-AI-011:** nếu yêu cầu không hợp lý/không tối ưu/có thể gây lỗi, báo nguyên nhân, bằng chứng, tác động và phương án tốt hơn để PO duyệt trước; không tự thực thi phương án khác hoặc mở rộng phạm vi.
 3. Đầu phiên đọc [Project](../../Project.md); đọc nguồn gần nhiệm vụ. Chỉ nạp lại khi thay đổi/mất context, không quét bí mật/dataset hoặc mọi skill.
-4. Nếu nhiệm vụ phụ thuộc cấu trúc source: AI tự chạy `npm run graph:check` qua terminal; graph cũ/thiếu thì `npm run graph:build`. Dùng các subcommand `context`, `deps`, `fn-impact` qua `npm run codegraph --` phù hợp để có context và impact trước sửa; cập nhật graph sau thay đổi source/config. Xem [quy trình CodeGraph](../../docs/ai/2026-10-18-codegraph.md). Không yêu cầu PO chuyển sang chat CLI.
+4. Nếu nhiệm vụ phụ thuộc cấu trúc source: AI tự chạy `npm run graph:check` qua terminal; graph cũ/thiếu thì `npm run graph:build`. Dùng các subcommand `context`, `deps`, `fn-impact` qua `npm run codegraph --` phù hợp để có context và impact trước sửa; cập nhật graph sau thay đổi source/config. Xem [quy trình CodeGraph](../../docs/SME_KY_THUAT.md#quy-trinh-codegraph). Không yêu cầu PO chuyển sang chat CLI.
    **SME-AI-012:** với phân tích/xây dựng/sửa/xóa tính năng, thực hiện [ngang → sâu](impact-analysis.md): độ phủ tính năng rồi truy vết đệ quy cha/con/cháu, kiểm tra callers/callees và các biên contract. Ghi mức ảnh hưởng, ranh giới có bằng chứng và ma trận sửa/hồi quy; nếu cần mở rộng quyền, trình PO trước khi sửa.
 5. Xác định cách nghiệm thu và skill cần dùng theo [index](../skills.json). Đọc skill trước khi áp dụng, theo adapter policy; không bịa tool.
 6. Làm phần được phép, kiểm chứng, trình kết quả và giới hạn. Chỉ hỏi phần thiếu có ảnh hưởng quan trọng.
@@ -41,3 +41,5 @@ Review work-in-progress: xem status, diff staged và unstaged, cùng nội dung 
 Đã kiểm chứng các phần bị ảnh hưởng theo phân tích ngang–sâu, hay còn nhánh chưa xác minh/chờ PO? Đúng yêu cầu/quyền? Có bằng chứng mới cho khẳng định? Đã nêu phần chưa kiểm chứng/chưa chốt? Cần cập nhật đúng tài liệu nào? Không bịa PO duyệt, test pass hoặc trạng thái live.
 
 Phục hồi context bằng [quick-ref](quick-ref.md) rồi đọc lại policy/Project/plan đang làm.
+
+Quy ước tài liệu PO duyệt 02/11/2026: chỉ hai Markdown trong `docs`; ghi kế hoạch/review/kết quả của 7 nhóm vào [SME_MASTER](../../docs/SME_MASTER.md), tra kỹ thuật ở [SME_KY_THUAT](../../docs/SME_KY_THUAT.md). Không tạo file plan/review/acceptance mới theo tên đợt.

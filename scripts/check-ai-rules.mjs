@@ -34,11 +34,11 @@ const required = [
   '.agents/workflow/preflight.md', '.agents/workflow/quick-ref.md', '.agents/workflow/impact-analysis.md',
   '.agents/rules/ai-rules.md', '.agents/rules/ai-delivery-workflow.md',
   '.agents/rules/karpathy-guidelines.md', '.agents/rules/data-security.md',
-  'docs/ai/2026-10-18-audit-and-plan.md', 'docs/ai/PO-REVIEW.md',
+  'docs/SME_MASTER.md', 'docs/SME_KY_THUAT.md',
   'docs/ai/acceptance-scenarios.json', 'docs/ai/skills-inventory.json',
   'docs/ai/original-rules.json',
   'package.json', 'package-lock.json', '.codegraphrc.json',
-  'scripts/check-codegraph.mjs', 'scripts/run-codegraph.mjs', 'docs/ai/2026-10-18-codegraph.md',
+  'scripts/check-codegraph.mjs', 'scripts/run-codegraph.mjs',
 ];
 for (const file of required) check(read(file).trim().length > 0, `Nonempty file: ${file}`);
 

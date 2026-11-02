@@ -1,0 +1,10 @@
+{
+  "pass": true,
+  "checks": 13,
+  "screenshots": [
+    "r6-01a-switch-canceled.png",
+    "r6-01b-switch-confirmed.png",
+    "r6-02-cross-tab-sync.png",
+    "r6-03-revocation-recovery-banner.png"
+  ]
+}

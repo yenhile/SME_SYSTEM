@@ -12,6 +12,10 @@ export class TransitionStageDto {
 
   @IsOptional()
   @IsString()
+  reportVersionId?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 
   @IsOptional()

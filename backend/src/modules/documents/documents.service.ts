@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { uploadRoot } from '../../common/storage';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentType, LoanStatus, StageCode } from '@prisma/client';
@@ -6,18 +7,20 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 
+import { assertLoanWrite } from '../workflow/loan-policy';
+
 @Injectable()
 export class DocumentsService {
-  private readonly uploadDir = join(process.cwd(), 'uploads');
+  private readonly uploadDir = uploadRoot();
   constructor(private prisma: PrismaService) {}
 
-  async upload(applicationId: string, documentType: DocumentType, file: { buffer: Buffer; originalname: string; size: number; mimetype: string }, userId: string) {
+  async upload(applicationId: string, documentType: DocumentType, file: { buffer: Buffer; originalname: string; size: number; mimetype: string }, userId: string, activeRole = 'CBTD') {
     await mkdir(this.uploadDir, { recursive: true });
     const key = randomUUID();
     const path = join(this.uploadDir, key);
     await writeFile(path, file.buffer);
     try {
-      return await this.create(applicationId, { documentType, fileName: file.originalname, fileSize: file.size, mimeType: file.mimetype, filePath: key }, userId);
+      return await this.create(applicationId, { documentType, fileName: file.originalname, fileSize: file.size, mimeType: file.mimetype, filePath: key }, userId, activeRole);
     } catch (err) { await unlink(path); throw err; }
   }
   async download(id: string) {
@@ -32,7 +35,7 @@ export class DocumentsService {
   /**
    * Tạo bản ghi chứng từ đính kèm (UC05)
    */
-  async create(applicationId: string, dto: CreateDocumentDto, userId: string) {
+  async create(applicationId: string, dto: CreateDocumentDto, userId: string, activeRole = 'CBTD') {
     return this.prisma.$transaction(async tx => {
       // Khóa hồ sơ để thay đổi chứng từ và hủy xác nhận "đủ chứng từ" diễn ra cùng lúc, không xen kẽ với chuyển bước.
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
@@ -44,6 +47,7 @@ export class DocumentsService {
         throw new NotFoundException(`Không tìm thấy hồ sơ với ID: ${applicationId}`);
       }
 
+      await assertLoanWrite(tx,loan, {id:userId, activeRole});
       const document = await tx.document.create({
         data: {
           applicationId,
@@ -102,7 +106,7 @@ export class DocumentsService {
   /**
    * Xóa chứng từ
    */
-  async delete(id: string) {
+  async delete(id: string, actor: {id:string;activeRole:string}) {
     const doc = await this.prisma.document.findUnique({
       where: { id },
     });
@@ -115,6 +119,12 @@ export class DocumentsService {
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${doc.applicationId} FOR UPDATE`;
       if (!(await tx.document.findUnique({ where: { id } }))) throw new NotFoundException(`Không tìm thấy chứng từ với ID: ${id}`);
       const loan = await tx.loanApplication.findUnique({ where: { id: doc.applicationId } });
+      if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ.');
+      await assertLoanWrite(tx,loan, actor);
+      if (loan.businessPolicyVersion) {
+        const versions = await tx.appraisalReportVersion.findMany({where:{report:{applicationId:loan.id}},select:{evidence:true}});
+        if (versions.some(v => ((v.evidence as any).documents ?? []).some((d:any) => d.id === id))) throw new BadRequestException('Tài liệu đã là căn cứ tờ trình. Giữ bản cũ và tải phiên bản mới.');
+      }
       const removed = await tx.document.delete({ where: { id } });
       if (loan) await this.withdrawConfirmation(tx, loan);
       return removed;

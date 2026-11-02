@@ -1,0 +1,82 @@
+{
+  "consolidatedOn": "2026-11-02",
+  "copied": [
+    {
+      "source": ".codex_tmp/sme-rollout/1793505962466/round1-acceptance.json",
+      "target": "evidence/reviews/round-1/acceptance.json",
+      "sha256": "033bb12ad30ddddbe6849686b21680002bc4c489d7591005e77161d5eacc2c46"
+    },
+    {
+      "source": ".codex_tmp/sme-rollout/1793505962466/r1-cross-tab-protected.png",
+      "target": "evidence/reviews/round-1/cross-tab.png",
+      "sha256": "9e9610bb39af5107193dc1c85b7e6e10ab02fe8070cb6539aec737d96d1c13b7"
+    },
+    {
+      "source": ".codex_tmp/sme-rollout/1793505962466/r2-server-and-private-recovery.png",
+      "target": "evidence/reviews/round-1/server-and-recovery.png",
+      "sha256": "0f7d38d1d50c656d344194d8721fefc68aa7ffa83ebf40e4d16a0439a54397f6"
+    },
+    {
+      "source": ".codex_tmp/sme-rollout/1793505962466/r5-mobile-signed-in.png",
+      "target": "evidence/reviews/round-1/mobile.png",
+      "sha256": "3b5259428afcb5522993eed4b8d23027da0cca79cf8cb1039ec8a19f9ca8cdba"
+    },
+    {
+      "source": ".codex_tmp/round1-release/upgrade-result.json",
+      "target": "evidence/reviews/round-1/release.json",
+      "sha256": "af549a8ce7fd30c140a5dd12f820f158f07d02dfb12a1413c5929ce61b9f4a8d"
+    },
+    {
+      "source": ".codex_tmp/round1-release/live-smoke.json",
+      "target": "evidence/reviews/round-1/live-smoke.json",
+      "sha256": "e4613fdf31dc0d6b7318337badcb3e3f7b8f64f81c92f53b4892fcf02ed37dd5"
+    },
+    {
+      "source": ".codex_tmp/round1-release/postcheck.json",
+      "target": "evidence/reviews/round-1/postcheck.json",
+      "sha256": "43a9e20b348388a2e29b3049222018b90a8c04b51fbaa1f32309af997760ed40"
+    },
+    {
+      "source": ".codex_tmp/sme-rollout/1793588538002/acceptance.json",
+      "target": "evidence/reviews/round-2/acceptance.json",
+      "sha256": "d5c30ed825b2c466da2ca5c2f5d6342c7a16cd37d92512b556cced583aed3bce"
+    },
+    {
+      "source": ".codex_tmp/round2-bc/live-smoke-result.json",
+      "target": "evidence/reviews/round-2/live-smoke.json",
+      "sha256": "cef8c1e869c28f3947ffd187530775986b85973edf0d98abdba683e1563cda04"
+    },
+    {
+      "source": ".codex_tmp/round2-bc/upgrade-result.json",
+      "target": "evidence/reviews/round-2/release.json",
+      "sha256": "995ab428ba01cacce10642a3183a7ac537b1038edfe92b8e99da271cd80676f6"
+    },
+    {
+      "source": ".codex_tmp/round2-bc/unit.log",
+      "target": "evidence/reviews/round-2/backend-tests.log",
+      "sha256": "87ee73814ba75f05c3dee8987a55939f045649074d9f395366777687c594a1f9"
+    },
+    {
+      "source": ".codex_tmp/round2-bc/frontend-tests.log",
+      "target": "evidence/reviews/round-2/frontend-tests.log",
+      "sha256": "b09b097c362b03b9e1a9d7f2958297b2f3d44910ca6d6c0fe0d216a8a44ef210"
+    },
+    {
+      "source": ".codex_tmp/sme-rollout/1793588538002/round2-03-manager-approval-retry.png",
+      "target": "evidence/reviews/round-2/manager-receipt.png",
+      "sha256": "80d8155df03e3764ff38ca47f6932c8bc42966b8e8c660c0d40ce5d9ee4e8e44"
+    },
+    {
+      "source": ".codex_tmp/sme-rollout/1793588538002/round2-05-receipt-mobile.png",
+      "target": "evidence/reviews/round-2/receipt-mobile.png",
+      "sha256": "7b8fc17c4de3b91c725bdee97633c972b28547ed72666d6dde9ca9997998726a"
+    },
+    {
+      "source": ".codex_tmp/sme-rollout/1793588538002/round2-08-truthful-prediction-failure.png",
+      "target": "evidence/reviews/round-2/prediction-feedback.png",
+      "sha256": "17bd34557a3f81ab17e449d0cf7db0f2fe3b1d64b7dd027c16f08dc0b6652911"
+    }
+  ],
+  "missing": [],
+  "excluded": []
+}

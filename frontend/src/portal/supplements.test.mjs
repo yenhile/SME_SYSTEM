@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { currentManifest, canRespond, canResolve, canReturn, supplementError, loadStaffSupplements } from './supplements.ts';
+import { currentManifest, canRespond, canResolve, canReturn, supplementError, loadStaffSupplements, supplementHeads, extractAcceptedSupplementFiles } from './supplements.ts';
 
 const view = { status: 'PENDING', items: [{ id: 'a', status: 'PENDING' }, { id: 'b', status: 'REPLACE_REQUIRED' }, { id: 'c', status: 'ACCEPTED' }], files: [
   { id: 'a1', itemId: 'a', version: 1, submittedAt: 'before' }, { id: 'a2', itemId: 'a', version: 2 },
@@ -54,4 +54,51 @@ test('return list is offered only after every item is checked, once per review r
   // Vòng kiểm tra mới sau khi doanh nghiệp gửi lại lại cho phép gửi.
   assert.equal(canReturn({ ...reviewed, events: [...reviewed.events, { type: 'RETURNED' }, { type: 'RESPONDED' }, { type: 'REPLACE_REQUIRED' }] }), true);
   assert.equal(canReturn({ ...reviewed, status: 'RESOLVED' }), false);
+});
+
+test('supplementHeads correctly resolves replacement chain A -> B -> C', () => {
+  const fileA = { id: 'fa', itemId: 'item1', version: 1 };
+  assert.deepEqual(supplementHeads([fileA]), [fileA]);
+
+  const fileB = { id: 'fb', itemId: 'item1', supersedesId: 'fa', version: 2 };
+  assert.deepEqual(supplementHeads([fileA, fileB]), [fileB]);
+
+  const fileC = { id: 'fc', itemId: 'item1', supersedesId: 'fb', version: 3 };
+  assert.deepEqual(supplementHeads([fileA, fileB, fileC]), [fileC]);
+
+  const fileD = { id: 'fd', itemId: 'item2', version: 1 };
+  assert.deepEqual(supplementHeads([fileA, fileB, fileC, fileD]), [fileC, fileD]);
+});
+
+test('extractAcceptedSupplementFiles extracts only accepted head files and preserves history', () => {
+  const requests = [
+    {
+      id: 'supp1',
+      portalSupplement: {
+        items: [
+          { id: 'item1', documentGroup: 'A', documentTypeCode: 'GPKD', status: 'ACCEPTED' },
+          { id: 'item2', documentGroup: 'B', documentTypeCode: 'BCTC', period: '2025', status: 'REPLACE_REQUIRED' },
+          { id: 'item3', documentGroup: 'C', documentTypeCode: 'HD', status: 'SUBMITTED' },
+        ],
+        files: [
+          { id: 'fa', itemId: 'item1', fileName: 'gpkd_v1.pdf', fileSize: 1024, version: 1, submittedAt: '2026-11-01' },
+          { id: 'fb', itemId: 'item1', fileName: 'gpkd_v2.pdf', fileSize: 2048, version: 2, supersedesId: 'fa', submittedAt: '2026-11-02' },
+          { id: 'fc', itemId: 'item2', fileName: 'bctc.pdf', fileSize: 4096, version: 1, submittedAt: '2026-11-01' },
+          { id: 'fd', itemId: 'item3', fileName: 'hd.pdf', fileSize: 8192, version: 1, submittedAt: '2026-11-01' },
+        ],
+      },
+    },
+  ];
+
+  const extracted = extractAcceptedSupplementFiles(requests);
+  // Only fb (head of item1, which is ACCEPTED) should be extracted.
+  // fa is superseded by fb.
+  // fc is REPLACE_REQUIRED (not ACCEPTED).
+  // fd is SUBMITTED (not ACCEPTED).
+  assert.equal(extracted.length, 1);
+  assert.equal(extracted[0].id, 'fb');
+  assert.equal(extracted[0].fileName, 'gpkd_v2.pdf');
+  assert.equal(extracted[0].supplementId, 'supp1');
+  assert.equal(extracted[0].documentType, 'A · GPKD');
+  assert.equal(extracted[0].version, 2);
 });

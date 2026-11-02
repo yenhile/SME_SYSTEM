@@ -1,3 +1,4 @@
+import { AppraisalModule } from './modules/appraisal/appraisal.module';
 import { Module } from '@nestjs/common';
 import { AdminController } from './admin.controller';
 import { HealthController } from './health.controller';
@@ -19,6 +20,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 
 @Module({
   imports: [
+    AppraisalModule,
     AuthModule,
     UsersModule,
     CompaniesModule,

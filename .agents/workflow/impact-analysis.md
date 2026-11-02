@@ -23,7 +23,7 @@ Với từng phần: ghi quan hệ, hành vi có thể đổi/hỏng, bằng ch�
 
 Sau bản đồ chiều ngang, lần theo file/symbol gốc (cha) → thành phần trực tiếp liên quan (con) → thành phần của chúng (cháu) → tiếp tục các tầng liên quan. Kiểm tra cả **nơi gọi/nơi tiêu thụ** và **phần được gọi/phụ thuộc**, cùng đường đi dữ liệu, validation, quyền, side effect và xử lý lỗi; không chỉ đọc import một chiều.
 
-Với việc phụ thuộc mã nguồn, dùng [CodeGraph](../../docs/ai/2026-10-18-codegraph.md): graph phải mới, lấy context/deps/fn-impact cho các điểm đã xác định. Kết hợp đọc source, tìm call site bằng rg, contract và test để nối qua HTTP, DI/decorator, ORM, event/job, lời gọi động hoặc khác ngôn ngữ mà graph không chứng minh được. File ngoài tập source của graph vẫn phải được xét khi liên quan.
+Với việc phụ thuộc mã nguồn, dùng [CodeGraph](../../docs/SME_KY_THUAT.md#quy-trinh-codegraph): graph phải mới, lấy context/deps/fn-impact cho các điểm đã xác định. Kết hợp đọc source, tìm call site bằng rg, contract và test để nối qua HTTP, DI/decorator, ORM, event/job, lời gọi động hoặc khác ngôn ngữ mà graph không chứng minh được. File ngoài tập source của graph vẫn phải được xét khi liên quan.
 
 Duyệt theo danh sách chờ và tập đã thăm để xử lý vòng lặp; ghi lại đường dẫn quan hệ/bằng chứng. Chỉ dừng một nhánh khi đã kiểm tra và giải thích ranh giới: không còn cạnh liên quan đến thay đổi, hành vi/contract tại biên được giữ nguyên có kiểm chứng, hoặc thành phần ngoài kiểm soát được ghi rõ giới hạn. Nếu tìm thêm tính năng liên quan, cập nhật bản đồ ngang rồi tiếp tục sâu.
 

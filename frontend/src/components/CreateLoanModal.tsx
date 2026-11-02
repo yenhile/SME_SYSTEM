@@ -72,6 +72,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if(Number(proposedAmount)>10000000000){setStatusMsg({text:'Chi nhánh tiếp nhận tối đa 10 tỷ đồng mỗi hồ sơ. Vui lòng liên hệ ngân hàng với nhu cầu cao hơn.',type:'error'});return;}
     if (taxBlocked) return;
     setSubmitting(true);
     setStatusMsg(null);
@@ -344,11 +345,11 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   />
                   {isExceedBranchLimit ? (
                     <div className="risk-alert-inline danger">
-                      <AlertTriangle size={12} /> Vượt 10 tỷ (Cần Cấp trên phê duyệt)
+                      <AlertTriangle size={12} /> Vượt giới hạn tiếp nhận 10 tỷ
                     </div>
                   ) : (
                     <span style={{ fontSize: '11px', color: 'var(--badge-green-text)', display: 'block', marginTop: 4 }}>
-                      Duyệt tại chi nhánh (≤ 10 tỷ)
+                      Trong giới hạn tiếp nhận (≤ 10 tỷ)
                     </span>
                   )}
                 </div>

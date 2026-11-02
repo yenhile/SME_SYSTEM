@@ -7,7 +7,7 @@ Phiên bản `sme-loan-ai-v1.2`, 18/10/2026. **PO đã duyệt phương án vớ
 | Thành phần | Vai trò |
 |---|---|
 | [AGENTS.md root](../AGENTS.md) | Entrypoint Codex và hướng dẫn chung cho toàn cây dự án |
-| [GEMINI.md root](../GEMINI.md) | Entrypoint Gemini/Antigravity, yêu cầu dùng cùng policy |
+| `GEMINI.md` (entrypoint chưa có trong checkout; xem [kiểm chứng AI](../docs/SME_KY_THUAT.md#kiem-chung-ai)) | Entrypoint Gemini/Antigravity, yêu cầu dùng cùng policy |
 | [.agents/AGENTS.md](AGENTS.md) | Chính sách chung SME-AI-001…012, nguồn quyết định workflow AI |
 | [ai-rules](rules/ai-rules.md), [data-security](rules/data-security.md) | Rule `always_on` cho Antigravity; bootstrap và bảo vệ dữ liệu |
 | [ai-delivery-workflow](rules/ai-delivery-workflow.md), [karpathy-guidelines](rules/karpathy-guidelines.md) | Rule `model_decision` cho triển khai/thiết kế; core vẫn yêu cầu thực hiện đúng nhiệm vụ |
@@ -16,7 +16,7 @@ Phiên bản `sme-loan-ai-v1.2`, 18/10/2026. **PO đã duyệt phương án vớ
 | [impact-analysis](workflow/impact-analysis.md) | Hai quy tắc cứng: quyền PO/phương án thay thế và phân tích ngang → sâu đệ quy, ma trận sửa/hồi quy |
 | [skills.json](skills.json) | Routing index **riêng của dự án**, không phải config host hoặc cơ chế cưỡng chế |
 | `.agents/skills/` | 56 skill imported giữ nguyên; chọn theo task, không nạp toàn bộ nội dung |
-| [hồ sơ review](../docs/ai/PO-REVIEW.md) | Kết quả, trạng thái kiểm chứng và lựa chọn PO cần duyệt |
+| [hồ sơ review](../docs/SME_KY_THUAT.md#huong-dan-ai) | Kết quả, trạng thái kiểm chứng và lựa chọn PO cần duyệt |
 | [snapshot gốc](../docs/ai/original-rules.json) | Bằng chứng/hoàn tác; nội dung nhúng không phải rule đang áp dụng |
 
 ## 2. Codex extension
@@ -110,7 +110,7 @@ Chỉnh policy: core → preflight/routing/adapter liên quan → chạy validat
 
 ## 8. CodeGraph — AI tự dùng trong cả hai host
 
-[Quy trình chi tiết và bằng chứng](../docs/ai/2026-10-18-codegraph.md). Đây là công cụ structural graph chạy cục bộ, không phải giao diện chat khác.
+[Quy trình chi tiết và bằng chứng](../docs/SME_KY_THUAT.md#quy-trinh-codegraph). Đây là công cụ structural graph chạy cục bộ, không phải giao diện chat khác.
 
 Khi clone/phục hồi môi trường, AI cài dependency tooling bằng `npm ci` ở root theo lockfile và chạy `npm run graph:build`. Với task code: kiểm tra `npm run graph:check`, refresh khi cũ, truy vấn context/deps/impact và làm mới sau sửa. Npm script `codegraph` tự kiểm tra freshness trước truy vấn; không dùng lệnh khác để né lỗi graph cũ.
 

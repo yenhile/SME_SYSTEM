@@ -4,13 +4,14 @@ import { sameJson, type SubmissionSnapshot } from './portal.snapshot';
 
 export type ReviewItem = { id: string; label: string; group: string; documentIds: string[]; fingerprint: string; guidance?: string; reviewCriteria?: string[] };
 export type IntakeReview = ReviewItem & { decision: 'ACCEPTED' | 'NEEDS_CORRECTION'; message: string; reviewerId: string; reviewedAt: string; carriedFrom?: string };
-export const intakeCycleEnabled = () => process.env.PORTAL_V2_INTAKE_ENABLED === 'true' && process.env.PORTAL_FOUNDATION_PREVIEW === 'true' && ['development','test'].includes(process.env.NODE_ENV??'');
+export const intakeCycleEnabled = () => process.env.PORTAL_V2_ROLLOUT_ENABLED === 'true' || process.env.PORTAL_V2_INTAKE_ENABLED === 'true' && process.env.PORTAL_FOUNDATION_PREVIEW === 'true' && ['development','test'].includes(process.env.NODE_ENV??'');
 export const isIntakeEditable = (r: { formVersion?: number; status: string }) => r.status === 'DRAFT' || (r.formVersion === 2 && r.status === 'RETURNED');
+export const hasPendingCorrection = (value:any) => !!value && (!value.status || value.status==='PENDING');
 
 const dependencies: Record<string, string[]> = {
   A: ['representativeName','representative','establishedYear','address','companyType'],
   B: ['annualRevenue','annualRevenueBasis','revenuePeriod','charterCapital','establishedYear'],
-  C: ['businessScope','industry','loanPurpose','capitalPlan'],
+  C: ['serviceProofMode','businessScope','industry','loanPurpose','capitalPlan'],
   D: ['loanType','loanPurpose','proposedAmount','loanTermMonths','capitalPlan','neededAt'],
   E: ['collateral'], F: ['hasExistingDebt'],
 };

@@ -15,7 +15,7 @@ interface IntakeRequirement extends PolicyRequirement {
 
 export interface ApprovedPortalPolicy extends PortalPolicy {
   status: 'APPROVED';
-  scope: 'MANUFACTURING_WORKING_CAPITAL_DEMO';
+  scope: string;
   annualPeriodRule: 'PREVIOUS_COMPLETED_CALENDAR_YEAR';
   timezone: 'Asia/Ho_Chi_Minh';
   declaration: { version: string; text: string };
@@ -85,6 +85,10 @@ const APPROVED_POLICY: ApprovedPortalPolicy = {
 
 /** Policy approval is independent from activation. Never resolve a policy supplied by the browser. */
 export function getApprovedPolicy(version = APPROVED_MVP_POLICY_VERSION): ApprovedPortalPolicy {
+  if (version !== APPROVED_MVP_POLICY_VERSION) {
+    const scope = Object.entries(SCOPE_POLICY_VERSIONS).find(([,v])=>v===version)?.[0];
+    if(scope) return getPolicyForScope(scope);
+  }
   if (version !== APPROVED_MVP_POLICY_VERSION) throw new ConflictException('Không có chính sách mô phỏng được duyệt cho phiên bản này.');
   return structuredClone(APPROVED_POLICY);
 }
@@ -95,6 +99,29 @@ export function describeApprovedPolicy() {
     note: 'Chính sách mô phỏng đã duyệt; chờ hoàn thiện kiểm tra, sửa đề nghị và nghiệm thu trước khi mở nộp.' };
 }
 
+export const SCOPE_POLICY_VERSIONS: Record<string,string> = {
+  MANUFACTURING:'sme-branch-manufacturing-working-capital-2026-10-31-v1',
+  TRADING:'sme-branch-trading-working-capital-2026-10-31-v1',
+  SERVICES:'sme-branch-services-working-capital-2026-10-31-v1',
+};
+export function isApprovedIntakeVersion(version:string) { return version===APPROVED_MVP_POLICY_VERSION || Object.values(SCOPE_POLICY_VERSIONS).includes(version); }
+export function getPolicyForScope(scope:string):ApprovedPortalPolicy {
+  if(!Object.hasOwn(SCOPE_POLICY_VERSIONS,scope)) throw new ConflictException('Phạm vi hoạt động chưa được hỗ trợ.');
+  const p=structuredClone(APPROVED_POLICY);p.version=SCOPE_POLICY_VERSIONS[scope];p.scope=scope+'_WORKING_CAPITAL';
+  if(scope!=='MANUFACTURING') {
+    p.requirements=p.requirements.filter(r=>!['business.plan','business.output','later.materials','later.quotation'].includes(r.id));
+    const trade=scope==='TRADING';
+    p.requirements.push(requirement('business.plan','C',trade?'C_TRADING_PLAN':'C_SERVICE_PLAN',trade?'Kế hoạch mua và bán hàng':'Kế hoạch thực hiện dịch vụ và chi phí'));
+    if(trade) p.requirements.push(requirement('business.output','C','C_BUSINESS_CONTRACT','Căn cứ đầu ra thương mại',{alternatives:['C_PURCHASE_ORDER','C_INVOICE']}));
+    else {
+      p.requiredFields.push('serviceProofMode');
+      p.requirements.push(requirement('service.contract','C','C_SERVICE_CONTRACT','Hợp đồng hoặc đơn đặt dịch vụ',{alternatives:['C_SERVICE_ORDER'],condition:{field:'serviceProofMode',equals:'CONTRACT_OR_ORDER'}}));
+      p.requirements.push(requirement('service.acceptance','C','C_SERVICE_ACCEPTANCE','Biên bản nghiệm thu dịch vụ',{condition:{field:'serviceProofMode',equals:'ACCEPTANCE_INVOICE'}}));
+      p.requirements.push(requirement('service.invoice','C','C_INVOICE','Hóa đơn dịch vụ',{condition:{field:'serviceProofMode',equals:'ACCEPTANCE_INVOICE'}}));
+    }
+  }
+  return p;
+}
 function atPath(data: unknown, field: string): unknown {
   let value: any = data;
   for (const part of field.split('.')) {
@@ -132,7 +159,10 @@ export function evaluateIntakeReadiness(policy: ApprovedPortalPolicy, data: unkn
     const value = atPath(data, field);
     if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) issue(field, 'MISSING_DATA', `Cần cung cấp: ${fieldLabels[field] ?? field}.`, true);
   }
-  if (atPath(data, 'businessScope') !== 'MANUFACTURING') issue('businessScope', 'OUTSIDE_SCOPE', 'Chính sách mô phỏng này chỉ áp dụng doanh nghiệp sản xuất.');
+  const scope = Object.entries(SCOPE_POLICY_VERSIONS).find(([,v])=>v===registered.version)?.[0] ?? 'MANUFACTURING';
+  if (atPath(data, 'businessScope') !== scope) issue('businessScope', 'OUTSIDE_SCOPE', 'Phạm vi hoạt động không khớp chính sách của đề nghị.');
+  if(scope==='SERVICES' && !['CONTRACT_OR_ORDER','ACCEPTANCE_INVOICE'].includes(String(atPath(data,'serviceProofMode')))) issue('serviceProofMode','SERVICE_PROOF','Chọn căn cứ doanh thu dịch vụ.');
+  if(registered.version!==APPROVED_MVP_POLICY_VERSION && Number(atPath(data,'proposedAmount'))>10000000000) issue('proposedAmount','BRANCH_LIMIT','Cổng này tiếp nhận đề nghị vay tối đa 10 tỷ đồng.');
   if (atPath(data, 'loanType') !== 'VAY_VON_LUU_DONG') issue('loanType', 'OUTSIDE_SCOPE', 'Chính sách mô phỏng này chỉ áp dụng vay vốn lưu động.');
   if (atPath(data, 'revenuePeriod') !== annualPeriod) issue('revenuePeriod', 'ANNUAL_PERIOD', `Cần báo cáo năm ${annualPeriod}; không tự quy đổi số liệu tháng/quý.`);
   const establishedYear = atPath(data, 'establishedYear');

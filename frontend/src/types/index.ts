@@ -26,6 +26,7 @@ export interface User {
   phone?: string;
   branchName: string;
   roles: RoleCode[];
+  isActive?: boolean;
 }
 
 export interface Company {
@@ -101,6 +102,7 @@ export interface SupplementRequest {
   resolvedAt?: string;
   status: 'PENDING' | 'RESOLVED' | 'EXPIRED';
   notes?: string;
+  portalSupplement?: any;
   requester?: {
     fullName: string;
     username: string;
@@ -117,6 +119,8 @@ export interface ApplicationAssignment {
 }
 
 export interface LoanApplication {
+  businessPolicyVersion?: string | null;
+  intakeOfficerId?: string | null;
   portalRequest?: import('../portal/model').PortalRequest | null;
   source?: 'PORTAL' | 'QUAY';
   id: string;
@@ -133,6 +137,15 @@ export interface LoanApplication {
   currentStage: StageCode;
   currentStatus: LoanStatus;
   assignedTo?: string;
+  assignmentVersion?: number;
+  coordinationRestrictions?:{writeBlocked:boolean;decisionBlocked:boolean};
+  makerCheckerRestrictions?: {
+    isIndependent: boolean;
+    decisionBlocked: boolean;
+    decisionBlockReason: string | null;
+    canCloseOverdue: boolean;
+    closeOverdueBlockReason: string | null;
+  };
   assignedUser?: {
     id: string;
     fullName: string;
@@ -209,7 +222,10 @@ export interface OfficerWorkload {
   phone?: string;
   branchName: string;
   roles: RoleCode[];
+  isActive?: boolean;
   activeLoanCount: number;
+  pendingIntakeCount:number;
+  totalAssignedCount:number;
   highRiskLoanCount: number;
   workloadStatus: 'KHẢ DỤNG' | 'BẬN RỘN' | 'QUÁ TẢI';
 }

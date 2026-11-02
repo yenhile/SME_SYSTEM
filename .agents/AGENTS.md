@@ -25,6 +25,8 @@ Tuân thủ quyền, sandbox và chỉ dẫn cấp cao của host. Trong hướn
 
 Không thêm nghiệp vụ, dependency, abstraction, refactor hoặc định dạng hàng loạt ngoài nhu cầu. Không sửa công việc sẵn có của người dùng. Nêu giả định có ảnh hưởng; hỏi khi thiếu câu trả lời sẽ thay đổi kết quả quan trọng. Không buộc PO chọn lại các chi tiết kỹ thuật thông thường đã có bằng chứng.
 
+PO duyệt ngày 02/11/2026: `docs` chỉ duy trì hai Markdown `SME_MASTER.md` và `SME_KY_THUAT.md`. Cả 7 đợt review (plan, quyết định, sửa, nghiệm thu, backlog) chỉ cập nhật `docs/SME_MASTER.md`; không tạo Markdown plan/review/acceptance rời. Bằng chứng log/ảnh/JSON đặt ngoài `docs`, không thay vendor SKILL.md.
+
 ## SME-AI-004 — Trung thực bằng chứng và nguồn yêu cầu
 
 Phân biệt **ĐÃ KIỂM CHỨNG** (lệnh/hành động + kết quả), **THEO CODE/TÀI LIỆU** (đường dẫn), **ĐỀ XUẤT/GIẢ ĐỊNH**, **CHƯA CHỐT/CHƯA XÁC MINH**. Dùng nhãn khi cần phân biệt, không biến mọi câu trả lời thành checklist dài.
@@ -35,7 +37,7 @@ Code mô tả hiện trạng, tài liệu/PO mô tả yêu cầu theo mức đã
 
 Đối chiếu Prisma schema, DTO, guard/service, frontend types và tài liệu liên quan trước khi đổi nghiệp vụ. Stage khác status; vai trò khác tài khoản; vai trò đang chọn phải thuộc quyền được cấp. Quyền UI không thay thế kiểm tra quyền API và đối tượng hồ sơ.
 
-Không tự đổi role, nhánh luồng, hạn mức, ngưỡng cấp trên, checklist chứng từ, cách tính/tạm dừng SLA, đóng quá hạn, lịch sử công đoạn hoặc quyền chi nhánh. Các mục đang mở trong [tài liệu phân quyền](../docs/Phan_quyen_va_luong_nghiep_vu.md) cần PO chốt khi nhiệm vụ phụ thuộc chúng. Khi đổi contract, xét cả backend/frontend/ML; khi đổi chuyển bước, xét transaction, lịch sử và thao tác đồng thời.
+Không tự đổi role, nhánh luồng, hạn mức, ngưỡng cấp trên, checklist chứng từ, cách tính/tạm dừng SLA, đóng quá hạn, lịch sử công đoạn hoặc quyền chi nhánh. Các mục đang mở trong [tài liệu phân quyền](../docs/SME_MASTER.md#quyet-dinh) cần PO chốt khi nhiệm vụ phụ thuộc chúng. Khi đổi contract, xét cả backend/frontend/ML; khi đổi chuyển bước, xét transaction, lịch sử và thao tác đồng thời.
 
 ML dự báo **trễ SLA**, không phải nợ xấu, khả năng trả nợ hay quyết định cấp tín dụng. Không biến dự báo thành tự động duyệt/từ chối. Nêu giới hạn dữ liệu tổng hợp và giải thích heuristic khi trình bày năng lực mô hình; không huấn luyện lại/ghi đè model hoặc dataset ngoài phạm vi được giao.
 
@@ -59,7 +61,7 @@ Khi có lỗi: tái hiện, thu bằng chứng, kiểm tra giả thuyết rồi 
 
 [skills.json](skills.json) là **routing index của dự án**, không phải tuyên bố cấu hình discovery chính thức của Codex/Antigravity. Đọc `SKILL.md` phù hợp; không chạy toàn thư viện. Không route mặc định vào deprecated/in-progress/personal; skill ghi user-invoked chỉ dùng khi người dùng yêu cầu.
 
-**CodeGraph bắt buộc đối với công việc phụ thuộc cấu trúc mã nguồn** (phân tích code/kiến trúc, coding, debugging, code review và thay source UI/ML). AI tự gọi qua terminal của host: `npm run graph:check`; nếu graph cũ/thiếu thì `npm run graph:build`; sau đó truy vấn `context`, `deps`, `fn-impact` phù hợp trước sửa. Làm mới graph sau thay đổi source/config; kiểm tra lại trước bàn giao. Xem [quy trình CodeGraph](../docs/ai/2026-10-18-codegraph.md). Chỉ đọc tài liệu/duyệt chính sách không phụ thuộc source thì không cần graph.
+**CodeGraph bắt buộc đối với công việc phụ thuộc cấu trúc mã nguồn** (phân tích code/kiến trúc, coding, debugging, code review và thay source UI/ML). AI tự gọi qua terminal của host: `npm run graph:check`; nếu graph cũ/thiếu thì `npm run graph:build`; sau đó truy vấn `context`, `deps`, `fn-impact` phù hợp trước sửa. Làm mới graph sau thay đổi source/config; kiểm tra lại trước bàn giao. Xem [quy trình CodeGraph](../docs/SME_KY_THUAT.md#quy-trinh-codegraph). Chỉ đọc tài liệu/duyệt chính sách không phụ thuộc source thì không cần graph.
 
 Tool thiếu/lỗi: phục hồi bằng `npm ci` tại root theo lockfile đã được PO cho phép, kiểm tra/build lại. Có thể đọc `rg`/source để điều tra độc lập, nhưng không dùng thay thế âm thầm hoặc báo hoàn tất việc code khi chưa đạt yêu cầu CodeGraph. Không cài global, tự tải gói qua `npx` hoặc bật embedding/LLM gửi source ra ngoài. RTK vẫn tùy chọn.
 
@@ -81,7 +83,7 @@ Trước báo hoàn tất: đối chiếu yêu cầu/plan, xem diff, kiểm ch�
 
 Không nói “mọi test pass”, “UI đúng”, “đã nạp tự động”, “đã PO duyệt” hoặc “tuân thủ pháp luật” khi chưa có bằng chứng tương ứng. Rule file hướng dẫn hành vi; quyền của host và kiểm tra kỹ thuật mới kiểm soát được hành động. Không hứa tuân thủ tuyệt đối bằng Markdown.
 
-Quản lý thay đổi rule: giữ entrypoint ngắn; cập nhật core và routing/preflight liên quan; chạy `node scripts/check-ai-rules.mjs`; mở phiên mới ở mỗi host để smoke test. Hướng dẫn áp dụng tại [AI-SETUP](AI-SETUP.md), nghiệm thu tại [PO-REVIEW](../docs/ai/PO-REVIEW.md).
+Quản lý thay đổi rule: giữ entrypoint ngắn; cập nhật core và routing/preflight liên quan; chạy `node scripts/check-ai-rules.mjs`; mở phiên mới ở mỗi host để smoke test. Hướng dẫn áp dụng tại [AI-SETUP](AI-SETUP.md), nghiệm thu tại [PO-REVIEW](../docs/SME_KY_THUAT.md#huong-dan-ai).
 
 ## SME-AI-011 — QUY TẮC CỨNG: yêu cầu PO và cấm tự thực thi phương án khác
 

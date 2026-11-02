@@ -10,6 +10,8 @@ const {ROLES_KEY}=require('../dist/common/decorators/roles.decorator');
 // do LoanAccessGuard xử lý và được kiểm tra riêng trong loan-access.test.cjs.
 const C='CBTD',T='THAM_QUYEN',Q='QUAN_LY',A='ADMIN';
 const EXPECTED={
+  AssignmentChangeRequestsController:{capabilities:[C,Q],list:[C,Q],detail:[C,Q],create:[C],approve:[Q],reject:[Q],cancel:[C]},
+  AppraisalController:{view:[C,T,Q],save:[C],submit:[C],clarify:[T]},
   AdminController:{stages:[A],updateStage:[A]},
   AssignmentsController:{getOfficerWorkloads:[Q],getAssignmentHistory:[Q],reassign:[Q]},
   CompaniesController:{checkTaxCode:[C,T,Q],findAll:[C,T,Q],upsert:[C]},
@@ -20,7 +22,7 @@ const EXPECTED={
   SupplementsController:{portalDetails:[C,T,Q],review:[C,T],returnCorrections:[C,T],download:[C,T,Q],getSupplements:[C,T,Q],createRequest:[C,T],resolveRequest:[C,T]},
   UsersController:{findAll:[A],findOne:[A],create:[A],update:[A]},
   WorkflowController:{getWorkflowStages:[C,T,Q],getWorkflowHistory:[C,T,Q],transitionStage:[C,T],closeOverdueSupplement:[Q]},
-  PortalIntakesController:{list:[C,Q],officers:[Q],config:[C,Q],assign:[Q],history:[C,Q],one:[C,Q],match:[C,Q],cycle:[C,Q],review:[C],returnCorrection:[C],issue:[Q],download:[C,Q],accept:[C]},
+  PortalIntakesController:{list:[C,Q],officers:[Q],config:[C,Q,T],assign:[Q],history:[C,Q],one:[C,Q],match:[C,Q],cycle:[C,Q],review:[C],returnCorrection:[C],correctionDecision:[C],reconciliation:[C],resolveReconciliation:[Q],issue:[Q],download:[C,Q],accept:[C]},
   AuthController:{login:null,getProfile:null,changePassword:null},
   NotificationsController:{list:null,read:null},
 };

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma.service';
 import { RiskLevel } from '@prisma/client';
 import { SLA_POLICY_PA1 } from '../workflow/sla/sla-policy';
 import { PREDICTION_PA1_MESSAGE } from './prediction-status';
+import { companyForLoan } from '../companies/company-snapshot';
 
 @Injectable()
 export class PredictionService {
@@ -26,6 +27,7 @@ export class PredictionService {
     if (!loan) {
       throw new Error(`Không tìm thấy hồ sơ với id: ${applicationId}`);
     }
+    loan.company=companyForLoan(loan);
 
     // C.9.2: đặc trưng previous_stage_duration_hours lấy từ công đoạn Tiếp nhận. Nếu công đoạn đó tính theo giờ làm việc (PA1)
     // thì khác nghĩa với dữ liệu huấn luyện: không gọi ML, không tạo xác suất giả, không đổi model.

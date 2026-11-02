@@ -1,0 +1,135 @@
+{
+  "releasePlanVersion": "SME-RELEASE-20261102-V1",
+  "generatedAt": "2026-11-02T12:15:47.339Z",
+  "git": {
+    "commit": "1b02c6494c9297fb73296aea20d08328cc6dedf1",
+    "branch": "LeThiYenNhi"
+  },
+  "targetEnvironment": {
+    "os": "Windows / Linux Container Host",
+    "nodeVersion": "v22.19.0",
+    "database": "PostgreSQL 16 (Docker container: sme-loan-workflow-db-1)",
+    "targetDatabaseName": "sme_loan",
+    "targetSchema": "public",
+    "targetPorts": {
+      "backend": 3000,
+      "frontend": 5174,
+      "postgres": 5432
+    }
+  },
+  "configurationChecklist": {
+    "DATABASE_URL": "Đã xác minh (localhost:5432/sme_loan)",
+    "JWT_SECRET": "Thiết lập qua biến môi trường an toàn (không commit)",
+    "PORT": "3000 (Backend API)",
+    "PORTAL_V2_ROLLOUT_ENABLED": "true (Bật tính năng Cổng DN V2 và hạn mức chi nhánh 10 tỷ)",
+    "UPLOAD_DIR": "uploads/ (Được bảo vệ quyền truy cập và cách ly)",
+    "NODE_ENV": "production"
+  },
+  "migrationSequence": [
+    {
+      "sequence": 1,
+      "name": "sme-branch-rollout.sql",
+      "sha256": "6842e06bdcc608801394fa67ab7413f6aabedabbdf1a4ee2623cf5d62141c6c1",
+      "sizeBytes": 1581,
+      "strategy": "ADDITIVE_IDEMPOTENT (Chỉ thêm cột/bảng/chỉ mục IF NOT EXISTS; không xóa dữ liệu)"
+    },
+    {
+      "sequence": 2,
+      "name": "round2-assignment-safety.sql",
+      "sha256": "0f6ad598ee9a5513901fccf6376c83be52cb21cef3c9206af66e657a08f694ea",
+      "sizeBytes": 993,
+      "strategy": "ADDITIVE_IDEMPOTENT (Chỉ thêm cột/bảng/chỉ mục IF NOT EXISTS; không xóa dữ liệu)"
+    },
+    {
+      "sequence": 3,
+      "name": "round2-assignment-coordination.sql",
+      "sha256": "a76904f970e22a5d7cbc0cf4b98e0a58c08b44523f9f12b110b454640656d501",
+      "sizeBytes": 6436,
+      "strategy": "ADDITIVE_IDEMPOTENT (Chỉ thêm cột/bảng/chỉ mục IF NOT EXISTS; không xóa dữ liệu)"
+    },
+    {
+      "sequence": 4,
+      "name": "round3-intake.sql",
+      "sha256": "288ab2a9931d027f7a5b5c494df98930eac72e82ce5e7c38017f7e89cfa6eaae",
+      "sizeBytes": 417,
+      "strategy": "ADDITIVE_IDEMPOTENT (Chỉ thêm cột/bảng/chỉ mục IF NOT EXISTS; không xóa dữ liệu)"
+    },
+    {
+      "sequence": 5,
+      "name": "portal-account-recovery.sql",
+      "sha256": "9dcddf7d7c8c8fb6b64180a90b7144a34a1ed4335b5655acc16079e64088c400",
+      "sizeBytes": 589,
+      "strategy": "ADDITIVE_IDEMPOTENT (Chỉ thêm cột/bảng/chỉ mục IF NOT EXISTS; không xóa dữ liệu)"
+    }
+  ],
+  "buildArtifacts": {
+    "frontend": [
+      {
+        "path": "frontend\\dist\\index.html",
+        "sha256": "fe6c9b1640acf2cc6801c87af3c90bc8b5026a57f9c4a359090614e5082ae8b8",
+        "sizeBytes": 874
+      },
+      {
+        "path": "frontend\\dist\\assets\\index-aQVMPYHJ.js",
+        "sha256": "c48b9e61c61a8437faefb8b91cb459036e6ff9df2a73d6acb415d9614dc7dc25",
+        "sizeBytes": 440066
+      },
+      {
+        "path": "frontend\\dist\\assets\\index-B_ZBkIDW.css",
+        "sha256": "44f282dc91b4a690a566eed2046ba1a42fbb1c8807f5106d40fb38ac5a424cb3",
+        "sizeBytes": 67458
+      }
+    ],
+    "backend": [
+      {
+        "path": "backend\\dist\\main.js",
+        "sha256": "c90fa8a4b7d164ae92e9d402fad1820d1d38b08e298aeb843006d84a44490832",
+        "sizeBytes": 850
+      },
+      {
+        "path": "backend\\package.json",
+        "sha256": "e8d37f1a76d03ec3de8c860090256e25c79bec60b64ce908fbb9786c01e23885",
+        "sizeBytes": 3258
+      },
+      {
+        "path": "frontend\\package.json",
+        "sha256": "88fea31b6e4094dec8a8447a657c07f1fd328e37e647abe936fa933314fe42f3",
+        "sizeBytes": 2156
+      }
+    ]
+  },
+  "maintenancePlan": {
+    "window": "Khung giờ thấp điểm: 22:00 - 23:00 (Thứ 7 / Chủ nhật)",
+    "estimatedDowntimeMinutes": 3,
+    "userNotice": "Thông báo trên Cổng DN và Workspace: \"Hệ thống bảo trì định kỳ từ 22:00 đến 22:15. Vui lòng hoàn tất và lưu các thao tác trước thời điểm trên.\""
+  },
+  "backupPlan": {
+    "command": "docker exec -i sme-loan-workflow-db-1 pg_dump -U postgres -d sme_loan -n public -Fc > backup_public_pre_release.dump",
+    "verification": "Kiểm tra file dump > 0 bytes và chạy thử nghiệm pg_restore vào schema tạm trước khi bắt đầu",
+    "estimatedBackupDurationMs": 250
+  },
+  "smokeTestPlan": {
+    "scripts": [
+      "GET /auth/me (Xác thực người dùng)",
+      "GET /workflow/stages (Nạp danh mục công đoạn và SLA)",
+      "GET /portal-intakes/form-config (Cấu hình biểu mẫu V2)",
+      "GET /loan-applications (Truy vấn danh sách hồ sơ theo vai trò)"
+    ],
+    "estimatedDurationSeconds": 15
+  },
+  "goStopCriteria": {
+    "GO": [
+      "1. Sao lưu schema public hoàn tất và verify thành công.",
+      "2. Toàn bộ 5 migration SQL thực thi với mã thoát 0 trong < 15 giây.",
+      "3. Backend và Frontend khởi động không có exception trong log.",
+      "4. Smoke test tự động đạt 100%."
+    ],
+    "STOP_TRIGGER_ROLLBACK": [
+      "1. Bất kỳ script migration nào phát sinh lỗi SQL.",
+      "2. Lỗi kết nối DB hoặc latency truy vấn > 2000ms.",
+      "3. Smoke test thất bại hoặc phát sinh lỗi 500 trên các endpoint cốt lõi.",
+      "4. Phát hiện sai lệch dữ liệu lịch sử hồ sơ vay."
+    ],
+    "rollbackSlaSeconds": 60
+  }
+}
