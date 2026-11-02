@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { AppraisalPanel } from './AppraisalPanel';
+import {AssignmentChangeRequestPanel} from './AssignmentChangeRequestPanel';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { hoursText, predictionLabel, slaPolicyLabel, slaStateLabel } from '../slaDisplay';
@@ -7,6 +9,7 @@ import { SupplementPanel } from './SupplementPanel';
 import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
 import { CloseOverdueForm } from './CloseOverdueForm';
 import { canCloseOverdue } from './closeOverdue';
+import { extractAcceptedSupplementFiles } from '../portal/supplements';
 import type { PortalFormConfig } from '../portal/model';
 import {
   LoanApplication,
@@ -36,20 +39,25 @@ interface LoanDetailModalProps {
   applicationId: string | null;
   onClose: () => void;
   onRefresh: () => void;
+  initialLoan?: LoanApplication | null;
+  initialTab?: 'timeline' | 'documents' | 'supplements';
 }
 
 export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
   applicationId,
   onClose,
   onRefresh,
+  initialLoan = null,
+  initialTab = 'timeline',
 }) => {
-  const { activeRole } = useAuth();
-  const [loan, setLoan] = useState<LoanApplication | null>(null);
+  const { activeRole, user } = useAuth();
+  const [reportVersionId,setReportVersionId]=useState<string|undefined>();
+  const [loan, setLoan] = useState<LoanApplication | null>(initialLoan);
   const [portalConfig, setPortalConfig] = useState<PortalFormConfig | null>(null);
   const [portalConfigError, setPortalConfigError] = useState('');
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'timeline' | 'documents' | 'supplements'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'documents' | 'supplements'>(initialTab);
 
   // Form states cho bổ sung hồ sơ
   const [supplementContent, setSupplementContent] = useState('');
@@ -95,8 +103,19 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
   };
 
   useEffect(() => {
-    fetchDetail();
-  }, [applicationId]);
+    if (initialLoan) {
+      setLoan(initialLoan);
+      setApprovedAmount(Number(initialLoan.officialAmount || initialLoan.proposedAmount));
+      setOfficialAmountInput(Number(initialLoan.officialAmount || initialLoan.proposedAmount));
+    } else {
+      fetchDetail();
+    }
+  }, [applicationId, initialLoan]);
+
+  const acceptedSupplementFiles = useMemo(
+    () => extractAcceptedSupplementFiles(loan?.supplementRequests),
+    [loan?.supplementRequests]
+  );
 
   if (!applicationId || !loan) return null;
 
@@ -140,11 +159,25 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
   // 3. Phê duyệt khoản vay
   const handleApprove = async () => {
+    if (isMakerCheckerDecisionBlocked) {
+      alert(loan.makerCheckerRestrictions?.decisionBlockReason || 'Bạn không đủ điều kiện độc lập để ra quyết định tín dụng.');
+      return;
+    }
+    const maxLimit = Number(loan.officialAmount || loan.proposedAmount);
+    if (!Number.isFinite(approvedAmount) || Number(approvedAmount) <= 0 || Number(approvedAmount) > maxLimit) {
+      alert(`Số tiền phê duyệt phải lớn hơn 0 và không vượt quá hạn mức ${maxLimit.toLocaleString('vi-VN')} VNĐ.`);
+      return;
+    }
+    if (!Number.isFinite(approvedInterestRate) || Number(approvedInterestRate) < 0 || Number(approvedInterestRate) > 100) {
+      alert('Lãi suất phê duyệt phải từ 0% đến 100%/năm.');
+      return;
+    }
     setActionLoading(true);
     try {
       await api.post(`/workflow/${loan.id}/transition`, {
         targetStage: 'HOAN_TAT',
         targetStatus: 'APPROVED',
+        reportVersionId,
         approvedAmount: Number(approvedAmount),
         interestRate: Number(approvedInterestRate),
         notes: `Phê duyệt cấp tín dụng: ${Number(approvedAmount).toLocaleString('vi-VN')} VNĐ, Lãi suất: ${approvedInterestRate}%/năm`,
@@ -161,6 +194,10 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
   // Quản lý đóng thủ công hồ sơ quá hạn bổ sung (DEC-02 / TK-08)
   const handleCloseOverdue = async (reason: string) => {
+    if (isMakerCheckerCloseBlocked) {
+      alert(loan.makerCheckerRestrictions?.closeOverdueBlockReason || 'Bạn không đủ điều kiện độc lập để đóng hồ sơ quá hạn.');
+      return;
+    }
     setActionLoading(true);
     try {
       await api.post(`/workflow/${loan.id}/close-overdue`, { reason });
@@ -176,6 +213,10 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
   // 4. Từ chối khoản vay
   const handleReject = async () => {
+    if (isMakerCheckerDecisionBlocked) {
+      alert(loan.makerCheckerRestrictions?.decisionBlockReason || 'Bạn không đủ điều kiện độc lập để ra quyết định tín dụng.');
+      return;
+    }
     if (!rejectionNote.trim()) {
       alert('Vui lòng nhập lý do giải thích từ chối');
       return;
@@ -185,6 +226,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
       await api.post(`/workflow/${loan.id}/transition`, {
         targetStage: 'HOAN_TAT',
         targetStatus: 'REJECTED',
+        reportVersionId,
         rejectionReasonCode,
         rejectionNote,
         notes: `Từ chối khoản vay theo danh mục ${rejectionReasonCode}: ${rejectionNote}`,
@@ -201,6 +243,10 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
   // 5. Xác nhận hạn mức chính thức
   const handleSetOfficialAmount = async () => {
+    if (loan.businessPolicyVersion && officialAmountInput > 10000000000) {
+      alert('Vượt hạn mức chi nhánh (tối đa 10 tỷ đồng).');
+      return;
+    }
     setActionLoading(true);
     try {
       await api.put(`/loan-applications/${loan.id}/set-amount`, {
@@ -319,10 +365,26 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
   };
 
   const terminal = loan.currentStage === 'HOAN_TAT' || ['APPROVED', 'REJECTED', 'CLOSED_TIMEOUT'].includes(loan.currentStatus);
-  const reception = activeRole === 'CBTD' && loan.currentStage === 'TIEP_NHAN' && !terminal;
-  const appraisal = activeRole === 'THAM_QUYEN' && ['THAM_DINH', 'CAP_TREN'].includes(loan.currentStage) && !terminal;
+  const writeBlocked=loan.coordinationRestrictions?.writeBlocked??false;
+  const decisionBlocked=loan.coordinationRestrictions?.decisionBlocked??false;
+  const isMakerCheckerDecisionBlocked = Boolean(loan.makerCheckerRestrictions?.decisionBlocked);
+  const isMakerCheckerCloseBlocked = loan.makerCheckerRestrictions?.canCloseOverdue === false;
+  const isAssignedOfficer = !loan.assignedTo || loan.assignedTo === user?.id;
+  const reception = activeRole === 'CBTD' && isAssignedOfficer && loan.currentStage === 'TIEP_NHAN' && !terminal&&!writeBlocked;
+  const appraisal = activeRole === 'THAM_QUYEN' && ['THAM_DINH', 'CAP_TREN'].includes(loan.currentStage) && !terminal&&!writeBlocked;
   const canEdit = reception || appraisal;
   const waitingSupplement = loan.currentStatus === 'SUPPLEMENT_REQUIRED';
+  const showDocCheckReminder =
+    activeRole === 'CBTD' &&
+    loan.assignedTo === user?.id &&
+    loan.currentStage === 'TIEP_NHAN' &&
+    !terminal &&
+    !writeBlocked &&
+    !waitingSupplement &&
+    !loan.isDocumentComplete &&
+    loan.currentStatus !== 'CHECKED';
+
+  const totalUnifiedDocuments = (loan.documents?.length || 0) + acceptedSupplementFiles.length;
   const canPredict = !terminal && ['THAM_QUYEN', 'QUAN_LY'].includes(activeRole || '');
   const latestPrediction = loan.delayPredictions?.[0];
   let topReasons: string[] = [];
@@ -334,6 +396,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
     }
   }
 
+  const stageSla = (code:StageCode) => { const hours=[...(loan.stageHistories??[])].reverse().find(h=>h.stage?.stageCode===code)?.slaStandardHours; return hours===undefined?'Theo cấu hình':`${hours} giờ`; };
   const formatVnd = (num?: number | string | null) => {
     if (!num) return '0 VNĐ';
     return `${Number(num).toLocaleString('vi-VN')} VNĐ`;
@@ -381,6 +444,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 <h3 style={{ fontSize: '17px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                   {loan.applicationCode}
                 </h3>
+                {!loan.businessPolicyVersion && <span className="badge badge-soft-gray" title="Giữ quy trình và lịch sử trước cập nhật; không tạo tờ trình hồi tố">Hồ sơ theo quy trình cũ</span>}
                 {loan.source === 'QUAY' && <span className="badge badge-soft-gray" title="Hồ sơ do CBTD tạo trực tiếp, không qua vòng kiểm tra Portal">Tạo tại quầy</span>}
                 {loan.currentStatus === 'APPROVED' ? (
                   <span className="badge badge-soft-green">🟢 Đã phê duyệt</span>
@@ -414,14 +478,29 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
         {/* Body Modal */}
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {loan.businessPolicyVersion && <AppraisalPanel loan={loan} onVersion={setReportVersionId} onChanged={()=>{void fetchDetail();onRefresh();}} />}
+          {writeBlocked&&<p role="alert" className="portal-error">Bạn đang chờ giải quyết xung đột lợi ích; các thao tác ghi nghiệp vụ trên hồ sơ này bị chặn.</p>}
+          {decisionBlocked&&<p role="alert" className="portal-error">Chưa được chốt quyết định tín dụng khi xung đột lợi ích còn chờ giải quyết.</p>}
+          {activeRole === 'THAM_QUYEN' && isMakerCheckerDecisionBlocked && (
+            <p role="alert" className="portal-error">
+              {loan.makerCheckerRestrictions?.decisionBlockReason || 'Bạn không đủ điều kiện độc lập để ra quyết định tín dụng trên hồ sơ này (Maker-Checker).'}
+            </p>
+          )}
+          {activeRole === 'QUAN_LY' && loan.currentStatus === 'SUPPLEMENT_REQUIRED' && isMakerCheckerCloseBlocked && (
+            <p role="alert" className="portal-error">
+              {loan.makerCheckerRestrictions?.closeOverdueBlockReason || 'Bạn không đủ điều kiện độc lập để đóng hồ sơ quá hạn (Maker-Checker).'}
+            </p>
+          )}
+          <AssignmentChangeRequestPanel key={'coordination:'+loan.id} subject={{type:'LOAN',id:loan.id,assignmentVersion:loan.assignmentVersion,ownerId:loan.assignedTo,closed:terminal}} onChanged={async()=>{await fetchDetail();onRefresh();}}/>
+          {!!loan.assignments?.length&&<details className="coordination-history portal-card"><summary>Lịch sử bàn giao hồ sơ ({loan.assignments.length})</summary><p>CBTD hiện tại: {loan.assignedUser?.fullName||loan.assignedUser?.username||'Chưa phân công'}</p><ol>{loan.assignments.map(entry=><li key={entry.id}><strong>{entry.fromUser?.fullName||'Chưa phân công'} → {entry.toUser?.fullName||entry.toUser.username}</strong><p>{new Date(entry.reassignedAt).toLocaleString('vi-VN')} · Quản lý: {entry.manager?.fullName||entry.manager.username}</p><p>Lý do: {entry.reason}</p></li>)}</ol></details>}
           {loan.portalRequest?.formVersion === 2 && <details className="portal-intake portal-card"><summary>Đề nghị gốc từ cổng doanh nghiệp · {loan.portalRequest.reference}</summary>{portalConfigError && <p className="portal-error" role="alert">Không tải được danh mục tài liệu: {portalConfigError}</p>}<PortalIntakeDetails request={loan.portalRequest} config={portalConfig} busy={actionLoading} /></details>}
           {/* C. THANH TIẾN TRÌNH QUY TRÌNH (WORKFLOW PROGRESS BAR) TRÊN CÙNG MÀN HÌNH */}
-          <div className="workflow-progress-bar">
+          <div className="workflow-progress-bar" data-business-policy={loan.businessPolicyVersion??'legacy'}>
             <div className={`progress-step ${currentStepIdx >= 1 ? (currentStepIdx === 1 ? 'active' : 'completed') : ''}`}>
               <div className="progress-step-circle">{currentStepIdx > 1 ? '✓' : '1'}</div>
               <div className="progress-step-text">
                 <h4>Tiếp nhận</h4>
-                <p>SLA: 4 giờ</p>
+                <p>SLA: {stageSla('TIEP_NHAN')}</p>
               </div>
             </div>
 
@@ -431,30 +510,65 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
               <div className="progress-step-circle">{currentStepIdx > 2 ? '✓' : '2'}</div>
               <div className="progress-step-text">
                 <h4>Thẩm định</h4>
-                <p>SLA: 12 giờ</p>
+                <p>SLA: {stageSla('THAM_DINH')}</p>
               </div>
             </div>
 
             <div className={`progress-step-line ${currentStepIdx > 2 ? 'completed' : ''}`} />
 
-            <div className={`progress-step ${currentStepIdx >= 3 ? (currentStepIdx === 3 ? 'active' : 'completed') : ''}`}>
+            {!loan.businessPolicyVersion && <><div className={`progress-step ${currentStepIdx >= 3 ? (currentStepIdx === 3 ? 'active' : 'completed') : ''}`}>
               <div className="progress-step-circle">{currentStepIdx > 3 ? '✓' : '3'}</div>
               <div className="progress-step-text">
                 <h4>Hội đồng / Cấp trên</h4>
-                <p>SLA: 24 giờ</p>
+                <p>SLA: {stageSla('CAP_TREN')}</p>
               </div>
             </div>
 
             <div className={`progress-step-line ${currentStepIdx > 3 ? 'completed' : ''}`} />
 
-            <div className={`progress-step ${currentStepIdx === 4 ? 'completed' : ''}`}>
-              <div className="progress-step-circle">{currentStepIdx === 4 ? '✓' : '4'}</div>
+            </>}<div className={`progress-step ${currentStepIdx === 4 ? 'completed' : ''}`}>
+              <div className="progress-step-circle">{currentStepIdx === 4 ? '✓' : loan.businessPolicyVersion ? '3' : '4'}</div>
               <div className="progress-step-text">
-                <h4>Phê duyệt & Giải ngân</h4>
-                <p>SLA: 4 giờ</p>
+                <h4>Hoàn tất quyết định</h4>
+                <p>SLA: {stageSla('HOAN_TAT')}</p>
               </div>
             </div>
           </div>
+
+          {/* D4-02: Hướng dẫn CBTD phụ trách rà soát & xác nhận đủ chứng từ tại Tiếp nhận */}
+          {showDocCheckReminder && (
+            <div
+              style={{
+                background: 'var(--badge-amber-bg)',
+                border: '1px solid var(--badge-amber-border)',
+                borderRadius: 8,
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <AlertCircle size={20} color="#b45309" />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--badge-amber-text)' }}>
+                    Hồ sơ tại công đoạn Tiếp nhận — Cần kiểm tra và xác nhận danh mục chứng từ
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#92400e', marginTop: 2 }}>
+                    Vui lòng rà soát tài liệu nộp ban đầu và tệp bổ sung tại tab "Danh mục chứng từ", sau đó bấm "Xác nhận hồ sơ đầy đủ" để hoàn tất công đoạn tiếp nhận trước khi chuyển thẩm định.
+                  </div>
+                </div>
+              </div>
+              <button
+                className="btn btn-secondary"
+                style={{ background: '#ffffff', whiteSpace: 'nowrap', fontSize: '12px' }}
+                onClick={() => setActiveTab('documents')}
+              >
+                Xem chứng từ
+              </button>
+            </div>
+          )}
 
           {/* Card AI Dự báo nguy cơ trễ hạn (Machine Learning Highlight) - Phong cách Pastel */}
           <div
@@ -600,7 +714,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
               </div>
               {isExceedBranchLimit ? (
                 <div className="risk-alert-inline danger">
-                  <AlertCircle size={12} /> Vượt 10 tỷ (Cần Cấp trên)
+                  <AlertCircle size={12} /> {loan.businessPolicyVersion ? 'Vượt hạn mức chi nhánh (tối đa 10 tỷ)' : 'Vượt 10 tỷ (Cần Cấp trên)'}
                 </div>
               ) : (
                 <span style={{ fontSize: '11px', color: 'var(--badge-green-text)' }}>≤ 10 tỷ (Duyệt tại chi nhánh)</span>
@@ -648,8 +762,18 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   onChange={(e) => setOfficialAmountInput(Number(e.target.value))}
                   style={{ width: '100%', marginTop: 4 }}
                 />
+                {loan.businessPolicyVersion && officialAmountInput > 10000000000 && (
+                  <p style={{ color: '#dc2626', fontSize: '11.5px', marginTop: 4, margin: 0 }}>
+                    Vượt hạn mức chi nhánh (tối đa 10 tỷ đồng).
+                  </p>
+                )}
               </div>
-              <button onClick={handleSetOfficialAmount} disabled={actionLoading} className="btn btn-primary" style={{ marginTop: 18 }}>
+              <button
+                onClick={handleSetOfficialAmount}
+                disabled={actionLoading || (!!loan.businessPolicyVersion && officialAmountInput > 10000000000) || officialAmountInput <= 0}
+                className="btn btn-primary"
+                style={{ marginTop: 18 }}
+              >
                 Lưu hạn mức
               </button>
             </div>
@@ -666,32 +790,62 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Số tiền phê duyệt (VNĐ):</label>
                   <input
                     type="number"
+                    min={1}
+                    max={Number(loan.officialAmount || loan.proposedAmount)}
                     value={approvedAmount}
                     onChange={(e) => setApprovedAmount(Number(e.target.value))}
                     style={{ width: '100%', marginTop: 4 }}
                   />
+                  {approvedAmount > Number(loan.officialAmount || loan.proposedAmount) && (
+                    <p style={{ color: '#dc2626', fontSize: '11.5px', marginTop: 4, margin: 0 }}>
+                      Vượt hạn mức tối đa ({Number(loan.officialAmount || loan.proposedAmount).toLocaleString('vi-VN')} VNĐ).
+                    </p>
+                  )}
+                  {approvedAmount <= 0 && (
+                    <p style={{ color: '#dc2626', fontSize: '11.5px', marginTop: 4, margin: 0 }}>
+                      Số tiền phê duyệt phải lớn hơn 0.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Lãi suất phê duyệt (%/năm):</label>
                   <input
                     type="number"
                     step="0.1"
+                    min={0}
+                    max={100}
                     value={approvedInterestRate}
                     onChange={(e) => setApprovedInterestRate(Number(e.target.value))}
                     style={{ width: '100%', marginTop: 4 }}
                   />
+                  {(approvedInterestRate < 0 || approvedInterestRate > 100) && (
+                    <p style={{ color: '#dc2626', fontSize: '11.5px', marginTop: 4, margin: 0 }}>
+                      Lãi suất phải từ 0% đến 100%.
+                    </p>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button onClick={() => setShowApproveForm(false)} className="btn btn-secondary">Hủy</button>
-                <button onClick={handleApprove} disabled={actionLoading} className="btn btn-success">
+                <button
+                  onClick={handleApprove}
+                  disabled={
+                    actionLoading ||
+                    isMakerCheckerDecisionBlocked ||
+                    approvedAmount <= 0 ||
+                    approvedAmount > Number(loan.officialAmount || loan.proposedAmount) ||
+                    approvedInterestRate < 0 ||
+                    approvedInterestRate > 100
+                  }
+                  className="btn btn-success"
+                >
                   Xác nhận Phê duyệt
                 </button>
               </div>
             </div>
           )}
 
-          {showCloseForm && canCloseOverdue(loan, activeRole) && (
+          {showCloseForm && canCloseOverdue(loan, activeRole) && !isMakerCheckerCloseBlocked && (
             <CloseOverdueForm applicationCode={loan.applicationCode} busy={actionLoading} onSubmit={reason => void handleCloseOverdue(reason)} onCancel={() => setShowCloseForm(false)} />
           )}
 
@@ -729,7 +883,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button onClick={() => setShowRejectForm(false)} className="btn btn-secondary">Hủy</button>
-                <button onClick={handleReject} disabled={actionLoading} className="btn btn-danger">
+                <button onClick={handleReject} disabled={actionLoading || isMakerCheckerDecisionBlocked} className="btn btn-danger">
                   Xác nhận Từ chối hồ sơ
                 </button>
               </div>
@@ -760,7 +914,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                 fontWeight: 700,
               }}
             >
-              Danh mục chứng từ ({loan.documents?.length || 0})
+              Danh mục chứng từ ({totalUnifiedDocuments})
             </button>
             <button
               onClick={() => setActiveTab('supplements')}
@@ -925,7 +1079,54 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                           </td>
                         </tr>
                       ))
-                    ) : (
+                    ) : null}
+                    {acceptedSupplementFiles.map((suppFile) => (
+                      <tr key={suppFile.id} style={{ background: 'rgba(16, 185, 129, 0.04)' }}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span className="badge badge-soft-green">BỔ SUNG</span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                              {suppFile.documentType}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            className="btn"
+                            style={{ fontWeight: 600 }}
+                            title="Tải tệp bổ sung hiện hành đã được chấp nhận"
+                            onClick={async () => {
+                              try {
+                                const blob = await api.download(`/supplements/${suppFile.supplementId}/files/${suppFile.id}/download`);
+                                const url = URL.createObjectURL(blob);
+                                const anchor = document.createElement('a');
+                                anchor.href = url;
+                                anchor.download = suppFile.fileName;
+                                anchor.click();
+                                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                              } catch (err) {
+                                alert((err as Error).message);
+                              }
+                            }}
+                          >
+                            {suppFile.fileName}
+                          </button>
+                          {suppFile.version > 1 && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: 6 }}>
+                              (v{suppFile.version})
+                            </span>
+                          )}
+                        </td>
+                        <td>{(suppFile.fileSize / 1024 / 1024).toFixed(1)} MB</td>
+                        <td>{new Date(suppFile.uploadedAt).toLocaleString('vi-VN')}</td>
+                        <td>
+                          <span style={{ fontSize: '11.5px', color: 'var(--badge-green-text)', fontWeight: 600 }}>
+                            Đã chấp nhận
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {!loan.documents?.length && !acceptedSupplementFiles.length && (
                       <tr>
                         <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                           Chưa có tài liệu đính kèm
@@ -1037,33 +1238,50 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
 
           <div style={{ display: 'flex', gap: 8 }}>
             {/* Nếu đang ở Tiếp nhận -> nút chuyển Thẩm định */}
-            {reception && !waitingSupplement && loan.isDocumentComplete && (
+            {reception && !loan.businessPolicyVersion && !waitingSupplement && loan.isDocumentComplete && (
               <button onClick={handleTransitionToAppraisal} disabled={actionLoading} className="btn btn-primary">
                 <Send size={15} /> Chuyển sang Thẩm định
               </button>
             )}
 
             {/* Nếu đang ở Thẩm định và hạn mức > 10 tỷ -> nút chuyển Cấp trên */}
-            {appraisal && !waitingSupplement && loan.currentStage === 'THAM_DINH' && Number(loan.officialAmount || loan.proposedAmount) > 10000000000 && (
+            {appraisal && !loan.businessPolicyVersion && !waitingSupplement && loan.currentStage === 'THAM_DINH' && Number(loan.officialAmount || loan.proposedAmount) > 10000000000 && (
               <button onClick={handleTransitionToHeadOffice} disabled={actionLoading} className="btn btn-warning">
                 <Send size={15} /> Trình Hội đồng / Cấp trên (&gt; 10 tỷ)
               </button>
             )}
 
             {/* Phê duyệt / Từ chối */}
-            {appraisal && !waitingSupplement && (
+            {appraisal && !waitingSupplement && (!loan.businessPolicyVersion || !!reportVersionId) && (
               <>
-                <button onClick={() => setShowRejectForm(true)} disabled={actionLoading} className="btn btn-danger">
+                <button
+                  onClick={() => setShowRejectForm(true)}
+                  disabled={actionLoading || decisionBlocked || isMakerCheckerDecisionBlocked}
+                  title={isMakerCheckerDecisionBlocked ? loan.makerCheckerRestrictions?.decisionBlockReason || undefined : undefined}
+                  className="btn btn-danger"
+                >
                   Từ chối (TC01 - TC05)
                 </button>
-                {(loan.currentStage === 'CAP_TREN' || !isExceedBranchLimit) && <button onClick={() => setShowApproveForm(true)} disabled={actionLoading} className="btn btn-success">
-                  <Check size={16} /> Phê duyệt Khoản vay
-                </button>}
+                {(loan.currentStage === 'CAP_TREN' || !isExceedBranchLimit) && (
+                  <button
+                    onClick={() => setShowApproveForm(true)}
+                    disabled={actionLoading || decisionBlocked || isMakerCheckerDecisionBlocked}
+                    title={isMakerCheckerDecisionBlocked ? loan.makerCheckerRestrictions?.decisionBlockReason || undefined : undefined}
+                    className="btn btn-success"
+                  >
+                    <Check size={16} /> Phê duyệt Khoản vay
+                  </button>
+                )}
               </>
             )}
 
             {canCloseOverdue(loan, activeRole) && (
-              <button onClick={() => setShowCloseForm(true)} disabled={actionLoading} className="btn btn-danger">
+              <button
+                onClick={() => setShowCloseForm(true)}
+                disabled={actionLoading || isMakerCheckerCloseBlocked}
+                title={isMakerCheckerCloseBlocked ? loan.makerCheckerRestrictions?.closeOverdueBlockReason || undefined : undefined}
+                className="btn btn-danger"
+              >
                 Đóng hồ sơ do quá hạn
               </button>
             )}

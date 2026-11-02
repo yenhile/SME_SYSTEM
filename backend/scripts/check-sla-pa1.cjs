@@ -53,11 +53,13 @@ async function runChecks(h) {
       charterCapital: 1e9, representativeName: 'Synthetic Representative', phone: '0900000000', address: 'Synthetic address',
       loanPurpose: 'Synthetic working capital', loanType: 'VAY_VON_LUU_DONG', proposedAmount: 1e9, loanTermMonths: 12,
     }, cbtd.id, clock);
+    await db.loanApplication.update({ where: { id: result.loan.id }, data: { businessPolicyVersion: null } });
+    result.loan.businessPolicyVersion = null;
     return result.loan;
   };
   const history = loanId => db.applicationStageHistory.findMany({ where: { applicationId: loanId }, include: { stage: true }, orderBy: [{ enteredAt: 'asc' }, { id: 'asc' }] });
   const toAppraisal = async (loan, clock, actor = cbtd) => {
-    await loans.checkDocuments(loan.id, true);
+    await loans.checkDocuments(loan.id, true, asCbtd(actor));
     return workflow.transitionStage(loan.id, { targetStage: 'THAM_DINH', targetStatus: 'PENDING_APPRAISAL' }, asCbtd(actor), clock);
   };
   const stage = (rows, code) => rows.find(r => r.stage.stageCode === code);
@@ -115,7 +117,8 @@ async function runChecks(h) {
   // 6. Điều chuyển không đặt lại đồng hồ: công đoạn giữ nguyên thời điểm vào và cách tính.
   const moved = await newLoan(vn('2026-10-27', '09:00'));
   const before = (await history(moved.id))[0];
-  await assignments.reassign(moved.id, { newOfficerId: cbtd2.id, reason: 'Synthetic reassignment' }, manager.id);
+  const movedLoan = await db.loanApplication.findUnique({ where: { id: moved.id } });
+  await assignments.reassign(moved.id, { newOfficerId: cbtd2.id, reason: 'Synthetic reassignment', expectedAssignmentVersion: movedLoan.assignmentVersion, clientRequestId: randomUUID() }, manager.id);
   const after = (await history(moved.id))[0];
   eq(after.enteredAt.getTime(), before.enteredAt.getTime(), 'reassignment keeps the stage entry time');
   eq(after.slaPolicy, 'PA1', 'reassignment keeps the stage policy');
@@ -125,7 +128,7 @@ async function runChecks(h) {
   // 7. Ngoài kỳ lịch: không tự quay về 24/7; thao tác bị từ chối và dữ liệu không đổi.
   await assert.rejects(newLoan(vn('2026-11-09', '10:00')), e => /không bao phủ/.test(e.message)); checks++;
   const edge = await newLoan(vn('2026-11-06', '15:00'));
-  await loans.checkDocuments(edge.id, true);
+  await loans.checkDocuments(edge.id, true, asCbtd(cbtd));
   await assert.rejects(
     workflow.transitionStage(edge.id, { targetStage: 'THAM_DINH', targetStatus: 'PENDING_APPRAISAL' }, asCbtd(cbtd), vn('2026-11-09', '10:00')),
     e => /không bao phủ/.test(e.message)); checks++;
@@ -304,7 +307,7 @@ async function runChecks(h) {
     const { DocumentsService } = require('../dist/modules/documents/documents.service');
     const documentsService = app.get(DocumentsService, { strict: false });
     const confirmed = await newLoan(vn('2026-10-27', '09:00'));
-    await loans.checkDocuments(confirmed.id, true);
+    await loans.checkDocuments(confirmed.id, true, asCbtd(cbtd));
     let state = await db.loanApplication.findUnique({ where: { id: confirmed.id } });
     eq(state.currentStatus, 'CHECKED', 'documents: loan confirmed complete');
     const addedDoc = await documentsService.create(confirmed.id, { documentType: 'PHAP_LY', fileName: 'synthetic.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/synthetic.pdf' }, cbtd.id);
@@ -312,15 +315,15 @@ async function runChecks(h) {
     eq(state.isDocumentComplete, false, 'documents: adding a document withdraws the confirmation');
     eq(state.currentStatus, 'RECEIVED', 'documents: loan returns to RECEIVED after a document change');
     await assert.rejects(workflow.transitionStage(confirmed.id, { targetStage: 'THAM_DINH', targetStatus: 'PENDING_APPRAISAL' }, asCbtd(cbtd), vn('2026-10-27', '12:00')), e => e.getStatus() === 400); checks++;
-    await loans.checkDocuments(confirmed.id, true);
-    await documentsService.delete(addedDoc.id);
+    await loans.checkDocuments(confirmed.id, true, asCbtd(cbtd));
+    await documentsService.delete(addedDoc.id, asCbtd(cbtd));
     state = await db.loanApplication.findUnique({ where: { id: confirmed.id } });
     eq(state.isDocumentComplete, false, 'documents: deleting a document withdraws the confirmation');
     eq(await db.document.count({ where: { id: addedDoc.id } }), 0, 'documents: the document was removed');
-    await loans.checkDocuments(confirmed.id, true);
+    await loans.checkDocuments(confirmed.id, true, asCbtd(cbtd));
     await toAppraisal(confirmed, vn('2026-10-27', '12:00')).catch(() => null);
     eq((await db.loanApplication.findUnique({ where: { id: confirmed.id } })).currentStage, 'THAM_DINH', 'documents: after confirming again the loan moves on');
-    const lateDoc = await documentsService.create(confirmed.id, { documentType: 'KHAC', fileName: 'late.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/late.pdf' }, approver.id);
+    const lateDoc = await documentsService.create(confirmed.id, { documentType: 'KHAC', fileName: 'late.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/late.pdf' }, approver.id, 'THAM_QUYEN');
     state = await db.loanApplication.findUnique({ where: { id: confirmed.id } });
     eq(state.currentStatus, 'PENDING_APPRAISAL', 'documents: a document added at appraisal does not touch the loan status');
     ok(lateDoc.id, 'documents: appraisal-stage document stored');

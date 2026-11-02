@@ -1,0 +1,193 @@
+{
+  "date": "2026-11-02",
+  "scope": "D3-01,D3-02,D3-03 technical verification; not PO acceptance or release",
+  "backendTests": {
+    "passed": 276,
+    "failed": 0
+  },
+  "frontendTests": {
+    "passed": 41,
+    "failed": 0,
+    "mode": "sequential"
+  },
+  "builds": {
+    "backend": true,
+    "frontend": true
+  },
+  "runtime": {
+    "pass": true,
+    "browserChecks": 21,
+    "apiChecks": 137,
+    "portalRegressionChecks": 90,
+    "round3": {
+      "pass": true,
+      "checks": 129,
+      "schema": "portal_v2_it_c0f629fdcbb44b29bb3afc6fc8b410d7",
+      "ownedNamespace": true
+    },
+    "migration": {
+      "pass": true,
+      "repeated": 2,
+      "legacyPreserved": true
+    },
+    "evidence": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\.codex_tmp\\sme-rollout\\1793604933570",
+    "schema": "portal_v2_it_c0f629fdcbb44b29bb3afc6fc8b410d7"
+  },
+  "cleanup": {
+    "schemaDropped": true,
+    "ownedUploadsRemoved": 34,
+    "preExistingUploadsPreserved": 0
+  },
+  "sharedDatabaseMigrated": false,
+  "released": false,
+  "verificationLimits": [
+    "New Round 3 scenario ends at TIEP_NHAN/RECEIVED; existing rollout regression covers appraisal and final decisions.",
+    "Chrome requires execution outside host sandbox with an owned profile.",
+    "No new approval actor or final-decision test was added after automatic approval review rejected that scope extension."
+  ],
+  "files": [
+    {
+      "file": "acceptance.json",
+      "sha256": "2755a1aded1742c3dbd6547759181ce56c0a1cd70aea3d2e15f673a5779b6878"
+    },
+    {
+      "file": "round3-01-officer-correction-decision.png",
+      "sha256": "a64b89125248c9ec6011c264a3b65f5c15412d1508cc8865d28972a53edbf271"
+    },
+    {
+      "file": "round3-02-enterprise-pending-mobile.png",
+      "sha256": "961f2d807acbac3c30b0b69cbfdbae4158bcf94ced32f8cf178d1ae2cabf8070"
+    },
+    {
+      "file": "round3-03-officer-reconciliation.png",
+      "sha256": "d60d4049d0b61d90833328a5b8d88d19b6fc3facf1c085f72bf96a2c0e816033"
+    },
+    {
+      "file": "round3-04-manager-reconciliation.png",
+      "sha256": "b49c9ff3e660d7c54f2187f0c7b1e5f966da7917676aa49b4fb96cf6c5a09d53"
+    },
+    {
+      "file": "round3-05-received.png",
+      "sha256": "414962de23863c5ff3150aac0763567a387ed2d86d700182782f5056ebc3e99c"
+    },
+    {
+      "file": "round3-06-enterprise-accepted.png",
+      "sha256": "8d960bd9f020a1e983a5cb41715d0666b2d6c09fec3247c20210bc0722279844"
+    },
+    {
+      "file": "backend-tests.log",
+      "sha256": "1866415d4e45d9d864254baa85f342ff25b9f101ca5d354d950a1da758b374a7"
+    },
+    {
+      "file": "frontend-tests.log",
+      "sha256": "42b465083c7943923a0241028021436e58ee1fbb2e3aac38ff4745c4ba9a7393"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "file": "backend/prisma/schema.prisma",
+      "sha256": "4175d6860534020115a4c7bfb0df0218b938fb9dc431c14fad22246c56b7119a"
+    },
+    {
+      "file": "backend/prisma/round3-intake.sql",
+      "sha256": "288ab2a9931d027f7a5b5c494df98930eac72e82ce5e7c38017f7e89cfa6eaae"
+    },
+    {
+      "file": "backend/src/modules/companies/company-snapshot.ts",
+      "sha256": "fef59521dcff8a0e56cf556942765f9eaa0a822a66fb3c132fb4f73af9c8f580"
+    },
+    {
+      "file": "backend/src/modules/companies/companies.service.ts",
+      "sha256": "195153677661243c232e48a0c01c156f5d4adfda1881e222e9f8066f3aeff34e"
+    },
+    {
+      "file": "backend/src/modules/loan-applications/loan-applications.service.ts",
+      "sha256": "161d43b1bd3d15fb18b273458f4af446db3fd09776d8f33efde795bb0991ca5b"
+    },
+    {
+      "file": "backend/src/modules/prediction/prediction.service.ts",
+      "sha256": "11aad7de2bae5a4d86688a539542e7aa6ee67290fcf185cf42b1c67aef70fb12"
+    },
+    {
+      "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+      "sha256": "e9699a1949ef6defafede1c5698a910e73fb846889ccbe5b091f385fe27e5b89"
+    },
+    {
+      "file": "backend/src/modules/dashboard/dashboard.service.ts",
+      "sha256": "fffd4ce4b8b92ea1d24526409a00e6208789e59624a235baa0f48990bac8e190"
+    },
+    {
+      "file": "backend/src/modules/assignments/assignment.transactions.ts",
+      "sha256": "c95fa2d4fe425b5b991f2cb2f6dcbfe08d1933af253aedceeb7b1119022e6a27"
+    },
+    {
+      "file": "backend/src/modules/portal/portal.service.ts",
+      "sha256": "b3dc740fab8c0749de9b12ab132a2d29cf4bfc957f175299ceb1b72a0bdba380"
+    },
+    {
+      "file": "backend/src/modules/portal/portal.controller.ts",
+      "sha256": "51d12726b5dfa4096baa1c5442e7fbd8c2654a3baed79c9cf9d6eab6d626ac08"
+    },
+    {
+      "file": "backend/src/modules/portal/portal.intake-workflow.ts",
+      "sha256": "d7de699cf17054f54566c03056874c55c6213f404be2b01322102025f92fe67b"
+    },
+    {
+      "file": "backend/src/modules/portal/portal.intake-cycle.ts",
+      "sha256": "bc3d7f60e9d708c0d762560a451e342d46b0bc70537e77c1a5444c93ebf31afb"
+    },
+    {
+      "file": "frontend/src/portal/IntakeCyclePanel.tsx",
+      "sha256": "5e596d375e8c02d94f9699dd496884e05b03140aca35079e317fcbe09a41e72e"
+    },
+    {
+      "file": "backend/test/round3-intake.test.cjs",
+      "sha256": "d6efefa93c72a8693fd771c3fc0dcfe8b161baaff5e7e9835aae42d7f55bf69a"
+    },
+    {
+      "file": "backend/test/role-routes.test.cjs",
+      "sha256": "1dd0f605d5480e52987a874e7034dc0471843e68dd53464cd868fd6f7feec1d3"
+    },
+    {
+      "file": "backend/scripts/check-portal-v2-intake.cjs",
+      "sha256": "d51808804689cc0a7743b387cda5441033cfd59a82a422166e8c7c1c348e82a3"
+    },
+    {
+      "file": "backend/scripts/check-sme-rollout.cjs",
+      "sha256": "3af17ed0ba4279ab689d4a976796a0c0ccf46d6f9e627c78ccc4b54e5b6172b9"
+    },
+    {
+      "file": "backend/scripts/check-round3-intake.cjs",
+      "sha256": "4493e3475e9331a0646154395c05671e7ac030f5a44dfcc56d7099ec7e5a3aab"
+    },
+    {
+      "file": "frontend/scripts/check-sme-rollout-browser.mjs",
+      "sha256": "74dab570970f1dc4e2229bc8e75a3896a10d2cf9f4f7cfbb4d9230f635921f7e"
+    },
+    {
+      "file": "frontend/scripts/round3-intake-checks.mjs",
+      "sha256": "fa60de78ce89bff44bc84fb98b91e570eee06749e6bd7c73331211b0bb5b2d56"
+    }
+  ],
+  "graph": {
+    "version": "3.17.0",
+    "files": 176,
+    "nodes": 3582,
+    "edges": 7201,
+    "fresh": true
+  },
+  "contextFiles": [
+    {
+      "file": "frontend/src/portal/PortalApp.tsx",
+      "sha256": "869d7553d1f6825a125a039ef7991876edb2496a7724594c1c49b0db409b126b"
+    },
+    {
+      "file": "frontend/src/styles.css",
+      "sha256": "91ef880fa04e338c3f62c4507e342de0e6e01e389db03347b980e24fe95a7eba"
+    },
+    {
+      "file": "frontend/src/portal/IntakeCyclePanel.tsx",
+      "sha256": "5e596d375e8c02d94f9699dd496884e05b03140aca35079e317fcbe09a41e72e"
+    }
+  ]
+}

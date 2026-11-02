@@ -1,3 +1,4 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -64,7 +65,7 @@ function auth(user) {
   const calls={sign:0};
   const prisma={user:{findUnique:async({where})=>where.username===user?.username?user:null}};
   const jwt={sign:()=>{calls.sign++;return 'token';}};
-  return {calls,service:new AuthService(prisma,jwt)};
+  return {calls,service:new AuthService(withCoordination(prisma),jwt)};
 }
 const account=async(over={})=>({id:'u1',username:'test_cbtd',fullName:'X',email:'x@e.test',phone:null,branchName:'b',isActive:true,passwordHash:await bcrypt.hash('Dung1234',4),roles:[{role:{code:'CBTD'}}],...over});
 test('five wrong passwords lock the account for 15 minutes even for the right password',async()=>{
@@ -101,25 +102,25 @@ function documents(loan) {
     document:{create:async({data})=>{state.created++;return{id:'d1',...data};},findUnique:async()=>({id:'d1',applicationId:'l1',filePath:'seed/x.pdf'}),delete:async()=>{state.deleted++;return{id:'d1'};}},
   };
   const prisma={$transaction:async fn=>fn(tx),document:{findUnique:async()=>({id:'d1',applicationId:'l1',filePath:'seed/x.pdf',portalDocumentId:null})}};
-  return {state,service:new DocumentsService(prisma)};
+  return {state,service:new DocumentsService(withCoordination(prisma))};
 }
-const loanAt=(currentStage,currentStatus,isDocumentComplete)=>({id:'l1',currentStage,currentStatus,isDocumentComplete});
+const loanAt=(currentStage,currentStatus,isDocumentComplete)=>({id:'l1',assignedTo:'u',currentStage,currentStatus,isDocumentComplete});
 const dto={documentType:'BAO_CAO_TAI_CHINH',fileName:'a.pdf',fileSize:1,mimeType:'application/pdf',filePath:'k'};
 test('adding a document after the confirmation withdraws it and returns the loan to RECEIVED',async()=>{
   const {state,service}=documents(loanAt('TIEP_NHAN','CHECKED',true));
-  await service.create('l1',dto,'u');
+  await service.create('l1',dto,'u','CBTD');
   assert.equal(state.created,1);assert.equal(state.locks,1);
   assert.equal(state.updates.length,1);assert.equal(state.updates[0].isDocumentComplete,false);assert.equal(state.updates[0].currentStatus,'RECEIVED');
 });
 test('deleting a document after the confirmation withdraws it too',async()=>{
   const {state,service}=documents(loanAt('TIEP_NHAN','CHECKED',true));
-  await service.delete('d1');
+  await service.delete('d1',{id:'u',activeRole:'CBTD'});
   assert.equal(state.deleted,1);assert.equal(state.updates.length,1);assert.equal(state.updates[0].isDocumentComplete,false);
 });
 test('nothing changes when the loan was not confirmed or is past reception',async()=>{
   for(const loan of [loanAt('TIEP_NHAN','RECEIVED',false),loanAt('TIEP_NHAN','SUPPLEMENT_REQUIRED',false),loanAt('THAM_DINH','PENDING_APPRAISAL',true),loanAt('CAP_TREN','WAITING_HEAD_OFFICE',true)]) {
     const {state,service}=documents(loan);
-    await service.create('l1',dto,'u');
+    await service.create('l1',dto,'u',loan.currentStage==='TIEP_NHAN'?'CBTD':'THAM_QUYEN');
     assert.equal(state.created,1);assert.equal(state.updates.length,0,`${loan.currentStage}/${loan.currentStatus}`);
   }
 });
@@ -136,24 +137,25 @@ function reassigner({loan,officer,failUpdate=false}) {
     $queryRaw:async()=>{state.order.push('lock');return[];},
     loanApplication:{findUnique:async()=>{state.order.push('read');return loan;},update:async({data})=>{state.order.push('update');if(failUpdate)throw new Error('db down');return{...loan,...data};}},
     user:{findUnique:async()=>officer},
-    applicationAssignment:{create:async({data})=>{state.order.push('history');return data;}},
+    applicationAssignment:{findUnique:async()=>null,create:async({data})=>{state.order.push('history');return data;}},
   };
   const outside=()=>{state.outside++;throw new Error('must run inside the transaction');};
   const prisma={$transaction:async fn=>fn(tx),loanApplication:{findUnique:outside,update:outside},user:{findUnique:outside},applicationAssignment:{create:outside}};
-  return {state,service:new AssignmentsService(prisma,{predictForApplication:async()=>{state.predicted++;}})};
+  return {state,service:new AssignmentsService(withCoordination(prisma),{predictForApplication:async()=>{state.predicted++;}})};
 }
 const officer=(over={})=>({id:'new',fullName:'B',isActive:true,roles:[{role:{code:'CBTD'}}],...over});
 const openLoan={id:'l1',applicationCode:'HS-1',assignedTo:'old',currentStage:'TIEP_NHAN',completedAt:null};
+const reassignBody=()=>({newOfficerId:'new',reason:'cân tải',expectedAssignmentVersion:0,clientRequestId:require('node:crypto').randomUUID()});
 test('reassignment locks the loan and writes history and owner together inside one transaction',async()=>{
   const {state,service}=reassigner({loan:openLoan,officer:officer()});
-  const result=await service.reassign('l1',{newOfficerId:'new',reason:'cân tải'},'mgr');
-  assert.deepEqual(state.order,['lock','read','history','update']);
+  const result=await service.reassign('l1',reassignBody(),'mgr');
+  assert.deepEqual(state.order,['lock','read','lock','history','update']);
   assert.equal(state.outside,0);assert.equal(state.predicted,1);
   assert.equal(result.loan.assignedTo,'new');
 });
 test('a failure while changing the owner aborts the whole reassignment before any prediction',async()=>{
   const {state,service}=reassigner({loan:openLoan,officer:officer(),failUpdate:true});
-  await assert.rejects(service.reassign('l1',{newOfficerId:'new'},'mgr'),/db down/);
+  await assert.rejects(service.reassign('l1',reassignBody(),'mgr'),/db down/);
   assert.equal(state.predicted,0,'no follow-up work after a rolled back change');
 });
 test('reassignment keeps its validation rules',async()=>{
@@ -166,7 +168,7 @@ test('reassignment keeps its validation rules',async()=>{
     [openLoan,officer({roles:[{role:{code:'THAM_QUYEN'}}]}),400],
   ]) {
     const {state,service}=reassigner({loan,officer:off});
-    await assert.rejects(service.reassign('l1',{newOfficerId:'new'},'mgr'),e=>e.getStatus()===status);
+    await assert.rejects(service.reassign('l1',reassignBody(),'mgr'),e=>e.getStatus()===status);
     assert.ok(!state.order.includes('history')&&!state.order.includes('update'),'nothing written on a rejected request');
   }
 });

@@ -9,7 +9,7 @@ Phạm vi và quyền theo [policy](../AGENTS.md). Chọn lộ trình ở [prefl
 
 ## 1. Xác định và lập kế hoạch
 
-Đọc Project và nguồn liên quan; công việc code/kiến trúc phải kiểm tra graph mới và lấy context/deps/impact từ CodeGraph trước sửa theo [hướng dẫn](../../docs/ai/2026-10-18-codegraph.md); xác định vấn đề, phần làm/không làm, file/interface bị ảnh hưởng, giả định, tiêu chí nghiệm thu. Công việc nhiều bước ghi plan ở `docs/ai/` hoặc vị trí được task chỉ định.
+Đọc Project và nguồn liên quan; công việc code/kiến trúc phải kiểm tra graph mới và lấy context/deps/impact từ CodeGraph trước sửa theo [hướng dẫn](../../docs/SME_KY_THUAT.md#quy-trinh-codegraph); xác định vấn đề, phần làm/không làm, file/interface bị ảnh hưởng, giả định, tiêu chí nghiệm thu. Công việc nhiều bước thuộc 7 nhóm ghi plan và kết quả ngay tại `docs/SME_MASTER.md`; không tạo Markdown plan/review/acceptance rời trong `docs`.
 
 Dùng brainstorming khi cần khám phá thiết kế, writing-plans khi cần kế hoạch nhiều bước. PO chỉ giao plan thì bàn giao plan; PO đã giao thực thi trong phạm vi rõ thì tiếp tục. Hỏi trước phần phụ thuộc quyết định nghiệp vụ hoặc tác động chưa được phép.
 

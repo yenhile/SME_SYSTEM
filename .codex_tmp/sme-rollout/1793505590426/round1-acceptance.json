@@ -1,0 +1,21 @@
+{
+  "pass": true,
+  "crossTab": true,
+  "canonicalLockedRecord": true,
+  "supportedProducts": [
+    "VAY_VON_LUU_DONG"
+  ],
+  "smtpRecovery": true,
+  "singleUseReset": true,
+  "oldPortalSessionRevoked": true,
+  "documentUi": true,
+  "completeFlow": {
+    "requestId": "4ef5d911-95ae-4aa0-99d1-5549b52b1cc5",
+    "loanId": "a0d30c7f-6629-425f-b3be-86989bd7aaaa",
+    "proposedAmount": 100000000,
+    "portalStatus": "APPROVED",
+    "reportVersions": 2
+  },
+  "recoveryMigrationRepeated": 2,
+  "publicDataModified": false
+}

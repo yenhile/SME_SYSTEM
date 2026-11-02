@@ -9,7 +9,14 @@ export const PUBLIC_REJECTION_REASONS: Record<string, string> = {
   TC04: 'Tài sản bảo đảm không đủ điều kiện',
   TC05: 'Quá hạn thời gian bổ sung chứng từ',
 };
-const GENERIC_REJECTION = 'Hồ sơ không được chấp thuận';
+export const GENERIC_REJECTION = 'Hồ sơ không được chấp thuận';
+
+export const PUBLIC_REJECTION_CODES = ['TC01', 'TC02', 'TC03', 'TC04', 'TC05'] as const;
+export type PublicRejectionReasonCode = (typeof PUBLIC_REJECTION_CODES)[number];
+
+export function isPublicRejectionReasonCode(code: unknown): code is PublicRejectionReasonCode {
+  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(PUBLIC_REJECTION_REASONS, code);
+}
 
 const STEP_LABELS = ['Tiếp nhận', 'Thẩm định', 'Phê duyệt', 'Hoàn tất'] as const;
 const STEP_CODES = ['RECEIVE', 'APPRAISAL', 'APPROVAL', 'DONE'] as const;
@@ -83,8 +90,9 @@ export function buildTracking(request: TrackingRequest, loan?: TrackingLoan | nu
   const status = LOAN_STATUS[loan.currentStatus] ?? LOAN_STATUS.RECEIVED;
   const result: any = { ...base, status: { ...status }, steps: steps(loanSteps(loan)) };
   if (loan.currentStatus === 'REJECTED') {
-    const code = loan.rejectionReasonCode && PUBLIC_REJECTION_REASONS[loan.rejectionReasonCode] ? loan.rejectionReasonCode : null;
-    result.rejection = { code, label: code ? PUBLIC_REJECTION_REASONS[code] : GENERIC_REJECTION };
+    const valid = isPublicRejectionReasonCode(loan.rejectionReasonCode);
+    const code = valid ? loan.rejectionReasonCode : null;
+    result.rejection = { code, label: valid ? PUBLIC_REJECTION_REASONS[code!] : GENERIC_REJECTION };
   }
   return result;
 }

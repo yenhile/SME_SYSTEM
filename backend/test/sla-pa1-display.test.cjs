@@ -1,3 +1,4 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 require('reflect-metadata');
@@ -80,7 +81,7 @@ test('early warnings never invent a risk level or probability when there is no p
 // Chi tiết hồ sơ: trạng thái SLA và số giờ đang chạy của công đoạn PA1 mở.
 function loanService({loan,pauses=[]}) {
   const prisma={loanApplication:{findUnique:async()=>loan},applicationStagePause:{findMany:async()=>pauses}};
-  return new LoanApplicationsService(prisma);
+  return new LoanApplicationsService(withCoordination(prisma));
 }
 const stageRow=(over={})=>({id:'h1',exitedAt:null,enteredAt:vn('2026-10-27','09:00'),pausedAt:null,pausedDurationHours:0,slaStandardHours:4,slaPolicy:'PA1',slaCalendarVersion:SIMULATED_CALENDAR_V1.version,...over});
 const loanRow=(over={})=>({id:'l1',currentStatus:'RECEIVED',delayPredictions:[],stageHistories:[stageRow()],...over});

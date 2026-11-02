@@ -1,0 +1,15 @@
+{
+  "pass": true,
+  "target": "SME localhost public",
+  "livePortalLogin": true,
+  "portalSessionVersionEnforced": true,
+  "forgotPasswordNeutral": true,
+  "unknownEmailDelivery": false,
+  "frontendServesUpdatedAuth": true,
+  "health": {
+    "backend": "ready",
+    "database": "ready",
+    "prediction": "ready"
+  },
+  "timestamp": "2026-11-01T04:03:49.184Z"
+}

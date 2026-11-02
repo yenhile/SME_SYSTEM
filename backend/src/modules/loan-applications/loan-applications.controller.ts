@@ -38,19 +38,19 @@ export class LoanApplicationsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.loanService.findOne(id);
+  findOne(@Param('id') id: string,@CurrentUser() user:any) {
+    return this.loanService.findOne(id,new Date(),user);
   }
 
   @Put(':id/check-documents')
   @Roles(RoleCode.CBTD)
-  checkDocuments(@Param('id') id: string, @Body('isComplete') isComplete: boolean) {
-    return this.loanService.checkDocuments(id, isComplete);
+  checkDocuments(@Param('id') id: string, @Body('isComplete') isComplete: boolean, @CurrentUser() user: any) {
+    return this.loanService.checkDocuments(id, isComplete, user);
   }
 
   @Put(':id/set-amount')
   @Roles(RoleCode.CBTD)
-  setAmount(@Param('id') id: string, @Body('officialAmount') officialAmount: number) {
-    return this.loanService.setOfficialAmount(id, Number(officialAmount));
+  setAmount(@Param('id') id: string, @Body('officialAmount') officialAmount: number, @CurrentUser() user: any) {
+    return this.loanService.setOfficialAmount(id, Number(officialAmount), user);
   }
 }

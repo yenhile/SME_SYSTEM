@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, FileText, LockKe
 import { portalApi, PortalApiError } from './client';
 import { groups, loanTypes } from './model';
 import type { PortalAccount, PortalData, PortalFormConfig, PortalRequest, PortalChecklist } from './model';
-import { capitalTotals, normalizeV2, validateV2, sameDraft } from './wizard';
+import { capitalTotals, normalizeV2, validateV2, sameDraft, initialDraftState, loanTypeOptions, type DraftRecovery } from './wizard';
 import { DocumentManager } from './DocumentManager';
 import { canEditCycle, canSendCycle } from './intake-cycle';
 import { IntakeCyclePanel } from './IntakeCyclePanel';
@@ -12,9 +12,8 @@ const steps = ['Thông tin doanh nghiệp', 'Nhu cầu vay', 'Phương án vốn
 const money = (value?: number) => value === undefined ? 'Chưa khai' : `${value.toLocaleString('vi-VN')} VNĐ`;
 const recoveryKey = (accountId: string, id: string) => `sme_portal_v2:${accountId}:${id}`;
 export const activeDraftKey = (accountId: string) => `sme_portal_v2_active:${accountId}`;
-type Recovery = { data: PortalData; baseRevision: number; step: number; updatedAt: string; conflict?: boolean };
 type Readiness={dataReady:boolean;canSubmit:false;issues:{code:string;path:string;step:number;message:string}[];note:string};
-function readRecovery(accountId: string, id: string): Recovery | null {
+function readRecovery(accountId: string, id: string): DraftRecovery | null {
   try {
     const value = JSON.parse(sessionStorage.getItem(recoveryKey(accountId, id)) || 'null');
     return value && typeof value.data === 'object' && value.data !== null && !Array.isArray(value.data) && Number.isSafeInteger(value.baseRevision) ? value : null;
@@ -49,22 +48,26 @@ function show(value: unknown): string {
 
 export function PortalWizard({ initial, draftId, account, config, onBack, onSaved }: { initial: PortalRequest | null; draftId: string; account: PortalAccount; config: PortalFormConfig; onBack: () => void; onSaved: (request: PortalRequest) => void }) {
   const [recovery] = useState(() => readRecovery(account.id, draftId));
+  const [initialState] = useState(() => initialDraftState(initial, recovery, canEditCycle(initial, config), { contactName: account.contactName, contactPhone: account.phone, contactEmail: account.email }));
+  const [retainedRecovery, setRetainedRecovery] = useState(initialState.retainedRecovery);
   const [request, setRequest] = useState(initial);
-  const [data, setData] = useState<PortalData>(() => recovery?.data ?? initial?.data ?? { contactName: account.contactName, contactPhone: account.phone, contactEmail: account.email });
-  const [step, setStep] = useState(() => recovery ? Math.min(5, Math.max(1, Number(recovery.step) || 1)) : 1);
-  const [dirty, setDirty] = useState(!!recovery || !initial);
+  const [data, setData] = useState<PortalData>(initialState.data);
+  const [step, setStep] = useState(initialState.step);
+  const [dirty, setDirty] = useState(initialState.dirty);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
   const [pendingFiles, setPendingFiles] = useState(0); const [storageError, setStorageError] = useState('');
   const [readiness,setReadiness]=useState<Readiness|null>(null);const [readinessError,setReadinessError]=useState('');
-  const [conflict, setConflict] = useState(!!recovery && (!!recovery.conflict || (!!initial && recovery.baseRevision !== (initial.revision ?? 0))));
+  const [conflict, setConflict] = useState(initialState.conflict);
   const conflictRef = useRef(conflict);
   const [remote, setRemote] = useState<PortalRequest | null>(null);
   const [checklist, setChecklist] = useState<PortalChecklist | null>(null); const [checklistError, setChecklistError] = useState('');
   const [assessmentRevision,setAssessmentRevision]=useState<number|undefined>();
   const [showErrors, setShowErrors] = useState(false);
   const requestRef = useRef(request); const dataRef = useRef(data); const dirtyRef = useRef(dirty); const lock = useRef(false);
-  const baseRevision = useRef(recovery?.baseRevision ?? initial?.revision ?? 0);
+  const baseRevision = useRef(initialState.baseRevision);
   const editable = canEditCycle(request,config);
+  const supportedTypes=config.supportedLoanTypes??['VAY_VON_LUU_DONG'];
+  const productOptions=loanTypeOptions(loanTypes,supportedTypes,data.loanType);
   const approvedAssessment=checklist?.approvedIntakeAssessment;
   const canSendApproved=canSendCycle({enabled:!!config.canSubmit,editable,dirty,busy,conflict,pendingFiles,dataReady:approvedAssessment?.dataReady===true,assessmentRevision,revision:request?.revision});
   const issues = validateV2(normalizeV2(data), step === 5 || showErrors); const totals = capitalTotals(data);
@@ -91,8 +94,14 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
   function assign(key: keyof PortalData, value: unknown) { change({ ...dataRef.current, [key]: value }); }
   function plan(key: string, value: unknown) { change({ ...dataRef.current, capitalPlan: { ...dataRef.current.capitalPlan, [key]: value } }); }
   function received(saved: PortalRequest, formSaved = false) {
+    const locked = !canEditCycle(saved, config);
+    const unsent = locked && dirtyRef.current && !sameDraft(dataRef.current, saved.data);
+    if (unsent) { stash(dataRef.current); setRetainedRecovery(readRecovery(account.id, draftId)); }
     requestRef.current = saved; baseRevision.current = saved.revision ?? 0; setRequest(saved);
-    if (formSaved) { dataRef.current = saved.data; dirtyRef.current = false; setData(saved.data); setDirty(false); try { sessionStorage.removeItem(recoveryKey(account.id, draftId)); } catch { /* Storage warning handled on next edit. */ } }
+    if (formSaved || locked) {
+      dataRef.current = saved.data; dirtyRef.current = false; setData(saved.data); setDirty(false);
+      if (!unsent && !retainedRecovery) try { sessionStorage.removeItem(recoveryKey(account.id, draftId)); } catch { /* Storage warning handled on next edit. */ }
+    }
     onSaved(saved);
   }
   async function persist(): Promise<PortalRequest> {
@@ -141,6 +150,7 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
   }
   function useRemote(keepLocal: boolean) {
     if (!remote) return;
+    keepLocal = keepLocal && canEditCycle(remote, config);
     if (keepLocal && !window.confirm('Bạn muốn giữ toàn bộ nội dung đang nhập để lưu lên phiên bản mới nhất? Những trường khác nhau trong bản trên hệ thống sẽ được thay bằng nội dung của bạn khi bạn bấm Lưu nháp.')) return;
     received(remote, !keepLocal); conflictRef.current = false; setConflict(false); setRemote(null); setError('');
     if (keepLocal) { dirtyRef.current = true; setDirty(true); stash(dataRef.current); setNotice('Đã chọn nội dung của bạn. Kiểm tra lại rồi bấm Lưu nháp.'); }
@@ -168,21 +178,25 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
     {request&&request.status!=='DRAFT'&&config.intakeCycleEnabled&&<IntakeCyclePanel key={request.id} request={request} mode="portal" onUpdated={r=>{if(dirtyRef.current){setRemote(r);markConflict();}else{received(r,true);setNotice('Đã tải trạng thái mới nhất.');}}}/>}
     <nav className="v2-stepper" aria-label="Các bước chuẩn bị hồ sơ"><ol>{steps.map((name, index) => <li key={name} className={step === index + 1 ? 'active' : step > index + 1 ? 'visited' : ''}><button disabled={busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => void navigate(index + 1)}><span>{step > index + 1 ? <Check size={16} /> : index + 1}</span><strong>{name}</strong></button></li>)}</ol><div className="v2-progress" role="progressbar" aria-label="Vị trí trong biểu mẫu" aria-valuemin={1} aria-valuemax={5} aria-valuenow={step}><span style={{ width: `${step * 20}%` }} /></div></nav>
     <div className="v2-save-status" role="status"><span className={dirty ? 'unsaved' : 'saved'}>{busy ? 'Đang lưu / xử lý…' : dirty ? 'Có nội dung chưa lưu trên hệ thống' : 'Đã lưu trên hệ thống'}</span><span>Bước {step}/5 · Tiến độ khai báo, không phải kết quả xét duyệt</span></div>
-    {recovery && <p className="portal-notice">Đã khôi phục nội dung chưa lưu trong tab này. File chưa tải lên cần được chọn lại; file đã lưu trên hệ thống vẫn được giữ nguyên.</p>}
+    {initialState.recoveryApplied && editable && <p className="portal-notice">Đã khôi phục nội dung chưa lưu trong tab này. File chưa tải lên cần được chọn lại; file đã lưu trên hệ thống vẫn được giữ nguyên.</p>}
+    {retainedRecovery && <details className="portal-card v2-retained-recovery"><summary>Nội dung chưa gửi được giữ riêng trong tab</summary><p>Biểu mẫu bên dưới hiển thị bản đã lưu trên hệ thống. Nội dung sau đây chưa được ngân hàng tiếp nhận và không thay đổi bản đã gửi.</p><dl>{Object.keys(labels).filter(key => retainedRecovery.data[key as keyof PortalData] !== undefined).map(key => <div key={key}><dt>{labels[key]}</dt><dd>{show(retainedRecovery.data[key as keyof PortalData])}</dd></div>)}</dl></details>}
     {error && <p role="alert" className="portal-error portal-alert">{error}</p>}{storageError && <p role="alert" className="portal-error portal-alert">{storageError}</p>}{notice && <p role="status" className="portal-notice">{notice}</p>}
     {!editable && <p className="v2-policy"><LockKeyhole size={18} />{request && request.status !== 'DRAFT' ? 'Hồ sơ đã khóa, chỉ được xem.' : 'Chế độ lưu nháp V2 hiện chưa được bật hoặc phiên bản không tương thích. Nội dung đã lưu vẫn có thể xem.'}</p>}
-    {conflict && <section className="v2-conflict portal-card" role="alert"><h2>Bản nháp đã có phiên bản khác</h2><p>Nội dung đang nhập được giữ lại. Hãy đối chiếu trước khi lưu để tránh ghi đè thay đổi ở tab khác.</p><button className="btn btn-secondary" disabled={busy} onClick={() => void latest()}>Xem bản mới nhất</button>{remote && <><div className="v2-compare"><section><h3>Nội dung đang nhập</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(data[key as keyof PortalData])}</p>)}</section><section><h3>Bản trên hệ thống</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(remote.data[key as keyof PortalData])}</p>)}</section></div><div className="portal-actions"><button className="btn btn-secondary" onClick={() => useRemote(false)}>Dùng bản trên hệ thống</button><button className="btn btn-primary" onClick={() => useRemote(true)}>Giữ nội dung đang nhập để lưu tiếp</button></div></>}</section>}
+    {config.rolloutEnabled&&<p className="portal-notice">Tiếp nhận vay vốn lưu động cho sản xuất, thương mại và dịch vụ, tối đa 10 tỷ đồng mỗi hồ sơ. Ngoài phạm vi này, vui lòng liên hệ ngân hàng.</p>}
+    {Number(data.proposedAmount)>10000000000&&<p role="alert" className="portal-error">Số tiền vượt giới hạn tiếp nhận 10 tỷ đồng. Bạn có thể lưu nháp; cần điều chỉnh hoặc liên hệ ngân hàng trước khi gửi.</p>}
+    {conflict && <section className="v2-conflict portal-card" role="alert"><h2>Bản nháp đã có phiên bản khác</h2><p>Nội dung đang nhập được giữ lại. Hãy đối chiếu trước khi lưu để tránh ghi đè thay đổi ở tab khác.</p><button className="btn btn-secondary" disabled={busy} onClick={() => void latest()}>Xem bản mới nhất</button>{remote && <><div className="v2-compare"><section><h3>Nội dung đang nhập</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(data[key as keyof PortalData])}</p>)}</section><section><h3>Bản trên hệ thống</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(remote.data[key as keyof PortalData])}</p>)}</section></div><div className="portal-actions"><button className="btn btn-secondary" onClick={() => useRemote(false)}>Dùng bản trên hệ thống</button>{canEditCycle(remote,config)&&<button className="btn btn-primary" onClick={() => useRemote(true)}>Giữ nội dung đang nhập để lưu tiếp</button>}</div></>}</section>}
     <fieldset className="portal-fieldset" disabled={busy || !editable || conflict}>
       {step === 1 && <section className="portal-card v2-form-card"><div className="portal-card-title"><Building2 size={22} /><div><h2>Thông tin doanh nghiệp</h2><p>Thông tin phục vụ tiếp nhận. Mã số thuế không thay thế việc đối chiếu pháp lý của ngân hàng.</p></div></div><div className="portal-field-grid">
         {field('companyName')}{field('taxCode', { readOnly:!!request?.submittedAt,hint: '10 hoặc 13 chữ số; thay chủ thể sau gửi cần lập đề nghị mới.' })}{field('companyType', { hint: 'Ví dụ: Công ty TNHH, Công ty cổ phần.' })}{field('industry')}
-        <Field path="businessScope" label="Phạm vi hoạt động" value={data.businessScope} options={{MANUFACTURING:'Doanh nghiệp sản xuất',OTHER:'Hoạt động khác'}} onChange={value=>assign('businessScope',value)}/>
+        {data.businessScope==='SERVICES'&&<Field path="serviceProofMode" label="Căn cứ doanh thu dịch vụ" value={data.serviceProofMode} options={{CONTRACT_OR_ORDER:'Hợp đồng hoặc đơn đặt dịch vụ',ACCEPTANCE_INVOICE:'Nghiệm thu kèm hóa đơn'}} onChange={v=>assign('serviceProofMode',v)}/>}
+        <Field path="businessScope" label="Phạm vi hoạt động" value={data.businessScope} options={config.rolloutEnabled?{MANUFACTURING:'Sản xuất',TRADING:'Thương mại',SERVICES:'Dịch vụ',OTHER:'Khác / cần tư vấn'}:{MANUFACTURING:'Doanh nghiệp sản xuất',OTHER:'Hoạt động khác'}} onChange={value=>assign('businessScope',value)}/>
         <Field path="representative.mode" label="Tư cách người gửi" value={data.representative?.mode} options={{LEGAL_REPRESENTATIVE:'Người đại diện pháp luật',AUTHORIZED:'Người được ủy quyền'}} onChange={value=>assign('representative',{...data.representative,mode:value})}/>
         {data.representative?.mode==='AUTHORIZED'&&<Field path="representative.name" label="Họ tên người được ủy quyền" value={data.representative.name} onChange={value=>assign('representative',{...data.representative,name:value})}/>}
         {field('establishedDate', { type: 'date', onChange: value => change({ ...dataRef.current, establishedDate: value as string | undefined, establishedYear: value ? Number(String(value).slice(0, 4)) : undefined }) })}
         {!data.establishedDate && field('establishedYear', { type: 'number', hint: 'Nhập năm thực tế nếu chưa biết ngày chính xác; không tạo ngày giả.' })}
         {field('address')}{field('representativeName')}{field('phone', { type: 'tel' })}{field('contactName', { hint: 'Người phối hợp chuẩn bị hồ sơ, có thể khác người đại diện pháp luật.' })}{field('contactPosition')}{field('contactPhone', { type: 'tel' })}{field('contactEmail', { type: 'email' })}{field('annualRevenue', { type: 'number' })}{field('revenuePeriod', { hint: 'Năm lịch hoàn thành gần nhất, dạng YYYY; không quy đổi tháng/quý.' })}{field('charterCapital', { type: 'number' })}
       </div><p className="v2-footnote">Có thể lưu khi chưa điền đủ. Chính sách mô phỏng áp dụng năm lịch hoàn thành gần nhất; ví dụ gửi năm 2026 sử dụng năm 2025.</p></section>}
-      {step === 2 && <section className="portal-card v2-form-card"><h2>Nhu cầu vay vốn</h2><p>Ghi rõ mục đích và thời điểm cần vốn để ngân hàng có cơ sở tiếp nhận.</p><div className="portal-field-grid">{field('loanType', { options: loanTypes })}{field('proposedAmount', { type: 'number', hint: 'Dùng chung cho phương án vốn ở bước 3.' })}{field('loanPurpose', { type: 'textarea', hint: 'Ví dụ: Mua nguyên vật liệu để thực hiện đơn hàng sản xuất.' })}{field('loanTermMonths', { type: 'number' })}{field('neededAt', { type: 'date' })}{field('preferredBranch', { hint: 'Tùy chọn; đây là mong muốn, chưa phải xác nhận ngân hàng tiếp nhận.' })}
+      {step === 2 && <section className="portal-card v2-form-card"><h2>Nhu cầu vay vốn</h2><p>Ghi rõ mục đích và thời điểm cần vốn để ngân hàng có cơ sở tiếp nhận.</p>{editable&&data.loanType&&!supportedTypes.includes(data.loanType)&&<p role="alert" className="portal-error">Loại vay đang lưu chưa được tiếp nhận trên cổng V2. Chọn vốn lưu động hoặc liên hệ ngân hàng; dữ liệu cũ được giữ để đối chiếu.</p>}<div className="portal-field-grid">{field('loanType', { options: productOptions })}{field('proposedAmount', { type: 'number', hint: 'Dùng chung cho phương án vốn ở bước 3.' })}{field('loanPurpose', { type: 'textarea', hint: 'Ví dụ: Mua nguyên vật liệu để thực hiện đơn hàng sản xuất.' })}{field('loanTermMonths', { type: 'number' })}{field('neededAt', { type: 'date' })}{field('preferredBranch', { hint: 'Tùy chọn; đây là mong muốn, chưa phải xác nhận ngân hàng tiếp nhận.' })}
         <Field path="collateral.mode" label="Hình thức bảo đảm dự kiến" value={data.collateral?.mode} options={{ PROPOSED: 'Có tài sản bảo đảm', NONE_REQUESTED: 'Đề nghị không bảo đảm', UNDECIDED: 'Chưa xác định' }} onChange={value => assign('collateral', { ...data.collateral, mode: value })} />
         {data.collateral?.mode === 'PROPOSED' && <Field path="collateral.description" label="Thông tin tài sản dự kiến" value={data.collateral.description} type="textarea" hint="Mô tả loại tài sản và giấy tờ đang có; chưa cần tự xác định giá trị thẩm định." onChange={value => assign('collateral', { ...data.collateral, description: value })} />}
         {data.collateral?.mode === 'NONE_REQUESTED' && <p className="v2-guidance">Đã ghi nhận đề nghị không bảo đảm. Bước chuẩn bị không bắt tải giấy tờ tài sản; ngân hàng sẽ xem xét theo chính sách được phê duyệt.</p>}
@@ -202,7 +216,7 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
       {(step===4||step===5)&&approvedAssessment&&<section className="portal-card approved-checklist"><h3>Checklist hồ sơ theo chính sách đã duyệt</h3><p>Đã cung cấp chưa đồng nghĩa ngân hàng xác minh hợp lệ.</p><ul>{approvedAssessment.requirements.map(item=><li key={item.id}><strong>{item.label}</strong> · {({NOT_APPLICABLE:'Không áp dụng theo điều kiện đã khai',LATER:'Cung cấp sau tiếp nhận khi được yêu cầu',PROVIDED_PENDING_REVIEW:'Đã cung cấp, chờ kiểm tra',MISSING:'Còn thiếu'}[item.state])}<p>{item.guidance}</p></li>)}</ul>{approvedAssessment.issues.map((issue,i)=><p className="portal-error" key={i}><button className="portal-link" onClick={()=>jump(issue.path,issue.step)}>{issue.message}</button></p>)}{approvedAssessment.formErrors.map((m,i)=><p className="portal-error" key={i}>{m}</p>)}</section>}
       {step===5&&config.approvedIntakePolicy&&<label className="portal-card"><input type="checkbox" disabled={busy||!editable||conflict} checked={data.submissionDeclaration?.accepted===true} onChange={e=>assign('submissionDeclaration',{accepted:e.target.checked,version:config.approvedIntakePolicy!.policy.declaration.version})}/>{config.approvedIntakePolicy.policy.declaration.text}</label>}
       {step === 5 && <section className="v2-review"><div className="portal-card"><div className="portal-card-title"><CheckCircle2 size={23} /><div><h2>Rà soát đề nghị</h2><p>Kiểm tra nội dung đã khai và tài liệu trước khi ngân hàng mở chức năng gửi V2.</p></div></div><div className="v2-policy" hidden={config.canSubmit || !!request?.submittedAt}><LockKeyhole size={19} /><div><strong>Quy trình Portal V2 đang được hoàn thiện, chưa mở sử dụng</strong><p>Bạn có thể lưu nháp và xem lại. Hồ sơ này chưa chuyển đến ngân hàng, chưa được phân công CBTD và chưa bắt đầu SLA.</p></div></div>
-        {config.canSubmit && <p className="v2-guidance">{config.intakeCycleEnabled?'Áp dụng checklist đã duyệt cho mô phỏng doanh nghiệp sản xuất vay vốn lưu động.':'Đang dùng policy TEST_ONLY '+config.submitPolicyVersion+' trong môi trường cách ly. Chức năng này không được mở trên hệ thống vận hành chính.'}</p>}
+        {config.canSubmit && <p className="v2-guidance">{config.intakeCycleEnabled?'Áp dụng checklist vốn lưu động theo phạm vi đã khai; ngân hàng còn kiểm tra nội dung.':'Đang dùng policy TEST_ONLY '+config.submitPolicyVersion+' trong môi trường cách ly. Chức năng này không được mở trên hệ thống vận hành chính.'}</p>}
         {request?.submittedAt && request.status!=='RETURNED' && <p className="portal-notice">Đề nghị đã gửi và khóa chỉnh sửa. Ngân hàng tiếp tục phân công CBTD; hồ sơ vay và SLA chỉ bắt đầu khi CBTD xác nhận tiếp nhận.</p>}
         {!!checklist?.missing?.length && <p className="v2-guidance">Còn {checklist.missing.length} mục tài liệu theo policy thử nghiệm chưa được cung cấp. <button className="portal-link" onClick={() => setStep(4)}>Xem tài liệu</button></p>}
         {checklist?.formErrors?.map((message, index) => <p className="portal-error" key={index}>{message}</p>)}
@@ -212,7 +226,7 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
         <section className="v2-review-issues"><h3>Những mục cần xem lại</h3><p>Gợi ý rà soát. Máy chủ kiểm tra lại checklist trước khi gửi.</p>{issues.length ? <ul>{issues.map((issue, index) => <li key={index}><button className={`portal-link ${issue.severity === 'error' ? 'portal-danger' : ''}`} onClick={() => jump(issue.path, issue.step)}>{issue.message} → Bước {issue.step}</button></li>)}</ul> : <p>Chưa phát hiện lỗi dữ liệu đã nhập. Việc này không đồng nghĩa đủ điều kiện vay hoặc đủ chứng từ theo chính sách.</p>}</section>
         {checklistError && <p role="alert" className="portal-error">Không tải được checklist: {checklistError}</p>}{checklist && <p className="v2-footnote">Checklist {checklist.checklistVersion}: {config.intakeCycleEnabled?'Áp dụng checklist đã duyệt; đủ theo khai báo vẫn chờ CBTD kiểm tra':checklist.policyStatus === 'PENDING_POLICY' ? 'Chưa mở sử dụng' : 'Chưa mở gửi chính thức'}. Tài liệu tải lên chưa được CBTD kiểm tra.</p>}
       </div></section>}
-    <div className="v2-wizard-footer"><button className="btn btn-secondary" disabled={busy || step === 1} onClick={() => void navigate(step - 1)}><ArrowLeft size={16} /> Quay lại</button><span className="v2-footer-spacer" /><button className="btn btn-secondary" disabled={busy || !editable || conflict} onClick={() => void run(async () => { await persist(); setNotice('Đã lưu bản nháp trên hệ thống.'); })}><Save size={16} /> Lưu nháp</button>{step < 5 ? <button className="btn btn-primary" disabled={busy} onClick={() => void navigate(step + 1)}>Tiếp tục <ArrowRight size={16} /></button> : <button className="btn btn-primary" disabled={config.intakeCycleEnabled?!canSendApproved:busy||!editable||conflict||!config.canSubmit||pendingFiles>0||checklist?.cannotSubmit!==false} onClick={() => void submitTestRequest()}>{config.intakeCycleEnabled?(request?.status==='RETURNED'?'Gửi lại đề nghị':'Gửi đề nghị'):'Gửi đề nghị thử nghiệm'}</button>}</div>
+    <div className="v2-wizard-footer"><button className="btn btn-secondary" disabled={busy || step === 1} onClick={() => void navigate(step - 1)}><ArrowLeft size={16} /> Quay lại</button><span className="v2-footer-spacer" /><button className="btn btn-secondary" disabled={busy || !editable || conflict} onClick={() => void run(async () => { await persist(); setNotice('Đã lưu bản nháp trên hệ thống.'); })}><Save size={16} /> Lưu nháp</button>{step < 5 ? <button className="btn btn-primary" disabled={busy} onClick={() => void navigate(step + 1)}>Tiếp tục <ArrowRight size={16} /></button> : <button className="btn btn-primary" disabled={Number(data.proposedAmount)>10000000000|| (config.intakeCycleEnabled?!canSendApproved:busy||!editable||conflict||!config.canSubmit||pendingFiles>0||checklist?.cannotSubmit!==false)} onClick={() => void submitTestRequest()}>{config.intakeCycleEnabled?(request?.status==='RETURNED'?'Gửi lại đề nghị':'Gửi đề nghị'):'Gửi đề nghị thử nghiệm'}</button>}</div>
     <p className="v2-footnote"><FileText size={14} /> Chỉ nội dung có trạng thái “Đã lưu trên hệ thống” được ngân hàng lưu trữ. Bản khôi phục trong tab không thay thế bản lưu trên hệ thống.</p>
   </section>;
 }

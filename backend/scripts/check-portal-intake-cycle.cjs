@@ -1,3 +1,4 @@
+const {assignmentFixture}=require('./assignment-fixtures.cjs');
 /* Real approved-policy API/PostgreSQL checks in an owned portal_v2_it_* schema.
  * No public seed/reset. startIsolated verifies target and owns cleanup of test uploads.
  */
@@ -12,6 +13,7 @@ async function runChecks(h){
   const {db,base}=h;let checks=0;
   const check=(v,m)=>{assert.ok(v,m);checks++;};
   async function call(endpoint,actor={},body,method=body===undefined?'GET':'POST',binary=false){
+    body=await assignmentFixture(db,endpoint,body);
     const headers={};if(actor.token)headers.Authorization=`Bearer ${actor.token}`;if(actor.role)headers['X-Active-Role']=actor.role;
     if(body!==undefined&&!(body instanceof FormData))headers['Content-Type']='application/json';
     const response=await fetch(base+endpoint,{method,headers,body:body instanceof FormData?body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});

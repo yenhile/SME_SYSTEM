@@ -1,3 +1,4 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 require('reflect-metadata');
@@ -10,7 +11,7 @@ const authority={id:'auth',activeRole:'THAM_QUYEN',roles:['THAM_QUYEN']};
 
 function listFixture() {
   const calls=[];
-  return {calls,service:new CompaniesService({company:{findMany:async args=>{calls.push(args);return[];}}})};
+  return {calls,service:new CompaniesService(withCoordination({company:{findMany:async args=>{calls.push(args);return[];}}}))};
 }
 test('CBTD only lists companies that have a loan assigned to them',async()=>{
   const {calls,service}=listFixture();
@@ -38,7 +39,7 @@ test('manager and authority keep the branch-wide company list',async()=>{
 const company={id:'c1',taxCode:'0101',companyName:'ABC',industry:'Dệt',establishedYear:2000,annualRevenue:5,charterCapital:9,representativeName:'Nguyen',phone:'090',address:'HN',loans:[]};
 function checkFixture(row) {
   const calls=[];
-  return {calls,service:new CompaniesService({company:{findUnique:async args=>{calls.push(args);return row;}}})};
+  return {calls,service:new CompaniesService(withCoordination({company:{findUnique:async args=>{calls.push(args);return row;}}}))};
 }
 test('CBTD sees company details and only their own loans for a company they handle',async()=>{
   const {calls,service}=checkFixture({...company,loans:[{id:'l1',applicationCode:'HS-1'}]});
@@ -78,8 +79,8 @@ const {LoanApplicationsService}=require('../dist/modules/loan-applications/loan-
 const loanDto={taxCode:'0101',companyName:'New name',industry:'x',establishedYear:2000,annualRevenue:1,charterCapital:1,representativeName:'r',phone:'1',address:'a',loanPurpose:'p',loanType:'VAY_VON_LUU_DONG',proposedAmount:10000000,loanTermMonths:12};
 function createFixture(existing) {
   const state={upserts:[]};
-  const tx={company:{findUnique:async()=>existing,upsert:async args=>{state.upserts.push(args);return{id:'c1'};}},workflowStage:{findUnique:async()=>null}};
-  return {state,service:new LoanApplicationsService({$transaction:async fn=>fn(tx)})};
+  const tx={$queryRaw:async()=>[],user:{findFirst:async()=>({id:'cbtd-a'})},company:{findUnique:async()=>existing,upsert:async args=>{state.upserts.push(args);return{id:'c1'};}},workflowStage:{findUnique:async()=>null}};
+  return {state,service:new LoanApplicationsService(withCoordination({$transaction:async fn=>fn(tx)}))};
 }
 const owned={id:'c1',loans:[{id:'l1'}]};
 const foreign={id:'c1',loans:[]};
@@ -97,8 +98,8 @@ test('creating a loan for a company that belongs to another officer is refused a
 });
 test('the ownership check only looks at the creating officer loans',async()=>{
   let query;
-  const tx={company:{findUnique:async q=>{query=q;return foreign;},upsert:async()=>({})},workflowStage:{findUnique:async()=>null}};
-  await assert.rejects(new LoanApplicationsService({$transaction:async fn=>fn(tx)}).create(loanDto,'cbtd-a'));
+  const tx={$queryRaw:async()=>[],user:{findFirst:async()=>({id:'cbtd-a'})},company:{findUnique:async q=>{query=q;return foreign;},upsert:async()=>({})},workflowStage:{findUnique:async()=>null}};
+  await assert.rejects(new LoanApplicationsService(withCoordination({$transaction:async fn=>fn(tx)})).create(loanDto,'cbtd-a'));
   assert.deepEqual(query.where,{taxCode:'0101'});
   assert.deepEqual(query.select.loans.where,{assignedTo:'cbtd-a'});
 });
@@ -106,7 +107,7 @@ test('POST /companies follows the same rule: own or new company only',async()=>{
   const body={taxCode:'0101',companyName:'N',industry:'x',establishedYear:2000,annualRevenue:1,charterCapital:1,representativeName:'r',phone:'1',address:'a'};
   for(const [existing,allowed] of [[null,true],[owned,true],[foreign,false]]) {
     const upserts=[];
-    const service=new CompaniesService({company:{findUnique:async()=>existing,upsert:async a=>{upserts.push(a);return{id:'c1'};}}});
+    const service=new CompaniesService(withCoordination({company:{findUnique:async()=>existing,upsert:async a=>{upserts.push(a);return{id:'c1'};}}}));
     if(allowed) {await service.upsert(body,cbtd);assert.equal(upserts.length,1);}
     else {await assert.rejects(service.upsert(body,cbtd),e=>e.getStatus()===403);assert.equal(upserts.length,0);}
   }

@@ -1,0 +1,12 @@
+{
+  "pass": true,
+  "checks": 17,
+  "liveApi": "http://localhost:3000/api",
+  "liveUi": "http://localhost:5173/",
+  "predictionStatus": "UPDATED",
+  "pendingFixturePreparedDirectly": true,
+  "creationApiVerifiedInIsolation": true,
+  "existingManagersNotNotified": true,
+  "syntheticRowsRemoved": true,
+  "existingTablesPreserved": 25
+}

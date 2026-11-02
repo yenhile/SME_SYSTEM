@@ -1,3 +1,4 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 require('reflect-metadata');
@@ -25,7 +26,7 @@ function fixture({loan={},supplements,history}={}) {
   };
   const prisma={$transaction:async fn=>fn(tx)};
   const prediction={predictForApplication:async()=>{state.predicted++;}};
-  const service=new WorkflowService(prisma,prediction);
+  const service=new WorkflowService(withCoordination(prisma),prediction);
   return {state,close:(dto,user=manager)=>service.closeOverdueSupplement('loan1',dto,user,NOW)};
 }
 const rejects=async(promise,status)=>assert.rejects(promise,e=>e.getStatus()===status);
@@ -102,7 +103,7 @@ test('only the QUAN_LY role may close, and a missing loan is 404',async()=>{
     assert.equal(state.loanUpdates.length,0);
   }
   const prisma={$transaction:async fn=>fn({$queryRaw:async()=>[],loanApplication:{findUnique:async()=>null}})};
-  await rejects(new WorkflowService(prisma,{}).closeOverdueSupplement('x',{reason:'r'},manager,NOW),404);
+  await rejects(new WorkflowService(withCoordination(prisma),{}).closeOverdueSupplement('x',{reason:'r'},manager,NOW),404);
 });
 test('close endpoint is limited to QUAN_LY while transition stays with CBTD and THAM_QUYEN',()=>{
   const guard=new RolesGuard(new Reflector());
@@ -114,6 +115,23 @@ test('close endpoint is limited to QUAN_LY while transition stays with CBTD and 
 });
 test('a closed loan can no longer be moved through the workflow',async()=>{
   const tx={$queryRaw:async()=>[],loanApplication:{findUnique:async()=>({id:'loan1',currentStage:'HOAN_TAT',currentStatus:'CLOSED_TIMEOUT',completedAt:new Date()})}};
-  const service=new WorkflowService({$transaction:async fn=>fn(tx)},{});
+  const service=new WorkflowService(withCoordination({$transaction:async fn=>fn(tx)}),{});
   await rejects(service.transitionStage('loan1',{targetStage:'THAM_DINH',targetStatus:'PENDING_APPRAISAL'},{id:'cbtd',activeRole:'CBTD'}),400);
+});
+
+test('D4-04: manager cannot close overdue if they are assigned officer or intake officer', async () => {
+  // 1. Manager is assignedTo
+  const fAssigned = fixture({ loan: { assignedTo: 'manager', intakeOfficerId: 'other' } });
+  await rejects(fAssigned.close({ reason: 'Overdue' }), 403);
+  assert.equal(fAssigned.state.loanUpdates.length, 0);
+
+  // 2. Manager is intakeOfficerId (even if assignedTo is different)
+  const fIntake = fixture({ loan: { assignedTo: 'other', intakeOfficerId: 'manager' } });
+  await rejects(fIntake.close({ reason: 'Overdue' }), 403);
+  assert.equal(fIntake.state.loanUpdates.length, 0);
+
+  // 3. Independent manager (neither assignedTo nor intakeOfficerId) succeeds
+  const fIndependent = fixture({ loan: { assignedTo: 'officer-a', intakeOfficerId: 'officer-b' } });
+  await fIndependent.close({ reason: 'Overdue' });
+  assert.equal(fIndependent.state.loanUpdates.length, 1);
 });

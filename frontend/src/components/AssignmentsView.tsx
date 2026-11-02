@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '../api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { api, ApiError } from '../api/client';
 import { OfficerWorkload, LoanApplication } from '../types';
 import { Users, ArrowRightLeft, RefreshCw } from 'lucide-react';
 import { predictionLabel } from '../slaDisplay';
+import {AssignmentChangeRequestsView} from './AssignmentChangeRequestsView';
 
-export const AssignmentsView: React.FC = () => {
+export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTAL';id:string})=>void}> = ({onOpenCase}) => {
   const [workloads, setWorkloads] = useState<OfficerWorkload[]>([]);
   const [activeLoans, setActiveLoans] = useState<LoanApplication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -15,27 +16,32 @@ export const AssignmentsView: React.FC = () => {
   const [reassignReason, setReassignReason] = useState<string>('Phân bổ lại tải công việc chi nhánh để tránh chậm hạn SLA');
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [conflict,setConflict]=useState(false);
+  const operation=useRef<{key:string;id:string}|null>(null);
+  const submitLock=useRef(false);
+  const sequence=useRef(0);
 
   const fetchData = async () => {
+    const current=++sequence.current;
     setLoading(true);
     try {
       const [workloadsData, loansData] = await Promise.all([
         api.get<OfficerWorkload[]>('/assignments/officer-workloads'),
         api.get<LoanApplication[]>('/loan-applications'),
       ]);
+      if(current!==sequence.current)return false;
       setWorkloads(workloadsData);
       const active = loansData.filter((l) =>
         ['RECEIVED', 'CHECKED', 'SUPPLEMENT_REQUIRED', 'PENDING_APPRAISAL', 'WAITING_HEAD_OFFICE'].includes(l.currentStatus)
       );
       setActiveLoans(active);
 
-      if (workloadsData.length > 0) {
-        setTargetOfficerId(workloadsData[0].id);
-      }
+      return true;
     } catch (err: any) {
-      setMsg({ text: err.message, type: 'error' });
+      if(current===sequence.current)setMsg({ text: err.message, type: 'error' });
+      return false;
     } finally {
-      setLoading(false);
+      if(current===sequence.current)setLoading(false);
     }
   };
 
@@ -46,39 +52,59 @@ export const AssignmentsView: React.FC = () => {
   const handleOpenReassignModal = (loan: LoanApplication) => {
     setSelectedLoan(loan);
     setMsg(null);
-    const available = workloads.find((w) => w.id !== loan.assignedTo);
-    if (available) {
-      setTargetOfficerId(available.id);
-    }
+    setTargetOfficerId('');setConflict(false);operation.current=null;
+    setReassignReason('Phân bổ lại tải công việc chi nhánh để tránh chậm hạn SLA');
+  };
+
+  const reloadAssignment=async()=>{
+    if(!selectedLoan||submitLock.current)return;
+    submitLock.current=true;setSubmitting(true);
+    try{
+      const current=await api.get<LoanApplication>(`/loan-applications/${selectedLoan.id}`);
+      if(current.completedAt||current.currentStage==='HOAN_TAT'){setSelectedLoan(null);setMsg({text:'Hồ sơ đã kết thúc, không thể điều chuyển.',type:'error'});}
+      else{setSelectedLoan(current);setTargetOfficerId('');setConflict(false);operation.current=null;setMsg(null);}
+      await fetchData();
+    }catch(err){setMsg({text:(err as Error).message,type:'error'});}
+    finally{submitLock.current=false;setSubmitting(false);}
   };
 
   const handleExecuteReassign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedLoan || !targetOfficerId) return;
+    if (!selectedLoan || !targetOfficerId || submitLock.current || conflict) return;
+    const reason=reassignReason.trim();
+    if(!reason||reason.length>2000){setMsg({text:'Vui lòng nhập lý do điều chuyển, tối đa 2.000 ký tự.',type:'error'});return;}
+    if(!Number.isSafeInteger(selectedLoan.assignmentVersion)){setMsg({text:'Dữ liệu phân công chưa có phiên bản. Vui lòng tải lại màn hình.',type:'error'});return;}
+    const key=JSON.stringify([selectedLoan.id,selectedLoan.assignmentVersion,targetOfficerId,reason]);
+    if(operation.current?.key!==key)operation.current={key,id:crypto.randomUUID()};
 
+    submitLock.current=true;
     setSubmitting(true);
     setMsg(null);
     try {
-      await api.post(`/assignments/${selectedLoan.id}/reassign`, {
+      const result=await api.post<{replayed:boolean;prediction:{status:string;message:string}}>(`/assignments/${selectedLoan.id}/reassign`, {
         newOfficerId: targetOfficerId,
-        reason: reassignReason,
+        reason,
+        expectedAssignmentVersion:selectedLoan.assignmentVersion,
+        clientRequestId:operation.current.id,
       });
 
-      setMsg({ text: 'Điều chuyển hồ sơ thành công! AI đã tự động tái đánh giá lại rủi ro SLA.', type: 'success' });
-      await fetchData();
-      setTimeout(() => {
-        setSelectedLoan(null);
-      }, 1500);
+      setSelectedLoan(null);setTargetOfficerId('');operation.current=null;
+      const refreshed=await fetchData();
+      if(!refreshed)setMsg({text:'Thao tác đã được lưu nhưng chưa làm mới được danh sách. Bấm Làm mới để đối chiếu phân công hiện tại.',type:'error'});
+      else setMsg({ text: result.replayed?'Thao tác này đã được ghi nhận trước đó. Danh sách đã hiển thị phân công hiện tại.':`Điều chuyển hồ sơ thành công. ${result.prediction.message}`, type: 'success' });
     } catch (err: any) {
+      if(err instanceof ApiError&&err.status===409)setConflict(true);
       setMsg({ text: err.message || 'Lỗi khi điều chuyển hồ sơ', type: 'error' });
     } finally {
       setSubmitting(false);
+      submitLock.current=false;
     }
   };
 
   return (
     <div className="assignments-view">
-      {msg?.type === 'error' && !selectedLoan && <p role="alert" className="error-message">{msg.text}</p>}
+      <AssignmentChangeRequestsView onOpenCase={onOpenCase} onChanged={async()=>{await fetchData();}}/>
+      {msg && !selectedLoan && <p role={msg.type==='error'?'alert':'status'} className={msg.type==='error'?'error-message':'portal-notice'}>{msg.text}</p>}
       <div className="page-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -89,7 +115,7 @@ export const AssignmentsView: React.FC = () => {
           </p>
         </div>
 
-        <button onClick={fetchData} className="btn btn-secondary">
+        <button onClick={fetchData} disabled={loading||submitting} className="btn btn-secondary">
           <RefreshCw size={15} /> Làm mới
         </button>
       </div>
@@ -143,7 +169,7 @@ export const AssignmentsView: React.FC = () => {
                   <td>{officer.phone || '0901234567'}</td>
                   <td>{officer.branchName}</td>
                   <td>
-                    <strong style={{ fontSize: '15px', color: 'var(--primary-hover)' }}>{officer.activeLoanCount}</strong> hồ sơ
+                    <strong style={{ fontSize: '15px', color: 'var(--primary-hover)' }}>{officer.totalAssignedCount}</strong> công việc<div>{officer.activeLoanCount} hồ sơ vay · {officer.pendingIntakeCount} đề nghị Portal</div>
                   </td>
                   <td>
                     {officer.highRiskLoanCount > 0 ? (
@@ -249,6 +275,7 @@ export const AssignmentsView: React.FC = () => {
                     </td>
                     <td>
                       <button
+                        disabled={loading || submitting}
                         onClick={() => handleOpenReassignModal(loan)}
                         className="btn btn-secondary"
                         style={{ padding: '6px 12px', fontSize: '12px' }}
@@ -270,7 +297,7 @@ export const AssignmentsView: React.FC = () => {
           <div className="modal-content" style={{ maxWidth: '560px' }}>
             <div className="modal-header">
               <h3 style={{ fontSize: '15px' }}>Điều chuyển Hồ sơ: {selectedLoan.applicationCode}</h3>
-              <button onClick={() => setSelectedLoan(null)} className="btn btn-secondary" style={{ padding: '6px' }}>
+              <button disabled={submitting} onClick={() => setSelectedLoan(null)} className="btn btn-secondary" style={{ padding: '6px' }}>
                 ✕
               </button>
             </div>
@@ -291,6 +318,7 @@ export const AssignmentsView: React.FC = () => {
                     {msg.text}
                   </div>
                 )}
+                {conflict&&<div role="alert"><p>Phân công đã đổi. Tải lại để đối chiếu trước khi xác nhận một thao tác mới.</p><button type="button" className="btn btn-secondary" disabled={submitting} onClick={()=>void reloadAssignment()}>Tải lại phân công</button></div>}
 
                 <div>
                   <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
@@ -313,14 +341,17 @@ export const AssignmentsView: React.FC = () => {
                     Chọn Cán bộ tiếp nhận mới (Ưu tiên cán bộ khả dụng):
                   </label>
                   <select
+                    aria-label="Cán bộ nhận điều chuyển"
+                    disabled={submitting||conflict}
                     value={targetOfficerId}
                     onChange={(e) => setTargetOfficerId(e.target.value)}
                     style={{ width: '100%' }}
                     required
                   >
+                    <option value="">Chọn cán bộ</option>
                     {workloads.map((w) => (
                       <option key={w.id} value={w.id} disabled={w.id === selectedLoan.assignedTo}>
-                        {w.fullName} • Đang xử lý: {w.activeLoanCount} hồ sơ ({w.workloadStatus})
+                        {w.fullName} • Đang xử lý: {w.totalAssignedCount} công việc ({w.activeLoanCount} hồ sơ vay, {w.pendingIntakeCount} Portal) ({w.workloadStatus})
                       </option>
                     ))}
                   </select>
@@ -331,6 +362,9 @@ export const AssignmentsView: React.FC = () => {
                     Lý do điều chuyển:
                   </label>
                   <textarea
+                    aria-label="Lý do điều chuyển"
+                    maxLength={2000}
+                    disabled={submitting||conflict}
                     rows={2}
                     value={reassignReason}
                     onChange={(e) => setReassignReason(e.target.value)}
@@ -341,10 +375,10 @@ export const AssignmentsView: React.FC = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" onClick={() => setSelectedLoan(null)} className="btn btn-secondary">
+                <button type="button" disabled={submitting} onClick={() => setSelectedLoan(null)} className="btn btn-secondary">
                   Hủy
                 </button>
-                <button type="submit" disabled={submitting} className="btn btn-primary">
+                <button type="submit" disabled={submitting||conflict||!targetOfficerId||targetOfficerId===selectedLoan.assignedTo||!reassignReason.trim()||!Number.isSafeInteger(selectedLoan.assignmentVersion)} className="btn btn-primary">
                   {submitting ? 'Đang điều chuyển...' : 'Xác nhận Điều chuyển'}
                 </button>
               </div>

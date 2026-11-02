@@ -5,6 +5,7 @@ import { waitingOn } from '../supplements/portal-supplement';
 import { firstStagePolicies, predictionStatusOf } from '../prediction/prediction-status';
 import { SLA_POLICY_PA1 } from '../workflow/sla/sla-policy';
 import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
+import {companyForLoan} from '../companies/company-snapshot';
 
 @Injectable()
 export class DashboardService {
@@ -159,6 +160,7 @@ export class DashboardService {
         application: {
           select: {
             applicationCode: true, assignedTo: true,
+            companySnapshot: true,
             company: { select: { companyName: true } },
             assignedUser: { select: { fullName: true } },
           },
@@ -170,7 +172,7 @@ export class DashboardService {
       id: row.id,
       applicationId: row.applicationId,
       applicationCode: row.application.applicationCode,
-      companyName: row.application.company.companyName,
+      companyName: companyForLoan(row.application).companyName,
       assignedOfficer: row.application.assignedUser ? row.application.assignedUser.fullName : 'Chưa phân công',
       assignedOfficerId: row.application.assignedTo,
       requestedAt: row.requestedAt,
@@ -225,8 +227,8 @@ export class DashboardService {
       return {
         id: loan.id,
         applicationCode: loan.applicationCode,
-        companyName: loan.company.companyName,
-        industry: loan.company.industry,
+        companyName: companyForLoan(loan).companyName,
+        industry: companyForLoan(loan).industry,
         loanAmount: Number(loan.officialAmount || loan.proposedAmount),
         currentStage: loan.currentStage,
         currentStatus: loan.currentStatus,

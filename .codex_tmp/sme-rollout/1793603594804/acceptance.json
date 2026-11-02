@@ -1,0 +1,19 @@
+{
+  "pass": true,
+  "browserChecks": 21,
+  "apiChecks": 137,
+  "portalRegressionChecks": 90,
+  "round3": {
+    "pass": true,
+    "checks": 127,
+    "schema": "portal_v2_it_b60e25ce1bad4902a722c1a5761b7b64",
+    "ownedNamespace": true
+  },
+  "migration": {
+    "pass": true,
+    "repeated": 2,
+    "legacyPreserved": true
+  },
+  "evidence": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\.codex_tmp\\sme-rollout\\1793603594804",
+  "schema": "portal_v2_it_b60e25ce1bad4902a722c1a5761b7b64"
+}

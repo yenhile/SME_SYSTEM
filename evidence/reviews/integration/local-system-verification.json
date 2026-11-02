@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-11-02T13:11:17.617Z",
+  "system": {
+    "backendUrl": "http://localhost:3000/api",
+    "frontendStaffUrl": "http://localhost:5173/",
+    "frontendPortalUrl": "http://localhost:5173/portal",
+    "mlServiceUrl": "http://localhost:8000",
+    "mailboxUrl": "http://localhost:8025",
+    "databaseUrl": "postgresql://sme_user:******@localhost:5432/sme_loan?schema=public"
+  },
+  "verificationSummary": {
+    "totalChecks": 37,
+    "allPassed": true,
+    "milestonesPassed": 13,
+    "exceptionsPassed": 6
+  },
+  "baselinePreservation": {
+    "users": {
+      "before": 4,
+      "after": 4
+    },
+    "companies": {
+      "before": 4,
+      "after": 4
+    },
+    "loans": {
+      "before": 4,
+      "after": 4
+    },
+    "portalAccounts": {
+      "before": 1,
+      "after": 1
+    }
+  }
+}
