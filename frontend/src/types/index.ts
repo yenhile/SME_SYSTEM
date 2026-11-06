@@ -1,13 +1,14 @@
+import type { SlaSummaryView } from '../slaDisplay';
+
 export type RoleCode = 'ADMIN' | 'CBTD' | 'THAM_QUYEN' | 'QUAN_LY';
 
-export type StageCode = 'TIEP_NHAN' | 'THAM_DINH' | 'CAP_TREN' | 'HOAN_TAT';
+export type StageCode = 'TIEP_NHAN' | 'THAM_DINH' | 'HOAN_TAT';
 
 export type LoanStatus =
   | 'RECEIVED'
   | 'CHECKED'
   | 'SUPPLEMENT_REQUIRED'
   | 'PENDING_APPRAISAL'
-  | 'WAITING_HEAD_OFFICE'
   | 'APPROVED'
   | 'REJECTED'
   | 'CLOSED_TIMEOUT';
@@ -168,6 +169,11 @@ export interface LoanApplication {
   predictionStatus?: 'AVAILABLE' | 'INCOMPATIBLE_PA1' | 'NONE';
   slaState?: { policy: string | null; calendarVersion: string | null; waiting: 'ENTERPRISE' | 'BANK' | null; slaRunning: boolean };
   liveSla?: { historyId: string; actualDurationHours?: number; pausedDurationHours?: number; netWorkDurationHours?: number; isDelayed?: boolean; error?: string } | null;
+  slaSummary?: SlaSummaryView | null;
+  reportStatus?: string | null;
+  reportVersion?: { sequence: number; submittedAt: string } | null;
+  queueReason?: import('../appraisalQueue').QueueReason;
+  documentCount?: number;
 }
 
 export interface OverviewStats {

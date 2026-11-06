@@ -195,7 +195,7 @@ export function DocumentManager({ request, config, data, disabled, onMutate, onP
     }).join('; ') || 'Chưa có thông tin loại tài liệu';
   }
 
-  return <section className="portal-document-manager" aria-label="Quản lý tài liệu">
+  return <section className="portal-document-manager" id="v2-documents" tabIndex={-1} aria-label="Quản lý tài liệu">
     <div className="portal-section-heading"><div><h2>Tài liệu hồ sơ</h2><p>Tệp đã tải lên chỉ ghi nhận đã cung cấp, chưa phải CBTD xác minh. Xem checklist để biết các mục áp dụng.</p></div></div>
     <p className="portal-policy-note">Tối đa {sizeLabel(maxBytes)}/tệp và {maxFiles} tệp hiện hành. Bộ tài chính dùng năm hoàn thành gần nhất theo chính sách mô phỏng.</p>
     <div className="portal-doc-grid">{config.groups.map(item => {

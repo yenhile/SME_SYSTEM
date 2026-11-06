@@ -95,7 +95,7 @@ test('officer workload uses active loan statuses and assigned requests only',asy
   assert.deepEqual(await service.officers(),[{id:'officer',fullName:'Demo',username:'demo',roles:['CBTD'],activeLoanCount:4,pendingIntakeCount:2,totalAssignedCount:6,highRiskLoanCount:1,workloadStatus:'BẬN RỘN'}]);
   assert.deepEqual(queries[1].select.delayPredictions.orderBy,[{predictionTimestamp:'desc'},{id:'desc'}]);
   assert.deepEqual(queries[0].where,{isActive:true,roles:{some:{role:{code:'CBTD'}}}});
-  assert.deepEqual(queries[1].where.currentStatus.in,['RECEIVED','CHECKED','SUPPLEMENT_REQUIRED','PENDING_APPRAISAL','WAITING_HEAD_OFFICE']);
+  assert.deepEqual(queries[1].where.currentStatus.in,['RECEIVED','CHECKED','SUPPLEMENT_REQUIRED','PENDING_APPRAISAL']);
   assert.deepEqual(queries[2].where,{assignedTo:'officer',status:{in:['ASSIGNED','RETURNED']}});
 });
 

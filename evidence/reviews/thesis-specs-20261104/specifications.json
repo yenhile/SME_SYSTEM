@@ -1,0 +1,1359 @@
+{
+  "date": "04/11/2026",
+  "original": 28,
+  "adjusted": 28,
+  "added": 11,
+  "total": 39,
+  "specs": [
+    {
+      "id": "UC01",
+      "title": "Đăng nhập",
+      "section": "3.8.1",
+      "actor": "CBTD, Thẩm quyền, Quản lý chi nhánh, Quản trị viên",
+      "finding": "Thiếu nhánh tài khoản bị khóa, giới hạn đăng nhập sai và điều kiện có vai trò hợp lệ; hậu điều kiện chỉ ghi đăng nhập thành công.",
+      "pre": "Có tài khoản nội bộ đang hoạt động, được cấp ít nhất một vai trò; truy cập màn hình đăng nhập nội bộ.",
+      "post": "Tạo phiên đăng nhập và mở không gian làm việc theo vai trò được cấp đang chọn.",
+      "flow": [
+        [
+          "Truy cập hệ thống.",
+          "Hiển thị tên đăng nhập và mật khẩu."
+        ],
+        [
+          "Nhập thông tin, chọn Đăng nhập.",
+          "Kiểm tra tài khoản, trạng thái hoạt động, mật khẩu và giới hạn thử sai."
+        ],
+        [
+          "Đăng nhập hợp lệ.",
+          "Nạp các vai trò được cấp và mở chức năng tương ứng."
+        ]
+      ],
+      "alt": "Tài khoản nhiều vai trò sử dụng UC39 để chuyển vai trò làm việc. Khi phiên hết hạn, đăng nhập lại.",
+      "errors": "Sai thông tin: báo lỗi và cho nhập lại. Tài khoản bị khóa: hướng dẫn liên hệ Quản trị. Thử sai quá nhiều: yêu cầu chờ. Không có vai trò: không mở workspace. Lỗi kết nối: báo lỗi, không kết luận tài khoản bị khóa.",
+      "rules": "Phiên nội bộ và phiên doanh nghiệp tách biệt. Đăng nhập không tự cấp thêm quyền.",
+      "acceptance": "Tài khoản hợp lệ vào đúng workspace; tài khoản khóa, sai mật khẩu hoặc không có vai trò không truy cập được chức năng nghiệp vụ.",
+      "refs": [
+        "AUTH"
+      ]
+    },
+    {
+      "id": "UC02",
+      "title": "Kiểm tra checklist",
+      "section": "3.8.2.2",
+      "actor": "CBTD đang được phân công",
+      "finding": "Thiếu trạng thái ASSIGNED và ràng buộc kết quả thuộc đúng lần gửi; nút kiểm tra một mục chưa tự thực hiện trả sửa cả đề nghị.",
+      "pre": "Đề nghị Portal V2 ở ASSIGNED, có lần gửi chính thức; CBTD là người phụ trách và không bị chặn do COI.",
+      "post": "Lưu kết quả từng mục trên đúng lần gửi; chưa tạo hồ sơ vay và chưa khởi động SLA khoản vay.",
+      "flow": [
+        [
+          "Mở đề nghị được giao trong Chờ tiếp nhận.",
+          "Hiển thị dữ liệu, tài liệu và checklist của lần gửi chính thức gần nhất."
+        ],
+        [
+          "Đối chiếu từng mục và chọn Kiểm tra đạt.",
+          "Ghi nhận mục đã đạt, người kiểm tra và thời điểm."
+        ]
+      ],
+      "alt": "Mục chưa đạt: nhập lý do rồi chọn Yêu cầu sửa mục này; hệ thống lưu Cần chỉnh sửa. CBTD tiếp tục rà soát và dùng UC03 để gửi danh sách tổng hợp.",
+      "errors": "Đề nghị không còn ASSIGNED, đã đổi người phụ trách hoặc lần gửi/phiên bản đã đổi: chặn lưu và yêu cầu tải lại. Thiếu tài liệu hoặc thiếu lý do sửa: báo lỗi.",
+      "rules": "Đủ dữ liệu theo khai báo không đồng nghĩa CBTD đã kiểm tra đạt. Không dùng bản nháp doanh nghiệp đang sửa làm căn cứ.",
+      "acceptance": "Kết quả gắn đúng mục và lần gửi; không tiếp nhận khi còn mục bắt buộc chưa đạt.",
+      "refs": [
+        "INTAKE"
+      ]
+    },
+    {
+      "id": "UC03",
+      "title": "Trả sửa đề nghị",
+      "section": "3.8.2.3",
+      "actor": "CBTD đang được phân công",
+      "finding": "Tiền điều kiện quá hẹp: có thể trả sửa dữ liệu dù không có mục tài liệu chưa đạt; thiếu hướng không đồng ý yêu cầu xin sửa của doanh nghiệp.",
+      "pre": "Đề nghị ASSIGNED; có ít nhất một mục cần sửa hoặc nội dung dữ liệu cần chỉnh sửa. Nếu DN đã xin sửa thì xử lý qua quyết định xin sửa.",
+      "post": "Nếu trả sửa/đồng ý xin sửa: đề nghị RETURNED, DN được sửa và gửi lại cùng mã; giữ lịch sử lần gửi cũ.",
+      "flow": [
+        [
+          "Mở chi tiết đề nghị và tổng hợp các mục cần sửa.",
+          "Hiển thị kết quả checklist và thông tin cần chỉnh sửa."
+        ],
+        [
+          "Nhập nội dung sửa dữ liệu nếu có, chọn Trả đề nghị để chỉnh sửa và xác nhận.",
+          "Lưu danh sách trả sửa, chuyển RETURNED và cho DN xem yêu cầu."
+        ]
+      ],
+      "alt": "Có yêu cầu xin sửa: nhập lý do, chọn Đồng ý và trả sửa; hoặc Không đồng ý trả sửa, giữ ASSIGNED và lưu lý do để DN xem.",
+      "errors": "Không có nội dung cần sửa: không cho trả. Có yêu cầu xin sửa đang chờ: phải xử lý yêu cầu đó trước. Lần gửi/phiên bản đổi hoặc không còn phụ trách: yêu cầu tải lại.",
+      "rules": "Đây là chỉnh sửa trước tiếp nhận, khác bổ sung chứng từ sau tiếp nhận. Không tự thay MST/chủ thể của đề nghị đã gửi.",
+      "acceptance": "Trả sửa dữ liệu đơn thuần được xử lý; cả hai hướng đồng ý/không đồng ý xin sửa đều có kết quả và lịch sử.",
+      "refs": [
+        "INTAKE"
+      ]
+    },
+    {
+      "id": "UC04",
+      "title": "Đối soát công ty",
+      "section": "3.8.2.4",
+      "actor": "CBTD đang được phân công",
+      "finding": "Thiếu ràng buộc bản gửi và phiên bản Company; chưa nói rõ gửi đối soát không cập nhật Company và không đổi trạng thái đề nghị thành hồ sơ vay.",
+      "pre": "Đề nghị ASSIGNED; MST đã tồn tại, thông tin bản gửi khác Company; chưa có đối soát Company đang mở.",
+      "post": "Tạo yêu cầu đối soát chờ QLCN, có căn cứ và dữ liệu trước/sau đề xuất; Company giữ nguyên, tiếp nhận tiếp tục bị chặn.",
+      "flow": [
+        [
+          "Mở đề nghị, chọn Đối chiếu dữ liệu Company.",
+          "Hiển thị khác biệt giữa bản đã gửi và Company hiện hữu."
+        ],
+        [
+          "Nhập căn cứ và chọn Gửi đối soát Company.",
+          "Lưu đối soát gắn với lần gửi, thông báo QLCN."
+        ]
+      ],
+      "alt": "Thông tin đã khớp: không cần lập đối soát; tiếp tục UC05 sau khi đủ các điều kiện khác.",
+      "errors": "Company/lần gửi thay đổi: tải lại so sánh. Đã có đối soát mở hoặc thiếu căn cứ: báo lỗi, không tạo trùng.",
+      "rules": "CBTD không tự ghi đè Company dùng chung. Việc chấp thuận thuộc UC21.",
+      "acceptance": "Gửi đối soát không đổi Company; QLCN có thể xem đúng căn cứ và phiên bản dữ liệu cần xử lý.",
+      "refs": [
+        "INTAKE",
+        "COMPANY"
+      ]
+    },
+    {
+      "id": "UC05",
+      "title": "Tiếp nhận đề nghị",
+      "section": "3.8.2.5",
+      "actor": "CBTD đang được phân công",
+      "finding": "Thiếu xác nhận kỳ/nguồn tài chính khi liên kết Company, đối soát còn mở, tính duy nhất của Loan và thời điểm bắt đầu SLA.",
+      "pre": "Đề nghị ASSIGNED; toàn bộ checklist bắt buộc đạt trên đúng lần gửi; không còn xin sửa, đối soát/vướng mắc hoặc COI chặn; số tiền thuộc phạm vi chi nhánh.",
+      "post": "Tạo duy nhất một Loan ở TIEP_NHAN/RECEIVED, liên kết đề nghị ACCEPTED; chụp thông tin Company, lưu người tiếp nhận và bắt đầu SLA khoản vay.",
+      "flow": [
+        [
+          "Mở đề nghị đã kiểm tra đạt, chọn Kiểm tra doanh nghiệp để tiếp nhận.",
+          "Kiểm tra MST và điều kiện tiếp nhận."
+        ],
+        [
+          "Kiểm tra kết quả, xác nhận liên kết Company hiện hữu và đối chiếu kỳ/nguồn tài chính nếu có.",
+          "Giữ dữ liệu Company hiện hữu; chỉ cho tiếp tục khi tương thích."
+        ],
+        [
+          "Chọn Tiếp nhận thành hồ sơ vay và xác nhận.",
+          "Tạo Loan, chứng từ và lịch sử đầu tiên trong cùng giao dịch; mở chi tiết Loan."
+        ]
+      ],
+      "alt": "MST chưa có: tạo Company từ dữ liệu đã kiểm tra. Company khác bản khai: dùng UC04/UC21 trước.",
+      "errors": "Chưa đạt checklist, đang xin sửa, còn đối soát mở, không tương thích tài chính hoặc tệp không khớp bản gửi: chặn và nêu lý do. Phiên bản đổi: tải lại. Gửi lại thao tác đã tiếp nhận hợp lệ: trả Loan đã có, không tạo thêm.",
+      "rules": "Gửi đề nghị Portal chưa tạo Loan và chưa chạy SLA. Tiếp nhận không phải phê duyệt tín dụng; không tự ghi đè Company.",
+      "acceptance": "Một đề nghị chỉ liên kết một Loan; thời điểm tiếp nhận khởi tạo lịch sử/SLA; Company và hồ sơ cũ được bảo toàn.",
+      "refs": [
+        "PORTAL",
+        "INTAKE",
+        "COMPANY",
+        "SLA"
+      ]
+    },
+    {
+      "id": "UC06",
+      "title": "Yêu cầu bổ sung",
+      "section": "3.8.3.2",
+      "actor": "CBTD phụ trách ở Tiếp nhận; Thẩm quyền ở Thẩm định",
+      "finding": "Chỉ mô tả CBTD, bỏ sót Thẩm quyền ở công đoạn sau; thiếu đầu ra hủy cờ đủ hồ sơ, tăng số lần bổ sung và phân biệt PA1 với SLA cũ.",
+      "pre": "Loan chưa kết thúc, không có đợt bổ sung PENDING; actor đúng công đoạn. Luồng bổ sung Portal yêu cầu Loan liên kết đề nghị ACCEPTED.",
+      "post": "Tạo đợt PENDING, Loan thành SUPPLEMENT_REQUIRED, bỏ xác nhận đủ hồ sơ và tăng số đợt bổ sung; mở thời gian chờ DN theo chính sách SLA của công đoạn.",
+      "flow": [
+        [
+          "Mở chi tiết Loan, thẻ Yêu cầu bổ sung, chọn Tạo yêu cầu bổ sung theo danh mục.",
+          "Hiển thị nội dung và các mục cần bổ sung."
+        ],
+        [
+          "Nhập thông điệp, loại tài liệu, kỳ nếu cần và lý do từng mục; gửi yêu cầu.",
+          "Kiểm tra dữ liệu, tạo đợt bổ sung và tạm dừng SLA chờ DN."
+        ]
+      ],
+      "alt": "Thêm nhiều mục trong cùng một đợt; mỗi mục chỉ rõ loại/kỳ và lý do.",
+      "errors": "Mục trùng, thiếu lý do, sai danh mục, đã có đợt đang chờ hoặc sai vai trò/công đoạn: không tạo đợt. COI chặn: phải xử lý điều phối trước.",
+      "rules": "Không đồng nhất trả sửa trước tiếp nhận với bổ sung sau tiếp nhận. Nhắc ngày 5/quá hạn ngày 10 theo lịch VN; không tự đóng Loan.",
+      "acceptance": "CBTD và Thẩm quyền đúng công đoạn tạo được yêu cầu; không nhân đôi đợt khi gửi lặp hợp lệ; cờ đủ hồ sơ bị bỏ.",
+      "refs": [
+        "SUPP",
+        "POLICY",
+        "DEADLINE",
+        "SUPP_MAIN"
+      ]
+    },
+    {
+      "id": "UC07",
+      "title": "Giải quyết bổ sung",
+      "section": "3.8.3.3",
+      "actor": "CBTD phụ trách ở Tiếp nhận; Thẩm quyền ở Thẩm định",
+      "finding": "Sai nếu hiểu chỉ lúc hoàn tất mới chạy lại SLA PA1: PA1 kết thúc chờ DN ngay khi DN gửi đủ; thiếu trạng thái khôi phục cụ thể và nhánh trả sửa mở lại khoảng chờ.",
+      "pre": "Đợt bổ sung PENDING; DN đã gửi tài liệu; actor có quyền ở công đoạn hiện tại; Loan chưa kết thúc.",
+      "post": "Khi mọi mục đạt: đợt RESOLVED; Loan về RECEIVED nếu ở Tiếp nhận, PENDING_APPRAISAL nếu ở Thẩm định. Không tự xác nhận lại đủ chứng từ.",
+      "flow": [
+        [
+          "Mở yêu cầu bổ sung.",
+          "Hiển thị các tệp đã gửi và trạng thái từng mục."
+        ],
+        [
+          "Đối chiếu tài liệu, chọn Chấp nhận mục cho từng mục đạt.",
+          "Lưu kết quả kiểm tra."
+        ],
+        [
+          "Khi tất cả mục đã chấp nhận, chọn Hoàn tất yêu cầu & Chạy lại SLA.",
+          "Đóng đợt bổ sung, khôi phục trạng thái theo công đoạn."
+        ]
+      ],
+      "alt": "Tệp chưa đạt: ghi thông điệp, chọn Yêu cầu thay thế. Sau khi kiểm tra xong các mục đã gửi, chọn Gửi danh sách sửa cho doanh nghiệp; PA1 mở lại thời gian chờ DN.",
+      "errors": "Còn mục chưa đạt: không hoàn tất. Còn mục SUBMITTED chưa kiểm tra: không gửi danh sách sửa. Phiên bản đổi, sai người/công đoạn hoặc Loan kết thúc: chặn thao tác.",
+      "rules": "PA1 chạy lại khi DN chính thức gửi đủ (UC36), không đợi ngân hàng hoàn tất kiểm tra. SLA cũ giữ cách đóng thời gian dừng khi giải quyết. Không trừ thời gian dừng hai lần.",
+      "acceptance": "Đợt chỉ hoàn tất khi mọi mục đạt; PA1 tính thời gian kiểm tra của ngân hàng, giữ các khoảng chờ DN; Loan về đúng trạng thái.",
+      "refs": [
+        "SUPP",
+        "SLA",
+        "SUPP_MAIN"
+      ]
+    },
+    {
+      "id": "UC08",
+      "title": "Xác nhận đủ hồ sơ",
+      "section": "3.8.3.4",
+      "actor": "CBTD đang phụ trách Loan",
+      "finding": "Thiếu đầu ra isDocumentComplete và phân biệt với checklist Portal; thiếu nhánh hủy xác nhận hiện có ở API, cần tránh hứa có nút UI chưa xác minh.",
+      "pre": "Loan ở TIEP_NHAN, chưa kết thúc, không ở SUPPLEMENT_REQUIRED và không có COI chặn; CBTD là người phụ trách.",
+      "post": "Loan CHECKED, isDocumentComplete=true; vẫn ở Tiếp nhận, chưa chuyển Thẩm định.",
+      "flow": [
+        [
+          "Mở Loan, xem Danh mục chứng từ và các đợt bổ sung.",
+          "Hiển thị tài liệu ban đầu và tài liệu bổ sung hiện hành đã duyệt."
+        ],
+        [
+          "Rà soát thực tế và chọn Xác nhận hồ sơ đầy đủ.",
+          "Ghi CHECKED và xác nhận đủ chứng từ."
+        ]
+      ],
+      "alt": "Nếu cần thêm chứng từ sau đó, dùng UC06; hệ thống bỏ cờ đủ hồ sơ. API có hỗ trợ hủy xác nhận để về RECEIVED; vị trí nút hủy trên UI chưa được xác minh trong đợt này.",
+      "errors": "Đang chờ bổ sung, sai người phụ trách, sai công đoạn, COI hoặc đã kết thúc: không cho xác nhận.",
+      "rules": "Đây là xác nhận nghiệp vụ của CBTD; khác kiểm tra đủ tệp tự động và khác checklist tiếp nhận Portal. Chưa có hạn mức/tờ trình thì chưa chuyển Thẩm định.",
+      "acceptance": "Xác nhận đổi đúng cờ và trạng thái; tạo yêu cầu bổ sung mới làm mất cờ đủ hồ sơ.",
+      "refs": [
+        "LOAN",
+        "SUPP"
+      ]
+    },
+    {
+      "id": "UC09",
+      "title": "Xác định hạn mức",
+      "section": "3.8.4",
+      "actor": "CBTD đang phụ trách Loan",
+      "finding": "Thiếu số dương/hợp lệ; cần phân biệt officialAmount do CBTD chốt để trình với approvedAmount do Thẩm quyền quyết định.",
+      "pre": "Loan TIEP_NHAN, chưa kết thúc, không chờ bổ sung/không bị COI chặn; actor là CBTD phụ trách.",
+      "post": "Lưu officialAmount; chưa phát sinh quyết định phê duyệt và chưa chuyển công đoạn.",
+      "flow": [
+        [
+          "Mở Loan, chọn Sửa ở Hạn mức chính thức.",
+          "Hiển thị ô nhập tiền VNĐ."
+        ],
+        [
+          "Nhập hạn mức và chọn Lưu hạn mức.",
+          "Kiểm tra và cập nhật officialAmount."
+        ]
+      ],
+      "alt": "Chỉnh lại hạn mức khi còn đủ điều kiện ở Tiếp nhận.",
+      "errors": "Không phải số hữu hạn, số tiền ≤0 hoặc >10 tỷ với Loan theo chính sách chi nhánh mới: báo lỗi. Đã sang công đoạn khác hoặc chờ bổ sung: chặn.",
+      "rules": "Phạm vi đặc tả là Loan theo chính sách chi nhánh mới, tối đa 10 tỷ. Không mở thêm luồng cấp trên cho đề nghị mới vượt trần.",
+      "acceptance": "Lưu được 0<officialAmount≤10 tỷ; chưa có approvedAmount chỉ vì CBTD lưu hạn mức.",
+      "refs": [
+        "LOAN",
+        "POLICY"
+      ]
+    },
+    {
+      "id": "UC10",
+      "title": "Lưu nháp tờ trình",
+      "section": "3.8.5.2",
+      "actor": "CBTD đang phụ trách Loan",
+      "finding": "Thiếu công đoạn được sửa, bản đã trình bị khóa và phân biệt lưu nháp với đủ điều kiện trình; hậu điều kiện cũ dễ hiểu cứ lưu là trình được.",
+      "pre": "Loan theo quy trình tờ trình mới, chưa kết thúc, không có COI chặn. Tờ trình chưa có/đang DRAFT ở Tiếp nhận hoặc CLARIFICATION_REQUIRED khi được yêu cầu làm rõ.",
+      "post": "Bản nháp được lưu, tăng phiên bản sửa; chưa tạo bản trình bất biến, chưa chuyển công đoạn.",
+      "flow": [
+        [
+          "Mở khung Tờ trình tín dụng.",
+          "Hiển thị nội dung nháp hoặc biểu mẫu trống gồm 8 phần."
+        ],
+        [
+          "Nhập nội dung và chọn Lưu nháp tờ trình.",
+          "Kiểm tra quyền/phiên bản, lưu nháp và thông báo."
+        ]
+      ],
+      "alt": "Đang làm rõ: chỉnh theo nội dung yêu cầu và lưu; các bản đã trình trước đó giữ nguyên.",
+      "errors": "Bản đã SUBMITTED/DECIDED hoặc không được mở sửa: chặn. Tờ trình đổi ở nơi khác: tải lại. Nội dung sai cấu trúc hoặc phần vượt 10.000 ký tự: báo lỗi.",
+      "rules": "Lưu nháp được phép chưa đầy đủ; trình phải qua kiểm tra riêng UC11. Việc chỉ xem một hồ sơ chưa có tờ trình không tự tạo bản ghi nháp.",
+      "acceptance": "Lưu và mở lại đúng nháp; lưu nháp không tạo bản đã trình, không reset SLA và không sửa bản đã trình.",
+      "refs": [
+        "APPRAISAL"
+      ]
+    },
+    {
+      "id": "UC11",
+      "title": "Trình tờ trình",
+      "section": "3.8.5.3",
+      "actor": "CBTD đang phụ trách Loan",
+      "finding": "Gộp hậu điều kiện lần đầu và trình lại, dễ hiểu trình lại tạo công đoạn Thẩm định mới; thiếu quy tắc phiên bản n và căn cứ bất biến.",
+      "pre": "Nháp đã lưu khớp nội dung hiển thị, đủ 7 phần phân tích/kết luận bắt buộc (điều kiện đề xuất có thể trống); có officialAmount hợp lệ, không còn bổ sung mở. Lần đầu Loan CHECKED; trình lại phải được yêu cầu làm rõ.",
+      "post": "Tờ trình SUBMITTED, tạo phiên bản bất biến số n. Lần đầu chuyển TIEP_NHAN/CHECKED sang THAM_DINH/PENDING_APPRAISAL; trình lại giữ công đoạn và thời gian đã chạy.",
+      "flow": [
+        [
+          "Mở tờ trình đã lưu và rà soát.",
+          "Kiểm tra nháp và điều kiện trình."
+        ],
+        [
+          "Chọn Trình tờ trình.",
+          "Chốt nội dung, snapshot căn cứ và dấu kiểm tra toàn vẹn; tạo bản n."
+        ],
+        [
+          "Xem kết quả.",
+          "Thông báo Thẩm quyền; lần đầu đóng lịch sử Tiếp nhận, mở Thẩm định và gọi dự báo nếu tương thích."
+        ]
+      ],
+      "alt": "Sau yêu cầu làm rõ: lưu nháp rồi trình bản n+1, giữ nguyên toàn bộ bản cũ; không tạo lại công đoạn Thẩm định.",
+      "errors": "Chưa lưu nháp, thiếu nội dung, thiếu hạn mức, chưa đủ chứng từ, còn bổ sung, tệp căn cứ không đọc được/đã đổi hoặc phiên bản nháp đổi: không trình.",
+      "rules": "Làm rõ nội bộ không dừng SLA. ML lỗi hoặc không tương thích PA1 không làm mất kết quả trình đã hoàn thành.",
+      "acceptance": "Lần đầu chỉ tạo một lần chuyển công đoạn; trình lại tăng phiên bản, không reset SLA và không ghi đè bản trước.",
+      "refs": [
+        "APPRAISAL",
+        "WORKFLOW",
+        "ML"
+      ]
+    },
+    {
+      "id": "UC12",
+      "title": "Tra cứu hồ sơ vay",
+      "section": "3.8.6",
+      "actor": "CBTD",
+      "finding": "Thiếu ràng buộc quyền ở chi tiết và tải tệp, cùng nguyên tắc xem Loan đã kết thúc; cần phân biệt danh sách Loan với đề nghị Chờ tiếp nhận.",
+      "pre": "Đăng nhập nội bộ ở vai trò CBTD; chỉ được xem Loan thuộc phạm vi phụ trách.",
+      "post": "Hiển thị kết quả tìm kiếm/chi tiết phù hợp; dữ liệu nghiệp vụ không thay đổi.",
+      "flow": [
+        [
+          "Mở Danh sách hồ sơ.",
+          "Hiển thị các Loan trong phạm vi vai trò."
+        ],
+        [
+          "Nhập mã Loan, tên DN hoặc MST, chọn Tìm; có thể lọc công đoạn/trạng thái.",
+          "Trả các kết quả phù hợp trong phạm vi quyền."
+        ],
+        [
+          "Chọn Chi tiết.",
+          "Hiển thị dữ liệu, chứng từ, lịch sử, SLA và tờ trình được phép xem."
+        ]
+      ],
+      "alt": "Chuyển giữa Kanban và bảng theo giao diện; xem Loan đã hoàn tất ở chế độ chỉ đọc. Đề nghị chưa tiếp nhận tra cứu tại Chờ tiếp nhận.",
+      "errors": "Không có kết quả: hiển thị danh sách trống. Không có quyền với mã Loan/tệp hoặc đã điều chuyển: từ chối truy cập. Lỗi tải: báo lỗi và cho thử lại.",
+      "rules": "Biết mã Loan hay URL tải tệp không thay thế quyền truy cập. Thẩm quyền xem hồ sơ từ Thẩm định qua UC13; QLCN giám sát qua UC22–UC23.",
+      "acceptance": "Bộ lọc không làm lộ hồ sơ ngoài quyền; mở chi tiết/tệp trái quyền bị chặn; Loan kết thúc không có thao tác ghi.",
+      "refs": [
+        "LOAN",
+        "ACCESS",
+        "UI_LOAN"
+      ]
+    },
+    {
+      "id": "UC13",
+      "title": "Xem xét tờ trình",
+      "section": "3.8.7.2",
+      "actor": "Thẩm quyền",
+      "finding": "Nhánh Chạy lại AI đang khẳng định luôn có rủi ro/xác suất; thiếu xử lý chưa có tờ trình, phiên bản mới nhất và PA1 không tương thích.",
+      "pre": "Vai trò Thẩm quyền; được truy cập Loan từ Thẩm định trở đi. Loan còn xử lý nếu muốn thực hiện quyết định/làm rõ.",
+      "post": "Hiển thị tờ trình, các bản đã trình và căn cứ được phép xem; chỉ xem không tạo quyết định.",
+      "flow": [
+        [
+          "Mở Thẩm định & phê duyệt, chọn Chi tiết.",
+          "Hiển thị Loan, chứng từ, SLA và tờ trình chỉ đọc."
+        ],
+        [
+          "Xem bản đã trình mới nhất, lịch sử và tài liệu liên quan.",
+          "Cung cấp dữ liệu để xem xét; thể hiện điều kiện độc lập và khả năng thao tác."
+        ]
+      ],
+      "alt": "Xem bản cũ để đối chiếu nhưng quyết định phải trên bản trình mới nhất hợp lệ. Có thể Chạy lại AI khi được phép và dữ liệu tương thích; PA1 không tương thích thì không sinh xác suất.",
+      "errors": "Chưa có tờ trình: hiển thị chưa có dữ liệu, không tự tạo bản nháp. Không độc lập: vẫn xem theo quyền, chặn quyết định/làm rõ. Dịch vụ ML lỗi: báo lỗi, không bịa kết quả.",
+      "rules": "Thẩm quyền không sửa thay phân tích của CBTD. Dự báo là nguy cơ trễ SLA, không phải mức an toàn tín dụng.",
+      "acceptance": "Xem được phiên bản và lịch sử; không độc lập không quyết định; PA1 không bị hiển thị như đã dự báo thành công.",
+      "refs": [
+        "APPRAISAL",
+        "ML",
+        "UI_LOAN",
+        "REPORT_RULES"
+      ]
+    },
+    {
+      "id": "UC14",
+      "title": "Yêu cầu làm rõ tờ trình",
+      "section": "3.8.7.3",
+      "actor": "Thẩm quyền độc lập",
+      "finding": "Thiếu điều kiện Loan ở Thẩm định, nội dung bắt buộc và hậu điều kiện SLA/công đoạn; cần đủ ba tiêu chí độc lập.",
+      "pre": "Loan THAM_DINH chưa kết thúc, không bị COI chặn; tờ trình SUBMITTED; actor không phải người phụ trách, người tiếp nhận ban đầu hoặc người từng lưu/trình tờ trình.",
+      "post": "Tờ trình CLARIFICATION_REQUIRED, lưu nội dung và thông báo CBTD; giữ công đoạn Loan, SLA tiếp tục chạy.",
+      "flow": [
+        [
+          "Mở Loan và xem bản đã trình.",
+          "Hiển thị dữ liệu chỉ đọc và ô làm rõ."
+        ],
+        [
+          "Nhập nội dung cụ thể, chọn Yêu cầu làm rõ tờ trình.",
+          "Kiểm tra độc lập/phiên bản, lưu yêu cầu và thông báo CBTD."
+        ]
+      ],
+      "alt": "CBTD giải trình bằng UC10 rồi UC11 để tạo bản n+1; Thẩm quyền xem lại trước khi quyết định.",
+      "errors": "Nội dung trống hoặc >4.000 ký tự, tờ trình không còn SUBMITTED, phiên bản đổi, sai công đoạn hoặc không độc lập: chặn.",
+      "rules": "Làm rõ là trao đổi nội bộ, không chuyển Loan trở về Tiếp nhận và không mở thời gian chờ DN.",
+      "acceptance": "Đúng actor gửi được yêu cầu có nội dung; Loan không đổi công đoạn/SLA; bản đã trình trước được bảo toàn.",
+      "refs": [
+        "APPRAISAL",
+        "REPORT_RULES"
+      ]
+    },
+    {
+      "id": "UC15",
+      "title": "Phê duyệt",
+      "section": "3.8.8.2",
+      "actor": "Thẩm quyền độc lập",
+      "finding": "Điều kiện Hồ sơ đã có tờ trình chưa đủ: phải SUBMITTED, đúng bản mới nhất, căn cứ còn nguyên và không có bổ sung/làm rõ; thiếu khóa toàn bộ sau quyết định.",
+      "pre": "Loan theo chính sách mới ở THAM_DINH/PENDING_APPRAISAL, chưa kết thúc; tờ trình SUBMITTED mới nhất; không có bổ sung/làm rõ hoặc COI chặn. Actor độc lập ba tiêu chí như UC14.",
+      "post": "Loan HOAN_TAT/APPROVED, lưu số tiền/lãi suất, người và thời điểm quyết định; tờ trình DECIDED, đóng lịch sử/SLA; Loan chỉ đọc.",
+      "flow": [
+        [
+          "Đọc bản đã trình mới nhất và chọn Phê duyệt Khoản vay.",
+          "Hiển thị form số tiền, lãi suất."
+        ],
+        [
+          "Nhập 0<số tiền≤officialAmount và 0≤lãi suất≤100%, xác nhận.",
+          "Kiểm tra quyền, phiên bản và toàn vẹn căn cứ; ghi quyết định duy nhất trong giao dịch."
+        ],
+        [
+          "Xem kết quả.",
+          "Hiển thị phê duyệt; đề nghị điều phối đang chờ hết hiệu lực."
+        ]
+      ],
+      "alt": "Cần giải trình thêm: dùng UC14 trước. Không đủ điều kiện tín dụng: dùng UC16.",
+      "errors": "Số tiền/lãi suất sai: báo lỗi. Bản tờ trình/căn cứ đã đổi, còn bổ sung/làm rõ hoặc không độc lập: không duyệt. Loan đã quyết định bởi phiên khác: không ghi quyết định thứ hai.",
+      "rules": "Phê duyệt không đồng nghĩa giải ngân. Portal chỉ công khai trạng thái được phép, không công khai số tiền/lãi suất duyệt và ghi chú nội bộ.",
+      "acceptance": "Chỉ đúng bản hợp lệ được quyết định; hai thao tác cạnh tranh chỉ một quyết định thành công; mọi ghi nghiệp vụ sau kết thúc bị chặn.",
+      "refs": [
+        "WORKFLOW",
+        "APPRAISAL",
+        "TRACKING",
+        "REPORT_RULES"
+      ]
+    },
+    {
+      "id": "UC16",
+      "title": "Từ chối",
+      "section": "3.8.8.3",
+      "actor": "Thẩm quyền độc lập",
+      "finding": "Thiếu đúng bản tờ trình, căn cứ/bổ sung/làm rõ, mã lý do hợp lệ và tách lý do công khai khỏi giải trình nội bộ; thiếu kết quả khóa Loan.",
+      "pre": "Giống UC15 về công đoạn, tờ trình SUBMITTED mới nhất, không bổ sung/làm rõ hoặc COI chặn và độc lập ba tiêu chí.",
+      "post": "Loan HOAN_TAT/REJECTED; lưu mã, giải trình, người/thời điểm; tờ trình DECIDED, đóng lịch sử/SLA và khóa nghiệp vụ.",
+      "flow": [
+        [
+          "Đọc bản trình mới nhất, chọn Từ chối.",
+          "Hiển thị danh mục TC01–TC05 và ghi chú giải trình."
+        ],
+        [
+          "Chọn mã hợp lệ, nhập giải trình và xác nhận.",
+          "Kiểm tra quyền, bản trình/căn cứ; lưu quyết định duy nhất và kết thúc Loan."
+        ]
+      ],
+      "alt": "Cần làm rõ trước: dùng UC14. Đóng vì quá hạn bổ sung do QLCN thực hiện qua UC24, không dùng thao tác từ chối để thay quyền đóng quá hạn.",
+      "errors": "Mã ngoài TC01–TC05, giải trình trống, bản/căn cứ đổi, còn bổ sung/làm rõ, không độc lập hoặc Loan kết thúc: không ghi quyết định.",
+      "rules": "TC01 pháp lý; TC02 tài chính; TC03 phương án; TC04 bảo đảm; TC05 quá hạn bổ sung. Portal nhận mã/nhãn công khai, không nhận giải trình nội bộ.",
+      "acceptance": "Lưu đúng mã và giải trình; Portal không lộ nội dung nội bộ; không có quyết định thứ hai trên Loan đã kết thúc.",
+      "refs": [
+        "WORKFLOW",
+        "APPRAISAL",
+        "TRACKING",
+        "REPORT_RULES"
+      ]
+    },
+    {
+      "id": "UC17",
+      "title": "Phân công cán bộ tín dụng",
+      "section": "3.8.9.2",
+      "actor": "Quản lý chi nhánh",
+      "finding": "Thiếu điều kiện CBTD nhận đang hoạt động và cấm tự phân công; thiếu lịch sử bàn giao/phiên bản, dễ nhầm phân công là tạo Loan.",
+      "pre": "Đề nghị đã SUBMITTED, chưa ACCEPTED, chưa có CBTD; QLCN có quyền; CBTD nhận đang hoạt động và có vai trò CBTD.",
+      "post": "Đề nghị ASSIGNED cho CBTD, ghi lịch sử phân công và thông báo; chưa tạo Loan, chưa bắt đầu SLA khoản vay.",
+      "flow": [
+        [
+          "Mở Chờ tiếp nhận, chọn đề nghị chưa phân công.",
+          "Hiển thị dữ liệu và danh sách CBTD/tải công việc."
+        ],
+        [
+          "Chọn CBTD, nhập ghi chú nếu có, chọn Phân công đề nghị và xác nhận.",
+          "Kiểm tra người nhận và phiên bản; cập nhật phân công, lịch sử và thông báo."
+        ]
+      ],
+      "alt": "Đã có CBTD: dùng nhánh điều chuyển đề nghị ở UC18, phải ghi lý do.",
+      "errors": "Tự giao cho chính mình, người nhận khóa/mất vai trò, đã tiếp nhận hoặc phân công/phiên bản vừa đổi: từ chối và cho tải lại.",
+      "rules": "QLCN phân công công việc; không kiểm tra thay CBTD hoặc quyết định tín dụng.",
+      "acceptance": "Chỉ CBTD hợp lệ nhận được việc; có dấu vết phân công; chưa có Loan/SLA chỉ vì đã phân công.",
+      "refs": [
+        "ASSIGN",
+        "PORTAL"
+      ]
+    },
+    {
+      "id": "UC18",
+      "title": "Điều chuyển hồ sơ",
+      "section": "3.8.9.3",
+      "actor": "Quản lý chi nhánh",
+      "finding": "Thiếu ảnh hưởng đến SLA, người tiếp nhận ban đầu, maker-checker và quyền cán bộ cũ; nhánh đề nghị RETURNED cần giữ RETURNED sau chuyển.",
+      "pre": "Loan chưa kết thúc hoặc đề nghị Portal chưa ACCEPTED đã có người phụ trách; CBTD nhận khác cán bộ cũ và khác QLCN thực hiện, còn hoạt động/có quyền.",
+      "post": "Đổi người phụ trách và lưu lịch sử/thông báo; giữ mã, chứng từ, lịch sử, SLA và người tiếp nhận ban đầu; đề nghị điều phối liên quan được xử lý hết hiệu lực theo trường hợp.",
+      "flow": [
+        [
+          "Mở Điều chuyển & phân công, chọn Điều chuyển tại Loan.",
+          "Hiển thị người nhận và lý do."
+        ],
+        [
+          "Chọn CBTD, nhập lý do tối đa 2.000 ký tự, xác nhận.",
+          "Kiểm tra phiên bản, đổi người phụ trách, lưu bàn giao và thông báo hai bên."
+        ]
+      ],
+      "alt": "Đề nghị trước tiếp nhận: chuyển trong chi tiết Chờ tiếp nhận. Nếu đang RETURNED thì vẫn RETURNED để DN tiếp tục chỉnh sửa.",
+      "errors": "Thiếu lý do, tự giao, trùng người cũ, người nhận không hợp lệ, Loan kết thúc hoặc phiên bản đổi: không chuyển.",
+      "rules": "Điều chuyển không reset/dừng SLA, không xóa lịch sử và không làm người từng lập/tiếp nhận trở thành người quyết định độc lập. CBTD cũ mất quyền mở dữ liệu Loan theo quyền phụ trách.",
+      "acceptance": "CBTD mới nhận quyền; CBTD cũ không tiếp tục ghi; mã, SLA, intakeOfficerId và lịch sử tờ trình được giữ.",
+      "refs": [
+        "ASSIGN",
+        "COMPANY",
+        "POLICY"
+      ]
+    },
+    {
+      "id": "UC19",
+      "title": "Duyệt đề nghị điều phối",
+      "section": "3.8.9.4",
+      "actor": "Quản lý chi nhánh độc lập với người gửi",
+      "finding": "Thiếu cấm tự duyệt bằng đổi vai trò, kiểm tra khả năng tiếp tục thực tế khi từ chối và trường hợp đề nghị hết hiệu lực do đã đổi người/kết thúc.",
+      "pre": "Đề nghị điều phối PENDING; người thực hiện khác người gửi; đối tượng và phân công tại lúc yêu cầu còn hợp lệ.",
+      "post": "Chấp thuận: APPROVED và bàn giao đúng một lần. Không chấp thuận: REJECTED, giữ người hiện tại sau khi xác nhận còn xử lý được; lưu căn cứ và thông báo.",
+      "flow": [
+        [
+          "Mở Đề nghị điều phối chờ quản lý và xem chi tiết.",
+          "Hiển thị lý do, người phụ trách và phiên bản phân công."
+        ],
+        [
+          "Chọn CBTD nhận, nhập căn cứ và Chấp thuận và bàn giao.",
+          "Kiểm tra độc lập, người nhận và phiên bản; bàn giao, ghi kết quả."
+        ]
+      ],
+      "alt": "Không đồng ý: nhập căn cứ, xác nhận CBTD hiện tại còn đủ điều kiện và thực tế tiếp tục xử lý; lưu Không chấp thuận. Nếu không thể xác nhận thì chọn bàn giao.",
+      "errors": "Tự xử lý đề nghị của mình, thiếu căn cứ/xác nhận, người nhận không hợp lệ hoặc phiên bản đổi: chặn. Đối tượng kết thúc/đã đổi người: đề nghị OBSOLETE; không bàn giao theo bản cũ.",
+      "rules": "Đổi vai trò không thay đổi danh tính người gửi. Quyết định phải truy vết được; gửi lặp cùng thao tác không nhân đôi bàn giao.",
+      "acceptance": "Cả chấp thuận/từ chối có căn cứ; tự duyệt bị chặn; đề nghị cũ hết hiệu lực không đổi người xử lý.",
+      "refs": [
+        "COORD",
+        "ASSIGN"
+      ]
+    },
+    {
+      "id": "UC20",
+      "title": "Duyệt báo xung đột lợi ích (COI)",
+      "section": "3.8.9.5",
+      "actor": "Quản lý chi nhánh độc lập với người gửi",
+      "finding": "Không có luồng ngoại lệ; hậu điều kiện Hồ sơ được mở khóa quá chung, có thể hiểu mở mọi quyền cho cán bộ cũ sau bàn giao.",
+      "pre": "Đề nghị COI PENDING; QLCN khác người báo; đối tượng/phân công còn hợp lệ.",
+      "post": "Chấp thuận: bàn giao CBTD mới, người cũ mất quyền theo phân công. Kết luận không có COI: giữ người cũ và gỡ chặn COI tương ứng; lưu căn cứ.",
+      "flow": [
+        [
+          "Mở đề nghị COI được ưu tiên trong hàng chờ.",
+          "Hiển thị lý do và cảnh báo đang chặn thao tác."
+        ],
+        [
+          "Chọn CBTD nhận hợp lệ, nhập căn cứ, chọn Chấp thuận và bàn giao.",
+          "Bàn giao, ghi APPROVED và thông báo kết quả."
+        ]
+      ],
+      "alt": "Kết luận không có xung đột: ghi căn cứ, xác nhận CBTD tiếp tục xử lý được và xác nhận không có COI; hệ thống ghi kết luận NO_CONFLICT_CONFIRMED, REJECTED.",
+      "errors": "Tự quyết đề nghị của mình, thiếu một xác nhận, CBTD cũ không còn hợp lệ hoặc người nhận sai: chặn. Đối tượng đổi người/kết thúc: hết hiệu lực, không bàn giao theo yêu cầu cũ.",
+      "rules": "Không được tự rút đề nghị COI. Không được gỡ chặn chỉ bằng đổi vai trò; các ràng buộc maker-checker khác vẫn giữ nguyên.",
+      "acceptance": "Chỉ một hướng giải quyết có căn cứ kết thúc COI; không cấp lại quyền hồ sơ cho cán bộ cũ đã bàn giao.",
+      "refs": [
+        "COORD",
+        "ASSIGN",
+        "COI_RULES"
+      ]
+    },
+    {
+      "id": "UC21",
+      "title": "Duyệt đối soát công ty",
+      "section": "3.8.9.6",
+      "actor": "Quản lý chi nhánh khác người lập đối soát",
+      "finding": "Thiếu checklist đạt, đúng bản gửi/Company và cấm tự duyệt; ghi chú khối sắp gỡ chưa phân biệt hiện trạng với kế hoạch.",
+      "pre": "Có đối soát Company OPEN; QLCN khác người lập. Khi chấp thuận: đề nghị ASSIGNED, checklist đạt, không có xin sửa chờ, Company và lần gửi khớp căn cứ đối soát.",
+      "post": "Chấp thuận: lưu snapshot Company cho Loan cũ cần bảo toàn, cập nhật Company rồi đóng đối soát. Không chấp thuận: giữ Company và đóng đối soát; chưa tự tiếp nhận.",
+      "flow": [
+        [
+          "Mở đề nghị có đối soát, xem thông tin trước/sau và căn cứ.",
+          "Hiển thị yêu cầu đối soát riêng."
+        ],
+        [
+          "Nhập căn cứ, chọn Xác nhận đối soát và cập nhật Company, xác nhận.",
+          "Kiểm tra độc lập/phiên bản, bảo toàn dữ liệu Loan cũ, cập nhật Company và thông báo CBTD."
+        ]
+      ],
+      "alt": "Không đồng ý: nhập căn cứ, chọn Không chấp thuận đối soát; Company giữ nguyên. CBTD phải kiểm tra lại chênh lệch, chưa được tiếp nhận nếu còn không tương thích.",
+      "errors": "Tự duyệt, Company/lần gửi đã đổi, checklist chưa đạt hoặc đang xin sửa: không chấp thuận. Bản đối soát cũ phải được xử lý và lập lại theo dữ liệu hiện hành.",
+      "rules": "Đối soát là nghiệp vụ riêng, không phải quyết định tín dụng. Source hiện còn luồng vướng mắc; kế hoạch gỡ chức năng chung không có nghĩa đối soát Company đã bị gỡ.",
+      "acceptance": "Chấp thuận không làm thay đổi thông tin đã chốt của Loan cũ; từ chối không làm Company tự tương thích; không tự tạo Loan.",
+      "refs": [
+        "INTAKE",
+        "COMPANY"
+      ]
+    },
+    {
+      "id": "UC22",
+      "title": "Xem cảnh báo xử lý chậm",
+      "section": "3.8.10.2",
+      "actor": "Quản lý chi nhánh; Thẩm quyền trong phạm vi được phép",
+      "finding": "Mô tả chỉ có danh sách nguy cơ nhưng source có cả Loan chưa có dự báo/PA1; thiếu ý nghĩa và thời điểm dự báo, nhánh không tương thích và lỗi ML.",
+      "pre": "Đăng nhập đúng vai trò có Dashboard; Thẩm quyền chỉ thấy Loan từ Thẩm định trở đi.",
+      "post": "Hiển thị cảnh báo/tình trạng dự báo và dữ liệu để ưu tiên công việc, không tự thay đổi quyết định tín dụng.",
+      "flow": [
+        [
+          "Mở Dashboard tổng quan, xem Bảng Cảnh báo Sớm AI.",
+          "Hiển thị Loan, công đoạn, mức nguy cơ, xác suất, nguyên nhân và thời điểm dự báo nếu có."
+        ],
+        [
+          "Chọn Xử lý tại Loan.",
+          "Mở chi tiết theo quyền actor."
+        ]
+      ],
+      "alt": "QLCN chọn Điều phối cán bộ để mở Điều chuyển & phân công. Thẩm quyền có thể chạy lại AI tại chi tiết nếu được phép và tương thích.",
+      "errors": "Không có Loan: danh sách trống. Chưa có dự báo: ghi rõ chưa có. Tiếp nhận dùng PA1: hiển thị Chưa có dự báo tương thích PA1, không trình bày xác suất cũ như có hiệu lực. ML lỗi: báo lỗi, không sinh xác suất giả.",
+      "rules": "ML chỉ dự báo nguy cơ trễ SLA. Chỉ có source không chứng minh mô hình hiệu quả trên dữ liệu thực tế; mô hình hiện dùng dữ liệu tổng hợp.",
+      "acceptance": "Phân biệt AVAILABLE, NONE và INCOMPATIBLE_PA1; không suy từ chưa có dự báo thành không có rủi ro.",
+      "refs": [
+        "DASHBOARD",
+        "ML",
+        "UI_DASH",
+        "DASH_ACCESS",
+        "PRED_STATUS"
+      ]
+    },
+    {
+      "id": "UC23",
+      "title": "Xem báo cáo thống kê",
+      "section": "3.8.10.3",
+      "actor": "Quản lý chi nhánh; Thẩm quyền theo quyền Dashboard hiện có",
+      "finding": "Chưa định nghĩa mẫu số tỷ lệ SLA và tách giờ thực/PA1; dễ gộp hai thước đo và gọi tỷ lệ công đoạn là tỷ lệ hồ sơ.",
+      "pre": "Vai trò được cấp quyền Dashboard; dữ liệu thống kê thuộc phạm vi hệ thống một chi nhánh.",
+      "post": "Hiển thị số liệu tổng hợp, thời gian/điểm nghẽn theo từng chính sách đo; không ghi dữ liệu nghiệp vụ.",
+      "flow": [
+        [
+          "Mở Dashboard tổng quan.",
+          "Hiển thị số Loan đang xử lý, phê duyệt, cảnh báo và tỷ lệ SLA."
+        ],
+        [
+          "Xem Phân tích Điểm nghẽn Quy trình SLA.",
+          "Hiển thị số lượt công đoạn, lượt trễ, thời gian thuần trung bình và đánh giá; tách giờ thực cũ và giờ làm việc PA1."
+        ]
+      ],
+      "alt": "Chưa có lượt công đoạn PA1 kết thúc: thể hiện chưa có tỷ lệ PA1. Theo source, tỷ lệ cũ mặc định 100% khi mẫu số 0; phải đọc cùng số lượt, không coi là bằng chứng hiệu quả thực tế.",
+      "errors": "Không tải được một phần số liệu: hiển thị lỗi, không thay bằng dữ liệu mô phỏng. Không có dữ liệu: hiển thị theo quy ước tương ứng, không tạo số liệu vận hành.",
+      "rules": "Tỷ lệ SLA = số lượt công đoạn kết thúc đúng hạn / tổng lượt công đoạn kết thúc của cùng chính sách. Cảnh báo đỏ tổng quan hiện đếm Loan active từng có dự báo CAO, còn bảng chi tiết dùng dự báo mới nhất; hai số không bảo đảm bằng nhau.",
+      "acceptance": "Hai chính sách không bị cộng chung; số lượt và tỷ lệ được diễn giải đúng; nêu rõ giới hạn bộ đếm cảnh báo hiện hành.",
+      "refs": [
+        "DASHBOARD",
+        "UI_DASH",
+        "DASH_ACCESS",
+        "PRED_STATUS"
+      ]
+    },
+    {
+      "id": "UC24",
+      "title": "Đóng hồ sơ quá hạn",
+      "section": "3.8.11",
+      "actor": "Quản lý chi nhánh độc lập với phụ trách và người tiếp nhận",
+      "finding": "Thiếu cách xác định hạn, đầu ra TC05/EXPIRED và chặn ghi sau đóng; cần phân biệt quá hạn chờ DN với ngân hàng đang kiểm tra.",
+      "pre": "Loan SUPPLEMENT_REQUIRED chưa kết thúc, có đợt PENDING thực sự còn chờ DN và đến hạn; QLCN không là assignedTo/intakeOfficerId, không bị COI chặn.",
+      "post": "Loan HOAN_TAT/CLOSED_TIMEOUT, lưu TC05/lý do/người/thời điểm; đợt bổ sung mở EXPIRED, đóng lịch sử và khoảng dừng; mọi ghi nghiệp vụ bị chặn.",
+      "flow": [
+        [
+          "Mở Dashboard, chọn Loan quá hạn bổ sung.",
+          "Hiển thị chi tiết và điều kiện được đóng."
+        ],
+        [
+          "Chọn Đóng hồ sơ do quá hạn, nhập lý do và xác nhận.",
+          "Kiểm tra lại hạn, bên đang chờ và tính độc lập trong giao dịch; đóng Loan, kết thúc các yêu cầu liên quan."
+        ]
+      ],
+      "alt": "DN đã gửi đủ và ngân hàng đang kiểm tra: tiếp tục UC07, không dùng đóng quá hạn thay cho kiểm tra.",
+      "errors": "Chưa đến hạn, không còn chờ DN, không có lý do, Loan đã kết thúc hoặc actor không độc lập: từ chối. Dữ liệu vừa đổi do DN nộp: kiểm tra lại, không đóng theo màn hình cũ.",
+      "rules": "Mặc định ngày 10 theo ngày lịch VN, mốc cuối tuần chuyển thứ Hai; hạn riêng nếu đã có được ưu tiên. Không tự đóng khi đến ngày 10.",
+      "acceptance": "Chỉ quá hạn thật và còn chờ DN mới đóng được; TC05/CLOSED_TIMEOUT và lịch sử nhất quán; Loan sau đóng chỉ đọc.",
+      "refs": [
+        "WORKFLOW",
+        "DEADLINE",
+        "SUPP"
+      ]
+    },
+    {
+      "id": "UC25",
+      "title": "Thêm người dùng",
+      "section": "3.8.12.2",
+      "actor": "Quản trị viên",
+      "finding": "Thiếu validation mật khẩu/vai trò và ranh giới tài khoản nội bộ; tên menu Liên hệ cá nhân là đúng theo UI hiện tại, không tự đổi tên cho hợp lý hóa.",
+      "pre": "Đăng nhập vai trò ADMIN; có thông tin cán bộ và ít nhất một vai trò nội bộ cần cấp.",
+      "post": "Tạo một tài khoản nội bộ hoạt động và các vai trò được chọn; không tạo tài khoản Portal hoặc tự cấp quyền nghiệp vụ cho Admin.",
+      "flow": [
+        [
+          "Mở Liên hệ cá nhân, chọn Tạo mới liên hệ.",
+          "Hiển thị Tạo tài khoản."
+        ],
+        [
+          "Nhập tên đăng nhập, mật khẩu ban đầu, email, họ tên; chi nhánh/điện thoại nếu có; chọn vai trò và Lưu tài khoản.",
+          "Kiểm tra dữ liệu, tạo tài khoản và hiển thị trong danh sách."
+        ]
+      ],
+      "alt": "Chọn nhiều vai trò cho một tài khoản; sử dụng UC39 khi làm việc.",
+      "errors": "Tên đăng nhập/email trùng, email sai, mật khẩu dưới 8 ký tự, họ tên trống, không có vai trò hoặc vai trò không hợp lệ: không tạo và báo lỗi.",
+      "rules": "Các vai trò nội bộ là CBTD, THAM_QUYEN, QUAN_LY, ADMIN. Quản lý đa chi nhánh nằm ngoài phạm vi một chi nhánh của đề tài.",
+      "acceptance": "Tạo đúng một tài khoản và các quyền được chọn; không tạo khi trùng hoặc thiếu dữ liệu bắt buộc.",
+      "refs": [
+        "USERS",
+        "UI_ADMIN",
+        "DTO_USER"
+      ]
+    },
+    {
+      "id": "UC26",
+      "title": "Sửa người dùng",
+      "section": "3.8.12.3",
+      "actor": "Quản trị viên",
+      "finding": "Thiếu đề nghị Portal đang phụ trách khi gỡ CBTD, danh sách trường không được sửa và tác động thu hồi vai trò tới phiên đang mở.",
+      "pre": "Đăng nhập ADMIN; tài khoản đích tồn tại.",
+      "post": "Cập nhật thông tin/vai trò hợp lệ; các phiên tiếp theo phải tuân quyền mới, không tự bàn giao công việc.",
+      "flow": [
+        [
+          "Mở Liên hệ cá nhân, chọn Sửa / Cấp quyền.",
+          "Hiển thị họ tên, chi nhánh, điện thoại, vai trò và trạng thái hoạt động."
+        ],
+        [
+          "Sửa thông tin/vai trò rồi Lưu tài khoản.",
+          "Kiểm tra ràng buộc, cập nhật trong giao dịch và tải lại danh sách."
+        ]
+      ],
+      "alt": "Cần khóa/mở tài khoản: UC27. Tài khoản đang đăng nhập bị thu hồi vai trò sẽ được nạp lại quyền/chọn vai trò hợp lệ theo UC39.",
+      "errors": "Tự bỏ ADMIN, không chọn vai trò, vai trò sai hoặc gỡ CBTD khi còn Loan chưa hoàn tất/đề nghị ASSIGNED hoặc RETURNED: không lưu, nêu công việc cần bàn giao.",
+      "rules": "Form hiện không sửa username, email hay mật khẩu của tài khoản đã tạo. Đổi người xử lý phải qua QLCN, không tự đổi khi Admin sửa tài khoản.",
+      "acceptance": "Gỡ CBTD bị chặn cho cả Loan và đề nghị Portal chưa bàn giao; thay quyền không vượt nguyên tắc maker-checker.",
+      "refs": [
+        "USERS",
+        "UI_ADMIN",
+        "AUTH_UI"
+      ]
+    },
+    {
+      "id": "UC27",
+      "title": "Khóa và mở khóa tài khoản",
+      "section": "3.8.12.4",
+      "actor": "Quản trị viên",
+      "finding": "Thiếu tác động với phiên đang mở và phân biệt mở khóa với khôi phục quyền/công việc; chưa nêu điều kiện khi mở khóa.",
+      "pre": "Đăng nhập ADMIN; tài khoản đích tồn tại; khóa phải bảo đảm công việc đã bàn giao.",
+      "post": "Lưu isActive=false khi khóa, true khi mở. Tài khoản khóa không sử dụng tiếp API có xác thực; mở khóa không tự cấp lại vai trò hay phân công.",
+      "flow": [
+        [
+          "Mở tài khoản qua Sửa / Cấp quyền.",
+          "Hiển thị Tài khoản hoạt động."
+        ],
+        [
+          "Bỏ chọn để khóa hoặc chọn lại để mở, Lưu tài khoản.",
+          "Kiểm tra điều kiện và cập nhật trạng thái."
+        ]
+      ],
+      "alt": "Nếu còn việc, QLCN điều chuyển xong qua UC18 rồi Admin mới khóa.",
+      "errors": "Tự khóa chính mình hoặc khóa người còn Loan chưa hoàn tất/đề nghị ASSIGNED, RETURNED: từ chối và nêu số việc cần bàn giao. Tài khoản không tồn tại: báo lỗi.",
+      "rules": "Phiên cán bộ khóa bị chặn ở lần xác thực tiếp theo và quay về đăng nhập khi client nạp lại phiên. Mở khóa vẫn cần đăng nhập và vai trò hợp lệ.",
+      "acceptance": "Không bỏ sót công việc trước khóa; tài khoản khóa không tiếp tục ghi bằng phiên cũ; mở khóa không tự thay phân công.",
+      "refs": [
+        "USERS",
+        "AUTH_UI",
+        "ACCESS"
+      ]
+    },
+    {
+      "id": "UC28",
+      "title": "Cấu hình SLA",
+      "section": "3.8.13",
+      "actor": "Quản trị viên",
+      "finding": "Không có ngoại lệ số giờ; thiếu khả năng sửa tên công đoạn và phân biệt cấu hình định mức với kích hoạt PA1/lịch làm việc.",
+      "pre": "Đăng nhập ADMIN; công đoạn cần cấu hình đã tồn tại.",
+      "post": "Lưu tên/standardSlaHours hợp lệ; giá trị mới được chụp cho lượt vào công đoạn tiếp theo; lịch sử và công đoạn đã mở giữ snapshot.",
+      "flow": [
+        [
+          "Mở Cấu hình SLA.",
+          "Hiển thị tên công đoạn và SLA (giờ)."
+        ],
+        [
+          "Chỉnh tên nếu cần và số giờ, chọn Lưu ở dòng tương ứng.",
+          "Kiểm tra dữ liệu, cập nhật cấu hình và thông báo."
+        ]
+      ],
+      "alt": "Chỉ chỉnh một dòng cần thay đổi; các công đoạn khác giữ nguyên.",
+      "errors": "Số giờ không nguyên hoặc <1, tên trống, công đoạn không tồn tại hay không có quyền ADMIN: báo lỗi, không lưu.",
+      "rules": "Form này không kích hoạt PA1 và không quản lý ngày nghỉ. Cách tính/lịch phụ thuộc mốc kích hoạt và snapshot đã lưu; lịch PA1 trong source hiện là lịch mô phỏng có phạm vi ngày, chưa chứng minh lịch ngân hàng thật.",
+      "acceptance": "Giá trị mới chỉ ảnh hưởng lần mở tiếp theo; không sửa lịch sử/SLA đang chạy và không tự đổi từ giờ thực sang PA1.",
+      "refs": [
+        "ADMIN",
+        "SLA",
+        "UI_ADMIN",
+        "CALENDAR"
+      ]
+    },
+    {
+      "id": "UC29",
+      "title": "Đăng ký và xác minh email doanh nghiệp",
+      "section": "3.8.14.1",
+      "actor": "Doanh nghiệp",
+      "finding": "Chương 3 đã nêu Cổng doanh nghiệp nhưng chưa có đặc tả vòng đăng ký/xác minh tài khoản.",
+      "pre": "Có email nhận thư; truy cập /portal; tài khoản chưa được xác minh.",
+      "post": "Tạo tài khoản Portal và xác minh email thành công; cho phép đăng nhập, chưa tạo Company/đề nghị/Loan.",
+      "flow": [
+        [
+          "Chọn Tạo tài khoản doanh nghiệp, nhập email, người liên hệ, điện thoại, mật khẩu.",
+          "Kiểm tra dữ liệu, giữ tài khoản chưa xác minh và gửi mã 6 số."
+        ],
+        [
+          "Nhập mã trong email, chọn Xác minh email.",
+          "Kiểm tra mã và ghi nhận đã xác minh; mời đăng nhập."
+        ]
+      ],
+      "alt": "Chọn Gửi lại mã xác minh sau ít nhất 60 giây; hệ thống phát hành mã mới, mã cũ hết hiệu lực.",
+      "errors": "Email/điện thoại sai; mật khẩu dưới 8 ký tự, thiếu chữ/số hoặc quá 72 byte: báo lỗi. Mã sai/hết 10 phút/đã dùng hoặc vượt lượt thử: không xác minh. Gửi thư lỗi: báo chưa gửi, giữ tài khoản và cho yêu cầu lại. Email đã có: phản hồi trung tính.",
+      "rules": "Tài khoản Portal tách tài khoản cán bộ. Đăng ký không yêu cầu tự chọn vai trò nội bộ; MST được khai ở đề nghị vay.",
+      "acceptance": "Chỉ email xác minh bằng mã còn hiệu lực được đăng nhập; không tạo Loan hay quyền nội bộ khi đăng ký.",
+      "refs": [
+        "PORTAL_AUTH",
+        "UI_PORTAL_AUTH"
+      ]
+    },
+    {
+      "id": "UC30",
+      "title": "Đăng nhập doanh nghiệp",
+      "section": "3.8.14.2",
+      "actor": "Doanh nghiệp",
+      "finding": "Thiếu đặc tả đăng nhập Portal tách với đăng nhập cán bộ UC01.",
+      "pre": "Tài khoản Portal đã xác minh email; chưa bị khóa thử sai tạm thời.",
+      "post": "Tạo phiên Portal, mở danh sách đề nghị thuộc tài khoản.",
+      "flow": [
+        [
+          "Mở /portal, nhập email và mật khẩu, chọn Đăng nhập.",
+          "Kiểm tra thông tin, xác minh email và trạng thái tạm khóa."
+        ],
+        [
+          "Đăng nhập hợp lệ.",
+          "Hiển thị Đề nghị vay của bạn, không mở workspace cán bộ."
+        ]
+      ],
+      "alt": "Chưa xác minh: hoàn thành UC29. Quên mật khẩu: UC31. Đăng xuất từ Portal: xóa phiên trên trình duyệt và về đăng nhập.",
+      "errors": "Sai thông tin: báo lỗi. Sai 5 lần theo bộ đếm hiện hành: tạm khóa 15 phút. Phiên hết hạn hoặc bị vô hiệu sau đặt lại mật khẩu: yêu cầu đăng nhập lại. Lỗi mạng: báo lỗi.",
+      "rules": "Phiên Portal chỉ truy cập đề nghị của account sở hữu; không dùng để gọi API cán bộ.",
+      "acceptance": "Đúng tài khoản xem được đề nghị của mình; không đăng nhập bằng email chưa xác minh hoặc dùng phiên Portal như quyền nội bộ.",
+      "refs": [
+        "PORTAL_AUTH",
+        "UI_PORTAL_AUTH"
+      ]
+    },
+    {
+      "id": "UC31",
+      "title": "Khôi phục mật khẩu doanh nghiệp",
+      "section": "3.8.14.3",
+      "actor": "Doanh nghiệp",
+      "finding": "Chức năng quên/đặt lại mật khẩu đã có nhưng chưa có đặc tả, thiếu vòng khôi phục tài khoản.",
+      "pre": "Có email tài khoản Portal đã xác minh để nhận liên kết; truy cập Quên mật khẩu.",
+      "post": "Đổi mật khẩu, liên kết reset mất hiệu lực và các phiên Portal cũ bị vô hiệu; yêu cầu đăng nhập lại.",
+      "flow": [
+        [
+          "Chọn Quên mật khẩu, nhập email và gửi yêu cầu.",
+          "Trả thông điệp trung tính; nếu tài khoản phù hợp thì gửi liên kết."
+        ],
+        [
+          "Mở liên kết, nhập mật khẩu mới và xác nhận.",
+          "Kiểm tra thời hạn/một lần dùng và quy tắc mật khẩu; cập nhật và về đăng nhập."
+        ]
+      ],
+      "alt": "Chưa nhận thư/hết hạn: yêu cầu liên kết mới sau thời gian chờ; không tạo tài khoản khác thay thế.",
+      "errors": "Liên kết sai/hết 10 phút/đã dùng, hai mật khẩu không khớp hoặc mật khẩu không đạt: không đổi. Quá giới hạn yêu cầu: chờ. Email không tồn tại/chưa xác minh: vẫn cùng thông điệp trung tính, không có reset hợp lệ.",
+      "rules": "Mật khẩu từ 8 ký tự có chữ/số, tối đa 72 byte. Thông báo gửi yêu cầu không phải bằng chứng email đã phát thành công; lỗi gửi thư không tạo token reset sống.",
+      "acceptance": "Reset hợp lệ chỉ dùng một lần; phiên cũ không còn được chấp nhận; không tiết lộ tài khoản tồn tại qua câu trả lời quên mật khẩu.",
+      "refs": [
+        "PORTAL_AUTH",
+        "UI_PORTAL_AUTH"
+      ]
+    },
+    {
+      "id": "UC32",
+      "title": "Lập và lưu nháp đề nghị vay",
+      "section": "3.8.15.1",
+      "actor": "Doanh nghiệp",
+      "finding": "Thiếu đặc tả đầu vào chủ đạo: khai DN, nhu cầu vốn, phương án, tài liệu và lưu nháp V2.",
+      "pre": "Đã đăng nhập Portal; chức năng nháp V2 được bật; lập mới hoặc mở nháp của chính tài khoản.",
+      "post": "Lưu đề nghị DRAFT và phiên bản dữ liệu/tài liệu; chưa gửi ngân hàng, chưa phân công, chưa Loan/SLA.",
+      "flow": [
+        [
+          "Chọn Tạo đề nghị vay.",
+          "Mở 5 bước: thông tin DN, nhu cầu vay, phương án vốn, hồ sơ tài liệu, rà soát."
+        ],
+        [
+          "Khai dữ liệu hiện có và Lưu nháp.",
+          "Lưu trên máy chủ, cho tiếp tục hoàn thiện."
+        ],
+        [
+          "Tải tài liệu theo loại/kỳ, gắn thành phần tài liệu và chọn nguồn doanh thu năm.",
+          "Kiểm tra tệp, lưu phiên bản tài liệu và mức đầy đủ theo khai báo."
+        ]
+      ],
+      "alt": "Có thể lưu nháp chưa đủ dữ liệu hoặc số tiền cần điều chỉnh. Tài liệu có thể thay thế/rút khỏi bản nháp theo quyền, giữ lịch sử phiên bản. RETURNED được mở sửa qua UC35.",
+      "errors": "Tệp sai định dạng/hỏng/>10 MB, khai sai kiểu, đề nghị đã khóa hoặc phiên bản xung đột: báo lỗi; tải lại và đối chiếu trước khi lưu. Không tự ghi đè nội dung ở phiên khác.",
+      "rules": "Phạm vi mới: vốn lưu động sản xuất/thương mại/dịch vụ. Thiếu doanh thu năm phù hợp thì tiếp tục nháp, không annualize và không điền 0 thay thiếu. B/F cho PDF hoặc XLSX; E PDF/JPG/PNG; A/C/D PDF.",
+      "acceptance": "Mở lại đúng nháp/tài liệu; dữ liệu thiếu không bị giả thành 0; nháp chưa xuất hiện như đề nghị chính thức cho ngân hàng.",
+      "refs": [
+        "PORTAL",
+        "FOUNDATION",
+        "FILES",
+        "UI_WIZARD"
+      ]
+    },
+    {
+      "id": "UC33",
+      "title": "Gửi đề nghị vay",
+      "section": "3.8.15.2",
+      "actor": "Doanh nghiệp",
+      "finding": "Thiếu đặc tả hành động gửi chính thức; cần tách đủ dữ liệu, CBTD xác minh và cấp tín dụng.",
+      "pre": "Nháp V2 thuộc tài khoản; chức năng gửi được bật; nội dung đã lưu, tệp tải xong; đáp ứng checklist đúng phạm vi/ngành, kỳ báo cáo, nguồn dữ liệu, cam kết và số tiền 0<đề nghị≤10 tỷ.",
+      "post": "Tạo lần gửi chính thức và snapshot bất biến; đề nghị SUBMITTED nếu chưa có CBTD; khóa dữ liệu đã gửi. Chưa tạo Loan và chưa tính SLA khoản vay.",
+      "flow": [
+        [
+          "Rà soát 5 bước, hoàn tất cam kết và chọn Gửi đề nghị.",
+          "Kiểm tra dữ liệu/tệp hiện hành theo chính sách."
+        ],
+        [
+          "Xác nhận gửi.",
+          "Kiểm tra tệp thật, lưu snapshot dữ liệu/checklist/tệp của lần gửi, thông báo ngân hàng và khóa sửa."
+        ]
+      ],
+      "alt": "Chưa đủ điều kiện: về đúng bước hoàn thiện, vẫn giữ nháp. Gửi lại theo RETURNED dùng UC35 trên cùng đề nghị.",
+      "errors": "Chưa lưu, thiếu tài liệu/nguồn doanh thu/kỳ đúng, tệp đang tải hoặc không đọc được, số tiền vượt trần, thiếu cam kết, phiên bản đổi hoặc gửi đang tắt: không gửi; nêu nguyên nhân.",
+      "rules": "A pháp lý, B tài chính, C hoạt động/phương án, D đề nghị/phương án vốn; E bảo đảm và F dư nợ theo điều kiện chính sách. BCTC dùng năm lịch hoàn thành gần nhất theo VN; không annualize/fake0. Đủ gửi chưa phải đủ để tiếp nhận hay phê duyệt.",
+      "acceptance": "Lưu đúng snapshot một lần gửi; cán bộ chỉ thấy bản chính thức; thao tác gửi lặp cùng phiên bản và cùng bộ tệp không nhân đôi lần gửi.",
+      "refs": [
+        "PORTAL",
+        "INTAKE",
+        "FOUNDATION",
+        "FILES",
+        "UI_WIZARD"
+      ]
+    },
+    {
+      "id": "UC34",
+      "title": "Theo dõi đề nghị và kết quả xử lý",
+      "section": "3.8.16",
+      "actor": "Doanh nghiệp",
+      "finding": "Thiếu đặc tả tra cứu của actor doanh nghiệp, gồm trạng thái trước/sau tiếp nhận và dữ liệu được công khai.",
+      "pre": "Đăng nhập Portal; có đề nghị của chính tài khoản.",
+      "post": "Hiển thị trạng thái, tiến độ và nội dung công khai; không thay dữ liệu nghiệp vụ.",
+      "flow": [
+        [
+          "Mở Đề nghị vay của bạn, chọn đề nghị.",
+          "Hiển thị nháp, chờ phân công, chờ tiếp nhận, cần sửa hoặc trạng thái xử lý Loan đã liên kết."
+        ],
+        [
+          "Chọn Xem tiến độ/kết quả.",
+          "Hiển thị các bước công khai và trạng thái phê duyệt/từ chối/đóng quá hạn theo dữ liệu thực."
+        ]
+      ],
+      "alt": "Cần sửa trước tiếp nhận: UC35. Cần bổ sung sau tiếp nhận: UC36. Từ chối: xem mã/nhãn lý do công khai nếu mã hợp lệ.",
+      "errors": "Đề nghị không thuộc tài khoản: không trả dữ liệu. Không có đề nghị: danh sách trống. Lỗi kết nối: báo lỗi, không hiển thị kết quả giả.",
+      "rules": "Không công khai cán bộ phụ trách, ghi chú nội bộ, tờ trình phân tích nội bộ, dự báo ML, số tiền/lãi suất phê duyệt. Các bước công khai là cách trình bày tiến độ, không bổ sung công đoạn nghiệp vụ.",
+      "acceptance": "Không truy cập chéo tài khoản; kết quả công khai khớp Loan và không lộ trường nội bộ.",
+      "refs": [
+        "TRACKING",
+        "PORTAL",
+        "UI_TRACKING"
+      ]
+    },
+    {
+      "id": "UC35",
+      "title": "Xin chỉnh sửa và gửi lại đề nghị",
+      "section": "3.8.17",
+      "actor": "Doanh nghiệp",
+      "finding": "Thiếu đặc tả phía DN đối ứng với UC03; cần bảo toàn mã/lịch sử và quy tắc kế thừa kiểm tra.",
+      "pre": "Đề nghị của tài khoản đã gửi, chưa ACCEPTED. Xin sửa khi SUBMITTED/ASSIGNED; thực sự sửa dữ liệu/tệp chỉ khi RETURNED.",
+      "post": "Xin sửa: ghi yêu cầu PENDING, chưa mở khóa. Gửi lại sau trả sửa: thêm lần gửi n+1 trên cùng mã; ASSIGNED nếu còn CBTD, SUBMITTED nếu chưa có; giữ bản cũ.",
+      "flow": [
+        [
+          "Mở đề nghị đã gửi, nhập nội dung và chọn Đề nghị ngân hàng cho chỉnh sửa.",
+          "Lưu yêu cầu, thông báo ngân hàng và chặn tiếp nhận khi đang chờ."
+        ],
+        [
+          "Khi ngân hàng trả sửa, xem danh sách cần sửa và chỉnh dữ liệu/tệp, lưu nháp.",
+          "Cho sửa trong RETURNED; cán bộ vẫn xem lần gửi chính thức cũ."
+        ],
+        [
+          "Chọn Gửi lại đề nghị và xác nhận.",
+          "Đánh giá lại điều kiện gửi, tạo lần gửi n+1, khóa chỉnh sửa và báo CBTD."
+        ]
+      ],
+      "alt": "Ngân hàng chủ động trả sửa: bắt đầu từ danh sách cần sửa, không cần xin sửa trước. Xin sửa bị từ chối: đề nghị vẫn khóa, DN xem lý do.",
+      "errors": "Xin sửa đang chờ, đã ACCEPTED, chưa được mở RETURNED, đổi MST/chủ thể, thiếu dữ liệu/tệp hoặc phiên bản đổi: từ chối thao tác tương ứng.",
+      "rules": "Giữ mã đề nghị và lịch sử tất cả lần gửi. Chỉ kế thừa mục đã đạt nếu căn cứ không đổi và lần trả sửa không yêu cầu vô hiệu kết quả; phần đổi phải kiểm tra lại. Không có trạng thái lưu riêng RESUBMITTED trong source hiện tại.",
+      "acceptance": "Không sửa được khi mới xin phép; gửi lại giữ mã, tăng số lần gửi, không tạo Loan/SLA và không lộ bản nháp đang sửa.",
+      "refs": [
+        "INTAKE",
+        "PORTAL",
+        "UI_CYCLE",
+        "UI_WIZARD",
+        "SCHEMA"
+      ]
+    },
+    {
+      "id": "UC36",
+      "title": "Nộp tài liệu bổ sung sau tiếp nhận",
+      "section": "3.8.18",
+      "actor": "Doanh nghiệp",
+      "finding": "Thiếu nửa luồng phản hồi DN của bổ sung có cấu trúc; đặc biệt khác tải tệp nháp với gửi đủ và tác động PA1.",
+      "pre": "Đề nghị ACCEPTED thuộc tài khoản và liên kết Loan chưa kết thúc; có đợt bổ sung PENDING, mục đang PENDING hoặc REPLACE_REQUIRED.",
+      "post": "Các tệp được gửi chính thức, mục thành SUBMITTED chờ kiểm tra; PA1 đóng thời gian chờ DN ngay khi gửi đủ. Đợt vẫn PENDING đến khi ngân hàng chấp nhận/hoàn tất.",
+      "flow": [
+        [
+          "Mở Bổ sung hồ sơ sau tiếp nhận và xem từng mục, kỳ, lý do.",
+          "Hiển thị yêu cầu và tệp hiện hành."
+        ],
+        [
+          "Tải tệp cho từng mục hoặc thay tệp cần sửa.",
+          "Kiểm tra định dạng/dung lượng, lưu phiên bản; nhắc phải gửi khi đã đủ."
+        ],
+        [
+          "Chọn Gửi tài liệu bổ sung khi đủ các mục cần nộp.",
+          "Đóng băng bộ tệp gửi, kiểm tra tệp thật, đổi trạng thái mục và đóng khoảng chờ DN PA1."
+        ]
+      ],
+      "alt": "Ngân hàng yêu cầu thay thế: đọc lý do và nộp bản mới cho mục đó; giữ các mục đã đạt và lịch sử tệp.",
+      "errors": "Chưa đủ mục, dùng tệp phiên bản cũ/không thuộc yêu cầu, tệp hỏng, phiên bản đổi hoặc đợt/Loan đã kết thúc: không gửi; hướng dẫn hoàn thiện/tải lại.",
+      "rules": "Chỉ tải tệp chưa phải gửi bổ sung. DN không tự chấp nhận mục hoặc hoàn tất đợt. SLA cũ giữ cơ chế tiếp tục lúc giải quyết; PA1 tính giờ ngân hàng kiểm tra và mở lại khoảng chờ khi trả sửa.",
+      "acceptance": "Gửi đủ có đúng bộ tệp và không nhân đôi khi thử lại; PA1 chạy lại từ lúc gửi đủ; Loan vẫn chờ bổ sung cho đến UC07.",
+      "refs": [
+        "SUPP",
+        "SLA",
+        "FILES",
+        "UI_SUPP"
+      ]
+    },
+    {
+      "id": "UC37",
+      "title": "Gửi đề nghị điều phối",
+      "section": "3.8.19.1",
+      "actor": "CBTD đang phụ trách đề nghị hoặc Loan",
+      "finding": "Có đặc tả QLCN duyệt điều phối nhưng thiếu actor tạo yêu cầu và nhánh rút đề nghị thông thường.",
+      "pre": "Đối tượng thuộc CBTD: đề nghị ASSIGNED/RETURNED hoặc Loan chưa kết thúc; chưa có đề nghị điều phối PENDING.",
+      "post": "Tạo biên nhận PENDING và thông báo QLCN độc lập; chưa đổi người xử lý và chưa reset/dừng SLA.",
+      "flow": [
+        [
+          "Mở đối tượng đang phụ trách, chọn đề nghị điều phối.",
+          "Hiển thị danh mục lý do và nội dung."
+        ],
+        [
+          "Chọn lý do thông thường, nhập căn cứ và gửi.",
+          "Kiểm tra phân công/phiên bản, tạo biên nhận, thông báo người quản lý có quyền."
+        ]
+      ],
+      "alt": "Khi PENDING và chưa được quyết định, chính CBTD gửi có thể rút đề nghị thông thường, chuyển CANCELLED. Nếu lý do là COI thì dùng UC38, không tự rút.",
+      "errors": "Không còn phụ trách, đối tượng đã kết thúc/chuyển giai đoạn, thiếu lý do, phiên bản đổi hoặc đã có PENDING: không tạo mới. Không có quản lý độc lập nhận thông báo: biên nhận vẫn được lưu, hiển thị tình trạng để theo dõi.",
+      "rules": "Gửi đề nghị thông thường không tự bàn giao; đề nghị điều phối không thay thế quyết định của QLCN ở UC19.",
+      "acceptance": "Chỉ người phụ trách tạo được; yêu cầu chờ không nhân đôi; người gửi rút được yêu cầu thường trước quyết định, không thay SLA.",
+      "refs": [
+        "COORD",
+        "UI_COORD"
+      ]
+    },
+    {
+      "id": "UC38",
+      "title": "Báo xung đột lợi ích (COI)",
+      "section": "3.8.19.2",
+      "actor": "CBTD đang phụ trách đề nghị hoặc Loan",
+      "finding": "Có đặc tả duyệt COI nhưng thiếu hành vi báo COI và tác dụng chặn theo người/doanh nghiệp.",
+      "pre": "CBTD đang phụ trách đối tượng còn hợp lệ; chưa có đề nghị điều phối PENDING; có căn cứ xung đột lợi ích cần báo.",
+      "post": "Lưu đề nghị COI PENDING, ưu tiên thông báo QLCN; bật chặn COI tương ứng đối với người báo và doanh nghiệp; chưa tự đổi cán bộ.",
+      "flow": [
+        [
+          "Mở đề nghị điều phối tại đối tượng đang phụ trách.",
+          "Hiển thị lý do Xung đột lợi ích."
+        ],
+        [
+          "Chọn COI, nhập căn cứ và gửi.",
+          "Lưu biên nhận, ràng buộc COI và thông báo ưu tiên cho QLCN khác người gửi."
+        ],
+        [
+          "Xem biên nhận chờ xử lý.",
+          "Hiển thị trạng thái và hạn chế thao tác liên quan."
+        ]
+      ],
+      "alt": "QLCN bàn giao hoặc kết luận có căn cứ không có COI theo UC20. Nếu không có quản lý độc lập nhận thông báo, giữ biên nhận và nêu tình trạng; không tự hủy/gỡ chặn.",
+      "errors": "Không còn phụ trách, thiếu căn cứ, phiên bản đổi hoặc đã có yêu cầu chờ: chặn gửi. Tự rút COI hoặc đổi vai trò để tiếp tục thao tác bị chặn: không cho phép.",
+      "rules": "COI gắn danh tính người báo và MST, có thể ảnh hưởng các đối tượng liên quan cùng DN; không chỉ một nút trên một hồ sơ. Việc chặn COI không tự tạm dừng SLA.",
+      "acceptance": "COI chờ thực sự chặn các thao tác theo ràng buộc; không tự rút, không tự duyệt bằng đổi vai trò; có biên nhận và thông báo.",
+      "refs": [
+        "COORD",
+        "UI_COORD",
+        "COI_RULES"
+      ]
+    },
+    {
+      "id": "UC39",
+      "title": "Chuyển vai trò làm việc",
+      "section": "3.8.20",
+      "actor": "Cán bộ nội bộ được cấp nhiều vai trò",
+      "finding": "Hệ thống hỗ trợ đa vai trò và maker-checker nhưng bộ đặc tả chưa có luồng chọn/chuyển vai trò.",
+      "pre": "Đã đăng nhập nội bộ; tài khoản có nhiều vai trò được cấp và còn hiệu lực.",
+      "post": "Workspace chuyển sang vai trò được chọn; đóng form/modal và bỏ nội dung chưa lưu sau xác nhận; quyền đối tượng/maker-checker theo danh tính vẫn giữ.",
+      "flow": [
+        [
+          "Mở tài khoản trên thanh điều hướng, chọn vai trò được cấp.",
+          "Hiển thị vai trò đang chọn và cảnh báo chuyển không gian làm việc."
+        ],
+        [
+          "Xác nhận chuyển.",
+          "Cập nhật vai trò, nạp workspace theo quyền và đồng bộ các tab của phiên."
+        ]
+      ],
+      "alt": "Hủy xác nhận: giữ vai trò và màn hình hiện tại. Vai trò bị thu hồi: nạp lại quyền, chọn vai trò còn hợp lệ và báo cho người dùng; hết vai trò hoặc tài khoản bị khóa thì kết thúc phiên.",
+      "errors": "Chọn vai trò chưa được cấp/đã bị thu hồi: không chấp nhận; không tự gửi lại thao tác ghi vừa bị từ chối. Lỗi mạng không tự kết luận tài khoản bị khóa.",
+      "rules": "Đổi vai trò không đổi user.id, không cho tự duyệt hồ sơ/điều phối/đối soát do chính mình thực hiện trước đó. Một vai trò không tự nhận quyền của vai trò khác.",
+      "acceptance": "Chỉ chọn được vai trò đã cấp; state vai trò cũ không sang workspace mới; các ràng buộc độc lập vẫn chặn đúng người.",
+      "refs": [
+        "AUTH_UI",
+        "UI_NAV",
+        "ACCESS"
+      ]
+    }
+  ],
+  "sources": {
+    "AUTH": {
+      "file": "backend/src/modules/auth/auth.service.ts",
+      "symbol": "async login",
+      "line": 18
+    },
+    "ACCESS": {
+      "file": "backend/src/common/guards/loan-access.guard.ts",
+      "symbol": "async canActivate",
+      "line": 8
+    },
+    "PORTAL": {
+      "file": "backend/src/modules/portal/portal.service.ts",
+      "symbol": "async accept",
+      "line": 311
+    },
+    "INTAKE": {
+      "file": "backend/src/modules/portal/portal.intake-workflow.ts",
+      "symbol": "async review",
+      "line": 111
+    },
+    "COMPANY": {
+      "file": "backend/src/modules/companies/company-snapshot.ts",
+      "symbol": "freezeCompanyLoans",
+      "line": 17
+    },
+    "SUPP": {
+      "file": "backend/src/modules/supplements/portal-supplements.service.ts",
+      "symbol": "async respond",
+      "line": 89
+    },
+    "POLICY": {
+      "file": "backend/src/modules/workflow/loan-policy.ts",
+      "symbol": "export const BRANCH_POLICY",
+      "line": 4
+    },
+    "DEADLINE": {
+      "file": "backend/src/modules/supplements/supplement-deadlines.ts",
+      "symbol": "export function overdueAt",
+      "line": 18
+    },
+    "SLA": {
+      "file": "backend/src/modules/workflow/sla/sla-policy.ts",
+      "symbol": "export async function resolveStageSla",
+      "line": 36
+    },
+    "LOAN": {
+      "file": "backend/src/modules/loan-applications/loan-applications.service.ts",
+      "symbol": "async checkDocuments",
+      "line": 294
+    },
+    "APPRAISAL": {
+      "file": "backend/src/modules/appraisal/appraisal.service.ts",
+      "symbol": "async mutate",
+      "line": 58
+    },
+    "WORKFLOW": {
+      "file": "backend/src/modules/workflow/workflow.service.ts",
+      "symbol": "async transitionStage",
+      "line": 24
+    },
+    "ML": {
+      "file": "backend/src/modules/prediction/prediction.service.ts",
+      "symbol": "async predictForApplication",
+      "line": 15
+    },
+    "TRACKING": {
+      "file": "backend/src/modules/portal/portal.tracking.ts",
+      "symbol": "export function buildTracking",
+      "line": 77
+    },
+    "ASSIGN": {
+      "file": "backend/src/modules/assignments/assignment.transactions.ts",
+      "symbol": "export async function transferLoan",
+      "line": 10
+    },
+    "COORD": {
+      "file": "backend/src/modules/assignments/assignment-change-requests.service.ts",
+      "symbol": "async create",
+      "line": 52
+    },
+    "DASHBOARD": {
+      "file": "backend/src/modules/dashboard/dashboard.service.ts",
+      "symbol": "async getOverviewStats",
+      "line": 17
+    },
+    "USERS": {
+      "file": "backend/src/modules/users/users.service.ts",
+      "symbol": "async update",
+      "line": 129
+    },
+    "ADMIN": {
+      "file": "backend/src/admin.controller.ts",
+      "symbol": "standardSlaHours",
+      "line": 10
+    },
+    "PORTAL_AUTH": {
+      "file": "backend/src/modules/portal/portal.auth.ts",
+      "symbol": "async register",
+      "line": 35
+    },
+    "FOUNDATION": {
+      "file": "backend/src/modules/portal/portal.approved-policy.ts",
+      "symbol": "export function evaluateIntakeReadiness",
+      "line": 141
+    },
+    "FILES": {
+      "file": "backend/src/modules/portal/portal.validation.ts",
+      "symbol": "export async function validatePortalFile",
+      "line": 99
+    },
+    "UI_LOAN": {
+      "file": "frontend/src/components/LoanDetailModal.tsx",
+      "symbol": "export",
+      "line": 46
+    },
+    "UI_DASH": {
+      "file": "frontend/src/components/DashboardView.tsx",
+      "symbol": "export const DashboardView",
+      "line": 22
+    },
+    "UI_ADMIN": {
+      "file": "frontend/src/components/AdminView.tsx",
+      "symbol": "export function AdminView",
+      "line": 10
+    },
+    "AUTH_UI": {
+      "file": "frontend/src/context/AuthContext.tsx",
+      "symbol": "export",
+      "line": 21
+    },
+    "UI_PORTAL_AUTH": {
+      "file": "frontend/src/portal/PortalAuth.tsx",
+      "symbol": "export function PortalAuth",
+      "line": 7
+    },
+    "UI_WIZARD": {
+      "file": "frontend/src/portal/PortalWizard.tsx",
+      "symbol": "export function PortalWizard",
+      "line": 49
+    },
+    "UI_TRACKING": {
+      "file": "frontend/src/portal/PortalApplicationTracking.tsx",
+      "symbol": "export",
+      "line": 4
+    },
+    "UI_CYCLE": {
+      "file": "frontend/src/portal/IntakeCyclePanel.tsx",
+      "symbol": "export",
+      "line": 10
+    },
+    "UI_SUPP": {
+      "file": "frontend/src/components/SupplementPanel.tsx",
+      "symbol": "export function SupplementPanel",
+      "line": 48
+    },
+    "UI_COORD": {
+      "file": "frontend/src/components/AssignmentChangeRequestPanel.tsx",
+      "symbol": "export",
+      "line": 5
+    },
+    "UI_NAV": {
+      "file": "frontend/src/components/Navbar.tsx",
+      "symbol": "export",
+      "line": 18
+    },
+    "SUPP_MAIN": {
+      "file": "backend/src/modules/supplements/supplements.service.ts",
+      "symbol": "async createSupplementRequest",
+      "line": 25
+    },
+    "REPORT_RULES": {
+      "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+      "symbol": "export async function assertReportDecision",
+      "line": 51
+    },
+    "COI_RULES": {
+      "file": "backend/src/modules/assignments/assignment-coordination.ts",
+      "symbol": "export async function assertNoCoordinationConflict",
+      "line": 7
+    },
+    "DTO_USER": {
+      "file": "backend/src/modules/users/dto/user.dto.ts",
+      "symbol": "export class CreateUserDto",
+      "line": 4
+    },
+    "DASH_ACCESS": {
+      "file": "backend/src/modules/dashboard/dashboard.controller.ts",
+      "symbol": "@Roles(RoleCode.QUAN_LY, RoleCode.THAM_QUYEN)",
+      "line": 10
+    },
+    "PRED_STATUS": {
+      "file": "backend/src/modules/prediction/prediction-status.ts",
+      "symbol": "export function predictionStatusOf",
+      "line": 14
+    },
+    "CALENDAR": {
+      "file": "backend/src/modules/workflow/sla/working-time.ts",
+      "symbol": "export const SIMULATED_CALENDAR_V1",
+      "line": 29
+    },
+    "SCHEMA": {
+      "file": "backend/prisma/schema.prisma",
+      "symbol": "enum PortalRequestStatus",
+      "line": 330
+    },
+    "PROJECT": {
+      "file": "Project.md",
+      "symbol": "## Ranh giới nghiệp vụ",
+      "line": 21
+    },
+    "MASTER": {
+      "file": "docs/SME_MASTER.md",
+      "symbol": "## 3. Chi tiết 7 Nhóm chức năng",
+      "line": 226
+    },
+    "NAV": {
+      "file": "frontend/src/navigation.ts",
+      "symbol": "export const NAV_ITEMS",
+      "line": 23
+    }
+  }
+}

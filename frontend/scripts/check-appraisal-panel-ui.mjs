@@ -27,6 +27,7 @@ const { AppraisalPanel } = await load('../src/components/AppraisalPanel.tsx', {
     },
   },
   '../context/AuthContext': { useAuth: () => currentAuth },
+  '../appraisalWorkspace': await load('../src/appraisalWorkspace.ts'),
 });
 
 const dispatcher = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher;
@@ -211,6 +212,63 @@ test('2. D5-02: Button Trình is disabled when content is unsaved; helper indica
   // Trình button is unlocked again!
   assert.doesNotMatch(html4, /<button class="btn btn-primary"[^>]*disabled=""[^>]*>Trình tờ trình<\/button>/);
   assert.match(html4, /✓ Bản nháp đã lưu khớp nội dung/);
+});
+
+async function renderReport(report, role, loanOverrides = {}) {
+  currentAuth = { activeRole: role, user: { id: 'viewer-1' } };
+  mockApiResponse = report;
+  let version = 'not-reported';
+  const harness = new LifecycleHarness(AppraisalPanel, {
+    loan: baseLoan({ currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL', ...loanOverrides }),
+    onChanged: () => {},
+    onVersion: value => { version = value; },
+  });
+  harness.render();
+  await harness.flushEffects();
+  await new Promise(r => setTimeout(r, 20));
+  return { html: renderToStaticMarkup(harness.render()), version: () => version, harness };
+}
+const submitted = { id: 'rep-1', status: 'SUBMITTED', revision: 2, draft: {}, versions: [{ id: 'v2', sequence: 2, content: {}, submittedAt: '2026-11-05T03:00:00Z' }, { id: 'v1', sequence: 1, content: {}, submittedAt: '2026-11-04T03:00:00Z' }] };
+
+test('4. Unchanged evidence lets the decision continue on the latest version', async () => {
+  const { html, version } = await renderReport({ ...submitted, evidenceChanged: false }, 'THAM_QUYEN');
+  assert.equal(version(), 'v2');
+  assert.doesNotMatch(html, /Căn cứ đã thay đổi/);
+});
+
+test('5. Changed evidence withholds the version and tells the authority what to do', async () => {
+  const { html, version } = await renderReport({ ...submitted, evidenceChanged: true }, 'THAM_QUYEN');
+  assert.equal(version(), undefined);
+  assert.match(html, /Căn cứ đã thay đổi/);
+  assert.match(html, /yêu cầu CBTD làm rõ và trình lại/);
+  assert.match(html, /Yêu cầu làm rõ tờ trình/);
+});
+
+test('6. The evidence warning waits until the open supplement is finished and is for the authority only', async () => {
+  const waiting = await renderReport({ ...submitted, evidenceChanged: true }, 'THAM_QUYEN', { currentStatus: 'SUPPLEMENT_REQUIRED' });
+  assert.doesNotMatch(waiting.html, /Căn cứ đã thay đổi/);
+  assert.equal(waiting.version(), undefined);
+  const manager = await renderReport({ ...submitted, evidenceChanged: true }, 'QUAN_LY');
+  assert.doesNotMatch(manager.html, /Căn cứ đã thay đổi/);
+});
+
+test('7. A decided report names the version the decision was made on', async () => {
+  const { html } = await renderReport({ ...submitted, status: 'DECIDED', decidedVersionId: 'v2' }, 'THAM_QUYEN', { currentStage: 'HOAN_TAT', currentStatus: 'APPROVED' });
+  assert.match(html, /Quyết định trên phiên bản 2/);
+});
+
+test('7b. The officer writes under the same section names the authority reads', async () => {
+  const { html } = await renderReport({ ...submitted }, 'THAM_QUYEN');
+  for (const label of ['Pháp lý và người đại diện', 'Kinh doanh và phương án vốn', 'Tài chính và tài liệu làm căn cứ', 'Dòng tiền và nguồn trả nợ', 'Tài sản bảo đảm (ghi không áp dụng nếu có căn cứ)', 'Rủi ro và biện pháp kiểm soát', 'Đề xuất của CBTD', 'Điều kiện đề xuất (nếu có)']) assert.ok(html.includes(label), label);
+  for (const old of ['Đánh giá pháp lý', 'Hoạt động kinh doanh', 'Phân tích tài chính', 'Kết luận đề xuất', 'Bản đã trình']) assert.ok(!html.includes(old), old);
+  assert.match(html, /Phiên bản 2/);
+});
+
+test('8. A new evidence key reloads the report', async () => {
+  const { harness } = await renderReport({ ...submitted, evidenceChanged: false }, 'THAM_QUYEN');
+  harness.props = { ...harness.props, evidenceKey: 'after-new-document' };
+  harness.render();
+  assert.equal(harness.queuedEffects.length, 1);
 });
 
 test('3. D5-05: Non-assigned CBTD or non-CBTD role cannot edit appraisal fields', async () => {

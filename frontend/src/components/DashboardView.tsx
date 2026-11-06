@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { predictionLabel } from '../slaDisplay';
+import { predictionLabel, stageStandardText, workingDurationText } from '../slaDisplay';
 import { OverdueSupplementsPanel, type OverdueSupplementItem } from './OverdueSupplementsPanel';
 import { OverviewStats, SlaBottleneck, EarlyWarningItem } from '../types';
 import {
@@ -56,7 +56,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
     <div className="dashboard-view">
       {error && <p role="alert" className="error-message">{error}</p>}
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
           Dashboard tổng quan
         </h2>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
@@ -143,7 +143,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
               <BarChart3 size={18} />
             </div>
             <div>
-              <h3 style={{ fontSize: '15px', color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
                 Phân tích Điểm nghẽn Quy trình SLA (Bottleneck Analysis)
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -176,12 +176,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                   <td>
                     <strong>{st.stageName}</strong>
                   </td>
-                  <td>{st.standardSlaHours} giờ</td>
+                  <td>{stageStandardText(st.stageCode, st.standardSlaHours)}</td>
                   <td>
                     <strong style={{ color: st.avgNetWorkHours > st.standardSlaHours ? '#dc2626' : 'inherit' }}>
-                      {st.avgNetWorkHours} giờ
+                      {st.stageCode === 'HOAN_TAT' ? '—' : `${st.avgNetWorkHours} giờ`}
                     </strong>
-                    {st.pa1 && st.pa1.totalHandled > 0 && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>PA1 (giờ làm việc): {st.pa1.avgNetWorkHours} giờ · {st.pa1.totalHandled} lượt · {st.pa1.delayRate}% trễ</div>}
+                    {st.pa1 && st.pa1.totalHandled > 0 && st.stageCode !== 'HOAN_TAT' && <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>PA1 (ngày làm việc): {workingDurationText(st.pa1.avgNetWorkHours)} · {st.pa1.totalHandled} lượt · {st.pa1.delayRate}% trễ</div>}
                   </td>
                   <td>{st.totalHandled} lượt</td>
                   <td>{st.delayedCount} lượt</td>
@@ -192,7 +192,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                           flex: 1,
                           height: 6,
                           background: '#f1f5f9',
-                          borderRadius: 3,
+                          borderRadius: 4,
                           overflow: 'hidden',
                           minWidth: 80,
                         }}
@@ -205,12 +205,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                           }}
                         />
                       </div>
-                      <span style={{ fontSize: '12px', fontWeight: 700 }}>{st.delayRate}%</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600 }}>{st.delayRate}%</span>
                     </div>
                   </td>
                   <td>
                     {st.isBottleneck ? (
-                      <span className="badge badge-soft-red">⚠️ ĐIỂM NGHẼN CAO</span>
+                      <span className="badge badge-soft-red">⚠️ Điểm nghẽn cao</span>
                     ) : (
                       <span className="badge badge-soft-green">Ổn định</span>
                     )}
@@ -241,7 +241,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
               <Brain size={18} />
             </div>
             <div>
-              <h3 style={{ fontSize: '15px', color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
                 Bảng Cảnh báo Sớm AI (AI Early Warning Rankings)
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -274,7 +274,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                 warnings.map((item) => (
                   <tr key={item.id} style={{ cursor: 'pointer' }} onClick={() => onSelectLoan(item.id)}>
                     <td>
-                      <div style={{ fontWeight: 700, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
                         {item.applicationCode}
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 600 }}>
@@ -283,10 +283,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                     </td>
 
                     <td>
-                      <div style={{ fontWeight: 700, color: 'var(--primary-hover)', fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--primary-hover)', fontFamily: 'var(--font-mono)' }}>
                         {Number(item.loanAmount).toLocaleString('vi-VN')} VNĐ
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                         Bổ sung: {item.supplementCount} lần
                       </div>
                     </td>
@@ -335,7 +335,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                           <li
                             key={i}
                             style={{
-                              fontSize: '11.5px',
+                              fontSize: '12px',
                               color: 'var(--text-secondary)',
                               marginBottom: 2,
                               display: 'flex',

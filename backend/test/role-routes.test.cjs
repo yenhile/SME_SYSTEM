@@ -16,7 +16,7 @@ const EXPECTED={
   AssignmentsController:{getOfficerWorkloads:[Q],getAssignmentHistory:[Q],reassign:[Q]},
   CompaniesController:{checkTaxCode:[C,T,Q],findAll:[C,T,Q],upsert:[C]},
   DashboardController:{getOverviewStats:[Q,T],getSlaBottleneckAnalysis:[Q,T],getEarlyWarningList:[Q,T],getOverdueSupplements:[Q],getStageDistribution:[Q,T]},
-  DocumentsController:{findByApplication:[C,T,Q],create:[C,T],delete:[C,T],download:[C,T,Q]},
+  DocumentsController:{findByApplication:[C,T,Q],create:[C],delete:[C],download:[C,T,Q]},
   LoanApplicationsController:{create:[C],findAll:[C,T,Q],findOne:[C,T,Q],checkDocuments:[C],setAmount:[C]},
   PredictionController:{predict:[T,Q]},
   SupplementsController:{portalDetails:[C,T,Q],review:[C,T],returnCorrections:[C,T],download:[C,T,Q],getSupplements:[C,T,Q],createRequest:[C,T],resolveRequest:[C,T]},

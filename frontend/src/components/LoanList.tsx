@@ -1,353 +1,133 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { api } from '../api/client';
-import { LoanApplication } from '../types';
+import { startAutoRefresh } from '../autoRefresh';
+import { lookupDecision } from '../appraisalQueue';
 import { useAuth } from '../context/AuthContext';
-import { KanbanBoard } from './KanbanBoard';
-import { filterLoansForView } from '../navigation';
+import { EMPTY_LOAN_FILTERS, hasActiveFilters, LOAN_PAGE_SIZE, loanListQuery, loanStatusDetail, pageCount, stageLabel, type LoanFilterValues } from '../loanListDisplay';
+import { isLoanFinished } from '../appraisalWorkspace';
+import type { LoanApplication } from '../types';
+import { LoanFilters } from './LoanFilters';
+import { codeColumn, companyColumn, LoanStatusBadges, LoanTable, type LoanColumn } from './LoanTable';
 import { PortalIntakeQueue } from './PortalIntakeQueue';
-import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
-import { predictionLabel } from '../slaDisplay';
-import {
-  Search,
-  Filter,
-  Plus,
-  ChevronRight,
-  RefreshCw,
-  LayoutGrid,
-  List,
-} from 'lucide-react';
 
 interface LoanListProps {
-  scope?: 'all' | 'appraisal';
   onSelectLoan: (loanId: string) => void;
   onOpenCreate: () => void;
   refreshKey: number;
   intakeTarget?: { id: string; revision: number } | null;
 }
 
-export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, refreshKey, scope = 'all', intakeTarget }) => {
+interface LoanPage { items: LoanApplication[]; total: number; page: number; pageSize: number }
+
+const APPRAISAL_STATUSES: ReadonlyArray<readonly [string, string]> = [['PENDING_APPRAISAL', 'Đang thẩm định'], ['SUPPLEMENT_REQUIRED', 'Chờ bổ sung']];
+const FINISHED_STATUSES: ReadonlyArray<readonly [string, string]> = [['APPROVED', 'Đã phê duyệt'], ['REJECTED', 'Bị từ chối'], ['CLOSED_TIMEOUT', 'Đã đóng do quá hạn']];
+const RECEPTION_STATUSES: ReadonlyArray<readonly [string, string]> = [['RECEIVED', 'Mới tiếp nhận'], ['CHECKED', 'Đã đủ hồ sơ']];
+const RECEPTION_STAGE: readonly [string, string] = ['TIEP_NHAN', 'Tiếp nhận'];
+const LATER_STAGES: ReadonlyArray<readonly [string, string]> = [['THAM_DINH', 'Thẩm định'], ['HOAN_TAT', 'Hoàn tất']];
+const LOOKUP_ORDER = { sort: 'updated' };
+
+const lookupColumns = (onSelectLoan: (loanId: string) => void): LoanColumn[] => [
+  codeColumn(onSelectLoan),
+  companyColumn,
+  {
+    label: 'Trạng thái',
+    render: loan => <>
+      <LoanStatusBadges loan={loan} />
+      <span className="lt-sub">{stageLabel(loan.currentStage)}</span>
+    </>,
+  },
+  { label: 'Kết quả', render: loan => (isLoanFinished(loan) ? loanStatusDetail(loan).text : '—') },
+  {
+    label: 'Người quyết định',
+    render: loan => {
+      const decision = lookupDecision(loan);
+      return <>
+        <span>{decision.by}</span>
+        {decision.time && <span className="lt-sub">{decision.time}</span>}
+      </>;
+    },
+  },
+  {
+    label: 'Thao tác',
+    render: loan => <button type="button" className="btn btn-secondary lt-action" onClick={event => { event.stopPropagation(); onSelectLoan(loan.id); }}>Xem</button>,
+  },
+];
+
+export const LoanList: React.FC<LoanListProps> = ({ onSelectLoan, onOpenCreate, refreshKey, intakeTarget }) => {
   const { activeRole } = useAuth();
   const [loans, setLoans] = useState<LoanApplication[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban'); // Mặc định là Kanban Board theo yêu cầu
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [keyword, setKeyword] = useState('');
-  const [stageFilter, setStageFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [myOnly, setMyOnly] = useState(false);
+  const [draft, setDraft] = useState<LoanFilterValues>(EMPTY_LOAN_FILTERS);
+  const [applied, setApplied] = useState<LoanFilterValues>(EMPTY_LOAN_FILTERS);
+  const [page, setPage] = useState(1);
   const [intakeTab, setIntakeTab] = useState(false);
-  useEffect(() => { if (intakeTarget && scope === 'all') setIntakeTab(true); }, [intakeTarget, scope]);
+  useEffect(() => { if (intakeTarget) setIntakeTab(true); }, [intakeTarget]);
 
+  const isAuthority = activeRole === 'THAM_QUYEN';
+  const showIntake = !isAuthority;
   const requestId = useRef(0);
-  const [workflowStages, setWorkflowStages] = useState<{ stageCode: string; stageName: string; standardSlaHours: number }[]>([]);
-  const fetchLoans = async () => {
-    const currentRequest = ++requestId.current;
-    setLoading(true);
-    setError('');
-    try {
-      const params = new URLSearchParams();
-      if (keyword) params.append('keyword', keyword);
-      if (stageFilter) params.append('stage', stageFilter);
-      if (statusFilter) params.append('status', statusFilter);
-      if (myOnly) params.append('myOnly', 'true');
 
-      const [data, stages] = await Promise.all([api.get<LoanApplication[]>(`/loan-applications?${params.toString()}`), api.get<typeof workflowStages>('/workflow/stages')]);
-      if (currentRequest === requestId.current) { setLoans(filterLoansForView(data, scope)); setWorkflowStages(stages); }
-    } catch (err: any) {
-      if (currentRequest === requestId.current) { setError(err.message); setLoans([]); }
+  const fetchLoans = useCallback(async (quiet = false) => {
+    const currentRequest = ++requestId.current;
+    if (!quiet) {
+      setLoading(true);
+      setError('');
+    }
+    try {
+      const data = await api.get<LoanPage>(`/loan-applications?${loanListQuery(applied, page, isAuthority ? LOOKUP_ORDER : {})}`);
+      if (currentRequest !== requestId.current) return;
+      const lastPage = pageCount({ total: data.total, pageSize: data.pageSize });
+      if (page > lastPage) { setPage(lastPage); return; }
+      setLoans(data.items);
+      setTotal(data.total);
+    } catch (err) {
+      if (!quiet && currentRequest === requestId.current) { setError((err as Error).message); setLoans([]); setTotal(0); }
     } finally {
       if (currentRequest === requestId.current) setLoading(false);
     }
-  };
+  }, [applied, isAuthority, page]);
 
-  useEffect(() => {
-    fetchLoans();
-  }, [stageFilter, statusFilter, myOnly, refreshKey, scope]);
+  useEffect(() => { void fetchLoans(); }, [fetchLoans, refreshKey]);
+  useEffect(() => startAutoRefresh({ refresh: () => { void fetchLoans(true); } }), [fetchLoans]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchLoans();
-  };
+  const applyFilters = () => { setPage(1); setApplied({ ...draft }); };
+  const clearFilters = () => { setDraft(EMPTY_LOAN_FILTERS); setPage(1); setApplied(EMPTY_LOAN_FILTERS); };
 
-  const formatVnd = (num?: number | string | null) => {
-    if (!num) return '0 VNĐ';
-    return `${Number(num).toLocaleString('vi-VN')} VNĐ`;
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return <span className="badge badge-soft-green">🟢 Đã phê duyệt</span>;
-      case 'REJECTED':
-        return <span className="badge badge-soft-red">🔴 Bị từ chối</span>;
-      case 'CLOSED_TIMEOUT':
-        return <span className="badge badge-soft-gray">⚫ Đã đóng (quá hạn bổ sung)</span>;
-      case 'SUPPLEMENT_REQUIRED':
-        return <span className="badge badge-soft-orange">🟡 Chờ bổ sung (Tạm dừng SLA)</span>;
-      case 'PENDING_APPRAISAL':
-        return <span className="badge badge-soft-amber">🟡 Đang thẩm định</span>;
-      case 'WAITING_HEAD_OFFICE':
-        return <span className="badge badge-soft-purple">🟣 Chờ Cấp trên duyệt</span>;
-      case 'CHECKED':
-        return <span className="badge badge-soft-blue">🔵 Đã đủ hồ sơ</span>;
-      default:
-        return <span className="badge badge-soft-blue">🔵 Mới tiếp nhận</span>;
-    }
-  };
+  const stageOptions = isAuthority ? LATER_STAGES : [RECEPTION_STAGE, ...LATER_STAGES];
+  const statusOptions = isAuthority ? [...APPRAISAL_STATUSES, ...FINISHED_STATUSES] : [...RECEPTION_STATUSES, ...APPRAISAL_STATUSES, ...FINISHED_STATUSES];
+  const subtitle = isAuthority ? 'Tra cứu hồ sơ từ công đoạn Thẩm định trở đi; mới cập nhật xếp trước' : 'Hồ sơ quá hạn và sắp đến hạn xếp trước; hồ sơ đã kết thúc xếp sau';
 
   return (
     <div className="loan-list-view">
-      {scope === 'all' && activeRole !== 'THAM_QUYEN' && <div className="portal-tabs"><button className={`btn ${!intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(false)}>Hồ sơ đang quản lý</button><button className={`btn ${intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(true)}>Chờ tiếp nhận</button></div>}
-      {scope === 'all' && activeRole !== 'THAM_QUYEN' && intakeTab ? <PortalIntakeQueue activeRole={activeRole} target={intakeTarget} onSelectLoan={onSelectLoan} onRefresh={fetchLoans} /> : <>
-      {/* Top Header & Actions */}
-      <div className="page-heading loan-page-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {scope === 'appraisal' ? 'Thẩm định & phê duyệt' : 'Danh sách hồ sơ'}
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Theo dõi tiến trình hồ sơ qua luồng công việc và cảnh báo sớm nguy cơ trễ hạn SLA
-          </p>
-        </div>
-
-        <div className="page-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Nút chuyển đổi View Mode: Kanban vs Table */}
-          <div
-            className="view-switcher"
-            style={{
-              display: 'flex',
-              background: '#ffffff',
-              padding: '3px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <button
-              onClick={() => setViewMode('kanban')}
-              className="btn"
-              style={{
-                padding: '6px 12px',
-                background: viewMode === 'kanban' ? 'var(--primary-light)' : 'transparent',
-                color: viewMode === 'kanban' ? 'var(--primary)' : 'var(--text-secondary)',
-                fontSize: '12px',
-              }}
-            >
-              <LayoutGrid size={14} /> Kanban Board
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className="btn"
-              style={{
-                padding: '6px 12px',
-                background: viewMode === 'table' ? 'var(--primary-light)' : 'transparent',
-                color: viewMode === 'table' ? 'var(--primary)' : 'var(--text-secondary)',
-                fontSize: '12px',
-              }}
-            >
-              <List size={14} /> Danh sách bảng
-            </button>
+      {showIntake && <div className="portal-tabs"><button className={`btn ${!intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setIntakeTab(false); void fetchLoans(true); }}>Hồ sơ đang quản lý</button><button className={`btn ${intakeTab ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIntakeTab(true)}>Chờ tiếp nhận</button></div>}
+      {showIntake && intakeTab ? <PortalIntakeQueue activeRole={activeRole} target={intakeTarget} onSelectLoan={onSelectLoan} onRefresh={() => { void fetchLoans(); }} /> : <>
+        <div className="page-heading loan-page-heading">
+          <div>
+            <h2>Danh sách hồ sơ</h2>
+            <p>{subtitle}</p>
           </div>
-
-          <button disabled={loading} onClick={fetchLoans} className="btn btn-secondary">
-            <RefreshCw size={15} /> Làm mới
-          </button>
-
-          {activeRole === 'CBTD' && <button onClick={onOpenCreate} className="btn btn-primary">
-            <Plus size={16} /> Tạo hồ sơ vay mới
-          </button>}
+          {activeRole === 'CBTD' && <div className="page-actions"><button onClick={onOpenCreate} className="btn btn-primary"><Plus size={16} aria-hidden="true" /> Tạo hồ sơ vay mới</button></div>}
         </div>
-      </div>
-
-      {/* Filter & Search Bar Sáng Sủa */}
-      <div
-        className="card loan-filters"
-        style={{
-          padding: '14px 18px',
-          marginBottom: 16,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          flexWrap: 'wrap',
-          background: '#ffffff',
-        }}
-      >
-        <div className="filter-heading">Bộ lọc</div>
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: 8, flex: 1, minWidth: '240px' }}>
-          <div style={{ position: 'relative', width: '100%' }}>
-            <Search size={15} style={{ position: 'absolute', left: 10, top: 10, color: 'var(--text-muted)' }} />
-            <input
-              type="text"
-              placeholder="Tìm theo Mã hồ sơ, Tên doanh nghiệp, MST..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              style={{ width: '100%', paddingLeft: 32 }}
-            />
-          </div>
-          <button type="submit" className="btn btn-secondary" style={{ padding: '8px 14px' }}>
-            Tìm
-          </button>
-        </form>
-
-        <div className="filter-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Filter size={15} color="var(--text-muted)" />
-          <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
-            <option value="">Tất cả công đoạn</option>
-            {scope === 'all' && <option value="TIEP_NHAN">1. Tiếp nhận hồ sơ</option>}
-            <option value="THAM_DINH">2. Thẩm định tín dụng</option>
-            <option value="CAP_TREN">3. Hội đồng / Cấp trên</option>
-            {scope === 'all' && <option value="HOAN_TAT">4. Hoàn tất & Phê duyệt</option>}
-          </select>
-
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">Tất cả trạng thái</option>
-            <option value="RECEIVED">Mới tiếp nhận</option>
-            <option value="CHECKED">Đã đủ hồ sơ</option>
-            <option value="SUPPLEMENT_REQUIRED">Chờ bổ sung (Tạm dừng SLA)</option>
-            <option value="PENDING_APPRAISAL">Đang thẩm định</option>
-            <option value="WAITING_HEAD_OFFICE">Chờ Cấp trên duyệt</option>
-            <option value="APPROVED">Đã phê duyệt</option>
-            <option value="REJECTED">Bị từ chối</option>
-            <option value="CLOSED_TIMEOUT">Đã đóng (quá hạn bổ sung)</option>
-          </select>
-
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: '13px',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              marginLeft: 8,
-              fontWeight: 500,
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={myOnly}
-              onChange={(e) => setMyOnly(e.target.checked)}
-              style={{ width: 16, height: 16 }}
-            />
-            Chỉ hồ sơ của tôi
-          </label>
-        </div>
-      </div>
-
-      {error && <p role="alert" className="error-message">{error}</p>}
-      {loading && <p role="status">Đang tải dữ liệu hồ sơ…</p>}
-      {/* Hiển thị Chế độ KANBAN BOARD hoặc TABLE */}
-      {viewMode === 'kanban' ? (
-        <KanbanBoard stageCodes={scope === 'appraisal' ? ['THAM_DINH', 'CAP_TREN'] : undefined} workflowStages={workflowStages} loans={loans} onSelectLoan={onSelectLoan} />
-      ) : (
-        <div className="data-table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Mã hồ sơ</th>
-                <th>Doanh nghiệp & Ngành nghề</th>
-                <th>Số tiền vay</th>
-                <th>Công đoạn</th>
-                <th>Trạng thái</th>
-                <th>Nguy cơ trễ hạn (AI)</th>
-                <th>Cán bộ phụ trách</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                    Đang tải dữ liệu hồ sơ...
-                  </td>
-                </tr>
-              ) : loans.length > 0 ? (
-                loans.map((loan) => {
-                  const latestPred = loan.delayPredictions?.[0];
-
-                  return (
-                    <tr key={loan.id} style={{ cursor: 'pointer' }} onClick={() => onSelectLoan(loan.id)}>
-                      <td>
-                        <div style={{ fontWeight: 700, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
-                          {loan.applicationCode}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          {new Date(loan.createdAt).toLocaleDateString('vi-VN')}
-                        </div>
-                      </td>
-
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{loan.company.companyName}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          MST: {loan.company.taxCode} • {loan.company.industry}
-                        </div>
-                      </td>
-
-                      <td>
-                        <div style={{ fontWeight: 700, color: 'var(--primary-hover)', fontFamily: 'var(--font-mono)' }}>
-                          {formatVnd(loan.officialAmount || loan.proposedAmount)}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          {loan.loanTermMonths} tháng • {loan.loanType}
-                        </div>
-                      </td>
-
-                      <td>
-                        <span className="badge badge-soft-gray">{loan.currentStage}</span>
-                      </td>
-
-                      <td>{getStatusBadge(loan.currentStatus)}<SupplementDeadlineBadge requests={loan.currentStatus === 'SUPPLEMENT_REQUIRED' ? loan.supplementRequests : undefined} /></td>
-
-                      <td>
-                        {latestPred ? (
-                          <span
-                            className={`badge ${
-                              latestPred.riskLevel === 'CAO'
-                                ? 'badge-soft-red'
-                                : latestPred.riskLevel === 'TRUNG_BINH'
-                                ? 'badge-soft-amber'
-                                : 'badge-soft-green'
-                            }`}
-                          >
-                            {latestPred.riskLevel === 'CAO' ? '⚠️ ' : ''}
-                            {latestPred.riskLevel} ({(latestPred.delayProbability * 100).toFixed(0)}%)
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{predictionLabel(loan.predictionStatus)}</span>
-                        )}
-                      </td>
-
-                      <td>
-                        <div style={{ fontSize: '13px', fontWeight: 500 }}>
-                          {loan.assignedUser?.fullName || 'Chưa gán'}
-                        </div>
-                      </td>
-
-                      <td>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectLoan(loan.id);
-                          }}
-                          className="btn btn-secondary"
-                          style={{ padding: '6px 10px', fontSize: '12px' }}
-                        >
-                          Chi tiết <ChevronRight size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                    Không tìm thấy hồ sơ nào phù hợp.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+        <LoanFilters values={draft} stageOptions={stageOptions} statusOptions={statusOptions} showOfficer={activeRole !== 'CBTD'} busy={loading} onChange={setDraft} onApply={applyFilters} onClear={clearFilters} />
+        <LoanTable
+          columns={isAuthority ? lookupColumns(onSelectLoan) : undefined}
+          loans={loans}
+          total={total}
+          page={page}
+          pageSize={LOAN_PAGE_SIZE}
+          loading={loading}
+          error={error}
+          hasFilter={hasActiveFilters(applied)}
+          emptyTitle="Hiện chưa có hồ sơ"
+          emptyDetail={activeRole === 'CBTD' ? 'Hồ sơ được phân công cho bạn sẽ xuất hiện tại đây.' : 'Hồ sơ sẽ xuất hiện tại đây khi được tiếp nhận.'}
+          onSelectLoan={onSelectLoan}
+          onRefresh={() => { void fetchLoans(); }}
+          onClearFilter={clearFilters}
+          onPageChange={next => { setPage(next); window.scrollTo({ top: 0 }); }}
+        />
       </>}
     </div>
   );

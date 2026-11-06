@@ -1,0 +1,18 @@
+{
+  "pass": true,
+  "counts": {
+    "requests": 15,
+    "legacy_requests": 0,
+    "loans": 3,
+    "legacy_loans": 0
+  },
+  "health": {
+    "status": "ok",
+    "services": {
+      "backend": "ready",
+      "database": "ready",
+      "prediction": "ready"
+    },
+    "timestamp": "2026-11-05T09:58:09.626Z"
+  }
+}

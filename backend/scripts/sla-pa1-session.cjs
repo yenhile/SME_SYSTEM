@@ -65,7 +65,7 @@ async function seed(h) {
     cbtd: await user('sla_cbtd', 'CBTD', 'CBTD mô phỏng'),
     approver: await user('sla_thamquyen', 'THAM_QUYEN', 'Thẩm quyền mô phỏng'),
   };
-  for (const [i, [code, name, sla]] of [['TIEP_NHAN', 'Tiếp nhận hồ sơ', 4], ['THAM_DINH', 'Thẩm định', 24], ['CAP_TREN', 'Cấp trên', 48], ['HOAN_TAT', 'Hoàn tất', 8]].entries()) {
+  for (const [i, [code, name, sla]] of [['TIEP_NHAN', 'Tiếp nhận hồ sơ', 4], ['THAM_DINH', 'Thẩm định', 24], ['HOAN_TAT', 'Hoàn tất', 8]].entries()) {
     await db.workflowStage.create({ data: { stageCode: code, stageName: name, standardSlaHours: sla, orderIndex: i + 1 } });
   }
   const account = await db.portalAccount.create({ data: { email: 'dn.sla@example.test', passwordHash: hash, contactName: 'Doanh nghiệp mô phỏng', phone: '0900000000', verifiedAt: new Date() } });

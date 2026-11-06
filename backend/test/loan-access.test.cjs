@@ -12,10 +12,8 @@ const loans={
   own:{id:'own',assignedTo:'cbtd-a',currentStage:'TIEP_NHAN',completedAt:null},
   other:{id:'other',assignedTo:'cbtd-b',currentStage:'TIEP_NHAN',completedAt:null},
   review:{id:'review',assignedTo:'cbtd-b',currentStage:'THAM_DINH',completedAt:null},
-  senior:{id:'senior',assignedTo:'cbtd-b',currentStage:'CAP_TREN',completedAt:null},
   done:{id:'done',assignedTo:'cbtd-a',currentStage:'HOAN_TAT',completedAt:new Date()},
   ownReview:{id:'ownReview',assignedTo:'cbtd-a',currentStage:'THAM_DINH',completedAt:null},
-  ownSenior:{id:'ownSenior',assignedTo:'cbtd-a',currentStage:'CAP_TREN',completedAt:null},
 };
 const prisma={
   loanApplication:{findUnique:async({where})=>loans[where.id]||null},
@@ -49,7 +47,7 @@ test('QUAN_LY opens any loan',async()=>{
   for(const id of ['own','other','review','done']) assert.equal(await run('QUAN_LY',{params:{id},id:'manager'}),true);
 });
 test('THAM_QUYEN opens loans from THAM_DINH onwards but not TIEP_NHAN',async()=>{
-  for(const id of ['review','senior','done']) assert.equal(await run('THAM_QUYEN',{params:{id},id:'auth'}),true);
+  for(const id of ['review','done']) assert.equal(await run('THAM_QUYEN',{params:{id},id:'auth'}),true);
   await assert.rejects(run('THAM_QUYEN',{params:{id:'other'},id:'auth'}),e=>status(e)===403);
   await assert.rejects(run('THAM_QUYEN',{params:{applicationId:'own'},id:'auth'}),e=>status(e)===403);
   await assert.rejects(run('THAM_QUYEN',{params:{id:'doc-other'},url:'/api/documents/doc-other',id:'auth'}),e=>status(e)===403);
@@ -124,16 +122,16 @@ test('findAll includes the pending supplement deadline markers for the list badg
 
 // PO chốt 30/10/2026: CBTD vẫn xem được hồ sơ của mình sau khi chuyển Thẩm định, nhưng chỉ xem.
 test('CBTD views own loans at every stage, including after the hand-over to appraisal',async()=>{
-  for(const id of ['own','ownReview','ownSenior','done']) assert.equal(await run('CBTD',{params:{id}}),true,id);
-  for(const [id,url] of [['ownReview','/api/documents/ownReview'],['ownSenior','/api/supplements/application/ownSenior']])
+  for(const id of ['own','ownReview','done']) assert.equal(await run('CBTD',{params:{id}}),true,id);
+  for(const [id,url] of [['ownReview','/api/documents/ownReview'],['ownReview','/api/supplements/application/ownReview']])
     assert.equal(await run('CBTD',{params:{applicationId:id},url}),true,`read ${id}`);
 });
 test('CBTD cannot change documents or supplements of an own loan once it left reception',async()=>{
-  for(const id of ['ownReview','ownSenior'])
+  for(const id of ['ownReview'])
     for(const url of [`/api/documents/${id}`,`/api/supplements/${id}`])
       await assert.rejects(run('CBTD',{params:{applicationId:id},method:'POST',url}),e=>status(e)===403&&/công đoạn này/.test(e.message),`${id} ${url}`);
   await assert.rejects(run('CBTD',{params:{applicationId:'done'},method:'POST',url:'/api/documents/done'}),e=>status(e)===403&&/đã kết thúc/.test(e.message));
 });
 test('CBTD still cannot open another officer loan at appraisal or head-office stage',async()=>{
-  for(const id of ['review','senior']) await assert.rejects(run('CBTD',{params:{id}}),e=>status(e)===403,id);
+  for(const id of ['review']) await assert.rejects(run('CBTD',{params:{id}}),e=>status(e)===403,id);
 });

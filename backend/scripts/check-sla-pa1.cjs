@@ -12,9 +12,11 @@ const root = path.resolve(__dirname, '..');
 const vn = (date, time) => new Date(`${date}T${time}:00+07:00`);
 
 function applySlaSql() {
-  const run = spawnSync(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'execute', '--file', path.join(root, 'prisma/sla-pa1.sql'), '--schema', path.join(root, 'prisma/schema.prisma')],
-    { cwd: root, env: { ...process.env }, encoding: 'utf8', timeout: 60000, windowsHide: true });
-  assert.equal(run.status, 0, 'SQL PA1 failed; output withheld');
+  for (const file of ['prisma/sla-pa1.sql', 'prisma/document-codes.sql']) {
+    const run = spawnSync(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'execute', '--file', path.join(root, file), '--schema', path.join(root, 'prisma/schema.prisma')],
+      { cwd: root, env: { ...process.env }, encoding: 'utf8', timeout: 60000, windowsHide: true });
+    assert.equal(run.status, 0, `${file} failed; output withheld`);
+  }
 }
 
 async function runChecks(h) {
@@ -41,7 +43,7 @@ async function runChecks(h) {
   const cbtd2 = await user('cbtd2', 'CBTD');
   const approver = await user('approver', 'THAM_QUYEN');
   const manager = await user('manager', 'QUAN_LY');
-  for (const [i, [code, sla]] of [['TIEP_NHAN', 4], ['THAM_DINH', 24], ['CAP_TREN', 16], ['HOAN_TAT', 4]].entries()) {
+  for (const [i, [code, sla]] of [['TIEP_NHAN', 4], ['THAM_DINH', 24], ['HOAN_TAT', 4]].entries()) {
     await db.workflowStage.create({ data: { stageCode: code, stageName: code, standardSlaHours: sla, orderIndex: i + 1 } });
   }
 
@@ -323,10 +325,10 @@ async function runChecks(h) {
     await loans.checkDocuments(confirmed.id, true, asCbtd(cbtd));
     await toAppraisal(confirmed, vn('2026-10-27', '12:00')).catch(() => null);
     eq((await db.loanApplication.findUnique({ where: { id: confirmed.id } })).currentStage, 'THAM_DINH', 'documents: after confirming again the loan moves on');
-    const lateDoc = await documentsService.create(confirmed.id, { documentType: 'KHAC', fileName: 'late.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/late.pdf' }, approver.id, 'THAM_QUYEN');
+    await assert.rejects(documentsService.create(confirmed.id, { documentType: 'KHAC', fileName: 'late.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/late.pdf' }, approver.id, 'THAM_QUYEN'), e => e.getStatus() === 403); checks++;
     state = await db.loanApplication.findUnique({ where: { id: confirmed.id } });
-    eq(state.currentStatus, 'PENDING_APPRAISAL', 'documents: a document added at appraisal does not touch the loan status');
-    ok(lateDoc.id, 'documents: appraisal-stage document stored');
+    eq(state.currentStatus, 'PENDING_APPRAISAL', 'documents: a refused upload at appraisal does not touch the loan status');
+    eq(await db.document.count({ where: { applicationId: confirmed.id, fileName: 'late.pdf' } }), 0, 'documents: no appraisal-stage document stored');
 
     // ===== Mốc 3: hiển thị, Dashboard, dự báo =====
     const { DashboardService } = require('../dist/modules/dashboard/dashboard.service');

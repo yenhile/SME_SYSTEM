@@ -9,7 +9,7 @@ export function CloseOverdueForm({ applicationCode, busy, onSubmit, onCancel }: 
     style={{ background: 'var(--badge-red-bg)', padding: '16px', borderRadius: 8, border: '1px solid var(--badge-red-border)', display: 'flex', flexDirection: 'column', gap: 12 }}
     onSubmit={event => { event.preventDefault(); if (reason.trim()) onSubmit(reason.trim()); }}
   >
-    <h4 style={{ color: 'var(--badge-red-text)', fontSize: '14px', fontWeight: 700 }}>Đóng hồ sơ do quá hạn bổ sung</h4>
+    <h4 style={{ color: 'var(--badge-red-text)', fontSize: '14px', fontWeight: 600 }}>Đóng hồ sơ do quá hạn bổ sung</h4>
     <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
       Hồ sơ {applicationCode} sẽ chuyển sang trạng thái đã đóng do quá hạn và bị khóa mọi thao tác tiếp theo; không thể hoàn tác. Lý do, người đóng và thời điểm đóng được lưu vào lịch sử công đoạn.
     </p>

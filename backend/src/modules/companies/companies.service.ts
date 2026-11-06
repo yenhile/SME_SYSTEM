@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma.service';
 import { assertOfficerMayWriteCompany } from './company-access';
 import {assertNoCompanyConflict} from '../assignments/assignment-coordination';
 import {lockCompany} from './company-snapshot';
+import { assertTaxCode } from '../../common/tax-code';
 
 @Injectable()
 export class CompaniesService {
@@ -71,6 +72,7 @@ export class CompaniesService {
     phone: string;
     address: string;
   }, user?: { id: string; activeRole?: string }) {
+    assertTaxCode(data.taxCode);
     return this.prisma.$transaction(async tx=>{
     if(user?.id)await assertNoCompanyConflict(tx,user.id,data.taxCode);
     await lockCompany(tx,data.taxCode);

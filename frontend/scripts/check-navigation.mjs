@@ -42,10 +42,10 @@ test('each role can open exactly its own pages and every other page is blocked',
   assert.deepEqual(ALL_TABS.filter(tab => nav.canOpenTab(tab, undefined)), []);
 });
 
-test('CBTD cannot see or open the appraisal, dashboard, assignment, user and SLA pages', () => {
+test('CBTD cannot open the appraisal, dashboard, assignment, user and SLA pages', () => {
   for (const tab of ['appraisal', 'dashboard', 'assignments', 'users', 'settings']) {
     assert.equal(nav.canOpenTab(tab, 'CBTD'), false, tab);
-    assert.ok(!nav.visibleNavItems('CBTD').some(item => item.tab === tab), tab);
+    assert.ok(!nav.allowedNavItems('CBTD').some(item => item.tab === tab), tab);
   }
 });
 
@@ -55,11 +55,30 @@ test('Thẩm quyền and Quản lý cannot reach administration, and Admin has n
   for (const tab of ['loans', 'appraisal', 'dashboard', 'companies', 'assignments']) assert.equal(nav.canOpenTab(tab, 'ADMIN'), false, tab);
 });
 
+test('every role sees the whole menu; entries outside its permission are locked, not hidden', () => {
+  for (const role of ROLES) {
+    const menu = nav.menuItems(role);
+    assert.deepEqual(menu.map(item => item.tab), ALL_TABS, role);
+    for (const item of menu) {
+      const expected = item.unavailable ? 'unavailable' : ALLOWED[role].includes(item.tab) ? 'open' : 'locked';
+      assert.equal(item.access, expected, `${role}:${item.tab}`);
+    }
+  }
+  assert.deepEqual(nav.menuItems(null).map(item => item.access), ALL_TABS.map(tab => nav.NAV_ITEMS.find(item => item.tab === tab).unavailable ? 'unavailable' : 'locked'));
+});
+
+test('a locked entry stays unreachable even though it is shown', () => {
+  for (const item of nav.menuItems('CBTD').filter(entry => entry.access === 'locked')) {
+    assert.equal(nav.canOpenTab(item.tab, 'CBTD'), false, item.tab);
+    assert.equal(nav.resolveTab(item.tab, 'CBTD'), 'loans', item.tab);
+  }
+});
+
 test('every role lands on a page it is allowed to open', () => {
   assert.equal(nav.getDefaultTab('ADMIN'), 'users');
   assert.equal(nav.getDefaultTab('CBTD'), 'loans');
   assert.equal(nav.getDefaultTab('QUAN_LY'), 'dashboard');
-  assert.equal(nav.getDefaultTab('THAM_QUYEN'), 'dashboard');
+  assert.equal(nav.getDefaultTab('THAM_QUYEN'), 'appraisal');
   for (const role of ROLES) assert.equal(nav.canOpenTab(nav.getDefaultTab(role), role), true, role);
 });
 
@@ -69,6 +88,7 @@ test('a forbidden page falls back to the role landing page', () => {
   assert.equal(nav.resolveTab('settings', 'QUAN_LY'), 'dashboard');
   assert.equal(nav.resolveTab('loans', 'ADMIN'), 'users');
   assert.equal(nav.resolveTab('loans', 'CBTD'), 'loans');
+  assert.equal(nav.resolveTab('assignments', 'THAM_QUYEN'), 'appraisal');
 });
 
 test('unimplemented entries stay disabled for everyone who can see them', () => {
@@ -78,11 +98,4 @@ test('unimplemented entries stay disabled for everyone who can see them', () => 
       assert.equal(nav.resolveTab(item.tab, role), nav.getDefaultTab(role));
     }
   }
-});
-
-test('appraisal view keeps only appraisal and head-office stages without mutating source records', () => {
-  const loans = ['TIEP_NHAN', 'THAM_DINH', 'CAP_TREN', 'HOAN_TAT'].map(currentStage => ({ currentStage }));
-  assert.deepEqual(nav.filterLoansForView(loans, 'appraisal'), [loans[1], loans[2]]);
-  assert.strictEqual(nav.filterLoansForView(loans, 'all'), loans);
-  assert.equal(loans.length, 4);
 });

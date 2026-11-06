@@ -4,6 +4,7 @@ import {assertNoCoordinationConflict,obsoleteCoordination,assertNoCompanyConflic
 import { uploadRoot } from '../../common/storage';
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { nextDocumentCode } from '../../common/document-codes';
 import { Prisma, DocumentType, LoanStatus } from '@prisma/client';
 import { randomUUID, createHash } from 'node:crypto';
 import { mkdir, writeFile, unlink, readFile } from 'node:fs/promises';
@@ -116,8 +117,11 @@ export class PortalService {
     if(formVersion===2) assertPreviewEnabled();
     const key=body.clientRequestId;
     if(key!==undefined && (formVersion!==2 || typeof key!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key))) throw new BadRequestException('clientRequestId chỉ hỗ trợ UUIDv4 cho bản nháp v2.');
-    const createData=()=>({accountId,reference:`DN-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${randomUUID().slice(0,12).toUpperCase()}`,data:formVersion===2?validateDraftV2(body.data??{}):validatePortalData(body.data??{}),formVersion,checklistVersion:formVersion===2?PREVIEW_CHECKLIST_VERSION:LEGACY_CHECKLIST_VERSION});
-    if(key===undefined) return this.prisma.portalRequest.create({data:createData(),include});
+    const createData=()=>({accountId,data:formVersion===2?validateDraftV2(body.data??{}):validatePortalData(body.data??{}),formVersion,checklistVersion:formVersion===2?PREVIEW_CHECKLIST_VERSION:LEGACY_CHECKLIST_VERSION});
+    if(key===undefined) return this.prisma.$transaction(async tx=>{
+      const data=createData();
+      return tx.portalRequest.create({data:{...data,reference:await nextDocumentCode(tx,'DN')},include});
+    });
     const id=key.toLowerCase();
     const conflict=()=>new ConflictException('Không thể tạo bản nháp với mã yêu cầu này.');
     try {
@@ -128,7 +132,8 @@ export class PortalService {
           if(existing.accountId!==accountId || existing.formVersion!==2) throw conflict();
           return existing;
         }
-        return tx.portalRequest.create({data:{...createData(),id},include});
+        const data=createData();
+        return tx.portalRequest.create({data:{...data,id,reference:await nextDocumentCode(tx,'DN')},include});
       });
     } catch(error) {
       // Different owners use different locks; an ID collision can still race the insert.
@@ -350,7 +355,7 @@ export class PortalService {
       if(company && r.formVersion===2 && (this.usesCycle(r) || readV2Snapshot(r).policy.readinessVersion==='MVP1')){
         const comparison=this.companyComparison(r,data,company);
         if(!comparison.compatible) throw new ConflictException(comparison.message);
-        if(!confirmExistingCompanyFinancials) throw new ConflictException('CBTD cần xác nhận đã đối chiếu kỳ và nguồn dữ liệu tài chính Company hiện hữu. Không tự ghi đè.');
+        if(!confirmExistingCompanyFinancials) throw new ConflictException('CBTD cần xác nhận đã đối chiếu kỳ và nguồn dữ liệu tài chính của doanh nghiệp hiện hữu. Không tự ghi đè.');
         financialReview=`; CBTD ${userId} xác nhận đối chiếu tài chính Company ${company.id}, kỳ ${String((r.data as any).revenuePeriod)}, nguồn ${String((r.data as any).annualRevenueBasis?.documentId)}`;
       }
       const {loanPurpose,loanType,proposedAmount,loanTermMonths}=data;
@@ -360,7 +365,7 @@ export class PortalService {
       if(!stage) throw new BadRequestException('Chưa cấu hình công đoạn Tiếp nhận.');
       const now=clock;
       const slaMode=await resolveStageSla(tx,now);
-      const loan=await tx.loanApplication.create({data:{applicationCode:`SME-${now.toISOString().slice(0,10).replace(/-/g,'')}-${randomUUID().replace(/-/g,'').slice(0,12).toUpperCase()}`,companyId:company.id,companySnapshot:companySnapshot(company),businessPolicyVersion:BRANCH_POLICY,intakeOfficerId:userId,loanPurpose,loanType,proposedAmount,loanTermMonths,assignedTo:userId,currentStage:'TIEP_NHAN',currentStatus:'RECEIVED',stageHistories:{create:{stageId:stage.id,enteredAt:now,slaStandardHours:stage.standardSlaHours,...slaMode,handledBy:userId,notes:`Tiếp nhận yêu cầu doanh nghiệp ${r.reference}${financialReview}`}}}});
+      const loan=await tx.loanApplication.create({data:{applicationCode:await nextDocumentCode(tx,'SME'),companyId:company.id,companySnapshot:companySnapshot(company),businessPolicyVersion:BRANCH_POLICY,intakeOfficerId:userId,loanPurpose,loanType,proposedAmount,loanTermMonths,assignedTo:userId,currentStage:'TIEP_NHAN',currentStatus:'RECEIVED',stageHistories:{create:{stageId:stage.id,enteredAt:now,slaStandardHours:stage.standardSlaHours,...slaMode,handledBy:userId,notes:`Tiếp nhận yêu cầu doanh nghiệp ${r.reference}${financialReview}`}}}});
       await tx.document.createMany({data:r.documents.map(d=>({applicationId:loan.id,documentType:documentTypes[d.documentGroup],fileName:d.fileName,filePath:d.filePath,fileSize:d.fileSize,mimeType:d.mimeType,uploadedBy:userId,uploadedAt:d.uploadedAt,portalDocumentId:d.id}))});
       await obsoleteCoordination(tx,{portalRequestId:id},'PORTAL_ACCEPTED');
       const request=await tx.portalRequest.update({where:{id},data:{status:'ACCEPTED',acceptedAt:now,acceptedBy:userId,loanId:loan.id},include});

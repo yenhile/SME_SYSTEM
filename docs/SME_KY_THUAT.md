@@ -100,10 +100,18 @@ Không dùng startup khác một cách máy móc: `start-local.ps1`/`run-local-d
 | [portal-account-recovery.sql](../backend/prisma/portal-account-recovery.sql) | Phục hồi Portal và authVersion |
 | [round2-assignment-safety.sql](../backend/prisma/round2-assignment-safety.sql) | Version và idempotency phân công |
 | [round2-assignment-coordination.sql](../backend/prisma/round2-assignment-coordination.sql) | Đề nghị điều phối, liên kết history/notices, FK/index/CHECK |
+| [document-codes.sql](../backend/prisma/document-codes.sql) | Hai PostgreSQL sequence sinh `DN-1`/`SME-1`; giữ mã cũ, tiếp nối số ngắn đã có, chạy lại không reset |
+| [renumber-document-codes.sql](../backend/prisma/renumber-document-codes.sql) | Chuyển mã cũ sang định dạng ngắn theo quyền riêng của PO; chỉ đổi hai cột mã, giữ mã ngắn đã cấp và trả bảng đối chiếu |
 
 Danh sách là nguồn tra cứu, không phải lệnh áp tất cả SQL lên bất kỳ DB nào. Trước áp dụng cần xác định target, đối chiếu schema hiện có, backup và khôi phục thử, kiểm SQL lặp/schema diff/dữ liệu cũ, regenerate client/build tương ứng rồi smoke có cleanup. Không reset/seed DB dùng chung hoặc drop cột để quay về UI cũ.
 
 Ngày 01–02/11 đã có bằng chứng áp dụng localhost, không suy ra mọi DB đã cập nhật. [Release đợt 1](../evidence/reviews/round-1/release.json), [release đợt 2](../evidence/reviews/round-2/release.json), [smoke đợt 2](../evidence/reviews/round-2/live-smoke.json). Dump/env/upload backup thật là dữ liệu cục bộ được quản lý riêng, không sao chép vào tài liệu/evidence chia sẻ.
+
+**Mã hồ sơ rút gọn (05/11/2026):** áp `document-codes.sql` trước khi khởi động backend mới. PortalService.create cấp `DN` khi tạo bản nháp; PortalService.accept và LoanApplicationsService.create dùng chung bộ đếm `SME`. UUID, unique constraint và các mã đã lưu giữ nguyên; không cần Prisma generate hoặc đổi schema. SQL chỉ thêm hai sequence và khởi tạo bằng số ngắn lớn nhất + 1 khi sequence chưa tồn tại; không reset sequence đã có. PostgreSQL `nextval` bảo đảm cấp số đồng thời, có thể bỏ số khi rollback và không được reset để lấp số khuyết. Khi restore cần giữ cả sequence; nếu thiếu sequence, backend báo lỗi thay vì tự sinh mã khác.
+
+Kiểm tra độc lập: `npm.cmd --prefix backend run test:document-codes`; kiểm tra service–Prisma–PostgreSQL tạm: `npm.cmd --prefix backend run check:document-codes` (Docker, image `postgres:16-alpine` đã có, không pull, tự dọn container/volume thử). Script này không dùng DATABASE_URL của hệ thống đang vận hành. Trạng thái áp dụng local và bằng chứng nằm tại mục mã hồ sơ rút gọn trong [Master](SME_MASTER.md#nhom-1).
+
+**Chuyển mã cũ theo yêu cầu PO bổ sung 05/11/2026:** `renumber-document-codes.sql` là thao tác dữ liệu riêng, không chạy tự động khi startup hay cùng SQL tạo sequence. Yêu cầu backup/restore thử và giữ bảng mã cũ → mới riêng. SQL khóa hai bảng, dùng sequence hiện hành cho các mã chưa đúng dạng ngắn theo thứ tự created_at/id, kiểm mọi dữ liệu ngoài hai trường mã trong transaction; lỗi/xung đột sẽ rollback. Mã ngắn đã cấp và nội dung lịch sử/snapshot không được viết lại. Chạy lại không đổi mã hoặc tiêu thụ số; không reset sequence để lấp chỗ khuyết. Kiểm tra tạm riêng bằng `node backend/scripts/check-document-codes.cjs --isolated --renumber` từ root; kết quả local tại mục chuyển mã cũ trong Master.
 
 ## 5. Kiểm thử và ý nghĩa bằng chứng
 

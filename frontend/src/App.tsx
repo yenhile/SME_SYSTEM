@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { getDefaultTab, resolveTab, type Tab } from './navigation';
+import { appraisalPath, appraisalRefFromPath, isLookupAddress, lookupAppraisalPath } from './appraisalWorkspace';
+import { LEAVE_WARNING, officerCasePath, officerCaseRefFromPath } from './officerCase';
+import { AppraisalWorkspace } from './components/AppraisalWorkspace';
+import { OfficerCaseWorkspace } from './components/OfficerCaseWorkspace';
 import { LoginPage } from './components/LoginPage';
 import { LoanList } from './components/LoanList';
+import { AppraisalQueue } from './components/AppraisalQueue';
 import { DashboardView } from './components/DashboardView';
 import { AssignmentsView } from './components/AssignmentsView';
 import { CreateLoanModal } from './components/CreateLoanModal';
@@ -22,12 +27,97 @@ function Workspace() {
   const [showCreate, setShowCreate] = useState(false);
   const [revision, setRevision] = useState(0);
   const [intakeTarget, setIntakeTarget] = useState<{ id: string; revision: number } | null>(null);
+  const isAuthority = activeRole === 'THAM_QUYEN';
+  const [appraisalRef, setAppraisalRef] = useState<string | null>(() => isAuthority ? appraisalRefFromPath(window.location.pathname) : null);
+  const [lookup, setLookup] = useState(() => isLookupAddress(window.location.search));
+  const isOfficer = activeRole === 'CBTD';
+  const [caseRef, setCaseRef] = useState<string | null>(() => isOfficer ? officerCaseRefFromPath(window.location.pathname) : null);
+  const caseDirty = useRef(false);
+  const shownCase = useRef(caseRef);
+  const listScroll = useRef(0);
+  shownCase.current = caseRef;
 
-  const refresh = () => setRevision(value => value + 1);
+  const confirmLeave = useCallback(() => !caseDirty.current || window.confirm(LEAVE_WARNING), []);
+  const markCaseDirty = useCallback((dirty: boolean) => { caseDirty.current = dirty; }, []);
+  const restoreListScroll = () => requestAnimationFrame(() => window.scrollTo({ top: listScroll.current }));
+
+  useEffect(() => {
+    const { pathname } = window.location;
+    if ((!isAuthority && appraisalRefFromPath(pathname)) || (!isOfficer && officerCaseRefFromPath(pathname))) window.history.replaceState(null, '', '/');
+    if (isAuthority) {
+      const followAddress = () => {
+        setAppraisalRef(appraisalRefFromPath(window.location.pathname));
+        setLookup(isLookupAddress(window.location.search));
+      };
+      window.addEventListener('popstate', followAddress);
+      return () => window.removeEventListener('popstate', followAddress);
+    }
+    if (isOfficer) {
+      const followAddress = () => {
+        const next = officerCaseRefFromPath(window.location.pathname);
+        if (next === shownCase.current) return;
+        if (!confirmLeave()) {
+          if (shownCase.current) window.history.pushState(null, '', officerCasePath(shownCase.current));
+          return;
+        }
+        if (!shownCase.current) listScroll.current = window.scrollY;
+        setCaseRef(next);
+        if (!next) { setRevision(value => value + 1); restoreListScroll(); }
+      };
+      window.addEventListener('popstate', followAddress);
+      return () => window.removeEventListener('popstate', followAddress);
+    }
+  }, [isAuthority, isOfficer, confirmLeave]);
+
+  const refresh = useCallback(() => setRevision(value => value + 1), []);
+  const showAppraisalCode = useCallback((applicationCode: string) => {
+    const target = appraisalPath(applicationCode);
+    if (appraisalRefFromPath(window.location.pathname) && window.location.pathname !== target) window.history.replaceState(null, '', `${target}${window.location.search}`);
+  }, []);
+  const showCaseCode = useCallback((applicationCode: string) => {
+    const target = officerCasePath(applicationCode);
+    if (officerCaseRefFromPath(window.location.pathname) && window.location.pathname !== target) window.history.replaceState(null, '', target);
+  }, []);
+
+  const openOfficerCase = (loanId: string) => {
+    if (loanId === caseRef) { refresh(); return; }
+    if (!confirmLeave()) return;
+    if (!caseRef) listScroll.current = window.scrollY;
+    window.history.pushState(null, '', officerCasePath(loanId));
+    setCaseRef(loanId);
+  };
+  const openLoan = (loanId: string) => {
+    if (isOfficer) { openOfficerCase(loanId); return; }
+    if (!isAuthority) { setSelectedLoanId(loanId); return; }
+    window.history.pushState(null, '', appraisalPath(loanId));
+    setLookup(false);
+    setAppraisalRef(loanId);
+  };
+  const openLoanForLookup = (loanId: string) => {
+    if (isOfficer) { openOfficerCase(loanId); return; }
+    if (!isAuthority) { setSelectedLoanId(loanId); return; }
+    window.history.pushState(null, '', lookupAppraisalPath(loanId));
+    setLookup(true);
+    setAppraisalRef(loanId);
+  };
+  const leaveAppraisal = () => {
+    if (appraisalRefFromPath(window.location.pathname) || officerCaseRefFromPath(window.location.pathname)) window.history.pushState(null, '', '/');
+    setLookup(false);
+    setAppraisalRef(null);
+    setCaseRef(null);
+  };
+  const changeTab = (next: Tab) => {
+    if (!confirmLeave()) return false;
+    const leavingCase = Boolean(caseRef);
+    leaveAppraisal();
+    setTab(next);
+    if (leavingCase) { refresh(); restoreListScroll(); }
+    return true;
+  };
 
   const openCase = (subject: { type: 'LOAN' | 'PORTAL'; id: string }) => {
     setCoordinationId(null);
-    if (subject.type === 'LOAN') setSelectedLoanId(subject.id);
+    if (subject.type === 'LOAN') openLoan(subject.id);
     else {
       setSelectedLoanId(null);
       setTab('loans');
@@ -35,19 +125,20 @@ function Workspace() {
     }
   };
 
-  const activeTab = resolveTab(tab, activeRole);
+  const activeTab = caseRef ? 'loans' : appraisalRef ? (lookup ? 'loans' : 'appraisal') : resolveTab(tab, activeRole);
 
   return (
     <div className="app-container">
       <Navbar
         activeTab={activeTab}
-        onTabChange={setTab}
+        onTabChange={changeTab}
         onOpenIntake={id => {
           setSelectedLoanId(null);
-          setTab('loans');
+          if (!changeTab('loans')) return;
           setIntakeTarget(previous => ({ id, revision: (previous?.revision ?? 0) + 1 }));
         }}
-        onOpenLoan={setSelectedLoanId}
+        onOpenLoan={openLoan}
+        confirmLeave={confirmLeave}
         onOpenCoordination={id => {
           setSelectedLoanId(null);
           setCoordinationId(id);
@@ -87,7 +178,7 @@ function Workspace() {
               color: 'inherit',
               padding: '2px 6px',
               fontSize: '16px',
-              fontWeight: 'bold',
+              fontWeight: 600,
               lineHeight: 1,
             }}
             aria-label="Đóng thông báo"
@@ -98,25 +189,29 @@ function Workspace() {
       )}
 
       <main className="main-content">
-        {(activeTab === 'loans' || activeTab === 'appraisal') && (
-          <LoanList
-            key={activeTab}
-            scope={activeTab === 'appraisal' ? 'appraisal' : 'all'}
-            intakeTarget={intakeTarget}
-            refreshKey={revision}
-            onSelectLoan={setSelectedLoanId}
-            onOpenCreate={() => setShowCreate(true)}
-          />
+        {appraisalRef ? (
+          <AppraisalWorkspace key={appraisalRef} reference={appraisalRef} lookup={lookup} onOpenForReview={openLoan} onBack={() => changeTab(lookup || tab === 'loans' ? 'loans' : 'appraisal')} onChanged={refresh} onResolved={showAppraisalCode} />
+        ) : activeTab === 'loans' && (
+          <div hidden={Boolean(caseRef)}>
+            <LoanList
+              intakeTarget={intakeTarget}
+              refreshKey={revision}
+              onSelectLoan={openLoanForLookup}
+              onOpenCreate={() => setShowCreate(true)}
+            />
+          </div>
         )}
-        {activeTab === 'companies' && <CompaniesView />}
-        {activeTab === 'dashboard' && <DashboardView onSelectLoan={setSelectedLoanId} onGoToAssignments={() => setTab('assignments')} />}
+        {caseRef && <OfficerCaseWorkspace key={caseRef} reference={caseRef} refreshKey={revision} onBack={() => changeTab(tab)} onResolved={showCaseCode} onDirtyChange={markCaseDirty} />}
+        {!appraisalRef && !caseRef && activeTab === 'appraisal' && <AppraisalQueue refreshKey={revision} onSelectLoan={openLoan} />}
+        {!appraisalRef && activeTab === 'companies' && <CompaniesView />}
+        {!appraisalRef && activeTab === 'dashboard' && <DashboardView onSelectLoan={openLoan} onGoToAssignments={() => setTab('assignments')} />}
         {activeTab === 'assignments' && <AssignmentsView onOpenCase={openCase} />}
         {activeTab === 'users' && <AdminView section="users" />}
         {activeTab === 'settings' && <AdminView section="settings" />}
       </main>
 
       {showCreate && activeRole === 'CBTD' && <CreateLoanModal isOpen onClose={() => setShowCreate(false)} onSuccess={refresh} />}
-      {selectedLoanId && <LoanDetailModal applicationId={selectedLoanId} onClose={() => setSelectedLoanId(null)} onRefresh={refresh} />}
+      {selectedLoanId && <LoanDetailModal applicationId={selectedLoanId} onClose={() => { setSelectedLoanId(null); refresh(); }} onRefresh={refresh} />}
       {coordinationId && <AssignmentChangeRequestModal key={coordinationId} id={coordinationId} onClose={() => setCoordinationId(null)} onChanged={refresh} onOpenCase={openCase} />}
     </div>
   );

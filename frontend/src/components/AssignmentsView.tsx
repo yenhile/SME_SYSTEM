@@ -32,7 +32,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
       if(current!==sequence.current)return false;
       setWorkloads(workloadsData);
       const active = loansData.filter((l) =>
-        ['RECEIVED', 'CHECKED', 'SUPPLEMENT_REQUIRED', 'PENDING_APPRAISAL', 'WAITING_HEAD_OFFICE'].includes(l.currentStatus)
+        ['RECEIVED', 'CHECKED', 'SUPPLEMENT_REQUIRED', 'PENDING_APPRAISAL'].includes(l.currentStatus)
       );
       setActiveLoans(active);
 
@@ -107,7 +107,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
       {msg && !selectedLoan && <p role={msg.type==='error'?'alert':'status'} className={msg.type==='error'?'error-message':'portal-notice'}>{msg.text}</p>}
       <div className="page-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
             Điều chuyển & phân công
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
@@ -138,7 +138,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
             <Users size={18} />
           </div>
           <div>
-            <h3 style={{ fontSize: '15px', color: 'var(--text-primary)' }}>
+            <h3 style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
               Bảng Giám sát Tải Công việc (CBTD Workload Monitoring)
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -163,13 +163,13 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
               {workloads.map((officer) => (
                 <tr key={officer.id}>
                   <td>
-                    <div style={{ fontWeight: 700 }}>{officer.fullName}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>@{officer.username}</div>
+                    <div style={{ fontWeight: 600 }}>{officer.fullName}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>@{officer.username}</div>
                   </td>
                   <td>{officer.phone || '0901234567'}</td>
                   <td>{officer.branchName}</td>
                   <td>
-                    <strong style={{ fontSize: '15px', color: 'var(--primary-hover)' }}>{officer.totalAssignedCount}</strong> công việc<div>{officer.activeLoanCount} hồ sơ vay · {officer.pendingIntakeCount} đề nghị Portal</div>
+                    <strong style={{ fontSize: '14px', color: 'var(--primary-hover)' }}>{officer.totalAssignedCount}</strong> công việc<div>{officer.activeLoanCount} hồ sơ vay · {officer.pendingIntakeCount} đề nghị Portal</div>
                   </td>
                   <td>
                     {officer.highRiskLoanCount > 0 ? (
@@ -187,7 +187,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
                           ? 'badge-soft-amber'
                           : 'badge-soft-green'
                       }`}
-                      style={{ fontWeight: 700 }}
+                      style={{ fontWeight: 600 }}
                     >
                       {officer.workloadStatus}
                     </span>
@@ -217,7 +217,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
             <ArrowRightLeft size={18} />
           </div>
           <div>
-            <h3 style={{ fontSize: '15px', color: 'var(--text-primary)' }}>
+            <h3 style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
               Danh sách Hồ sơ Đang xử lý (Sẵn sàng Điều chuyển)
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -296,7 +296,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '560px' }}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '15px' }}>Điều chuyển Hồ sơ: {selectedLoan.applicationCode}</h3>
+              <h3 style={{ fontSize: '14px' }}>Điều chuyển Hồ sơ: {selectedLoan.applicationCode}</h3>
               <button disabled={submitting} onClick={() => setSelectedLoan(null)} className="btn btn-secondary" style={{ padding: '6px' }}>
                 ✕
               </button>
@@ -308,7 +308,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
                   <div
                     style={{
                       padding: '10px 14px',
-                      borderRadius: 6,
+                      borderRadius: 4,
                       fontSize: '13px',
                       backgroundColor: msg.type === 'success' ? 'var(--badge-green-bg)' : 'var(--badge-red-bg)',
                       border: `1px solid ${msg.type === 'success' ? 'var(--badge-green-border)' : 'var(--badge-red-border)'}`,
@@ -324,7 +324,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
                   <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
                     Doanh nghiệp vay vốn:
                   </label>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedLoan.company.companyName}</div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedLoan.company.companyName}</div>
                 </div>
 
                 <div>

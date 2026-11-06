@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { ROLE_NAMES, useAuth } from '../context/AuthContext';
 import { RoleCode, User, StageCode } from '../types';
+import { daysToHours, hoursToDays } from '../slaDisplay';
 
 type Account = User & { isActive: boolean };
-type Stage = { stageCode: StageCode; stageName: string; standardSlaHours: number };
+type Stage = { stageCode: StageCode; stageName: string; standardSlaHours: number; slaDays: string };
 const roleCodes = Object.keys(ROLE_NAMES) as RoleCode[];
 const emptyForm = { username: '', password: '', fullName: '', email: '', phone: '', branchName: '', roles: [] as RoleCode[], isActive: true };
 export function AdminView({ section }: { section: 'users' | 'settings' }) {
@@ -21,7 +22,10 @@ export function AdminView({ section }: { section: 'users' | 'settings' }) {
     setBusy(true); setError('');
     try {
       if (section === 'users') setAccounts(await api.get<Account[]>('/users'));
-      else setStages(await api.get<Stage[]>('/admin/workflow-stages'));
+      else {
+        const rows = await api.get<Omit<Stage, 'slaDays'>[]>('/admin/workflow-stages');
+        setStages(rows.filter(stage => stage.stageCode !== 'HOAN_TAT').map(stage => ({ ...stage, slaDays: String(hoursToDays(stage.standardSlaHours)) })));
+      }
     } catch (err) { setError((err as Error).message); }
     finally { setBusy(false); }
   };
@@ -37,7 +41,7 @@ export function AdminView({ section }: { section: 'users' | 'settings' }) {
     finally { setBusy(false); }
   };
   return <section className="admin-view">
-    <div className="page-heading"><div><h2>{section === 'users' ? 'Liên hệ cá nhân' : 'Cấu hình SLA'}</h2><p>Quản trị hệ thống · {section === 'users' ? 'Một tài khoản có thể được cấp nhiều vai trò.' : 'Định mức mới áp dụng cho công đoạn được mở sau khi lưu.'}</p></div><button disabled={busy} className="btn btn-secondary" onClick={() => void load()}>Làm mới</button></div>
+    <div className="page-heading"><div><h2>{section === 'users' ? 'Liên hệ cá nhân' : 'Cấu hình SLA'}</h2><p>Quản trị hệ thống · {section === 'users' ? 'Một tài khoản có thể được cấp nhiều vai trò.' : 'Định mức tính theo ngày làm việc (1 ngày = 8 giờ), áp dụng cho công đoạn được mở sau khi lưu. Hoàn tất không tính SLA.'}</p></div><button disabled={busy} className="btn btn-secondary" onClick={() => void load()}>Làm mới</button></div>
     {error && <p role="alert" className="error-message">{error}</p>}{notice && <p role="status">{notice}</p>}
     {section === 'users' ? <>
       <button className="btn btn-primary" onClick={() => { setEditId(null); setForm(emptyForm); setOpen(true); setError(''); }}>Tạo mới liên hệ</button>
@@ -49,6 +53,6 @@ export function AdminView({ section }: { section: 'users' | 'settings' }) {
         <fieldset><legend>Vai trò (chọn ít nhất một)</legend>{roleCodes.map(role => <label className="check-label" key={role}><input type="checkbox" checked={form.roles.includes(role)} onChange={e => setForm({ ...form, roles: e.target.checked ? [...form.roles, role] : form.roles.filter(item => item !== role) })} />{ROLE_NAMES[role]}</label>)}</fieldset>
         {editId && <label className="check-label"><input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} />Tài khoản hoạt động</label>}
       </div><div className="modal-footer"><button type="submit" className="btn btn-primary" disabled={busy || !form.roles.length}>{busy ? 'Đang lưu…' : 'Lưu tài khoản'}</button></div></form></section></div>}
-    </> : <div className="card admin-form">{stages.map((stage, index) => <form className="sla-row" key={stage.stageCode} onSubmit={async e => { e.preventDefault(); setBusy(true); setError(''); try { await api.put(`/admin/workflow-stages/${stage.stageCode}`, { stageName: stage.stageName, standardSlaHours: Number(stage.standardSlaHours) }); setNotice(`Đã cập nhật ${stage.stageName}.`); } catch (err) { setError((err as Error).message); } finally { setBusy(false); } }}><label>Tên công đoạn<input required value={stage.stageName} onChange={e => setStages(stages.map((item, i) => i === index ? { ...item, stageName: e.target.value } : item))} /></label><label>SLA (giờ)<input required type="number" min={1} step={1} value={stage.standardSlaHours} onChange={e => setStages(stages.map((item, i) => i === index ? { ...item, standardSlaHours: Number(e.target.value) } : item))} /></label><button className="btn btn-primary" type="submit" disabled={busy}>Lưu</button></form>)}</div>}
+    </> : <div className="card admin-form">{stages.map((stage, index) => <form className="sla-row" key={stage.stageCode} onSubmit={async e => { e.preventDefault(); setBusy(true); setError(''); try { await api.put(`/admin/workflow-stages/${stage.stageCode}`, { stageName: stage.stageName, standardSlaHours: daysToHours(Number(stage.slaDays)) }); setNotice(`Đã cập nhật ${stage.stageName}.`); } catch (err) { setError((err as Error).message); } finally { setBusy(false); } }}><label>Tên công đoạn<input required value={stage.stageName} onChange={e => setStages(stages.map((item, i) => i === index ? { ...item, stageName: e.target.value } : item))} /></label><label>SLA (ngày làm việc)<input required type="number" min={0.5} step={0.5} value={stage.slaDays} onChange={e => setStages(stages.map((item, i) => i === index ? { ...item, slaDays: e.target.value } : item))} /></label><button className="btn btn-primary" type="submit" disabled={busy}>Lưu</button></form>)}</div>}
   </section>;
 }

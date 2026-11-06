@@ -186,10 +186,10 @@ export class PortalIntakeWorkflow {
       const data=this.snapshot(s).data;
       await assertNoCompanyConflict(tx,actor.id,data.taxCode);await lockCompany(tx,data.taxCode);
       const company=await tx.company.findUnique({where:{taxCode:data.taxCode}});
-      if(!company||intakeDigest(companySnapshot(company))!==body.companyHash)throw new ConflictException('Company đã thay đổi; tải lại đối soát.');
-      if(!approvedCompanyDifferences(data,company).length)throw new BadRequestException('Thông tin đã khớp; không cần cập nhật Company.');
+      if(!company||intakeDigest(companySnapshot(company))!==body.companyHash)throw new ConflictException('Dữ liệu doanh nghiệp đã thay đổi; tải lại đối soát.');
+      if(!approvedCompanyDifferences(data,company).length)throw new BadRequestException('Thông tin đã khớp; không cần cập nhật doanh nghiệp.');
       if(await tx.portalIntakeIssue.findFirst({where:{requestId:id,kind:'COMPANY_RECONCILIATION',status:'OPEN'}}))throw new ConflictException('Đang có đối soát Company chờ xử lý.');
-      await tx.portalIntakeIssue.create({data:{requestId:id,kind:'COMPANY_RECONCILIATION',description:reason,proposal:'QLCN xác minh căn cứ trước khi cập nhật riêng Company.',publicMessage:'Ngân hàng đang đối soát thông tin doanh nghiệp.',createdBy:actor.id,updatedBy:actor.id,context:json({submissionId:s.id,companyId:company.id,companyHash:body.companyHash,before:companySnapshot(company),proposed:companySnapshot(data)})}});
+      await tx.portalIntakeIssue.create({data:{requestId:id,kind:'COMPANY_RECONCILIATION',description:reason,proposal:'QLCN xác minh căn cứ trước khi cập nhật riêng dữ liệu doanh nghiệp.',publicMessage:'Ngân hàng đang đối soát thông tin doanh nghiệp.',createdBy:actor.id,updatedBy:actor.id,context:json({submissionId:s.id,companyId:company.id,companyHash:body.companyHash,before:companySnapshot(company),proposed:companySnapshot(data)})}});
       const managers=await tx.user.findMany({where:{isActive:true,roles:{some:{role:{code:'QUAN_LY'}}}},select:{id:true}});
       if(managers.length)await tx.internalNotification.createMany({data:managers.map(u=>({userId:u.id,requestId:id,title:'Đối soát doanh nghiệp chờ xử lý',message:`Cần xác minh đối soát ${r.reference}.`}))});
       return tx.portalRequest.update({where:{id},data:{revision:{increment:1}},include:this.include});
@@ -218,7 +218,7 @@ export class PortalIntakeWorkflow {
         if(!manager)throw new ForbiddenException('Quản lý không còn quyền xử lý.');
         await assertNoCompanyConflict(tx,actor.id,data.taxCode);await lockCompany(tx,data.taxCode);
         const company=await tx.company.findUnique({where:{taxCode:data.taxCode}});
-        if(!company||company.id!==context.companyId||intakeDigest(companySnapshot(company))!==context.companyHash)throw new ConflictException('Company đã thay đổi; cần lập đối soát mới.');
+        if(!company||company.id!==context.companyId||intakeDigest(companySnapshot(company))!==context.companyHash)throw new ConflictException('Dữ liệu doanh nghiệp đã thay đổi; cần lập đối soát mới.');
         await freezeCompanyLoans(tx,company);
         await tx.company.update({where:{id:company.id},data:companySnapshot(data)});
       }
@@ -240,7 +240,7 @@ export class PortalIntakeWorkflow {
       await this.latest(tx,id);
       if(resolving){const issue=await tx.portalIntakeIssue.findFirst({where:{id:body.issueId,requestId:id,status:'OPEN'}});
         if(!issue)throw new NotFoundException('Không có vướng mắc đang mở.');
-        if(issue.kind==='COMPANY_RECONCILIATION')throw new ConflictException('Cần xử lý bằng thao tác đối soát Company riêng.');
+        if(issue.kind==='COMPANY_RECONCILIATION')throw new ConflictException('Cần xử lý bằng thao tác đối soát doanh nghiệp riêng.');
         await tx.portalIntakeIssue.update({where:{id:issue.id},data:{status:'RESOLVED',resolution,updatedBy:actor.id}});
       }else await tx.portalIntakeIssue.create({data:{id:randomUUID(),requestId:id,description,proposal,publicMessage,createdBy:actor.id,updatedBy:actor.id}});
       return tx.portalRequest.update({where:{id},data:{revision:{increment:1}},include:this.include});

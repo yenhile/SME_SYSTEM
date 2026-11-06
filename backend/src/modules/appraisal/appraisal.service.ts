@@ -2,8 +2,8 @@ import { Injectable, BadRequestException, ConflictException, ForbiddenException,
 import { PrismaService } from '../../prisma.service';
 import { WorkflowService } from '../workflow/workflow.service';
 import { PredictionService } from '../prediction/prediction.service';
-import { assertBranchAmount, BRANCH_POLICY, LoanActor } from '../workflow/loan-policy';
-import { assertIndependent, digest, reportEvidence, validateReport } from './appraisal.logic';
+import { assertOfficialAmount, BRANCH_POLICY, LoanActor } from '../workflow/loan-policy';
+import { assertIndependent, digest, isEvidenceChanged, reportEvidence, validateReport } from './appraisal.logic';
 import {assertNoCoordinationConflict} from '../assignments/assignment-coordination';
 @Injectable()
 export class AppraisalService {
@@ -13,10 +13,7 @@ export class AppraisalService {
     if (!report) return null;
     if (!actor?.id) return report;
 
-    const loan = await this.prisma.loanApplication.findUnique({
-      where: { id },
-      select: { assignedTo: true, intakeOfficerId: true }
-    });
+    const loan = await this.prisma.loanApplication.findUnique({ where: { id } });
 
     let isIndependent = true;
     let clarifyBlockReason: string | null = null;
@@ -42,8 +39,18 @@ export class AppraisalService {
       }
     }
 
+    const latest = report.versions[0];
+    const awaitingDecision = report.status === 'SUBMITTED' && loan?.currentStage === 'THAM_DINH' && !loan.completedAt && Boolean(latest);
+    const evidenceChanged = awaitingDecision ? await isEvidenceChanged(this.prisma, loan, latest.evidenceHash) : false;
+    const authors = report.versions.length
+      ? await this.prisma.user.findMany({ where: { id: { in: [...new Set(report.versions.map(version => version.submittedBy))] } }, select: { id: true, fullName: true, username: true } })
+      : [];
+    const authorNames = new Map(authors.map(author => [author.id, author.fullName || author.username]));
+
     return {
       ...report,
+      versions: report.versions.map(version => ({ ...version, submittedByName: authorNames.get(version.submittedBy) ?? null })),
+      evidenceChanged,
       makerChecker: {
         isIndependent,
         canClarify: isIndependent,
@@ -94,7 +101,7 @@ export class AppraisalService {
           if(loan.currentStatus==='SUPPLEMENT_REQUIRED' || await tx.supplementRequest.count({where:{applicationId:id,status:'PENDING'}})) throw new ConflictException('Cần hoàn tất bổ sung trước khi trình.');
           if(loan.currentStage==='TIEP_NHAN' && (!loan.isDocumentComplete || loan.currentStatus!=='CHECKED')) throw new BadRequestException('Cần xác nhận đủ chứng từ trước khi trình.');
           if(!loan.officialAmount) throw new BadRequestException('Cần xác nhận hạn mức chính thức trước khi trình.');
-          assertBranchAmount(loan.officialAmount);
+          assertOfficialAmount(loan.officialAmount, loan.proposedAmount);
           const evidence=await reportEvidence(tx,loan);
           const sequence=await tx.appraisalReportVersion.count({where:{reportId:report.id}})+1;
           await tx.appraisalReportVersion.create({data:{reportId:report.id,sequence,content,evidence,evidenceHash:digest(evidence),submittedBy:user.id}});

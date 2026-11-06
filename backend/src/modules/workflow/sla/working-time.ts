@@ -33,6 +33,21 @@ export const SIMULATED_CALENDAR_V1: SlaCalendar = {
   holidays: ['2026-10-30'],
 };
 
+/** Lịch vận hành năm 2026: không theo hoán đổi và làm bù thứ Bảy của công chức, 23/11 là ngày làm việc. */
+export const OPERATING_CALENDAR_2026: SlaCalendar = {
+  version: 'VN-20260101-20261231-v1',
+  coverageFrom: '2026-01-01',
+  coverageTo: '2026-12-31',
+  holidays: [
+    '2026-01-01',
+    '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20',
+    '2026-04-27',
+    '2026-04-30', '2026-05-01',
+    '2026-09-01', '2026-09-02',
+    '2026-11-24',
+  ],
+};
+
 /** Khoảng tạm dừng; `end = null` là khoảng còn mở và được tính đến thời điểm `until` của lần gọi. */
 export interface PauseInterval {
   start: Date;
@@ -108,6 +123,42 @@ export function workingMillisBetween(start: Date, end: Date, calendar: SlaCalend
     total += remaining;
   }
   return total;
+}
+
+/**
+ * Thời điểm đã dùng hết `hours` giờ làm việc kể từ `start`, bỏ qua các khoảng tạm dừng đã kết thúc.
+ * Hạn rơi đúng cuối ca thì giữ nguyên cuối ca (12:00 hoặc 17:00). Hạn vượt kỳ bao phủ của lịch thì báo CalendarCoverageError.
+ * Không gọi khi còn khoảng dừng đang mở, vì lúc đó chưa xác định được hạn.
+ */
+export function workingDeadline(start: Date, hours: number, calendar: SlaCalendar, pauses: ReadonlyArray<PauseInterval> = []): Date {
+  const from = start.getTime();
+  assertCovered(calendar, from);
+  const paused = mergeSegments(pauses.map((p): Segment => [Math.max(from, p.start.getTime()), p.end ? p.end.getTime() : from]));
+  const holidays = new Set(calendar.holidays);
+  let remaining = hours * HOUR_MS;
+  for (let day = midnightUtcMs(dateKeyOf(from)); ; day += DAY_MS) {
+    const key = dateKeyOf(day);
+    assertCovered(calendar, day);
+    const weekday = weekdayOf(key);
+    if (weekday === 0 || weekday === 6 || holidays.has(key)) continue;
+    for (const session of WORKING_SESSIONS) {
+      let cursor = Math.max(from, day + session.startMinute * 60000);
+      const sessionEnd = day + session.endMinute * 60000;
+      if (cursor >= sessionEnd) continue;
+      for (const [pa, pb] of paused) {
+        if (pb <= cursor || pa >= sessionEnd) continue;
+        const free = Math.max(0, pa - cursor);
+        if (remaining <= free) return new Date(cursor + remaining);
+        remaining -= free;
+        cursor = Math.max(cursor, pb);
+        if (cursor >= sessionEnd) break;
+      }
+      if (cursor >= sessionEnd) continue;
+      const free = sessionEnd - cursor;
+      if (remaining <= free) return new Date(cursor + remaining);
+      remaining -= free;
+    }
+  }
 }
 
 /** Như `workingMillisBetween` nhưng trả về số giờ (có phần thập phân). */

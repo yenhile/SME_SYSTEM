@@ -1,0 +1,27 @@
+{
+  "target": "sme-loan-workflow-db-1",
+  "backupVerified": true,
+  "applied": true,
+  "database": "sme_loan",
+  "backupBytes": 180380,
+  "backupSha256": "748e8eb0bc552b6405edc317b55cb9d70fc18dfce98c2dec8fb722f52b299e8e",
+  "otherDataChanged": false,
+  "requestsRenamed": 13,
+  "loansRenamed": 3,
+  "existingShortCodesPreserved": 2,
+  "mappingRetainedPrivately": true,
+  "tablesVerified": 25,
+  "rowsVerified": 94,
+  "counters": {
+    "DN": {
+      "last_value": "15",
+      "is_called": true
+    },
+    "SME": {
+      "last_value": "3",
+      "is_called": true
+    }
+  },
+  "pass": true,
+  "restoreContainerCleaned": true
+}

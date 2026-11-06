@@ -21,7 +21,7 @@ export class DocumentsController {
   }
 
   @Post(':applicationId')
-  @Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN)
+  @Roles(RoleCode.CBTD)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   create(
     @Param('applicationId') applicationId: string,
@@ -35,7 +35,7 @@ export class DocumentsController {
   }
 
   @Delete(':id')
-  @Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN)
+  @Roles(RoleCode.CBTD)
   delete(@Param('id') id: string, @CurrentUser() user: {id:string;activeRole:string}) {
     return this.documentsService.delete(id, user);
   }

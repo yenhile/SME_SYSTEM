@@ -30,7 +30,6 @@ test('accepted loans map internal statuses to public statuses and step progress'
     [loan({currentStatus:'SUPPLEMENT_REQUIRED'}),'SUPPLEMENT_REQUIRED','current,pending,pending,pending'],
     [loan({currentStage:'THAM_DINH',currentStatus:'PENDING_APPRAISAL',stageHistories:hist('TIEP_NHAN','THAM_DINH')}),'APPRAISAL','done,current,pending,pending'],
     [loan({currentStage:'THAM_DINH',currentStatus:'SUPPLEMENT_REQUIRED',stageHistories:hist('TIEP_NHAN','THAM_DINH')}),'SUPPLEMENT_REQUIRED','done,current,pending,pending'],
-    [loan({currentStage:'CAP_TREN',currentStatus:'WAITING_HEAD_OFFICE',stageHistories:hist('TIEP_NHAN','THAM_DINH','CAP_TREN')}),'HEAD_OFFICE','done,done,current,pending'],
     [loan({currentStage:'HOAN_TAT',currentStatus:'APPROVED',completedAt:new Date(),stageHistories:hist('TIEP_NHAN','THAM_DINH','HOAN_TAT')}),'APPROVED','done,done,done,done'],
   ];
   for(const [l,code,steps] of cases) {

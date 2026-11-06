@@ -1,0 +1,302 @@
+{
+  "fixture": "Presentation only, synthetic data. No API or database writes.",
+  "checks": [
+    {
+      "label": "1440: four review groups",
+      "pass": true
+    },
+    {
+      "label": "1440: one declaration",
+      "pass": true
+    },
+    {
+      "label": "1440: no raw technical fields in visible text",
+      "pass": true
+    },
+    {
+      "label": "1440: incomplete submit disabled",
+      "pass": true
+    },
+    {
+      "label": "1440: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "1440: responsive submit card",
+      "pass": true
+    },
+    {
+      "label": "1440: incomplete section initially expanded",
+      "pass": true
+    },
+    {
+      "label": "1440: edit link points to originating step",
+      "pass": true
+    },
+    {
+      "label": "1440: full answers expandable",
+      "pass": true
+    },
+    {
+      "label": "375: four review groups",
+      "pass": true
+    },
+    {
+      "label": "375: one declaration",
+      "pass": true
+    },
+    {
+      "label": "375: no raw technical fields in visible text",
+      "pass": true
+    },
+    {
+      "label": "375: incomplete submit disabled",
+      "pass": true
+    },
+    {
+      "label": "375: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "375: responsive submit card",
+      "pass": true
+    },
+    {
+      "label": "375: incomplete section initially expanded",
+      "pass": true
+    },
+    {
+      "label": "375: edit link points to originating step",
+      "pass": true
+    },
+    {
+      "label": "375: full answers expandable",
+      "pass": true
+    },
+    {
+      "label": "ready: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "ready: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "Ready: callback remains connected, fixture only",
+      "pass": true
+    },
+    {
+      "label": "Declaration change: unsaved-state explanation",
+      "pass": true
+    },
+    {
+      "label": "dirty: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "dirty: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "dirty: disabled submit cannot invoke callback",
+      "pass": true
+    },
+    {
+      "label": "Dirty: save guidance visible",
+      "pass": true
+    },
+    {
+      "label": "stale: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "stale: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "stale: disabled submit cannot invoke callback",
+      "pass": true
+    },
+    {
+      "label": "error: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "error: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "error: disabled submit cannot invoke callback",
+      "pass": true
+    },
+    {
+      "label": "readonly: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "readonly: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "readonly: disabled submit cannot invoke callback",
+      "pass": true
+    },
+    {
+      "label": "Readonly: mutation controls disabled, information retained",
+      "pass": true
+    },
+    {
+      "label": "closed: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "closed: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "closed: disabled submit cannot invoke callback",
+      "pass": true
+    },
+    {
+      "label": "files: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "files: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "files: disabled submit cannot invoke callback",
+      "pass": true
+    },
+    {
+      "label": "legacy: preserves supplied submit guard",
+      "pass": true
+    },
+    {
+      "label": "legacy: honest readiness presentation",
+      "pass": true
+    },
+    {
+      "label": "legacy: disabled submit cannot invoke callback",
+      "pass": true
+    },
+    {
+      "label": "Legacy: readiness fields translated in the shared review",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous login/1440: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous login/1440: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous register/1440: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous register/1440: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous verify/1440: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous verify/1440: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous forgot/1440: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous forgot/1440: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous reset/1440: reset view only, no submission",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous reset/1440: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous 1440: no mutation attempts",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous login/375: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous login/375: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous register/375: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous register/375: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous verify/375: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous verify/375: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous forgot/375: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous forgot/375: correct view title",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous reset/375: reset view only, no submission",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous reset/375: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "Live anonymous 375: no mutation attempts",
+      "pass": true
+    },
+    {
+      "label": "No browser runtime exceptions",
+      "pass": true
+    }
+  ],
+  "screenshots": [
+    "review-incomplete-1440.png",
+    "review-actions-1440.png",
+    "review-incomplete-375.png",
+    "review-actions-375.png",
+    "review-ready.png",
+    "review-dirty.png",
+    "review-error.png",
+    "review-readonly.png",
+    "auth-login-1440.png",
+    "auth-register-1440.png",
+    "auth-verify-1440.png",
+    "auth-forgot-1440.png",
+    "auth-reset-1440.png",
+    "auth-login-375.png",
+    "auth-register-375.png",
+    "auth-verify-375.png",
+    "auth-forgot-375.png",
+    "auth-reset-375.png"
+  ],
+  "errors": []
+}

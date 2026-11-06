@@ -1,0 +1,4530 @@
+{
+  "scope": "28 đặc tả nội bộ hiện có và 1 đặc tả Lập và gửi đề nghị vay của Doanh nghiệp; theo phạm vi PO đã chốt trong hội thoại.",
+  "formatting": "Năm dòng thông tin chung; tiêu đề luồng gộp hai ô; hai cột Actor/System, bước chính đánh số liên tục; nhánh theo số bước.",
+  "validationPlan": [
+    "Đếm đúng 29 bảng/mã/tên riêng biệt",
+    "Kiểm tra bước chính và tham chiếu nhánh",
+    "Kiểm tra gộp ô, màu xám, đường viền và độ rộng",
+    "Giữ nguyên file gốc và phần ngoài đặc tả của báo cáo",
+    "Không chạy ghi DB hoặc thay source ứng dụng"
+  ],
+  "original": 28,
+  "rewritten": 28,
+  "added": 1,
+  "total": 29,
+  "specs": [
+    {
+      "id": "UC01",
+      "title": "Đăng nhập",
+      "section": "3.8.1",
+      "description": "Cho phép cán bộ đăng nhập hệ thống.",
+      "pre": "Có tài khoản nội bộ đang hoạt động và được cấp vai trò.",
+      "post": "Đăng nhập thành công, mở màn hình theo vai trò.",
+      "actor": "Cán bộ tín dụng, Cán bộ thẩm quyền, Quản lý chi nhánh, Quản trị viên.",
+      "flow": [
+        [
+          "Truy cập hệ thống.",
+          "Hiển thị form đăng nhập."
+        ],
+        [
+          "Nhập tên đăng nhập và mật khẩu.",
+          ""
+        ],
+        [
+          "Nhấn Đăng nhập.",
+          "Hiển thị màn hình theo vai trò."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Chọn vai trò khác đã được cấp.",
+          "system": "Chuyển sang không gian làm việc tương ứng.",
+          "at": 5
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Sai thông tin: báo lỗi, yêu cầu nhập lại.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Tài khoản bị khóa, chưa có vai trò hoặc thử sai quá nhiều: không cho truy cập.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "AUTH"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Đăng nhập"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép cán bộ đăng nhập hệ thống."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Có tài khoản nội bộ đang hoạt động và được cấp vai trò."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Đăng nhập thành công, mở màn hình theo vai trò."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng, Cán bộ thẩm quyền, Quản lý chi nhánh, Quản trị viên."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Truy cập hệ thống.",
+            "2. Hiển thị form đăng nhập."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập tên đăng nhập và mật khẩu.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Đăng nhập.",
+            "5. Hiển thị màn hình theo vai trò."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "5.1. Chọn vai trò khác đã được cấp.",
+            "5.2. Chuyển sang không gian làm việc tương ứng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.3. Sai thông tin: báo lỗi, yêu cầu nhập lại."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.4. Tài khoản bị khóa, chưa có vai trò hoặc thử sai quá nhiều: không cho truy cập."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC02",
+      "title": "Kiểm tra checklist",
+      "section": "3.8.2.2",
+      "description": "Cho phép CBTD kiểm tra các mục của đề nghị vay.",
+      "pre": "Đăng nhập CBTD, được giao đề nghị đang chờ tiếp nhận.",
+      "post": "Lưu kết quả kiểm tra của từng mục trên đúng lần gửi.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở Chờ tiếp nhận.",
+          "Hiển thị đề nghị được giao."
+        ],
+        [
+          "Nhấn Xem đề nghị.",
+          "Hiển thị thông tin và checklist."
+        ],
+        [
+          "Nhấn Kiểm tra đạt tại mục đã đối chiếu.",
+          "Hiển thị Đã kiểm tra đạt."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Nhập lý do và chọn Yêu cầu sửa mục này.",
+          "system": "Hiển thị Cần chỉnh sửa; chưa trả sửa toàn bộ đề nghị.",
+          "at": 5
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Thiếu lý do sửa: yêu cầu nhập bổ sung.",
+          "at": 6
+        },
+        {
+          "actor": "",
+          "system": "Lần gửi hoặc phân công đã đổi: yêu cầu tải lại.",
+          "at": 6
+        }
+      ],
+      "refs": [
+        "INTAKE"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Kiểm tra checklist"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD kiểm tra các mục của đề nghị vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập CBTD, được giao đề nghị đang chờ tiếp nhận."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu kết quả kiểm tra của từng mục trên đúng lần gửi."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Chờ tiếp nhận.",
+            "2. Hiển thị đề nghị được giao."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Xem đề nghị.",
+            "4. Hiển thị thông tin và checklist."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhấn Kiểm tra đạt tại mục đã đối chiếu.",
+            "6. Hiển thị Đã kiểm tra đạt."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "5.1. Nhập lý do và chọn Yêu cầu sửa mục này.",
+            "5.2. Hiển thị Cần chỉnh sửa; chưa trả sửa toàn bộ đề nghị."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.1. Thiếu lý do sửa: yêu cầu nhập bổ sung."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.2. Lần gửi hoặc phân công đã đổi: yêu cầu tải lại."
+          ]
+        }
+      ],
+      "stepCount": 6
+    },
+    {
+      "id": "UC03",
+      "title": "Trả sửa đề nghị",
+      "section": "3.8.2.3",
+      "description": "Cho phép CBTD trả đề nghị để doanh nghiệp chỉnh sửa.",
+      "pre": "Đăng nhập CBTD, phụ trách đề nghị; có nội dung cần sửa hoặc DN xin sửa.",
+      "post": "Đề nghị chuyển Cần chỉnh sửa, giữ mã và lịch sử lần gửi.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở đề nghị cần trả sửa.",
+          "Hiển thị checklist và thông tin đề nghị."
+        ],
+        [
+          "Nhập nội dung cần chỉnh sửa.",
+          ""
+        ],
+        [
+          "Nhấn Trả đề nghị để chỉnh sửa.",
+          "Hiển thị yêu cầu xác nhận."
+        ],
+        [
+          "Nhấn OK.",
+          "Hiển thị Cần chỉnh sửa và danh sách cần sửa."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "DN đã xin sửa: chọn Đồng ý và trả sửa hoặc Không đồng ý trả sửa.",
+          "system": "Lưu quyết định và lý do; không đồng ý thì giữ chờ tiếp nhận.",
+          "at": 1
+        },
+        {
+          "actor": "DN sửa đề nghị và gửi lại trên cùng mã.",
+          "system": "Lưu lần gửi mới để CBTD kiểm tra lại.",
+          "at": 7
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Chưa có nội dung cần sửa: không cho trả sửa.",
+          "at": 7
+        },
+        {
+          "actor": "",
+          "system": "Còn yêu cầu xin sửa đang chờ: yêu cầu xử lý trước.",
+          "at": 7
+        }
+      ],
+      "refs": [
+        "INTAKE"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Trả sửa đề nghị"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD trả đề nghị để doanh nghiệp chỉnh sửa."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập CBTD, phụ trách đề nghị; có nội dung cần sửa hoặc DN xin sửa."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Đề nghị chuyển Cần chỉnh sửa, giữ mã và lịch sử lần gửi."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đề nghị cần trả sửa.",
+            "2. Hiển thị checklist và thông tin đề nghị."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập nội dung cần chỉnh sửa.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Trả đề nghị để chỉnh sửa.",
+            "5. Hiển thị yêu cầu xác nhận."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Nhấn OK.",
+            "7. Hiển thị Cần chỉnh sửa và danh sách cần sửa."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "1.1. DN đã xin sửa: chọn Đồng ý và trả sửa hoặc Không đồng ý trả sửa.",
+            "1.2. Lưu quyết định và lý do; không đồng ý thì giữ chờ tiếp nhận."
+          ]
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "7.1. DN sửa đề nghị và gửi lại trên cùng mã.",
+            "7.2. Lưu lần gửi mới để CBTD kiểm tra lại."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.3. Chưa có nội dung cần sửa: không cho trả sửa."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.4. Còn yêu cầu xin sửa đang chờ: yêu cầu xử lý trước."
+          ]
+        }
+      ],
+      "stepCount": 7
+    },
+    {
+      "id": "UC04",
+      "title": "Đối soát công ty",
+      "section": "3.8.2.4",
+      "description": "Cho phép CBTD gửi yêu cầu đối soát dữ liệu doanh nghiệp.",
+      "pre": "Đăng nhập CBTD, được giao đề nghị; MST đã tồn tại và có thông tin khác biệt.",
+      "post": "Lưu yêu cầu chờ Quản lý; chưa thay đổi dữ liệu doanh nghiệp.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở đề nghị.",
+          "Hiển thị chi tiết đề nghị."
+        ],
+        [
+          "Nhấn Đối chiếu dữ liệu Company.",
+          "Hiển thị các thông tin khác nhau."
+        ],
+        [
+          "Nhập căn cứ đối soát.",
+          ""
+        ],
+        [
+          "Nhấn Gửi đối soát Company.",
+          "Thông báo đã gửi yêu cầu."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Thông tin đã khớp.",
+          "system": "Thông báo không cần đối soát.",
+          "at": 4
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Thiếu căn cứ hoặc đã có yêu cầu chờ: không gửi.",
+          "at": 7
+        },
+        {
+          "actor": "",
+          "system": "Dữ liệu đối chiếu thay đổi: yêu cầu tải lại.",
+          "at": 7
+        }
+      ],
+      "refs": [
+        "INTAKE",
+        "COMPANY"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Đối soát công ty"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD gửi yêu cầu đối soát dữ liệu doanh nghiệp."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập CBTD, được giao đề nghị; MST đã tồn tại và có thông tin khác biệt."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu yêu cầu chờ Quản lý; chưa thay đổi dữ liệu doanh nghiệp."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đề nghị.",
+            "2. Hiển thị chi tiết đề nghị."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Đối chiếu dữ liệu Company.",
+            "4. Hiển thị các thông tin khác nhau."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhập căn cứ đối soát.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Nhấn Gửi đối soát Company.",
+            "7. Thông báo đã gửi yêu cầu."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "4.1. Thông tin đã khớp.",
+            "4.2. Thông báo không cần đối soát."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.1. Thiếu căn cứ hoặc đã có yêu cầu chờ: không gửi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.2. Dữ liệu đối chiếu thay đổi: yêu cầu tải lại."
+          ]
+        }
+      ],
+      "stepCount": 7
+    },
+    {
+      "id": "UC05",
+      "title": "Tiếp nhận đề nghị",
+      "section": "3.8.2.5",
+      "description": "Cho phép CBTD tiếp nhận đề nghị thành hồ sơ vay.",
+      "pre": "Đăng nhập CBTD, được giao đề nghị; checklist đạt, không còn xin sửa/đối soát hoặc COI chặn.",
+      "post": "Tạo một hồ sơ Mới tiếp nhận, liên kết đề nghị; bắt đầu SLA hồ sơ vay.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở đề nghị đủ điều kiện.",
+          "Hiển thị kết quả kiểm tra."
+        ],
+        [
+          "Nhấn Kiểm tra doanh nghiệp để tiếp nhận.",
+          "Hiển thị kết quả đối chiếu doanh nghiệp."
+        ],
+        [
+          "Nhấn Tiếp nhận thành hồ sơ vay.",
+          "Hiển thị yêu cầu xác nhận."
+        ],
+        [
+          "Nhấn OK.",
+          "Mở hồ sơ mới; đề nghị chuyển Đã tiếp nhận."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "DN đã tồn tại: xác nhận dùng dữ liệu hiện hữu và đã đối chiếu tài chính.",
+          "system": "Giữ dữ liệu doanh nghiệp; khác biệt cần xử lý đối soát trước.",
+          "at": 4
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Chưa đủ điều kiện: hiển thị lý do, không tiếp nhận.",
+          "at": 8
+        },
+        {
+          "actor": "",
+          "system": "Đề nghị thay đổi: yêu cầu tải lại. Đã tiếp nhận: mở hồ sơ có sẵn, không tạo trùng.",
+          "at": 8
+        }
+      ],
+      "refs": [
+        "PORTAL",
+        "INTAKE",
+        "COMPANY",
+        "SLA"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Tiếp nhận đề nghị"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD tiếp nhận đề nghị thành hồ sơ vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập CBTD, được giao đề nghị; checklist đạt, không còn xin sửa/đối soát hoặc COI chặn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Tạo một hồ sơ Mới tiếp nhận, liên kết đề nghị; bắt đầu SLA hồ sơ vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đề nghị đủ điều kiện.",
+            "2. Hiển thị kết quả kiểm tra."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Kiểm tra doanh nghiệp để tiếp nhận.",
+            "4. Hiển thị kết quả đối chiếu doanh nghiệp."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhấn Tiếp nhận thành hồ sơ vay.",
+            "6. Hiển thị yêu cầu xác nhận."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "7. Nhấn OK.",
+            "8. Mở hồ sơ mới; đề nghị chuyển Đã tiếp nhận."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "4.1. DN đã tồn tại: xác nhận dùng dữ liệu hiện hữu và đã đối chiếu tài chính.",
+            "4.2. Giữ dữ liệu doanh nghiệp; khác biệt cần xử lý đối soát trước."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "8.1. Chưa đủ điều kiện: hiển thị lý do, không tiếp nhận."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "8.2. Đề nghị thay đổi: yêu cầu tải lại. Đã tiếp nhận: mở hồ sơ có sẵn, không tạo trùng."
+          ]
+        }
+      ],
+      "stepCount": 8
+    },
+    {
+      "id": "UC06",
+      "title": "Yêu cầu bổ sung",
+      "section": "3.8.3.2",
+      "description": "Cho phép cán bộ yêu cầu doanh nghiệp bổ sung chứng từ.",
+      "pre": "Đúng quyền công đoạn; hồ sơ chưa kết thúc, chưa có đợt bổ sung chờ và không bị COI chặn.",
+      "post": "Tạo yêu cầu, chuyển Chờ bổ sung và tạm dừng SLA chờ DN; bỏ cờ đủ hồ sơ.",
+      "actor": "Cán bộ tín dụng, Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Mở thẻ Yêu cầu bổ sung.",
+          "Hiển thị các yêu cầu hiện có."
+        ],
+        [
+          "Nhấn Tạo yêu cầu bổ sung theo danh mục.",
+          "Hiển thị form yêu cầu."
+        ],
+        [
+          "Nhập nội dung, loại tài liệu và lý do.",
+          ""
+        ],
+        [
+          "Nhấn Gửi yêu cầu & Tạm dừng SLA.",
+          "Thông báo đã gửi; hiển thị Chờ bổ sung."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Nhấn Thêm mục.",
+          "system": "Thêm dòng tài liệu cần bổ sung.",
+          "at": 5
+        },
+        {
+          "actor": "DN tải tài liệu và nhấn Gửi tài liệu bổ sung khi đã đủ.",
+          "system": "Hiển thị Đã gửi, chờ kiểm tra; PA1 chạy lại từ lúc gửi đủ.",
+          "at": 7
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Thiếu nội dung, trùng mục hoặc đã có đợt chờ: không tạo yêu cầu.",
+          "at": 7
+        }
+      ],
+      "refs": [
+        "SUPP",
+        "POLICY",
+        "DEADLINE",
+        "SUPP_MAIN"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Yêu cầu bổ sung"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép cán bộ yêu cầu doanh nghiệp bổ sung chứng từ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đúng quyền công đoạn; hồ sơ chưa kết thúc, chưa có đợt bổ sung chờ và không bị COI chặn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Tạo yêu cầu, chuyển Chờ bổ sung và tạm dừng SLA chờ DN; bỏ cờ đủ hồ sơ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng, Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở thẻ Yêu cầu bổ sung.",
+            "2. Hiển thị các yêu cầu hiện có."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Tạo yêu cầu bổ sung theo danh mục.",
+            "4. Hiển thị form yêu cầu."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhập nội dung, loại tài liệu và lý do.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Nhấn Gửi yêu cầu & Tạm dừng SLA.",
+            "7. Thông báo đã gửi; hiển thị Chờ bổ sung."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "5.1. Nhấn Thêm mục.",
+            "5.2. Thêm dòng tài liệu cần bổ sung."
+          ]
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "7.1. DN tải tài liệu và nhấn Gửi tài liệu bổ sung khi đã đủ.",
+            "7.2. Hiển thị Đã gửi, chờ kiểm tra; PA1 chạy lại từ lúc gửi đủ."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.3. Thiếu nội dung, trùng mục hoặc đã có đợt chờ: không tạo yêu cầu."
+          ]
+        }
+      ],
+      "stepCount": 7
+    },
+    {
+      "id": "UC07",
+      "title": "Giải quyết bổ sung",
+      "section": "3.8.3.3",
+      "description": "Cho phép cán bộ kiểm tra và hoàn tất đợt bổ sung.",
+      "pre": "Đúng quyền công đoạn; có đợt bổ sung chờ và tài liệu DN đã gửi.",
+      "post": "Đợt bổ sung hoàn tất; hồ sơ trở lại trạng thái xử lý theo công đoạn.",
+      "actor": "Cán bộ tín dụng, Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Mở đợt bổ sung.",
+          "Hiển thị các mục và tài liệu đã gửi."
+        ],
+        [
+          "Nhấn Chấp nhận mục tại tài liệu đạt.",
+          "Hiển thị Đã chấp nhận."
+        ],
+        [
+          "Nhấn Hoàn tất yêu cầu & Chạy lại SLA.",
+          "Thông báo hoàn tất; cập nhật trạng thái hồ sơ."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Chọn Yêu cầu thay thế và gửi danh sách sửa sau khi kiểm tra xong.",
+          "system": "Hiển thị Cần thay thế; PA1 mở lại khoảng chờ DN.",
+          "at": 3
+        },
+        {
+          "actor": "DN gửi đủ bản thay thế.",
+          "system": "Hiển thị tài liệu mới chờ kiểm tra; giữ lịch sử tệp.",
+          "at": 4
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Còn mục chưa đạt: không hoàn tất.",
+          "at": 6
+        },
+        {
+          "actor": "",
+          "system": "Dữ liệu thay đổi hoặc hồ sơ kết thúc: chặn thao tác.",
+          "at": 6
+        }
+      ],
+      "refs": [
+        "SUPP",
+        "SLA",
+        "SUPP_MAIN"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Giải quyết bổ sung"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép cán bộ kiểm tra và hoàn tất đợt bổ sung."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đúng quyền công đoạn; có đợt bổ sung chờ và tài liệu DN đã gửi."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Đợt bổ sung hoàn tất; hồ sơ trở lại trạng thái xử lý theo công đoạn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng, Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đợt bổ sung.",
+            "2. Hiển thị các mục và tài liệu đã gửi."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Chấp nhận mục tại tài liệu đạt.",
+            "4. Hiển thị Đã chấp nhận."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhấn Hoàn tất yêu cầu & Chạy lại SLA.",
+            "6. Thông báo hoàn tất; cập nhật trạng thái hồ sơ."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "3.1. Chọn Yêu cầu thay thế và gửi danh sách sửa sau khi kiểm tra xong.",
+            "3.2. Hiển thị Cần thay thế; PA1 mở lại khoảng chờ DN."
+          ]
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "4.1. DN gửi đủ bản thay thế.",
+            "4.2. Hiển thị tài liệu mới chờ kiểm tra; giữ lịch sử tệp."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.1. Còn mục chưa đạt: không hoàn tất."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.2. Dữ liệu thay đổi hoặc hồ sơ kết thúc: chặn thao tác."
+          ]
+        }
+      ],
+      "stepCount": 6
+    },
+    {
+      "id": "UC08",
+      "title": "Xác nhận đủ hồ sơ",
+      "section": "3.8.3.4",
+      "description": "Cho phép CBTD xác nhận hồ sơ đủ chứng từ.",
+      "pre": "Đăng nhập CBTD, phụ trách hồ sơ ở Tiếp nhận và không chờ bổ sung.",
+      "post": "Hồ sơ chuyển Đã đủ hồ sơ; chưa chuyển Thẩm định.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở Danh mục chứng từ.",
+          "Hiển thị chứng từ ban đầu và bổ sung đã đạt."
+        ],
+        [
+          "Nhấn Xác nhận hồ sơ đầy đủ.",
+          "Hiển thị Đã đủ hồ sơ."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Phát hiện thiếu chứng từ: tạo yêu cầu bổ sung.",
+          "system": "Chuyển Chờ bổ sung và bỏ xác nhận đủ hồ sơ.",
+          "at": 3
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Sai người/công đoạn, đang chờ bổ sung hoặc hồ sơ kết thúc: không cho xác nhận.",
+          "at": 4
+        }
+      ],
+      "refs": [
+        "LOAN",
+        "SUPP"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Xác nhận đủ hồ sơ"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD xác nhận hồ sơ đủ chứng từ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập CBTD, phụ trách hồ sơ ở Tiếp nhận và không chờ bổ sung."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hồ sơ chuyển Đã đủ hồ sơ; chưa chuyển Thẩm định."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Danh mục chứng từ.",
+            "2. Hiển thị chứng từ ban đầu và bổ sung đã đạt."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Xác nhận hồ sơ đầy đủ.",
+            "4. Hiển thị Đã đủ hồ sơ."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "3.1. Phát hiện thiếu chứng từ: tạo yêu cầu bổ sung.",
+            "3.2. Chuyển Chờ bổ sung và bỏ xác nhận đủ hồ sơ."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "4.1. Sai người/công đoạn, đang chờ bổ sung hoặc hồ sơ kết thúc: không cho xác nhận."
+          ]
+        }
+      ],
+      "stepCount": 4
+    },
+    {
+      "id": "UC09",
+      "title": "Xác định hạn mức",
+      "section": "3.8.4",
+      "description": "Cho phép CBTD nhập hạn mức chính thức để trình thẩm định.",
+      "pre": "Đăng nhập CBTD, phụ trách hồ sơ ở Tiếp nhận và không chờ bổ sung.",
+      "post": "Lưu hạn mức chính thức; chưa phải quyết định phê duyệt.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Nhấn Sửa tại Hạn mức chính thức.",
+          "Hiển thị ô nhập hạn mức."
+        ],
+        [
+          "Nhập số tiền.",
+          ""
+        ],
+        [
+          "Nhấn Lưu hạn mức.",
+          "Hiển thị hạn mức đã cập nhật."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Số tiền không hợp lệ, ≤0 hoặc vượt 10 tỷ: báo lỗi, không lưu.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Không còn quyền sửa tại Tiếp nhận: chặn cập nhật.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "LOAN",
+        "POLICY"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Xác định hạn mức"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD nhập hạn mức chính thức để trình thẩm định."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập CBTD, phụ trách hồ sơ ở Tiếp nhận và không chờ bổ sung."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu hạn mức chính thức; chưa phải quyết định phê duyệt."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Nhấn Sửa tại Hạn mức chính thức.",
+            "2. Hiển thị ô nhập hạn mức."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập số tiền.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Lưu hạn mức.",
+            "5. Hiển thị hạn mức đã cập nhật."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Số tiền không hợp lệ, ≤0 hoặc vượt 10 tỷ: báo lỗi, không lưu."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.2. Không còn quyền sửa tại Tiếp nhận: chặn cập nhật."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC10",
+      "title": "Lưu nháp tờ trình",
+      "section": "3.8.5.2",
+      "description": "Cho phép CBTD soạn và lưu nháp tờ trình.",
+      "pre": "Đăng nhập CBTD, phụ trách hồ sơ; tờ trình đang lập hoặc được yêu cầu làm rõ.",
+      "post": "Lưu nháp; giữ nguyên các bản đã trình trước.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở khung Tờ trình tín dụng.",
+          "Hiển thị nội dung nháp hoặc form trống."
+        ],
+        [
+          "Nhập nội dung tờ trình.",
+          ""
+        ],
+        [
+          "Nhấn Lưu nháp tờ trình.",
+          "Thông báo Đã lưu bản nháp."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Tờ trình cần làm rõ: sửa nội dung theo yêu cầu.",
+          "system": "Lưu nháp để trình phiên bản tiếp theo.",
+          "at": 3
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Bản đã trình chưa được mở làm rõ: không cho sửa.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Nội dung không hợp lệ hoặc bản nháp đã đổi: báo lỗi, yêu cầu kiểm tra lại.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "APPRAISAL"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Lưu nháp tờ trình"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD soạn và lưu nháp tờ trình."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập CBTD, phụ trách hồ sơ; tờ trình đang lập hoặc được yêu cầu làm rõ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu nháp; giữ nguyên các bản đã trình trước."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở khung Tờ trình tín dụng.",
+            "2. Hiển thị nội dung nháp hoặc form trống."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập nội dung tờ trình.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Lưu nháp tờ trình.",
+            "5. Thông báo Đã lưu bản nháp."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "3.1. Tờ trình cần làm rõ: sửa nội dung theo yêu cầu.",
+            "3.2. Lưu nháp để trình phiên bản tiếp theo."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Bản đã trình chưa được mở làm rõ: không cho sửa."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.2. Nội dung không hợp lệ hoặc bản nháp đã đổi: báo lỗi, yêu cầu kiểm tra lại."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC11",
+      "title": "Trình tờ trình",
+      "section": "3.8.5.3",
+      "description": "Cho phép CBTD trình tờ trình đã lưu nháp.",
+      "pre": "CBTD phụ trách; nháp đủ và đã lưu, có hạn mức, đủ chứng từ, không còn bổ sung chờ.",
+      "post": "Tạo bản đã trình. Lần đầu chuyển Thẩm định; trình lại giữ công đoạn và SLA.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở tờ trình đã lưu.",
+          "Hiển thị bản nháp."
+        ],
+        [
+          "Nhấn Trình tờ trình.",
+          "Hiển thị bản đã trình và thông báo thành công."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Trình lại sau yêu cầu làm rõ.",
+          "system": "Tạo bản tiếp theo, giữ bản cũ và thời gian đã xử lý.",
+          "at": 3
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Chưa lưu nháp hoặc thiếu điều kiện: thông báo nội dung cần hoàn thiện.",
+          "at": 4
+        },
+        {
+          "actor": "",
+          "system": "Bản nháp/tài liệu căn cứ đã đổi: yêu cầu kiểm tra lại.",
+          "at": 4
+        }
+      ],
+      "refs": [
+        "APPRAISAL",
+        "WORKFLOW",
+        "ML"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Trình tờ trình"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD trình tờ trình đã lưu nháp."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "CBTD phụ trách; nháp đủ và đã lưu, có hạn mức, đủ chứng từ, không còn bổ sung chờ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Tạo bản đã trình. Lần đầu chuyển Thẩm định; trình lại giữ công đoạn và SLA."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở tờ trình đã lưu.",
+            "2. Hiển thị bản nháp."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Trình tờ trình.",
+            "4. Hiển thị bản đã trình và thông báo thành công."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "3.1. Trình lại sau yêu cầu làm rõ.",
+            "3.2. Tạo bản tiếp theo, giữ bản cũ và thời gian đã xử lý."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "4.1. Chưa lưu nháp hoặc thiếu điều kiện: thông báo nội dung cần hoàn thiện."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "4.2. Bản nháp/tài liệu căn cứ đã đổi: yêu cầu kiểm tra lại."
+          ]
+        }
+      ],
+      "stepCount": 4
+    },
+    {
+      "id": "UC12",
+      "title": "Tra cứu hồ sơ vay",
+      "section": "3.8.6",
+      "description": "Cho phép CBTD tìm và xem hồ sơ được phụ trách.",
+      "pre": "Đã đăng nhập với vai trò Cán bộ tín dụng.",
+      "post": "Hiển thị hồ sơ phù hợp trong phạm vi quyền.",
+      "actor": "Cán bộ tín dụng.",
+      "flow": [
+        [
+          "Mở Danh sách hồ sơ.",
+          "Hiển thị các hồ sơ được phép xem."
+        ],
+        [
+          "Nhập mã hồ sơ, tên doanh nghiệp hoặc MST.",
+          ""
+        ],
+        [
+          "Nhấn Tìm.",
+          "Hiển thị kết quả phù hợp."
+        ],
+        [
+          "Nhấn Chi tiết tại hồ sơ.",
+          "Hiển thị chi tiết hồ sơ."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Chọn công đoạn, trạng thái hoặc kiểu xem.",
+          "system": "Hiển thị theo bộ lọc và kiểu xem đã chọn.",
+          "at": 3
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Không có kết quả: hiển thị danh sách trống.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Không có quyền: từ chối truy cập. Hồ sơ đã kết thúc chỉ được xem.",
+          "at": 7
+        }
+      ],
+      "refs": [
+        "LOAN",
+        "ACCESS",
+        "UI_LOAN"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Tra cứu hồ sơ vay"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép CBTD tìm và xem hồ sơ được phụ trách."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đã đăng nhập với vai trò Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hiển thị hồ sơ phù hợp trong phạm vi quyền."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Danh sách hồ sơ.",
+            "2. Hiển thị các hồ sơ được phép xem."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập mã hồ sơ, tên doanh nghiệp hoặc MST.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Tìm.",
+            "5. Hiển thị kết quả phù hợp."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Nhấn Chi tiết tại hồ sơ.",
+            "7. Hiển thị chi tiết hồ sơ."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "3.1. Chọn công đoạn, trạng thái hoặc kiểu xem.",
+            "3.2. Hiển thị theo bộ lọc và kiểu xem đã chọn."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Không có kết quả: hiển thị danh sách trống."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.1. Không có quyền: từ chối truy cập. Hồ sơ đã kết thúc chỉ được xem."
+          ]
+        }
+      ],
+      "stepCount": 7
+    },
+    {
+      "id": "UC13",
+      "title": "Xem xét tờ trình",
+      "section": "3.8.7.2",
+      "description": "Cho phép Thẩm quyền xem hồ sơ và tờ trình.",
+      "pre": "Đăng nhập Thẩm quyền; hồ sơ từ công đoạn Thẩm định trở đi.",
+      "post": "Hiển thị tờ trình và tài liệu ở chế độ chỉ xem.",
+      "actor": "Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Mở Thẩm định & phê duyệt.",
+          "Hiển thị danh sách hồ sơ."
+        ],
+        [
+          "Nhấn Chi tiết.",
+          "Hiển thị hồ sơ và tờ trình."
+        ],
+        [
+          "Chọn bản đã trình hoặc thẻ tài liệu.",
+          "Hiển thị nội dung tương ứng."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Nhấn Chạy lại AI khi được phép.",
+          "system": "Cập nhật dự báo nguy cơ trễ SLA nếu khả dụng.",
+          "at": 5
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Chưa có tờ trình/dự báo: hiển thị chưa có dữ liệu.",
+          "at": 4
+        },
+        {
+          "actor": "",
+          "system": "Không độc lập: chặn quyết định/làm rõ. PA1 không tương thích: thông báo chưa có dự báo phù hợp.",
+          "at": 6
+        }
+      ],
+      "refs": [
+        "APPRAISAL",
+        "ML",
+        "UI_LOAN",
+        "REPORT_RULES"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Xem xét tờ trình"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Thẩm quyền xem hồ sơ và tờ trình."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Thẩm quyền; hồ sơ từ công đoạn Thẩm định trở đi."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hiển thị tờ trình và tài liệu ở chế độ chỉ xem."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Thẩm định & phê duyệt.",
+            "2. Hiển thị danh sách hồ sơ."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Chi tiết.",
+            "4. Hiển thị hồ sơ và tờ trình."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Chọn bản đã trình hoặc thẻ tài liệu.",
+            "6. Hiển thị nội dung tương ứng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "5.1. Nhấn Chạy lại AI khi được phép.",
+            "5.2. Cập nhật dự báo nguy cơ trễ SLA nếu khả dụng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "4.1. Chưa có tờ trình/dự báo: hiển thị chưa có dữ liệu."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.1. Không độc lập: chặn quyết định/làm rõ. PA1 không tương thích: thông báo chưa có dự báo phù hợp."
+          ]
+        }
+      ],
+      "stepCount": 6
+    },
+    {
+      "id": "UC14",
+      "title": "Yêu cầu làm rõ tờ trình",
+      "section": "3.8.7.3",
+      "description": "Cho phép Thẩm quyền yêu cầu CBTD làm rõ tờ trình.",
+      "pre": "Thẩm quyền độc lập; hồ sơ ở Thẩm định, tờ trình đã trình và chưa có quyết định.",
+      "post": "Tờ trình chuyển CBTD cần làm rõ; SLA nội bộ tiếp tục chạy.",
+      "actor": "Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Mở tờ trình cần làm rõ.",
+          "Hiển thị tờ trình và ô yêu cầu."
+        ],
+        [
+          "Nhập nội dung cần làm rõ.",
+          ""
+        ],
+        [
+          "Nhấn Yêu cầu làm rõ tờ trình.",
+          "Thông báo đã gửi; hiển thị CBTD cần làm rõ."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Nội dung trống hoặc tờ trình đã đổi: báo lỗi.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Không độc lập, có COI chặn hoặc hồ sơ kết thúc: từ chối thao tác.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "APPRAISAL",
+        "REPORT_RULES"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Yêu cầu làm rõ tờ trình"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Thẩm quyền yêu cầu CBTD làm rõ tờ trình."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Thẩm quyền độc lập; hồ sơ ở Thẩm định, tờ trình đã trình và chưa có quyết định."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Tờ trình chuyển CBTD cần làm rõ; SLA nội bộ tiếp tục chạy."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở tờ trình cần làm rõ.",
+            "2. Hiển thị tờ trình và ô yêu cầu."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập nội dung cần làm rõ.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Yêu cầu làm rõ tờ trình.",
+            "5. Thông báo đã gửi; hiển thị CBTD cần làm rõ."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Nội dung trống hoặc tờ trình đã đổi: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.2. Không độc lập, có COI chặn hoặc hồ sơ kết thúc: từ chối thao tác."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC15",
+      "title": "Phê duyệt",
+      "section": "3.8.8.2",
+      "description": "Cho phép Thẩm quyền phê duyệt khoản vay.",
+      "pre": "Thẩm quyền độc lập; bản trình mới nhất hợp lệ, không còn bổ sung/làm rõ hoặc COI chặn.",
+      "post": "Hồ sơ Hoàn tất/Đã phê duyệt; lưu quyết định và khóa ghi nghiệp vụ.",
+      "actor": "Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Nhấn Phê duyệt Khoản vay tại hồ sơ.",
+          "Hiển thị form số tiền và lãi suất."
+        ],
+        [
+          "Nhập số tiền, lãi suất.",
+          ""
+        ],
+        [
+          "Nhấn Xác nhận Phê duyệt.",
+          "Hiển thị Đã phê duyệt."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Số tiền ≤0/vượt hạn mức hoặc lãi suất ngoài 0–100%: báo lỗi.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Sai quyền độc lập, căn cứ đã đổi hoặc còn điều kiện chưa đạt: không phê duyệt.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Hồ sơ đã kết thúc: không ghi quyết định tiếp theo.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "WORKFLOW",
+        "APPRAISAL",
+        "TRACKING",
+        "REPORT_RULES"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Phê duyệt"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Thẩm quyền phê duyệt khoản vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Thẩm quyền độc lập; bản trình mới nhất hợp lệ, không còn bổ sung/làm rõ hoặc COI chặn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hồ sơ Hoàn tất/Đã phê duyệt; lưu quyết định và khóa ghi nghiệp vụ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Nhấn Phê duyệt Khoản vay tại hồ sơ.",
+            "2. Hiển thị form số tiền và lãi suất."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập số tiền, lãi suất.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Xác nhận Phê duyệt.",
+            "5. Hiển thị Đã phê duyệt."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Số tiền ≤0/vượt hạn mức hoặc lãi suất ngoài 0–100%: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.2. Sai quyền độc lập, căn cứ đã đổi hoặc còn điều kiện chưa đạt: không phê duyệt."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.3. Hồ sơ đã kết thúc: không ghi quyết định tiếp theo."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC16",
+      "title": "Từ chối",
+      "section": "3.8.8.3",
+      "description": "Cho phép Thẩm quyền từ chối khoản vay.",
+      "pre": "Thẩm quyền độc lập; bản trình mới nhất hợp lệ, không còn bổ sung/làm rõ hoặc COI chặn.",
+      "post": "Hồ sơ Hoàn tất/Bị từ chối; lưu lý do và khóa ghi nghiệp vụ.",
+      "actor": "Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Nhấn Từ chối tại hồ sơ.",
+          "Hiển thị mã lý do và ô giải trình."
+        ],
+        [
+          "Chọn mã TC01–TC05.",
+          ""
+        ],
+        [
+          "Nhập giải trình.",
+          ""
+        ],
+        [
+          "Nhấn Xác nhận Từ chối hồ sơ.",
+          "Hiển thị Bị từ chối."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Mã không hợp lệ hoặc thiếu giải trình: báo lỗi.",
+          "at": 6
+        },
+        {
+          "actor": "",
+          "system": "Không độc lập, bản trình/căn cứ đã đổi hoặc hồ sơ kết thúc: không quyết định.",
+          "at": 6
+        }
+      ],
+      "refs": [
+        "WORKFLOW",
+        "APPRAISAL",
+        "TRACKING",
+        "REPORT_RULES"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Từ chối"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Thẩm quyền từ chối khoản vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Thẩm quyền độc lập; bản trình mới nhất hợp lệ, không còn bổ sung/làm rõ hoặc COI chặn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hồ sơ Hoàn tất/Bị từ chối; lưu lý do và khóa ghi nghiệp vụ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Nhấn Từ chối tại hồ sơ.",
+            "2. Hiển thị mã lý do và ô giải trình."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Chọn mã TC01–TC05.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhập giải trình.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhấn Xác nhận Từ chối hồ sơ.",
+            "6. Hiển thị Bị từ chối."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.1. Mã không hợp lệ hoặc thiếu giải trình: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.2. Không độc lập, bản trình/căn cứ đã đổi hoặc hồ sơ kết thúc: không quyết định."
+          ]
+        }
+      ],
+      "stepCount": 6
+    },
+    {
+      "id": "UC17",
+      "title": "Phân công cán bộ tín dụng",
+      "section": "3.8.9.2",
+      "description": "Cho phép Quản lý giao đề nghị mới cho CBTD.",
+      "pre": "Đăng nhập Quản lý; đề nghị đã gửi, chưa có người phụ trách và chưa tiếp nhận.",
+      "post": "Lưu phân công, đề nghị chuyển Chờ tiếp nhận; chưa bắt đầu SLA khoản vay.",
+      "actor": "Quản lý chi nhánh.",
+      "flow": [
+        [
+          "Mở đề nghị chưa phân công.",
+          "Hiển thị form Phân công cán bộ tín dụng."
+        ],
+        [
+          "Chọn cán bộ nhận.",
+          ""
+        ],
+        [
+          "Nhấn Phân công đề nghị.",
+          "Hiển thị yêu cầu xác nhận."
+        ],
+        [
+          "Nhấn OK.",
+          "Thông báo Đã lưu phân công."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Tự giao cho mình hoặc cán bộ nhận không còn hoạt động/vai trò CBTD: báo lỗi.",
+          "at": 7
+        },
+        {
+          "actor": "",
+          "system": "Đề nghị vừa được phân công hoặc tiếp nhận: yêu cầu tải lại.",
+          "at": 7
+        }
+      ],
+      "refs": [
+        "ASSIGN",
+        "PORTAL"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Phân công cán bộ tín dụng"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản lý giao đề nghị mới cho CBTD."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản lý; đề nghị đã gửi, chưa có người phụ trách và chưa tiếp nhận."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu phân công, đề nghị chuyển Chờ tiếp nhận; chưa bắt đầu SLA khoản vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đề nghị chưa phân công.",
+            "2. Hiển thị form Phân công cán bộ tín dụng."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Chọn cán bộ nhận.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Phân công đề nghị.",
+            "5. Hiển thị yêu cầu xác nhận."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Nhấn OK.",
+            "7. Thông báo Đã lưu phân công."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.1. Tự giao cho mình hoặc cán bộ nhận không còn hoạt động/vai trò CBTD: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.2. Đề nghị vừa được phân công hoặc tiếp nhận: yêu cầu tải lại."
+          ]
+        }
+      ],
+      "stepCount": 7
+    },
+    {
+      "id": "UC18",
+      "title": "Điều chuyển hồ sơ",
+      "section": "3.8.9.3",
+      "description": "Cho phép Quản lý bàn giao hồ sơ sang CBTD khác.",
+      "pre": "Đăng nhập Quản lý; hồ sơ chưa kết thúc, cán bộ nhận còn hoạt động và có quyền CBTD.",
+      "post": "Đổi người phụ trách, lưu bàn giao; giữ mã, lịch sử và SLA đã sử dụng.",
+      "actor": "Quản lý chi nhánh.",
+      "flow": [
+        [
+          "Nhấn Điều chuyển tại hồ sơ.",
+          "Hiển thị form Điều chuyển hồ sơ."
+        ],
+        [
+          "Chọn cán bộ nhận.",
+          ""
+        ],
+        [
+          "Nhập lý do.",
+          ""
+        ],
+        [
+          "Nhấn Xác nhận Điều chuyển.",
+          "Thông báo điều chuyển thành công."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Đề nghị chưa tiếp nhận: chọn Điều chuyển đề nghị.",
+          "system": "Đổi người phụ trách; đề nghị đang Cần chỉnh sửa vẫn giữ trạng thái đó.",
+          "at": 1
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Thiếu lý do, trùng người cũ/tự giao hoặc người nhận không hợp lệ: báo lỗi.",
+          "at": 6
+        },
+        {
+          "actor": "",
+          "system": "Hồ sơ kết thúc hoặc phân công đã đổi: không điều chuyển theo bản cũ.",
+          "at": 6
+        }
+      ],
+      "refs": [
+        "ASSIGN",
+        "COMPANY",
+        "POLICY"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Điều chuyển hồ sơ"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản lý bàn giao hồ sơ sang CBTD khác."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản lý; hồ sơ chưa kết thúc, cán bộ nhận còn hoạt động và có quyền CBTD."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Đổi người phụ trách, lưu bàn giao; giữ mã, lịch sử và SLA đã sử dụng."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Nhấn Điều chuyển tại hồ sơ.",
+            "2. Hiển thị form Điều chuyển hồ sơ."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Chọn cán bộ nhận.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhập lý do.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhấn Xác nhận Điều chuyển.",
+            "6. Thông báo điều chuyển thành công."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "1.1. Đề nghị chưa tiếp nhận: chọn Điều chuyển đề nghị.",
+            "1.2. Đổi người phụ trách; đề nghị đang Cần chỉnh sửa vẫn giữ trạng thái đó."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.1. Thiếu lý do, trùng người cũ/tự giao hoặc người nhận không hợp lệ: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.2. Hồ sơ kết thúc hoặc phân công đã đổi: không điều chuyển theo bản cũ."
+          ]
+        }
+      ],
+      "stepCount": 6
+    },
+    {
+      "id": "UC19",
+      "title": "Duyệt đề nghị điều phối",
+      "section": "3.8.9.4",
+      "description": "Cho phép Quản lý xử lý đề nghị điều phối do CBTD gửi.",
+      "pre": "Đăng nhập Quản lý; có đề nghị chờ, người quyết định khác người gửi.",
+      "post": "Lưu chấp thuận và bàn giao hoặc không chấp thuận, giữ người phụ trách.",
+      "actor": "Quản lý chi nhánh.",
+      "flow": [
+        [
+          "Mở đề nghị điều phối chờ quản lý.",
+          "Hiển thị lý do và cán bộ phụ trách."
+        ],
+        [
+          "Chọn cán bộ nhận.",
+          ""
+        ],
+        [
+          "Nhập căn cứ.",
+          ""
+        ],
+        [
+          "Nhấn Chấp thuận và bàn giao.",
+          "Hiển thị Đã chấp thuận điều phối."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Nhập căn cứ, xác nhận CBTD còn xử lý được và chọn Không chấp thuận điều phối.",
+          "system": "Lưu không chấp thuận, giữ phân công.",
+          "at": 5
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Tự duyệt, thiếu căn cứ hoặc người nhận không hợp lệ: báo lỗi.",
+          "at": 6
+        },
+        {
+          "actor": "",
+          "system": "Đề nghị đã xử lý/hết hiệu lực: không bàn giao theo yêu cầu cũ.",
+          "at": 6
+        }
+      ],
+      "refs": [
+        "COORD",
+        "ASSIGN"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Duyệt đề nghị điều phối"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản lý xử lý đề nghị điều phối do CBTD gửi."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản lý; có đề nghị chờ, người quyết định khác người gửi."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu chấp thuận và bàn giao hoặc không chấp thuận, giữ người phụ trách."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đề nghị điều phối chờ quản lý.",
+            "2. Hiển thị lý do và cán bộ phụ trách."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Chọn cán bộ nhận.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhập căn cứ.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhấn Chấp thuận và bàn giao.",
+            "6. Hiển thị Đã chấp thuận điều phối."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "5.1. Nhập căn cứ, xác nhận CBTD còn xử lý được và chọn Không chấp thuận điều phối.",
+            "5.2. Lưu không chấp thuận, giữ phân công."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.1. Tự duyệt, thiếu căn cứ hoặc người nhận không hợp lệ: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.2. Đề nghị đã xử lý/hết hiệu lực: không bàn giao theo yêu cầu cũ."
+          ]
+        }
+      ],
+      "stepCount": 6
+    },
+    {
+      "id": "UC20",
+      "title": "Duyệt báo xung đột lợi ích (COI)",
+      "section": "3.8.9.5",
+      "description": "Cho phép Quản lý xử lý báo cáo xung đột lợi ích.",
+      "pre": "Đăng nhập Quản lý; có COI đang chờ, người quyết định khác người báo.",
+      "post": "Bàn giao hoặc kết luận không có COI; lưu căn cứ và giải quyết chặn tương ứng.",
+      "actor": "Quản lý chi nhánh.",
+      "flow": [
+        [
+          "Mở đề nghị Xung đột lợi ích.",
+          "Hiển thị lý do và cảnh báo chặn thao tác."
+        ],
+        [
+          "Chọn cán bộ nhận.",
+          ""
+        ],
+        [
+          "Nhập căn cứ.",
+          ""
+        ],
+        [
+          "Nhấn Chấp thuận và bàn giao.",
+          "Hiển thị kết quả bàn giao."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Xác nhận CBTD tiếp tục được, không có COI và chọn Không chấp thuận điều phối.",
+          "system": "Lưu kết luận, giữ cán bộ và gỡ chặn COI tương ứng.",
+          "at": 5
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Tự duyệt, thiếu căn cứ/xác nhận hoặc đề nghị hết hiệu lực: từ chối.",
+          "at": 6
+        },
+        {
+          "actor": "CBTD tự rút báo cáo COI.",
+          "system": "Không cho tự rút hoặc đổi vai trò để gỡ chặn.",
+          "at": 1
+        }
+      ],
+      "refs": [
+        "COORD",
+        "ASSIGN",
+        "COI_RULES"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Duyệt báo xung đột lợi ích (COI)"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản lý xử lý báo cáo xung đột lợi ích."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản lý; có COI đang chờ, người quyết định khác người báo."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Bàn giao hoặc kết luận không có COI; lưu căn cứ và giải quyết chặn tương ứng."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đề nghị Xung đột lợi ích.",
+            "2. Hiển thị lý do và cảnh báo chặn thao tác."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Chọn cán bộ nhận.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhập căn cứ.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhấn Chấp thuận và bàn giao.",
+            "6. Hiển thị kết quả bàn giao."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "5.1. Xác nhận CBTD tiếp tục được, không có COI và chọn Không chấp thuận điều phối.",
+            "5.2. Lưu kết luận, giữ cán bộ và gỡ chặn COI tương ứng."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "6.1. Tự duyệt, thiếu căn cứ/xác nhận hoặc đề nghị hết hiệu lực: từ chối."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "1.1. CBTD tự rút báo cáo COI.",
+            "1.2. Không cho tự rút hoặc đổi vai trò để gỡ chặn."
+          ]
+        }
+      ],
+      "stepCount": 6
+    },
+    {
+      "id": "UC21",
+      "title": "Duyệt đối soát công ty",
+      "section": "3.8.9.6",
+      "description": "Cho phép Quản lý duyệt cập nhật dữ liệu doanh nghiệp hiện hữu.",
+      "pre": "Có đối soát chờ; Quản lý khác người lập. Chấp thuận cần checklist đạt, đúng bản gửi và dữ liệu.",
+      "post": "Cập nhật doanh nghiệp hoặc giữ nguyên nếu từ chối; bảo toàn thông tin hồ sơ vay cũ.",
+      "actor": "Quản lý chi nhánh.",
+      "flow": [
+        [
+          "Mở đề nghị có yêu cầu đối soát.",
+          "Hiển thị thông tin trước/sau và căn cứ."
+        ],
+        [
+          "Nhập căn cứ quyết định.",
+          ""
+        ],
+        [
+          "Nhấn Xác nhận đối soát và cập nhật Company.",
+          "Hiển thị yêu cầu xác nhận."
+        ],
+        [
+          "Nhấn OK.",
+          "Thông báo đã cập nhật; đóng yêu cầu."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Nhấn Không chấp thuận đối soát sau khi nhập căn cứ.",
+          "system": "Giữ dữ liệu doanh nghiệp; lưu kết quả từ chối.",
+          "at": 4
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Tự duyệt, chưa đạt checklist hoặc còn xin sửa: không chấp thuận.",
+          "at": 7
+        },
+        {
+          "actor": "",
+          "system": "Dữ liệu hoặc lần gửi đã đổi: yêu cầu lập lại đối soát.",
+          "at": 7
+        }
+      ],
+      "refs": [
+        "INTAKE",
+        "COMPANY"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Duyệt đối soát công ty"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản lý duyệt cập nhật dữ liệu doanh nghiệp hiện hữu."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Có đối soát chờ; Quản lý khác người lập. Chấp thuận cần checklist đạt, đúng bản gửi và dữ liệu."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Cập nhật doanh nghiệp hoặc giữ nguyên nếu từ chối; bảo toàn thông tin hồ sơ vay cũ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở đề nghị có yêu cầu đối soát.",
+            "2. Hiển thị thông tin trước/sau và căn cứ."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập căn cứ quyết định.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Xác nhận đối soát và cập nhật Company.",
+            "5. Hiển thị yêu cầu xác nhận."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Nhấn OK.",
+            "7. Thông báo đã cập nhật; đóng yêu cầu."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "4.1. Nhấn Không chấp thuận đối soát sau khi nhập căn cứ.",
+            "4.2. Giữ dữ liệu doanh nghiệp; lưu kết quả từ chối."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.1. Tự duyệt, chưa đạt checklist hoặc còn xin sửa: không chấp thuận."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.2. Dữ liệu hoặc lần gửi đã đổi: yêu cầu lập lại đối soát."
+          ]
+        }
+      ],
+      "stepCount": 7
+    },
+    {
+      "id": "UC22",
+      "title": "Xem cảnh báo xử lý chậm",
+      "section": "3.8.10.2",
+      "description": "Cho phép xem cảnh báo nguy cơ trễ SLA.",
+      "pre": "Đăng nhập Quản lý hoặc Thẩm quyền; Thẩm quyền chỉ xem hồ sơ từ Thẩm định.",
+      "post": "Hiển thị cảnh báo theo quyền; không quyết định tín dụng.",
+      "actor": "Quản lý chi nhánh, Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Mở Dashboard tổng quan.",
+          "Hiển thị Bảng Cảnh báo Sớm AI."
+        ],
+        [
+          "Nhấn Xử lý tại hồ sơ.",
+          "Hiển thị chi tiết hồ sơ."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Quản lý nhấn Điều phối cán bộ.",
+          "system": "Mở Điều chuyển & phân công.",
+          "at": 3
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Chưa có dự báo hoặc không tương thích PA1: hiển thị tình trạng tương ứng.",
+          "at": 2
+        },
+        {
+          "actor": "",
+          "system": "Không tải được dữ liệu: báo lỗi, không tạo xác suất giả.",
+          "at": 2
+        }
+      ],
+      "refs": [
+        "DASHBOARD",
+        "ML",
+        "UI_DASH",
+        "DASH_ACCESS",
+        "PRED_STATUS"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Xem cảnh báo xử lý chậm"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép xem cảnh báo nguy cơ trễ SLA."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản lý hoặc Thẩm quyền; Thẩm quyền chỉ xem hồ sơ từ Thẩm định."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hiển thị cảnh báo theo quyền; không quyết định tín dụng."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh, Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Dashboard tổng quan.",
+            "2. Hiển thị Bảng Cảnh báo Sớm AI."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Xử lý tại hồ sơ.",
+            "4. Hiển thị chi tiết hồ sơ."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "3.1. Quản lý nhấn Điều phối cán bộ.",
+            "3.2. Mở Điều chuyển & phân công."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "2.1. Chưa có dự báo hoặc không tương thích PA1: hiển thị tình trạng tương ứng."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "2.2. Không tải được dữ liệu: báo lỗi, không tạo xác suất giả."
+          ]
+        }
+      ],
+      "stepCount": 4
+    },
+    {
+      "id": "UC23",
+      "title": "Xem báo cáo thống kê",
+      "section": "3.8.10.3",
+      "description": "Cho phép xem thống kê hồ sơ và SLA của chi nhánh.",
+      "pre": "Đăng nhập Quản lý hoặc Thẩm quyền.",
+      "post": "Hiển thị số liệu tổng quan và điểm nghẽn theo công đoạn.",
+      "actor": "Quản lý chi nhánh, Cán bộ thẩm quyền.",
+      "flow": [
+        [
+          "Mở Dashboard tổng quan.",
+          "Hiển thị các chỉ số hồ sơ và tỷ lệ SLA."
+        ],
+        [
+          "Xem Phân tích Điểm nghẽn Quy trình SLA.",
+          "Hiển thị thời gian trung bình và số lượt trễ theo công đoạn."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Không tải được dữ liệu: báo lỗi.",
+          "at": 4
+        },
+        {
+          "actor": "",
+          "system": "Số liệu SLA cũ/PA1 được tách riêng; chưa có lượt PA1 kết thúc thì chưa có tỷ lệ PA1.",
+          "at": 2
+        }
+      ],
+      "refs": [
+        "DASHBOARD",
+        "UI_DASH",
+        "DASH_ACCESS",
+        "PRED_STATUS"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Xem báo cáo thống kê"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép xem thống kê hồ sơ và SLA của chi nhánh."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản lý hoặc Thẩm quyền."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hiển thị số liệu tổng quan và điểm nghẽn theo công đoạn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh, Cán bộ thẩm quyền."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Dashboard tổng quan.",
+            "2. Hiển thị các chỉ số hồ sơ và tỷ lệ SLA."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Xem Phân tích Điểm nghẽn Quy trình SLA.",
+            "4. Hiển thị thời gian trung bình và số lượt trễ theo công đoạn."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "4.1. Không tải được dữ liệu: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "2.1. Số liệu SLA cũ/PA1 được tách riêng; chưa có lượt PA1 kết thúc thì chưa có tỷ lệ PA1."
+          ]
+        }
+      ],
+      "stepCount": 4
+    },
+    {
+      "id": "UC24",
+      "title": "Đóng hồ sơ quá hạn",
+      "section": "3.8.11",
+      "description": "Cho phép Quản lý đóng hồ sơ quá hạn bổ sung.",
+      "pre": "Quản lý không là người phụ trách/tiếp nhận; hồ sơ quá hạn và vẫn chờ DN bổ sung.",
+      "post": "Hồ sơ Hoàn tất/Đã đóng do quá hạn, mã TC05; lưu lý do và khóa ghi nghiệp vụ.",
+      "actor": "Quản lý chi nhánh.",
+      "flow": [
+        [
+          "Chọn hồ sơ quá hạn trên Dashboard.",
+          "Hiển thị chi tiết hồ sơ."
+        ],
+        [
+          "Nhấn Đóng hồ sơ do quá hạn.",
+          "Hiển thị form lý do."
+        ],
+        [
+          "Nhập lý do đóng hồ sơ.",
+          ""
+        ],
+        [
+          "Nhấn Xác nhận đóng hồ sơ.",
+          "Hiển thị Đã đóng do quá hạn bổ sung."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Thiếu lý do, chưa quá hạn hoặc người đóng không độc lập: không cho đóng.",
+          "at": 7
+        },
+        {
+          "actor": "",
+          "system": "DN đã gửi đủ, ngân hàng đang kiểm tra: không đóng quá hạn.",
+          "at": 7
+        }
+      ],
+      "refs": [
+        "WORKFLOW",
+        "DEADLINE",
+        "SUPP"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Đóng hồ sơ quá hạn"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản lý đóng hồ sơ quá hạn bổ sung."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Quản lý không là người phụ trách/tiếp nhận; hồ sơ quá hạn và vẫn chờ DN bổ sung."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Hồ sơ Hoàn tất/Đã đóng do quá hạn, mã TC05; lưu lý do và khóa ghi nghiệp vụ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản lý chi nhánh."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Chọn hồ sơ quá hạn trên Dashboard.",
+            "2. Hiển thị chi tiết hồ sơ."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Đóng hồ sơ do quá hạn.",
+            "4. Hiển thị form lý do."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhập lý do đóng hồ sơ.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Nhấn Xác nhận đóng hồ sơ.",
+            "7. Hiển thị Đã đóng do quá hạn bổ sung."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.1. Thiếu lý do, chưa quá hạn hoặc người đóng không độc lập: không cho đóng."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.2. DN đã gửi đủ, ngân hàng đang kiểm tra: không đóng quá hạn."
+          ]
+        }
+      ],
+      "stepCount": 7
+    },
+    {
+      "id": "UC25",
+      "title": "Thêm người dùng",
+      "section": "3.8.12.2",
+      "description": "Cho phép Quản trị viên tạo tài khoản cán bộ.",
+      "pre": "Đã đăng nhập với vai trò Quản trị viên.",
+      "post": "Tạo tài khoản nội bộ với các vai trò được chọn.",
+      "actor": "Quản trị viên.",
+      "flow": [
+        [
+          "Mở Liên hệ cá nhân.",
+          "Hiển thị danh sách người dùng."
+        ],
+        [
+          "Nhấn Tạo mới liên hệ.",
+          "Hiển thị form Tạo tài khoản."
+        ],
+        [
+          "Nhập thông tin tài khoản.",
+          ""
+        ],
+        [
+          "Chọn vai trò.",
+          ""
+        ],
+        [
+          "Nhấn Lưu tài khoản.",
+          "Thông báo đã lưu, cập nhật danh sách."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Trùng tên đăng nhập/email: báo lỗi.",
+          "at": 8
+        },
+        {
+          "actor": "",
+          "system": "Thiếu thông tin, mật khẩu dưới 8 ký tự hoặc không chọn vai trò: không lưu.",
+          "at": 8
+        }
+      ],
+      "refs": [
+        "USERS",
+        "UI_ADMIN",
+        "DTO_USER"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Thêm người dùng"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản trị viên tạo tài khoản cán bộ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đã đăng nhập với vai trò Quản trị viên."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Tạo tài khoản nội bộ với các vai trò được chọn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản trị viên."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Liên hệ cá nhân.",
+            "2. Hiển thị danh sách người dùng."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhấn Tạo mới liên hệ.",
+            "4. Hiển thị form Tạo tài khoản."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "5. Nhập thông tin tài khoản.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Chọn vai trò.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "7. Nhấn Lưu tài khoản.",
+            "8. Thông báo đã lưu, cập nhật danh sách."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "8.1. Trùng tên đăng nhập/email: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "8.2. Thiếu thông tin, mật khẩu dưới 8 ký tự hoặc không chọn vai trò: không lưu."
+          ]
+        }
+      ],
+      "stepCount": 8
+    },
+    {
+      "id": "UC26",
+      "title": "Sửa người dùng",
+      "section": "3.8.12.3",
+      "description": "Cho phép Quản trị viên sửa thông tin và vai trò cán bộ.",
+      "pre": "Đăng nhập Quản trị viên; tài khoản cần sửa tồn tại.",
+      "post": "Lưu thông tin và vai trò hợp lệ.",
+      "actor": "Quản trị viên.",
+      "flow": [
+        [
+          "Nhấn Sửa / Cấp quyền tại tài khoản.",
+          "Hiển thị form Cập nhật tài khoản."
+        ],
+        [
+          "Sửa thông tin hoặc vai trò.",
+          ""
+        ],
+        [
+          "Nhấn Lưu tài khoản.",
+          "Thông báo đã lưu, cập nhật danh sách."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Tự bỏ ADMIN hoặc bỏ CBTD khi còn hồ sơ/đề nghị chưa bàn giao: không lưu.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Thông tin hoặc vai trò không hợp lệ: báo lỗi.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "USERS",
+        "UI_ADMIN",
+        "AUTH_UI"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Sửa người dùng"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản trị viên sửa thông tin và vai trò cán bộ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản trị viên; tài khoản cần sửa tồn tại."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu thông tin và vai trò hợp lệ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản trị viên."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Nhấn Sửa / Cấp quyền tại tài khoản.",
+            "2. Hiển thị form Cập nhật tài khoản."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Sửa thông tin hoặc vai trò.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Lưu tài khoản.",
+            "5. Thông báo đã lưu, cập nhật danh sách."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Tự bỏ ADMIN hoặc bỏ CBTD khi còn hồ sơ/đề nghị chưa bàn giao: không lưu."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.2. Thông tin hoặc vai trò không hợp lệ: báo lỗi."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC27",
+      "title": "Khóa và mở khóa tài khoản",
+      "section": "3.8.12.4",
+      "description": "Cho phép Quản trị viên khóa hoặc mở khóa tài khoản.",
+      "pre": "Đăng nhập Quản trị viên; tài khoản đích tồn tại.",
+      "post": "Tài khoản chuyển Đã khóa hoặc Hoạt động.",
+      "actor": "Quản trị viên.",
+      "flow": [
+        [
+          "Mở Sửa / Cấp quyền của tài khoản.",
+          "Hiển thị trạng thái Tài khoản hoạt động."
+        ],
+        [
+          "Bỏ chọn Tài khoản hoạt động.",
+          ""
+        ],
+        [
+          "Nhấn Lưu tài khoản.",
+          "Thông báo đã khóa tài khoản."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Chọn lại Tài khoản hoạt động và lưu.",
+          "system": "Thông báo đã mở khóa tài khoản.",
+          "at": 3
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Tự khóa chính mình hoặc cán bộ còn công việc chưa bàn giao: từ chối khóa.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "USERS",
+        "AUTH_UI",
+        "ACCESS"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Khóa và mở khóa tài khoản"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản trị viên khóa hoặc mở khóa tài khoản."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản trị viên; tài khoản đích tồn tại."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Tài khoản chuyển Đã khóa hoặc Hoạt động."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản trị viên."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Sửa / Cấp quyền của tài khoản.",
+            "2. Hiển thị trạng thái Tài khoản hoạt động."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Bỏ chọn Tài khoản hoạt động.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Lưu tài khoản.",
+            "5. Thông báo đã khóa tài khoản."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "3.1. Chọn lại Tài khoản hoạt động và lưu.",
+            "3.2. Thông báo đã mở khóa tài khoản."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Tự khóa chính mình hoặc cán bộ còn công việc chưa bàn giao: từ chối khóa."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC28",
+      "title": "Cấu hình SLA",
+      "section": "3.8.13",
+      "description": "Cho phép Quản trị viên sửa định mức giờ SLA công đoạn.",
+      "pre": "Đăng nhập Quản trị viên; công đoạn đã tồn tại.",
+      "post": "Lưu định mức cho lượt mở công đoạn mới; không đổi lịch sử đã chốt.",
+      "actor": "Quản trị viên.",
+      "flow": [
+        [
+          "Mở Cấu hình SLA.",
+          "Hiển thị danh sách công đoạn và SLA."
+        ],
+        [
+          "Nhập số giờ mới tại công đoạn.",
+          ""
+        ],
+        [
+          "Nhấn Lưu.",
+          "Thông báo đã cập nhật."
+        ]
+      ],
+      "alternatives": [],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Số giờ không nguyên hoặc nhỏ hơn 1: báo lỗi.",
+          "at": 5
+        },
+        {
+          "actor": "",
+          "system": "Không có quyền hoặc công đoạn không tồn tại: từ chối cập nhật.",
+          "at": 5
+        }
+      ],
+      "refs": [
+        "ADMIN",
+        "SLA",
+        "UI_ADMIN",
+        "CALENDAR"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Cấu hình SLA"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép Quản trị viên sửa định mức giờ SLA công đoạn."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "Đăng nhập Quản trị viên; công đoạn đã tồn tại."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu định mức cho lượt mở công đoạn mới; không đổi lịch sử đã chốt."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Quản trị viên."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Mở Cấu hình SLA.",
+            "2. Hiển thị danh sách công đoạn và SLA."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập số giờ mới tại công đoạn.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Lưu.",
+            "5. Thông báo đã cập nhật."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.1. Số giờ không nguyên hoặc nhỏ hơn 1: báo lỗi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "5.2. Không có quyền hoặc công đoạn không tồn tại: từ chối cập nhật."
+          ]
+        }
+      ],
+      "stepCount": 5
+    },
+    {
+      "id": "UC29",
+      "title": "Lập và gửi đề nghị vay",
+      "section": "3.8.14",
+      "description": "Cho phép DN khai thông tin, tải chứng từ và gửi đề nghị vay.",
+      "pre": "DN đã đăng nhập Portal; chức năng gửi đang bật. Đề nghị mới tối đa 10 tỷ.",
+      "post": "Lưu nháp hoặc gửi vào hàng chờ ngân hàng; chưa tạo hồ sơ vay, chưa tính SLA khoản vay.",
+      "actor": "Doanh nghiệp.",
+      "flow": [
+        [
+          "Nhấn Tạo đề nghị vay.",
+          "Hiển thị form đề nghị."
+        ],
+        [
+          "Nhập thông tin doanh nghiệp, nhu cầu vay và phương án vốn.",
+          ""
+        ],
+        [
+          "Nhấn Lưu nháp.",
+          "Hiển thị mã và nội dung nháp."
+        ],
+        [
+          "Tải chứng từ theo danh mục.",
+          "Hiển thị tài liệu đã tải và mục còn thiếu."
+        ],
+        [
+          "Nhấn Gửi đề nghị.",
+          "Hiển thị yêu cầu xác nhận."
+        ],
+        [
+          "Nhấn Xác nhận gửi.",
+          "Thông báo đã gửi; khóa chỉnh sửa."
+        ]
+      ],
+      "alternatives": [
+        {
+          "actor": "Chưa hoàn thiện: chỉ lưu nháp.",
+          "system": "Giữ nháp để bổ sung sau; không tự quy đổi doanh thu hoặc điền 0 thay thiếu.",
+          "at": 4
+        },
+        {
+          "actor": "Đề nghị được trả sửa: sửa trên cùng mã rồi nhấn Gửi lại đề nghị.",
+          "system": "Lưu lần gửi mới và giữ lịch sử.",
+          "at": 1
+        }
+      ],
+      "exceptions": [
+        {
+          "actor": "",
+          "system": "Thiếu dữ liệu, nguồn doanh thu năm, tài liệu/cam kết hoặc vượt 10 tỷ: chưa cho gửi.",
+          "at": 9
+        },
+        {
+          "actor": "",
+          "system": "Tệp sai định dạng/hỏng hoặc quá 10 MB: yêu cầu tải lại.",
+          "at": 7
+        },
+        {
+          "actor": "",
+          "system": "Đề nghị đã khóa, chưa được mở sửa hoặc dữ liệu đã đổi: chặn thao tác, yêu cầu tải lại.",
+          "at": 11
+        }
+      ],
+      "refs": [
+        "PORTAL",
+        "INTAKE",
+        "FOUNDATION",
+        "FILES",
+        "UI_WIZARD"
+      ],
+      "rows": [
+        {
+          "kind": "meta",
+          "cells": [
+            "Tên use case",
+            "Lập và gửi đề nghị vay"
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Mô tả",
+            "Cho phép DN khai thông tin, tải chứng từ và gửi đề nghị vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Tiền điều kiện",
+            "DN đã đăng nhập Portal; chức năng gửi đang bật. Đề nghị mới tối đa 10 tỷ."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Hậu điều kiện",
+            "Lưu nháp hoặc gửi vào hàng chờ ngân hàng; chưa tạo hồ sơ vay, chưa tính SLA khoản vay."
+          ]
+        },
+        {
+          "kind": "meta",
+          "cells": [
+            "Actor chính",
+            "Doanh nghiệp."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện chính (Basic flow)"
+        },
+        {
+          "kind": "columns",
+          "cells": [
+            "Actor",
+            "System"
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "1. Nhấn Tạo đề nghị vay.",
+            "2. Hiển thị form đề nghị."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "3. Nhập thông tin doanh nghiệp, nhu cầu vay và phương án vốn.",
+            ""
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "4. Nhấn Lưu nháp.",
+            "5. Hiển thị mã và nội dung nháp."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "6. Tải chứng từ theo danh mục.",
+            "7. Hiển thị tài liệu đã tải và mục còn thiếu."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "8. Nhấn Gửi đề nghị.",
+            "9. Hiển thị yêu cầu xác nhận."
+          ]
+        },
+        {
+          "kind": "flow",
+          "cells": [
+            "10. Nhấn Xác nhận gửi.",
+            "11. Thông báo đã gửi; khóa chỉnh sửa."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện thay thế (Alternative flow)"
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "4.1. Chưa hoàn thiện: chỉ lưu nháp.",
+            "4.2. Giữ nháp để bổ sung sau; không tự quy đổi doanh thu hoặc điền 0 thay thiếu."
+          ]
+        },
+        {
+          "kind": "alternatives",
+          "cells": [
+            "1.1. Đề nghị được trả sửa: sửa trên cùng mã rồi nhấn Gửi lại đề nghị.",
+            "1.2. Lưu lần gửi mới và giữ lịch sử."
+          ]
+        },
+        {
+          "kind": "section",
+          "title": "Luồng sự kiện ngoại lệ (Exception flow)"
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "9.1. Thiếu dữ liệu, nguồn doanh thu năm, tài liệu/cam kết hoặc vượt 10 tỷ: chưa cho gửi."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "7.1. Tệp sai định dạng/hỏng hoặc quá 10 MB: yêu cầu tải lại."
+          ]
+        },
+        {
+          "kind": "exceptions",
+          "cells": [
+            "",
+            "11.1. Đề nghị đã khóa, chưa được mở sửa hoặc dữ liệu đã đổi: chặn thao tác, yêu cầu tải lại."
+          ]
+        }
+      ],
+      "stepCount": 11
+    }
+  ],
+  "sources": {
+    "AUTH": {
+      "file": "backend/src/modules/auth/auth.service.ts",
+      "symbol": "async login",
+      "line": 18
+    },
+    "ACCESS": {
+      "file": "backend/src/common/guards/loan-access.guard.ts",
+      "symbol": "async canActivate",
+      "line": 8
+    },
+    "PORTAL": {
+      "file": "backend/src/modules/portal/portal.service.ts",
+      "symbol": "async accept",
+      "line": 311
+    },
+    "INTAKE": {
+      "file": "backend/src/modules/portal/portal.intake-workflow.ts",
+      "symbol": "async review",
+      "line": 111
+    },
+    "COMPANY": {
+      "file": "backend/src/modules/companies/company-snapshot.ts",
+      "symbol": "freezeCompanyLoans",
+      "line": 17
+    },
+    "SUPP": {
+      "file": "backend/src/modules/supplements/portal-supplements.service.ts",
+      "symbol": "async respond",
+      "line": 89
+    },
+    "POLICY": {
+      "file": "backend/src/modules/workflow/loan-policy.ts",
+      "symbol": "export const BRANCH_POLICY",
+      "line": 4
+    },
+    "DEADLINE": {
+      "file": "backend/src/modules/supplements/supplement-deadlines.ts",
+      "symbol": "export function overdueAt",
+      "line": 18
+    },
+    "SLA": {
+      "file": "backend/src/modules/workflow/sla/sla-policy.ts",
+      "symbol": "export async function resolveStageSla",
+      "line": 36
+    },
+    "LOAN": {
+      "file": "backend/src/modules/loan-applications/loan-applications.service.ts",
+      "symbol": "async checkDocuments",
+      "line": 294
+    },
+    "APPRAISAL": {
+      "file": "backend/src/modules/appraisal/appraisal.service.ts",
+      "symbol": "async mutate",
+      "line": 58
+    },
+    "WORKFLOW": {
+      "file": "backend/src/modules/workflow/workflow.service.ts",
+      "symbol": "async transitionStage",
+      "line": 24
+    },
+    "ML": {
+      "file": "backend/src/modules/prediction/prediction.service.ts",
+      "symbol": "async predictForApplication",
+      "line": 15
+    },
+    "TRACKING": {
+      "file": "backend/src/modules/portal/portal.tracking.ts",
+      "symbol": "export function buildTracking",
+      "line": 77
+    },
+    "ASSIGN": {
+      "file": "backend/src/modules/assignments/assignment.transactions.ts",
+      "symbol": "export async function transferLoan",
+      "line": 10
+    },
+    "COORD": {
+      "file": "backend/src/modules/assignments/assignment-change-requests.service.ts",
+      "symbol": "async create",
+      "line": 52
+    },
+    "DASHBOARD": {
+      "file": "backend/src/modules/dashboard/dashboard.service.ts",
+      "symbol": "async getOverviewStats",
+      "line": 17
+    },
+    "USERS": {
+      "file": "backend/src/modules/users/users.service.ts",
+      "symbol": "async update",
+      "line": 129
+    },
+    "ADMIN": {
+      "file": "backend/src/admin.controller.ts",
+      "symbol": "standardSlaHours",
+      "line": 10
+    },
+    "PORTAL_AUTH": {
+      "file": "backend/src/modules/portal/portal.auth.ts",
+      "symbol": "async register",
+      "line": 35
+    },
+    "FOUNDATION": {
+      "file": "backend/src/modules/portal/portal.approved-policy.ts",
+      "symbol": "export function evaluateIntakeReadiness",
+      "line": 141
+    },
+    "FILES": {
+      "file": "backend/src/modules/portal/portal.validation.ts",
+      "symbol": "export async function validatePortalFile",
+      "line": 99
+    },
+    "UI_LOAN": {
+      "file": "frontend/src/components/LoanDetailModal.tsx",
+      "symbol": "export",
+      "line": 46
+    },
+    "UI_DASH": {
+      "file": "frontend/src/components/DashboardView.tsx",
+      "symbol": "export const DashboardView",
+      "line": 22
+    },
+    "UI_ADMIN": {
+      "file": "frontend/src/components/AdminView.tsx",
+      "symbol": "export function AdminView",
+      "line": 10
+    },
+    "AUTH_UI": {
+      "file": "frontend/src/context/AuthContext.tsx",
+      "symbol": "export",
+      "line": 21
+    },
+    "UI_PORTAL_AUTH": {
+      "file": "frontend/src/portal/PortalAuth.tsx",
+      "symbol": "export function PortalAuth",
+      "line": 7
+    },
+    "UI_WIZARD": {
+      "file": "frontend/src/portal/PortalWizard.tsx",
+      "symbol": "export function PortalWizard",
+      "line": 49
+    },
+    "UI_TRACKING": {
+      "file": "frontend/src/portal/PortalApplicationTracking.tsx",
+      "symbol": "export",
+      "line": 4
+    },
+    "UI_CYCLE": {
+      "file": "frontend/src/portal/IntakeCyclePanel.tsx",
+      "symbol": "export",
+      "line": 10
+    },
+    "UI_SUPP": {
+      "file": "frontend/src/components/SupplementPanel.tsx",
+      "symbol": "export function SupplementPanel",
+      "line": 48
+    },
+    "UI_COORD": {
+      "file": "frontend/src/components/AssignmentChangeRequestPanel.tsx",
+      "symbol": "export",
+      "line": 5
+    },
+    "UI_NAV": {
+      "file": "frontend/src/components/Navbar.tsx",
+      "symbol": "export",
+      "line": 18
+    },
+    "SUPP_MAIN": {
+      "file": "backend/src/modules/supplements/supplements.service.ts",
+      "symbol": "async createSupplementRequest",
+      "line": 25
+    },
+    "REPORT_RULES": {
+      "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+      "symbol": "export async function assertReportDecision",
+      "line": 51
+    },
+    "COI_RULES": {
+      "file": "backend/src/modules/assignments/assignment-coordination.ts",
+      "symbol": "export async function assertNoCoordinationConflict",
+      "line": 7
+    },
+    "DTO_USER": {
+      "file": "backend/src/modules/users/dto/user.dto.ts",
+      "symbol": "export class CreateUserDto",
+      "line": 4
+    },
+    "DASH_ACCESS": {
+      "file": "backend/src/modules/dashboard/dashboard.controller.ts",
+      "symbol": "@Roles(RoleCode.QUAN_LY, RoleCode.THAM_QUYEN)",
+      "line": 10
+    },
+    "PRED_STATUS": {
+      "file": "backend/src/modules/prediction/prediction-status.ts",
+      "symbol": "export function predictionStatusOf",
+      "line": 14
+    },
+    "CALENDAR": {
+      "file": "backend/src/modules/workflow/sla/working-time.ts",
+      "symbol": "export const SIMULATED_CALENDAR_V1",
+      "line": 29
+    },
+    "SCHEMA": {
+      "file": "backend/prisma/schema.prisma",
+      "symbol": "enum PortalRequestStatus",
+      "line": 330
+    },
+    "PROJECT": {
+      "file": "Project.md",
+      "symbol": "## Ranh giới nghiệp vụ",
+      "line": 21
+    },
+    "MASTER": {
+      "file": "docs/SME_MASTER.md",
+      "symbol": "## 3. Chi tiết 7 Nhóm chức năng",
+      "line": 226
+    },
+    "NAV": {
+      "file": "frontend/src/navigation.ts",
+      "symbol": "export const NAV_ITEMS",
+      "line": 23
+    }
+  },
+  "sourceHashes": {
+    "AUTH": "56F130146E11C5655B03D7F68EF270DDB62B581B74934DBBD9653978168A78A6",
+    "ACCESS": "40BA0357569D105EF5C7700F35E7C5FF5276E9F62AF7E5A793841B8C9CE0CD65",
+    "PORTAL": "B3DC740FAB8C0749DE9B12AB132A2D29CF4BFC957F175299CEB1B72A0BDBA380",
+    "INTAKE": "D7DE699CF17054F54566C03056874C55C6213F404BE2B01322102025F92FE67B",
+    "COMPANY": "FEF59521DCFF8A0E56CF556942765F9EAA0A822A66FB3C132FB4F73AF9C8F580",
+    "SUPP": "FA6F2CE0BF0B98DCF21EDBD0D8A60715759E37634AA87584C65883D396C9E652",
+    "POLICY": "0B56CEF3C2D205BE107D1286F23716595E414E2C1E9A0EAF333619E8430496DB",
+    "DEADLINE": "8C0F0839B78B086B7AE34A1D39364CA4421E7782870FED66F12446C12BBB99F7",
+    "SLA": "B8DE3F025169ECA93AAE94BDD707AD5AF7967AE48E0F3E66870EB47D606B8316",
+    "LOAN": "21AE032338AD1DEF4628C574FA6BE1B3B070BADC0F49604693A3351873AA4441",
+    "APPRAISAL": "28DC9406666C5C922021EEE1DBFD90EA59A56060383E0854D8BECA0C29E85091",
+    "WORKFLOW": "51315EED6CE043C5582D6ABEB10044EFEDDDCB0E1C7580CECAEEF4FAEA14CECA",
+    "ML": "11AAD7DE2BAE5A4D86688A539542E7AA6EE67290FCF185CF42B1C67AEF70FB12",
+    "TRACKING": "A03C2324A5B3C56B7E06C2C9660A68F4182CF1117C1B0C94D92E4D0226EE34C6",
+    "ASSIGN": "C95FA2D4FE425B5B991F2CB2F6DCBFE08D1933AF253AEDCEEB7B1119022E6A27",
+    "COORD": "CE430E740BAC51A1C6070D36CDD1C1885BAD18D5B37309FF1FD751701E58C6F5",
+    "DASHBOARD": "FFFD4CE4B8B92EA1D24526409A00E6208789E59624A235BAA0F48990BAC8E190",
+    "USERS": "B0F1FED62FC7B4B8A3634C80CC4C90B964EEC5B9578503D99B9022E918908576",
+    "ADMIN": "255458E313785BEDC317D281B47B9E9C469C256448C2570D87C1139B45A17DDB",
+    "PORTAL_AUTH": "1F9D55840F0B75B3A85CB95630299F06E5D4D21F362500E2FCB63624703CEA2A",
+    "FOUNDATION": "865F953A8EC602175028D5D14B66558674792F767FA571C045963A89379A8EE7",
+    "FILES": "2BFD2768CE5F3DE4D9156D7A9761B18767878B7568A439476C523A9A73651949",
+    "UI_LOAN": "2BA6EC2E39546F222B96570710DD96D36A9C285002E141D0B96DD50AEE49612F",
+    "UI_DASH": "4F83B4F4D51B0892F934192B79FA01F933B6DFADDB513A141E919944C36460FF",
+    "UI_ADMIN": "9E704474D8FC6B09E65095BD42778F91A1ECB161963325191A75567A2A4F1D7E",
+    "AUTH_UI": "D116D9DCE8D6A31D465467F51890E3DD466D3C3429EF11C7E177AD1738289E7C",
+    "UI_PORTAL_AUTH": "5999118FDF79CCDC4D0AF1165EBFF7AF475B2ECACF564A2AE6F45BBADDA29381",
+    "UI_WIZARD": "0867C343C4F8B41E72A8743D44831F97F163531EE4891929104A0F2DBDC1D413",
+    "UI_TRACKING": "61D8F855538883CF009872F6567A5807ADD37693D564D660A75BB6F5670C0677",
+    "UI_CYCLE": "5E596D375E8C02D94F9699DD496884E05B03140ACA35079E317FCBE09A41E72E",
+    "UI_SUPP": "3AC89F0324B81504830CE3595B13F397A6D0E6C72083DF8005E31354137B0EC4",
+    "UI_COORD": "DB7E76931F6833D90688A4297E5C4975BCB85AABF1DA9FBEF908E85EC77B5AE2",
+    "UI_NAV": "F66272BDBA35C5AE72ABC026AE47AE079A12C89D1725F2CDE7BFC6941D1C89A3",
+    "SUPP_MAIN": "65BFE667057027E39998A4E84F41651242C7663067A6E9C6B2B51AF96345F8A9",
+    "REPORT_RULES": "E9699A1949EF6DEFAFEDE1C5698A910E73FB846889CCBE5B091F385FE27E5B89",
+    "COI_RULES": "D35DF7E6ECA214C980D5742928AF83384C5BA40B8D45096CCFD3265A86602250",
+    "DTO_USER": "BDB1044734E9759187CDA796EE359353F0918AB5B4B0FF2C74E342B2A6A01EB0",
+    "DASH_ACCESS": "B4C6D8775729A1B5DDB1D457A13E7D85732BBC794DF640CDD03C6A131149FC74",
+    "PRED_STATUS": "4692BFC592E561900E40CFC7C789ADE3BD2B73AB065876F358812AF54C4D5430",
+    "CALENDAR": "D2014388CEE2E7AC973B73B42A78D0C5B8DF2EC3A20F8D79ADD26B66BD73F042",
+    "SCHEMA": "4175D6860534020115A4C7BFB0DF0218B938FB9DC431C14FAD22246C56B7119A",
+    "PROJECT": "229B137377D0386FE614EFE1985C25988E55E9AC0699C323165FE64B0E54C6E8",
+    "MASTER": "7ECA5A5AC12F531F3CE8B12631A0AD8FB53B742E6CE72A2BAB5C026D129EF517",
+    "NAV": "701ABFEA236A12D9468E892DDFD795332FE22695A03B877153258D8D10FAD25D"
+  },
+  "style": "Ngắn gọn; một bước một thao tác; System chỉ ghi màn hình/kết quả; giữ điều kiện nghiệp vụ chính.",
+  "mainFlowRows": 100,
+  "reduction": {
+    "before": 44436,
+    "after": 23005
+  }
+}

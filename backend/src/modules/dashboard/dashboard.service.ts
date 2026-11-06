@@ -20,7 +20,6 @@ export class DashboardService {
       LoanStatus.CHECKED,
       LoanStatus.SUPPLEMENT_REQUIRED,
       LoanStatus.PENDING_APPRAISAL,
-      LoanStatus.WAITING_HEAD_OFFICE,
     ];
 
     const [
@@ -193,7 +192,6 @@ export class DashboardService {
       LoanStatus.CHECKED,
       LoanStatus.SUPPLEMENT_REQUIRED,
       LoanStatus.PENDING_APPRAISAL,
-      LoanStatus.WAITING_HEAD_OFFICE,
     ];
 
     const activeLoans = await this.prisma.loanApplication.findMany({
@@ -252,7 +250,7 @@ export class DashboardService {
    * Phân bổ hồ sơ theo từng công đoạn và trạng thái
    */
   async getStageDistribution() {
-    const stages = [StageCode.TIEP_NHAN, StageCode.THAM_DINH, StageCode.CAP_TREN, StageCode.HOAN_TAT];
+    const stages = [StageCode.TIEP_NHAN, StageCode.THAM_DINH, StageCode.HOAN_TAT];
     
     const distribution = await Promise.all(
       stages.map(async (st) => {

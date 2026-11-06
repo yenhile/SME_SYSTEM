@@ -23,8 +23,16 @@ const lucideMock = new Proxy({}, {
   get: (_, prop) => () => React.createElement('span', { 'data-icon': String(prop) }),
 });
 
+const appraisalHelpers = await load('../src/appraisalWorkspace.ts');
+const decisionResult = await load('../src/components/DecisionResult.tsx', { '../appraisalWorkspace': appraisalHelpers });
+let appraisalPanelProps = null;
+
 const { LoanDetailModal } = await load('../src/components/LoanDetailModal.tsx', {
-  './AppraisalPanel': { AppraisalPanel: () => null },
+  './DecisionResult': decisionResult,
+  './loanInputRules': await load('../src/components/loanInputRules.ts'),
+  '../appraisalWorkspace': appraisalHelpers,
+  '../loanListDisplay': await load('../src/loanListDisplay.ts', { './appraisalWorkspace': appraisalHelpers, './slaDisplay': await load('../src/slaDisplay.ts') }),
+  './AppraisalPanel': { AppraisalPanel: props => { appraisalPanelProps = props; return null; } },
   './AssignmentChangeRequestPanel': { AssignmentChangeRequestPanel: () => null },
   '../api/client': {
     api: {
@@ -36,7 +44,7 @@ const { LoanDetailModal } = await load('../src/components/LoanDetailModal.tsx', 
     },
   },
   '../context/AuthContext': { useAuth: () => currentAuth },
-  '../slaDisplay': { hoursText: () => '', predictionLabel: () => '', slaPolicyLabel: () => '', slaStateLabel: () => '' },
+  '../slaDisplay': { predictionLabel: () => '', slaPolicyLabel: () => '', slaStateLabel: () => '', slaSummaryText: () => '', stageDurationText: () => '', stageStandardText: () => '' },
   './PortalIntakeDetails': { PortalIntakeDetails: () => null },
   './SupplementPanel': { SupplementPanel: () => null },
   './SupplementDeadlineBadge': { SupplementDeadlineBadge: () => null },
@@ -309,6 +317,19 @@ test('3. Document check reminder banner: hidden on SUPPLEMENT_REQUIRED, shown on
   assert.doesNotMatch(htmlAppraisal, /Hồ sơ tại công đoạn Tiếp nhận — Cần kiểm tra và xác nhận danh mục chứng từ/);
 });
 
+test('3b. The officer reads business names, never codes or emoji', () => {
+  currentAuth = { activeRole: 'CBTD', user: { id: 'cbtd-1' } };
+  const suppRequest = { id: 'supp-1', portalSupplement: { items: [{ id: 'item-1', documentGroup: 'A', documentTypeCode: 'A_BUSINESS_REGISTRATION', status: 'ACCEPTED' }], files: [{ id: 'file-a', itemId: 'item-1', fileName: 'gpkd.pdf', fileSize: 1024, version: 1, submittedAt: '2026-11-01' }] } };
+  const loan = baseLoan({ supplementRequests: [suppRequest], documents: [{ id: 'doc-1', documentType: 'PHAP_LY', fileName: 'gpkd.pdf', fileSize: 1048576, uploadedAt: '2026-11-01T08:00:00Z' }] });
+  const html = renderToStaticMarkup(React.createElement(LoanDetailModal, { applicationId: 'loan-1', onClose: () => {}, onRefresh: () => {}, initialLoan: loan, initialTab: 'documents' }));
+  for (const code of ['>RECEIVED<', '>TIEP_NHAN<', '>PHAP_LY<', 'A_BUSINESS_REGISTRATION', 'AI Early Warning', 'Explainable AI', 'RandomForest']) assert.ok(!html.includes(code), code);
+  assert.doesNotMatch(html, /[\u{1F300}-\u{1FAFF}\u{26AB}]/u);
+  assert.match(html, />Mới tiếp nhận</);
+  assert.match(html, />Tiếp nhận<\/strong>/);
+  assert.match(html, />Pháp lý</);
+  assert.match(html, /Nguy cơ trễ SLA/);
+});
+
 test('4. Unified document counter reflects both initial documents and accepted supplement heads', () => {
   currentAuth = { activeRole: 'CBTD', user: { id: 'cbtd-1' } };
 
@@ -333,7 +354,7 @@ test('4. Unified document counter reflects both initial documents and accepted s
   assert.match(html, /Danh mục chứng từ \(3\)/);
   // Table must contain accepted supplement file B
   assert.match(html, /gpkd_v2\.pdf/);
-  assert.match(html, /BỔ SUNG/);
+  assert.match(html, /badge-soft-green">Bổ sung</);
   assert.match(html, /\(v2\)/);
   assert.match(html, /Đã chấp nhận/);
   // Table must NOT contain superseded file A in the main list
@@ -356,8 +377,111 @@ test('5. D4-01 branch limit: 10 billion is allowed and green, > 10 billion on ne
   assert.doesNotMatch(htmlOver, /Cần Cấp trên/);
   assert.doesNotMatch(htmlOver, /Trình Hội đồng \/ Cấp trên/);
 
-  // Legacy loan > 10 billion -> retains legacy escalation text
   const legacyOver = baseLoan({ businessPolicyVersion: null, proposedAmount: 15000000000, officialAmount: 15000000000 });
   const htmlLegacy = renderToStaticMarkup(React.createElement(LoanDetailModal, { applicationId: 'loan-1', onClose: () => {}, onRefresh: () => {}, initialLoan: legacyOver }));
-  assert.match(htmlLegacy, /Vượt 10 tỷ \(Cần Cấp trên\)/);
+  assert.match(htmlLegacy, /Vượt hạn mức chi nhánh \(tối đa 10 tỷ\)/);
+});
+
+const renderLoan = overrides => renderToStaticMarkup(React.createElement(LoanDetailModal, { applicationId: 'loan-1', onClose: () => {}, onRefresh: () => {}, initialLoan: baseLoan(overrides) }));
+const doneHistory = { stage: { stageCode: 'HOAN_TAT' }, handler: { fullName: 'Thẩm quyền A', username: 'tq_a' }, enteredAt: '2026-11-05T03:00:00Z', exitedAt: '2026-11-05T03:00:00Z', slaStandardHours: 8, pausedDurationHours: 0 };
+
+test('7. Approved loan shows the approved amount, rate, decider and date', () => {
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  const html = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'APPROVED', approvedAmount: '4000000000', interestRate: '8.5', completedAt: '2026-11-05T03:00:00Z', stageHistories: [doneHistory] });
+  assert.match(html, /Kết quả quyết định/);
+  assert.match(html, /4\.000\.000\.000 VNĐ/);
+  assert.match(html, /8,5%\/năm/);
+  assert.match(html, /Thẩm quyền A/);
+  assert.match(html, /05\/11\/2026|5\/11\/2026/);
+});
+
+test('8. Rejected and timed-out loans show the reason and who closed them', () => {
+  currentAuth = { activeRole: 'CBTD', user: { id: 'cbtd-1' } };
+  const rejected = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'REJECTED', rejectionReasonCode: 'TC02', rejectionNote: 'Dòng tiền không đủ', completedAt: '2026-11-05T03:00:00Z', stageHistories: [doneHistory] });
+  assert.match(rejected, /TC02 - Năng lực tài chính không đảm bảo/);
+  assert.match(rejected, /Dòng tiền không đủ/);
+  assert.match(rejected, /Thẩm quyền A/);
+  const timedOut = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'CLOSED_TIMEOUT', rejectionReasonCode: 'TC05', rejectionNote: 'Quá hạn', completedAt: '2026-11-05T03:00:00Z', stageHistories: [doneHistory] });
+  assert.match(timedOut, /TC05 - Quá hạn thời gian bổ sung chứng từ/);
+});
+
+test('9. Loans still in progress show no decision block, and old loans without history say so', () => {
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  assert.doesNotMatch(renderLoan({ currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' }), /Kết quả quyết định/);
+  const old = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'APPROVED', approvedAmount: 3500000000, interestRate: 8.5, stageHistories: [] });
+  assert.match(old, /3\.500\.000\.000 VNĐ/);
+  assert.match(old, /Chưa ghi nhận/);
+});
+
+test('10. The report panel reloads when the evidence of the loan changes', () => {
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  const base = { currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' };
+  renderLoan(base);
+  const before = appraisalPanelProps.evidenceKey;
+  assert.equal(typeof before, 'string');
+  renderLoan({ ...base, documents: [{ id: 'doc-9', documentType: 'KHAC', fileName: 'them.pdf', fileSize: 1, uploadedAt: '2026-11-05T03:00:00Z' }] });
+  assert.notEqual(appraisalPanelProps.evidenceKey, before);
+  renderLoan(base);
+  assert.equal(appraisalPanelProps.evidenceKey, before);
+  renderLoan({ ...base, supplementRequests: [{ id: 's1', status: 'RESOLVED', resolvedAt: '2026-11-05T03:00:00Z' }] });
+  assert.notEqual(appraisalPanelProps.evidenceKey, before);
+});
+
+test('11. Only the assigned officer at Tiếp nhận sees the add-document action', () => {
+  const documentsTab = overrides => renderToStaticMarkup(React.createElement(LoanDetailModal, { applicationId: 'loan-1', onClose: () => {}, onRefresh: () => {}, initialLoan: baseLoan(overrides), initialTab: 'documents' }));
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  assert.doesNotMatch(documentsTab({ currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' }), /Thêm tài liệu/);
+  currentAuth = { activeRole: 'CBTD', user: { id: 'cbtd-1' } };
+  assert.match(documentsTab({ currentStage: 'TIEP_NHAN', currentStatus: 'RECEIVED' }), /Thêm tài liệu/);
+});
+
+test('12. Only the assigned officer at Tiếp nhận sees the delete-document action', () => {
+  const documentsTab = overrides => renderToStaticMarkup(React.createElement(LoanDetailModal, { applicationId: 'loan-1', onClose: () => {}, onRefresh: () => {}, initialLoan: baseLoan(overrides), initialTab: 'documents' }));
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  assert.doesNotMatch(documentsTab({ currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' }), /btn-outline-danger/);
+  assert.doesNotMatch(documentsTab({ businessPolicyVersion: null, currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' }), /btn-outline-danger/);
+  currentAuth = { activeRole: 'CBTD', user: { id: 'cbtd-1' } };
+  assert.match(documentsTab({ currentStage: 'TIEP_NHAN', currentStatus: 'RECEIVED' }), /btn-outline-danger/);
+});
+
+test('13. The approval form starts with no interest rate and cannot be confirmed until one is entered', async () => {
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  const harness = new ComponentLifecycleHarness(LoanDetailModal, {
+    applicationId: 'loan-1', onClose: () => {}, onRefresh: () => {},
+    initialLoan: baseLoan({ businessPolicyVersion: null, currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' }),
+  });
+  harness.render();
+  await harness.flushEffects();
+  const SHOW_APPROVE_FORM = 9, INTEREST_RATE = 11;
+  harness.hooks[SHOW_APPROVE_FORM].setter(true);
+  const confirm = html => html.match(/<button[^>]*>Xác nhận Phê duyệt<\/button>/)[0];
+  const rateInput = html => html.match(/<input[^>]*max="100"[^>]*>/)[0];
+
+  const empty = renderToStaticMarkup(harness.render());
+  assert.doesNotMatch(rateInput(empty), /value="[^"]+"/);
+  assert.match(confirm(empty), /disabled=""/);
+
+  harness.hooks[INTEREST_RATE].setter('7.9');
+  const filled = renderToStaticMarkup(harness.render());
+  assert.match(rateInput(filled), /value="7.9"/);
+  assert.doesNotMatch(confirm(filled), /disabled=""/);
+
+  harness.hooks[INTEREST_RATE].setter('0');
+  assert.doesNotMatch(confirm(renderToStaticMarkup(harness.render())), /disabled=""/);
+
+  harness.hooks[INTEREST_RATE].setter('101');
+  assert.match(confirm(renderToStaticMarkup(harness.render())), /disabled=""/);
+});
+
+test('6. Progress bar has exactly three steps for every loan', () => {
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  for (const overrides of [
+    { currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' },
+    { businessPolicyVersion: null, currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' },
+    { currentStage: 'HOAN_TAT', currentStatus: 'APPROVED' },
+  ]) {
+    const html = renderToStaticMarkup(React.createElement(LoanDetailModal, { applicationId: 'loan-1', onClose: () => {}, onRefresh: () => {}, initialLoan: baseLoan({ ...overrides, stageHistories: [] }) }));
+    assert.equal((html.match(/class="progress-step-circle"/g) ?? []).length, 3);
+    assert.doesNotMatch(html, /Hội đồng|Cấp trên/);
+  }
 });

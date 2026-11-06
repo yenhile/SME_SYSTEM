@@ -51,6 +51,7 @@ export function SupplementPanel(props: PanelProps) {
   const [error, setError] = useState(''); const [notice, setNotice] = useState('');
   const live = useRef(true);
   const epoch = useRef(0);
+  const noticeOwner = useRef(props.mode === 'portal' ? props.requestId : props.applicationId);
   const fileIds = useRef(new WeakMap<File, string>());
   const attempts = useRef(new Map<string, string>());
   const base = props.mode === 'portal' ? `/requests/${props.requestId}/supplements` : '/supplements';
@@ -68,7 +69,9 @@ export function SupplementPanel(props: PanelProps) {
   }
   useEffect(() => {
     const currentEpoch = ++epoch.current;
-    live.current = true; setLoading(true); setBusy(false); setError(''); setNotice(''); setViews([]); attempts.current.clear();
+    const owner = props.mode === 'portal' ? props.requestId : props.applicationId;
+    if (noticeOwner.current !== owner) { noticeOwner.current = owner; setNotice(''); }
+    live.current = true; setLoading(true); setBusy(false); setError(''); setViews([]); attempts.current.clear();
     void load().catch(err => { if (live.current && epoch.current === currentEpoch) setError(supplementError(err)); }).finally(() => { if (live.current && epoch.current === currentEpoch) setLoading(false); });
     return () => { live.current = false; epoch.current++; };
   }, [identity, props.mode]);

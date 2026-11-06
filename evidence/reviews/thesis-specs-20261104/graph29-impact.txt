@@ -1,0 +1,74 @@
+﻿
+> sme-loan-ai-tooling@0.1.0 codegraph
+> node scripts/check-codegraph.mjs && node scripts/run-codegraph.mjs fn-impact assertReportDecision --file backend/src/modules/appraisal/appraisal.logic.ts --json
+
+CODEGRAPH OK version=3.17.0 files=182 nodes=3715 edges=7428 backend=117 frontend=53 ml=7
+{
+  "name": "assertReportDecision",
+  "results": [
+    {
+      "name": "assertReportDecision",
+      "kind": "function",
+      "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+      "line": 51,
+      "endLine": 59,
+      "role": "utility",
+      "fileHash": "e9699a1949ef6defafede1c5698a910e73fb846889ccbe5b091f385fe27e5b89",
+      "levels": {
+        "1": [
+          {
+            "name": "run",
+            "kind": "function",
+            "file": "backend/src/modules/workflow/workflow.service.ts",
+            "line": 25
+          }
+        ],
+        "2": [
+          {
+            "name": "WorkflowService.transitionStage",
+            "kind": "method",
+            "file": "backend/src/modules/workflow/workflow.service.ts",
+            "line": 24
+          }
+        ],
+        "3": [
+          {
+            "name": "AppraisalService.mutate",
+            "kind": "method",
+            "file": "backend/src/modules/appraisal/appraisal.service.ts",
+            "line": 58
+          },
+          {
+            "name": "WorkflowController.transitionStage",
+            "kind": "method",
+            "file": "backend/src/modules/workflow/workflow.controller.ts",
+            "line": 30
+          }
+        ],
+        "4": [
+          {
+            "name": "AppraisalController.save",
+            "kind": "method",
+            "file": "backend/src/modules/appraisal/appraisal.controller.ts",
+            "line": 30
+          },
+          {
+            "name": "AppraisalController.submit",
+            "kind": "method",
+            "file": "backend/src/modules/appraisal/appraisal.controller.ts",
+            "line": 32
+          },
+          {
+            "name": "AppraisalController.clarify",
+            "kind": "method",
+            "file": "backend/src/modules/appraisal/appraisal.controller.ts",
+            "line": 34
+          }
+        ]
+      },
+      "totalDependents": 7,
+      "direct": 1,
+      "transitive": 6
+    }
+  ]
+}

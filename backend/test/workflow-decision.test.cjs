@@ -79,7 +79,6 @@ function createFixture(overrides = {}) {
     stages: [
       { id: 's-td', stageCode: 'THAM_DINH', standardSlaHours: 24 },
       { id: 's-ht', stageCode: 'HOAN_TAT', standardSlaHours: 0 },
-      { id: 's-ct', stageCode: 'CAP_TREN', standardSlaHours: 48 },
     ],
     coordinationRequests: overrides.coordinationRequests || [
       { id: 'acr-1', applicationId: 'loan-1', status: 'PENDING', requestedById: 'user-req' },

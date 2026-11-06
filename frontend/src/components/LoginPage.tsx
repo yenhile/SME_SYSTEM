@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Landmark } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 import { useAuth } from '../context/AuthContext';
 import { getAuthToken } from '../api/client';
 export function LoginPage() {
@@ -9,7 +9,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return <main className="login-page"><section className="card login-card reference-login">
-    <div className="brand-icon"><Landmark size={26} /></div>
+    <BrandLogo />
     <h1>SME Loan Workflow</h1><p>Đăng nhập để truy cập hệ thống</p>
     {sessionError && <div role="alert" className="error-message">{sessionError}{getAuthToken() && <button className="btn btn-secondary" onClick={() => void restoreSession()}>Thử kết nối lại</button>}<button className="btn" onClick={logout}>Đăng nhập lại</button></div>}
     <form onSubmit={async e => { e.preventDefault(); setError(''); setBusy(true); try { await login(username.trim(), password); } catch (err) { setError((err as Error).message); } finally { setBusy(false); } }}>

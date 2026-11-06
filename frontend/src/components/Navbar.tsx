@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth, ROLE_NAMES } from '../context/AuthContext';
-import { BarChart3, Landmark, LogOut, Settings, FolderOpen, History, ChevronDown, CircleUserRound, Languages, CircleHelp, ShieldCheck, KeyRound } from 'lucide-react';
-import { NAV_GROUPS, visibleNavItems, type Tab } from '../navigation';
+import { BarChart3, LogOut, Settings, FolderOpen, History, ChevronDown, CircleUserRound, Languages, CircleHelp, ShieldCheck, KeyRound } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
+import { NAV_GROUPS, menuItems, type Tab } from '../navigation';
 import { NotificationBell } from './NotificationBell';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { RoleCode } from '../types';
@@ -15,7 +16,7 @@ const accountItems = [
   { label: 'Quyền riêng tư', icon: ShieldCheck },
 ];
 
-export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpenCoordination }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void; onOpenCoordination?: (id: string) => void }) {
+export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpenCoordination, confirmLeave }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void; onOpenCoordination?: (id: string) => void; confirmLeave?: () => boolean }) {
   const { user, activeRole, selectRole, logout } = useAuth();
   const [accountOpen, setAccountOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -58,31 +59,34 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpe
   return <>
     <aside className="sidebar">
       <div className="brand-section">
-        <div className="brand-icon"><Landmark size={22} /></div>
-        <strong>SME LOAN<br />WORKFLOW</strong>
+        <BrandLogo />
       </div>
       <nav aria-label="Menu chính" className="grouped-navigation">
         {NAV_GROUPS.map(group => {
-          const items = visibleNavItems(activeRole).filter(item => item.group === group.id);
+          const items = menuItems(activeRole).filter(item => item.group === group.id);
           if (!items.length) return null;
           const Icon = groupIcons[group.id];
-          return <section className="nav-group" key={group.id} aria-labelledby={`nav-group-${group.id}`}>
+          const allLocked = items.every(item => item.access === 'locked');
+          return <section className={`nav-group${allLocked ? ' all-locked' : ''}`} key={group.id} aria-labelledby={`nav-group-${group.id}`}>
             <h2 id={`nav-group-${group.id}`} className="nav-group-heading"><Icon size={18} />{group.label}</h2>
             <div className="nav-group-items">
-              {items.map(item => (
-                <button
+              {items.map(item => {
+                const locked = item.access === 'locked';
+                return <button
                   key={item.tab}
                   data-tab={item.tab}
-                  disabled={item.unavailable}
-                  title={item.unavailable ? `${item.label}: chức năng chưa triển khai.` : undefined}
+                  disabled={item.access === 'unavailable'}
+                  aria-disabled={locked || undefined}
+                  title={item.access === 'unavailable' ? `${item.label}: chức năng chưa triển khai.` : locked ? 'Vai trò của bạn không có quyền truy cập mục này.' : undefined}
                   aria-current={activeTab === item.tab ? 'page' : undefined}
-                  className={`nav-tab-btn ${activeTab === item.tab ? 'active' : ''}`}
-                  onClick={() => onTabChange(item.tab)}
+                  className={`nav-tab-btn ${activeTab === item.tab ? 'active' : ''}${locked ? ' is-locked' : ''}`}
+                  onClick={() => { if (!locked) onTabChange(item.tab); }}
                 >
                   <span>{item.label}</span>
+                  {locked && <span className="nav-sr-only">, không có quyền truy cập</span>}
                   {item.unavailable && <small>Chưa triển khai</small>}
-                </button>
-              ))}
+                </button>;
+              })}
             </div>
           </section>;
         })}
@@ -131,10 +135,8 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpe
                 <span
                   className="role-switcher-title"
                   style={{
-                    fontSize: '11px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    fontWeight: 700,
+                    fontSize: '12px',
+                    fontWeight: 600,
                     color: 'var(--text-muted)',
                     padding: '8px 12px 4px',
                     display: 'block',
@@ -157,18 +159,18 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpe
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '7px 10px',
-                        borderRadius: 6,
+                        borderRadius: 4,
                         border: activeRole === r ? '1px solid var(--primary, #0284c7)' : '1px solid var(--border-color, #e2e8f0)',
                         background: activeRole === r ? 'var(--primary-subtle, #f0f9ff)' : 'transparent',
                         cursor: 'pointer',
-                        fontSize: '12.5px',
+                        fontSize: '12px',
                         fontWeight: activeRole === r ? 600 : 400,
                         color: activeRole === r ? 'var(--primary, #0284c7)' : 'inherit',
                       }}
                     >
                       <span>{ROLE_NAMES[r] || r}</span>
                       {activeRole === r && (
-                        <span style={{ fontSize: '11px', color: 'var(--primary, #0284c7)' }}>● Đang dùng</span>
+                        <span style={{ fontSize: '12px', color: 'var(--primary, #0284c7)' }}>● Đang dùng</span>
                       )}
                     </button>
                   ))}
@@ -198,7 +200,7 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpe
                 </button>
               ))}
             </div>
-            <button className="account-logout" type="button" onClick={logout}>
+            <button className="account-logout" type="button" onClick={() => { if (!confirmLeave || confirmLeave()) logout(); }}>
               <LogOut size={18} />
               Đăng xuất
             </button>

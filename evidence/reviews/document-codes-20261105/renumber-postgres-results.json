@@ -1,0 +1,152 @@
+{
+  "environment": "Owned temporary postgres:16-alpine container; synthetic data only",
+  "checks": [
+    {
+      "label": "Portal first draft uses DN-1",
+      "pass": true
+    },
+    {
+      "label": "Internal UUID is preserved",
+      "pass": true
+    },
+    {
+      "label": "Counter creation uses SME-1 independently of DN",
+      "pass": true
+    },
+    {
+      "label": "Portal acceptance shares the same SME counter",
+      "pass": true
+    },
+    {
+      "label": "Acceptance retains original DN reference",
+      "pass": true
+    },
+    {
+      "label": "Acceptance replay retains the same linked loan",
+      "pass": true
+    },
+    {
+      "label": "Acceptance replay consumes no extra SME code",
+      "pass": true
+    },
+    {
+      "label": "Concurrent V2 retries produce one request and reference",
+      "pass": true
+    },
+    {
+      "label": "Concurrent V2 retries preserve one UUID",
+      "pass": true
+    },
+    {
+      "label": "Concurrent retry is stored once",
+      "pass": true
+    },
+    {
+      "label": "24 concurrent requests have 24 distinct short codes",
+      "pass": true
+    },
+    {
+      "label": "Concurrent requests allocate DN-3 through DN-26",
+      "pass": true
+    },
+    {
+      "label": "24 parallel SME allocations are unique across connections",
+      "pass": true
+    },
+    {
+      "label": "Parallel SME allocations share the existing sequence",
+      "pass": true
+    },
+    {
+      "label": "Rollback allocates the expected code",
+      "pass": true
+    },
+    {
+      "label": "Rollback does not reuse an allocated number",
+      "pass": true
+    },
+    {
+      "label": "Deleting a request does not reset numbering",
+      "pass": true
+    },
+    {
+      "label": "Rerunning migration does not reset an existing counter",
+      "pass": true
+    },
+    {
+      "label": "Counter survives PostgreSQL restart",
+      "pass": true
+    },
+    {
+      "label": "Migration resumes above an existing DN short code",
+      "pass": true
+    },
+    {
+      "label": "Migration resumes above an existing SME short code",
+      "pass": true
+    },
+    {
+      "label": "Migration preserves all old identifiers and references",
+      "pass": true
+    },
+    {
+      "label": "Old bank code remains unchanged",
+      "pass": true
+    },
+    {
+      "label": "Migration replay never reuses an allocation without a record",
+      "pass": true
+    },
+    {
+      "label": "Renumber replaces exactly two old requests and one old loan",
+      "pass": true
+    },
+    {
+      "label": "Renumber follows creation order and existing counters",
+      "pass": true
+    },
+    {
+      "label": "Renumber keeps the existing short DN code",
+      "pass": true
+    },
+    {
+      "label": "Renumber keeps the existing short SME code",
+      "pass": true
+    },
+    {
+      "label": "Renumber retains linked IDs and historical content exactly",
+      "pass": true
+    },
+    {
+      "label": "Next request continues after renamed records",
+      "pass": true
+    },
+    {
+      "label": "Next loan continues after renamed records",
+      "pass": true
+    },
+    {
+      "label": "Renumber replay changes no codes",
+      "pass": true
+    },
+    {
+      "label": "Renumber replay consumes no numbers",
+      "pass": true
+    },
+    {
+      "label": "A conflicting loan code rolls back earlier request renames",
+      "pass": true
+    },
+    {
+      "label": "A failed renumber preserves the old loan code",
+      "pass": true
+    },
+    {
+      "label": "Missing real database counter fails closed",
+      "pass": true
+    }
+  ],
+  "restartPortChanged": true,
+  "pass": true,
+  "cleanedUp": true
+}
