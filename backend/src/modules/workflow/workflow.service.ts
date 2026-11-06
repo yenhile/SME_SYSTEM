@@ -13,6 +13,20 @@ import { assertReportDecision } from '../appraisal/appraisal.logic';
 import { isPublicRejectionReasonCode, PUBLIC_REJECTION_REASONS } from '../portal/portal.tracking';
 import { Prisma } from '@prisma/client';
 
+function decisionNotice(applicationCode: string, dto: TransitionStageDto) {
+  if (dto.targetStatus === LoanStatus.APPROVED) {
+    return {
+      title: 'Hồ sơ đã được phê duyệt',
+      message: `Hồ sơ ${applicationCode} đã được phê duyệt ${Number(dto.approvedAmount).toLocaleString('vi-VN')} VNĐ, lãi suất ${Number(dto.interestRate).toLocaleString('vi-VN')}%/năm.`,
+    };
+  }
+  const code = dto.rejectionReasonCode as string;
+  return {
+    title: 'Hồ sơ bị từ chối',
+    message: `Hồ sơ ${applicationCode} bị từ chối: ${code} - ${PUBLIC_REJECTION_REASONS[code]}. Giải trình: ${dto.rejectionNote?.trim()}`,
+  };
+}
+
 @Injectable()
 export class WorkflowService {
   private readonly logger = new Logger(WorkflowService.name);
@@ -37,7 +51,6 @@ export class WorkflowService {
       let decidedReport: { report: any; version: any } | null = null;
       if (loan.businessPolicyVersion) {
         assertBranchAmount(loan.officialAmount || loan.proposedAmount);
-        if (dto.targetStage === 'CAP_TREN') throw new BadRequestException('Hồ sơ mới chỉ xử lý trong phạm vi chi nhánh, tối đa 10 tỷ.');
         if (fromReception) {
           const report = await tx.appraisalReport.findUnique({where:{applicationId}});
           if (report?.status !== 'SUBMITTED') throw new BadRequestException('Cần lập và trình tờ trình trước khi chuyển Thẩm định.');
@@ -52,10 +65,8 @@ export class WorkflowService {
       } else if (dto.targetStage === StageCode.HOAN_TAT && dto.targetStatus === LoanStatus.REJECTED) {
         if (!isPublicRejectionReasonCode(dto.rejectionReasonCode)) throw new BadRequestException('Mã lý do từ chối không hợp lệ. Phải thuộc danh mục chuẩn TC01-TC05.');
         if (!dto.rejectionNote?.trim()) throw new BadRequestException('Cần mã và lý do từ chối.');
-      } else if (loan.currentStage === StageCode.THAM_DINH && dto.targetStage === StageCode.CAP_TREN && dto.targetStatus === LoanStatus.WAITING_HEAD_OFFICE) {
-        // Escalation follows appraisal; the existing policy also allows escalation below the limit.
       } else if (dto.targetStage === StageCode.HOAN_TAT && dto.targetStatus === LoanStatus.APPROVED) {
-        if (loan.currentStage === StageCode.THAM_DINH && amount > 10000000000) throw new BadRequestException('Khoản vay vượt 10 tỷ phải trình cấp trên trước khi phê duyệt.');
+        if (amount > 10000000000) throw new BadRequestException('Khoản vay vượt hạn mức chi nhánh (tối đa 10 tỷ), không thể phê duyệt.');
         if (!Number.isFinite(dto.approvedAmount) || dto.approvedAmount! <= 0 || dto.approvedAmount! > amount) throw new BadRequestException('Số tiền phê duyệt phải dương và không vượt hạn mức.');
         if (!Number.isFinite(dto.interestRate) || dto.interestRate! < 0 || dto.interestRate! > 100) throw new BadRequestException('Lãi suất phải từ 0 đến 100%.');
       } else throw new BadRequestException('Cặp công đoạn và trạng thái không hợp lệ.');
@@ -80,6 +91,9 @@ export class WorkflowService {
         handledBy: user.id, notes: dto.notes, ...mode,
         ...(terminal ? { exitedAt: now, actualDurationHours: 0, netWorkDurationHours: 0 } : {}),
       } });
+      if (terminal && loan.assignedTo) {
+        await tx.internalNotification.createMany({ data: [{ userId: loan.assignedTo, applicationId, ...decisionNotice(loan.applicationCode, dto) }] });
+      }
       return tx.loanApplication.update({ where: { id: applicationId }, data: {
         currentStage: dto.targetStage, currentStatus: dto.targetStatus,
         completedAt: terminal ? now : null,

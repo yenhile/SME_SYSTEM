@@ -1,11 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import { CalendarCoverageError, PauseInterval, SIMULATED_CALENDAR_V1, SlaCalendar, workingHoursBetween, workingMillisBetween } from './working-time';
+import { CalendarCoverageError, OPERATING_CALENDAR_2026, PauseInterval, SIMULATED_CALENDAR_V1, SlaCalendar, workingDeadline, workingHoursBetween, workingMillisBetween } from './working-time';
 
 export const SLA_POLICY_PA1 = 'PA1';
 
 /** Các phiên bản lịch đã được phê duyệt dùng cho PA1. Thêm lịch mới = thêm vào đây rồi ghi nhận mốc kích hoạt mới. */
 const CALENDARS: Record<string, SlaCalendar> = {
   [SIMULATED_CALENDAR_V1.version]: SIMULATED_CALENDAR_V1,
+  [OPERATING_CALENDAR_2026.version]: OPERATING_CALENDAR_2026,
 };
 
 export function calendarByVersion(version: string): SlaCalendar {
@@ -136,4 +137,48 @@ export function computeStageClosing(stage: StageClosingInput, pauses: ReadonlyAr
   const actual = (exitedAt.getTime() - stage.enteredAt.getTime()) / 3600000;
   const net = Math.max(0, actual - pausedTotal);
   return { actualDurationHours: actual, pausedDurationHours: pausedTotal, netWorkDurationHours: net, isDelayed: net > stage.slaStandardHours };
+}
+
+export interface StageSlaSummary {
+  policy: string | null;
+  standardHours: number;
+  netWorkHours: number | null;
+  remainingHours: number | null;
+  dueAt: Date | null;
+  waitingEnterprise: boolean;
+  isOverdue: boolean;
+  error: string | null;
+}
+
+/**
+ * Tình trạng SLA của công đoạn đang mở tại `now`. Không ném lỗi: lỗi lịch của một hồ sơ không được làm hỏng cả danh sách.
+ * Đang chờ doanh nghiệp thì chưa xác định được hạn và không gắn "Quá hạn"; giờ đã vượt vẫn được tính khi đồng hồ chạy lại.
+ */
+export function stageSlaSummary(stage: StageClosingInput, pauses: ReadonlyArray<PauseInterval>, now: Date): StageSlaSummary {
+  const isPa1 = stage.slaPolicy === SLA_POLICY_PA1;
+  const waitingEnterprise = isPa1 ? pauses.some(pause => pause.end === null) : Boolean(stage.pausedAt);
+  const base = { policy: stage.slaPolicy, standardHours: stage.slaStandardHours, waitingEnterprise };
+  let closing: StageClosingResult;
+  try {
+    closing = computeStageClosing(stage, pauses, now);
+  } catch (error) {
+    return { ...base, netWorkHours: null, remainingHours: null, dueAt: null, isOverdue: false, error: (error as Error).message };
+  }
+  let dueAt: Date | null = null;
+  let dueError: string | null = null;
+  if (isPa1 && !waitingEnterprise) {
+    try {
+      dueAt = workingDeadline(stage.enteredAt, stage.slaStandardHours, calendarByVersion(stage.slaCalendarVersion ?? ''), pauses);
+    } catch (error) {
+      dueError = (error as Error).message;
+    }
+  }
+  return {
+    ...base,
+    netWorkHours: closing.netWorkDurationHours,
+    remainingHours: Math.max(0, stage.slaStandardHours - closing.netWorkDurationHours),
+    dueAt,
+    isOverdue: closing.isDelayed && !waitingEnterprise,
+    error: dueError,
+  };
 }

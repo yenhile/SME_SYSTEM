@@ -20,7 +20,7 @@ export function isPublicRejectionReasonCode(code: unknown): code is PublicReject
 
 const STEP_LABELS = ['Tiếp nhận', 'Thẩm định', 'Phê duyệt', 'Hoàn tất'] as const;
 const STEP_CODES = ['RECEIVE', 'APPRAISAL', 'APPROVAL', 'DONE'] as const;
-const STAGE_ORDER = ['TIEP_NHAN', 'THAM_DINH', 'CAP_TREN'];
+const STAGE_ORDER = ['TIEP_NHAN', 'THAM_DINH'];
 
 export type StepState = 'done' | 'current' | 'pending' | 'stopped';
 
@@ -51,7 +51,6 @@ const LOAN_STATUS: Record<string, { code: string; label: string; message: string
   CHECKED: { code: 'RECEIVED', label: 'Đang kiểm tra hồ sơ', message: 'Ngân hàng đang kiểm tra tính đầy đủ của hồ sơ.' },
   SUPPLEMENT_REQUIRED: { code: 'SUPPLEMENT_REQUIRED', label: 'Cần bổ sung chứng từ', message: 'Ngân hàng cần bổ sung chứng từ. Vui lòng mở mục "Bổ sung hồ sơ sau tiếp nhận" để gửi tài liệu.' },
   PENDING_APPRAISAL: { code: 'APPRAISAL', label: 'Đang thẩm định', message: 'Hồ sơ đang được thẩm định.' },
-  WAITING_HEAD_OFFICE: { code: 'HEAD_OFFICE', label: 'Đang chờ cấp có thẩm quyền xét duyệt', message: 'Hồ sơ đang được trình cấp có thẩm quyền xem xét.' },
   APPROVED: { code: 'APPROVED', label: 'Đã được phê duyệt', message: 'Hồ sơ đã được phê duyệt. Ngân hàng sẽ liên hệ về các bước tiếp theo.' },
   REJECTED: { code: 'REJECTED', label: 'Không được chấp thuận', message: 'Hồ sơ không được chấp thuận.' },
   CLOSED_TIMEOUT: { code: 'CLOSED', label: 'Đã đóng do quá hạn bổ sung', message: 'Hồ sơ đã được đóng do quá hạn bổ sung chứng từ. Vui lòng liên hệ ngân hàng để được hướng dẫn.' },

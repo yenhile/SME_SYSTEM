@@ -8,6 +8,18 @@ import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 
 import { assertLoanWrite } from '../workflow/loan-policy';
+import { validatePortalFile } from '../portal/portal.validation';
+
+/** Định dạng tệp theo loại chứng từ dùng chung quy tắc với nhóm tài liệu tương ứng trên cổng doanh nghiệp. */
+const PORTAL_GROUP_BY_TYPE: Record<DocumentType, string> = {
+  PHAP_LY: 'A',
+  TAI_CHINH: 'B',
+  HOAT_DONG_SX: 'C',
+  PHUONG_AN: 'D',
+  TSBD: 'E',
+  DU_NO: 'F',
+  KHAC: 'A',
+};
 
 @Injectable()
 export class DocumentsService {
@@ -15,12 +27,13 @@ export class DocumentsService {
   constructor(private prisma: PrismaService) {}
 
   async upload(applicationId: string, documentType: DocumentType, file: { buffer: Buffer; originalname: string; size: number; mimetype: string }, userId: string, activeRole = 'CBTD') {
+    const checked = await validatePortalFile(PORTAL_GROUP_BY_TYPE[documentType], file);
     await mkdir(this.uploadDir, { recursive: true });
     const key = randomUUID();
     const path = join(this.uploadDir, key);
     await writeFile(path, file.buffer);
     try {
-      return await this.create(applicationId, { documentType, fileName: file.originalname, fileSize: file.size, mimeType: file.mimetype, filePath: key }, userId, activeRole);
+      return await this.create(applicationId, { documentType, fileName: checked.fileName, fileSize: file.size, mimeType: checked.mimeType, filePath: key }, userId, activeRole);
     } catch (err) { await unlink(path); throw err; }
   }
   async download(id: string) {
@@ -47,7 +60,7 @@ export class DocumentsService {
         throw new NotFoundException(`Không tìm thấy hồ sơ với ID: ${applicationId}`);
       }
 
-      await assertLoanWrite(tx,loan, {id:userId, activeRole});
+      await assertLoanWrite(tx,loan, {id:userId, activeRole}, true);
       const document = await tx.document.create({
         data: {
           applicationId,
@@ -120,7 +133,7 @@ export class DocumentsService {
       if (!(await tx.document.findUnique({ where: { id } }))) throw new NotFoundException(`Không tìm thấy chứng từ với ID: ${id}`);
       const loan = await tx.loanApplication.findUnique({ where: { id: doc.applicationId } });
       if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ.');
-      await assertLoanWrite(tx,loan, actor);
+      await assertLoanWrite(tx,loan, actor, true);
       if (loan.businessPolicyVersion) {
         const versions = await tx.appraisalReportVersion.findMany({where:{report:{applicationId:loan.id}},select:{evidence:true}});
         if (versions.some(v => ((v.evidence as any).documents ?? []).some((d:any) => d.id === id))) throw new BadRequestException('Tài liệu đã là căn cứ tờ trình. Giữ bản cũ và tải phiên bản mới.');

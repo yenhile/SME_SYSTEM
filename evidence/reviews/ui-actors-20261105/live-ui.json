@@ -1,0 +1,406 @@
+{
+  "scope": "Live UI, existing synthetic accounts, read-only business data",
+  "checks": [
+    {
+      "label": "ADMIN menu matches role matrix",
+      "pass": true
+    },
+    {
+      "label": "Admin grants only the four internal roles",
+      "pass": true
+    },
+    {
+      "label": "Admin SLA view contains three current stages, no head-office stage",
+      "pass": true
+    },
+    {
+      "label": "ADMIN review made no business write attempts",
+      "pass": true
+    },
+    {
+      "label": "CBTD menu matches role matrix",
+      "pass": true
+    },
+    {
+      "label": "CBTD review made no business write attempts",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN menu matches role matrix",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN review made no business write attempts",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY menu matches role matrix",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY review made no business write attempts",
+      "pass": true
+    },
+    {
+      "label": "No browser runtime exceptions",
+      "pass": true
+    }
+  ],
+  "observations": [
+    "Tham quyen sees coordination button but navigation returns to dashboard"
+  ],
+  "screenshots": [
+    "01-staff-login.png",
+    "04-admin-account-roles.png",
+    "02-admin-sla-desktop.png",
+    "03-admin-sla-mobile.png",
+    "06-cbtd-loans.png",
+    "07-cbtd-intake.png",
+    "08-cbtd-loan-detail.png",
+    "08b-cbtd-supplements.png",
+    "05-approver-dashboard.png",
+    "06-tham_quyen-loans.png",
+    "08-tham_quyen-loan-detail.png",
+    "08b-tham_quyen-supplements.png",
+    "06-quan_ly-loans.png",
+    "07-quan_ly-intake.png",
+    "08-quan_ly-loan-detail.png",
+    "08b-quan_ly-supplements.png",
+    "09-enterprise-login.png",
+    "13-enterprise-register.png",
+    "13-enterprise-verify.png",
+    "13-enterprise-forgot.png",
+    "14-enterprise-reset.png",
+    "15-enterprise-login-mobile.png"
+  ],
+  "api": [
+    {
+      "endpoint": "/admin/workflow-stages",
+      "role": "ADMIN",
+      "status": 200
+    },
+    {
+      "endpoint": "/loan-applications",
+      "role": "CBTD",
+      "status": 200
+    },
+    {
+      "endpoint": "/loan-applications",
+      "role": "THAM_QUYEN",
+      "status": 200
+    },
+    {
+      "endpoint": "/loan-applications",
+      "role": "QUAN_LY",
+      "status": 200
+    }
+  ],
+  "actors": {
+    "ADMIN": {
+      "menus": {
+        "enabled": [
+          "users",
+          "settings"
+        ],
+        "disabled": [
+          "activity"
+        ]
+      },
+      "views": {
+        "users": {
+          "heading": "Liên hệ cá nhân",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        },
+        "settings": {
+          "heading": "Cấu hình SLA",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        }
+      },
+      "grantRoles": [
+        "Quản trị hệ thống",
+        "Cán bộ tín dụng",
+        "Cán bộ thẩm quyền",
+        "Quản lý chi nhánh"
+      ],
+      "slaRows": [
+        "Tiếp nhận & Kiểm tra hồ sơ",
+        "Thẩm định hồ sơ & Năng lực rủi ro",
+        "Hoàn tất & Phê duyệt giải ngân"
+      ],
+      "apiStillContainsLegacyStage": true,
+      "mobileOverflow": false
+    },
+    "CBTD": {
+      "menus": {
+        "enabled": [
+          "companies",
+          "loans"
+        ],
+        "disabled": [
+          "issues"
+        ]
+      },
+      "views": {
+        "companies": {
+          "heading": "Liên hệ doanh nghiệp",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        },
+        "loans": {
+          "heading": "Danh sách hồ sơ",
+          "alerts": [],
+          "kanban": [
+            "1. Tiếp nhận hồ sơ1",
+            "2. Thẩm định tín dụng1",
+            "3. Hội đồng / Cấp trên1",
+            "4. Hoàn tất & Phê duyệt1"
+          ],
+          "filters": [
+            {
+              "value": "CAP_TREN",
+              "label": "3. Hội đồng / Cấp trên"
+            },
+            {
+              "value": "WAITING_HEAD_OFFICE",
+              "label": "Chờ Cấp trên duyệt"
+            }
+          ]
+        }
+      },
+      "hasIntakeTab": true,
+      "intake": {
+        "heading": "Đề nghị từ cổng doanh nghiệp",
+        "alerts": [],
+        "kanban": [],
+        "filters": []
+      },
+      "currentPolicyLoanAvailable": false,
+      "detailDataPolicy": "legacy",
+      "loanProgress": [
+        "Tiếp nhận",
+        "Thẩm định",
+        "Hội đồng / Cấp trên",
+        "Hoàn tất quyết định"
+      ],
+      "supplementButtons": [
+        "Yêu cầu bổ sung (12)"
+      ]
+    },
+    "THAM_QUYEN": {
+      "menus": {
+        "enabled": [
+          "dashboard",
+          "companies",
+          "loans",
+          "appraisal"
+        ],
+        "disabled": [
+          "issues"
+        ]
+      },
+      "views": {
+        "dashboard": {
+          "heading": "Dashboard tổng quan",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        },
+        "companies": {
+          "heading": "Liên hệ doanh nghiệp",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        },
+        "loans": {
+          "heading": "Danh sách hồ sơ",
+          "alerts": [],
+          "kanban": [
+            "1. Tiếp nhận hồ sơ0",
+            "2. Thẩm định tín dụng1",
+            "3. Hội đồng / Cấp trên1",
+            "4. Hoàn tất & Phê duyệt1"
+          ],
+          "filters": [
+            {
+              "value": "CAP_TREN",
+              "label": "3. Hội đồng / Cấp trên"
+            },
+            {
+              "value": "WAITING_HEAD_OFFICE",
+              "label": "Chờ Cấp trên duyệt"
+            }
+          ]
+        },
+        "appraisal": {
+          "heading": "Thẩm định & phê duyệt",
+          "alerts": [],
+          "kanban": [
+            "2. Thẩm định tín dụng1",
+            "3. Hội đồng / Cấp trên1"
+          ],
+          "filters": [
+            {
+              "value": "CAP_TREN",
+              "label": "3. Hội đồng / Cấp trên"
+            },
+            {
+              "value": "WAITING_HEAD_OFFICE",
+              "label": "Chờ Cấp trên duyệt"
+            }
+          ]
+        }
+      },
+      "coordinationButton": true,
+      "coordinationDestination": "dashboard",
+      "hasIntakeTab": false,
+      "currentPolicyLoanAvailable": false,
+      "detailDataPolicy": "legacy",
+      "loanProgress": [
+        "Tiếp nhận",
+        "Thẩm định",
+        "Hội đồng / Cấp trên",
+        "Hoàn tất quyết định"
+      ],
+      "supplementButtons": [
+        "Yêu cầu bổ sung (0)",
+        "Yêu cầu bổ sung chứng từ",
+        "Từ chối (TC01 - TC05)",
+        "Phê duyệt Khoản vay"
+      ]
+    },
+    "QUAN_LY": {
+      "menus": {
+        "enabled": [
+          "dashboard",
+          "companies",
+          "loans",
+          "appraisal",
+          "assignments"
+        ],
+        "disabled": [
+          "issues",
+          "activity"
+        ]
+      },
+      "views": {
+        "dashboard": {
+          "heading": "Dashboard tổng quan",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        },
+        "companies": {
+          "heading": "Liên hệ doanh nghiệp",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        },
+        "loans": {
+          "heading": "Danh sách hồ sơ",
+          "alerts": [],
+          "kanban": [
+            "1. Tiếp nhận hồ sơ1",
+            "2. Thẩm định tín dụng1",
+            "3. Hội đồng / Cấp trên1",
+            "4. Hoàn tất & Phê duyệt1"
+          ],
+          "filters": [
+            {
+              "value": "CAP_TREN",
+              "label": "3. Hội đồng / Cấp trên"
+            },
+            {
+              "value": "WAITING_HEAD_OFFICE",
+              "label": "Chờ Cấp trên duyệt"
+            }
+          ]
+        },
+        "appraisal": {
+          "heading": "Thẩm định & phê duyệt",
+          "alerts": [],
+          "kanban": [
+            "2. Thẩm định tín dụng1",
+            "3. Hội đồng / Cấp trên1"
+          ],
+          "filters": [
+            {
+              "value": "CAP_TREN",
+              "label": "3. Hội đồng / Cấp trên"
+            },
+            {
+              "value": "WAITING_HEAD_OFFICE",
+              "label": "Chờ Cấp trên duyệt"
+            }
+          ]
+        },
+        "assignments": {
+          "heading": "Điều chuyển & phân công",
+          "alerts": [],
+          "kanban": [],
+          "filters": []
+        }
+      },
+      "coordinationButton": true,
+      "hasIntakeTab": true,
+      "intake": {
+        "heading": "Đề nghị từ cổng doanh nghiệp",
+        "alerts": [],
+        "kanban": [],
+        "filters": []
+      },
+      "currentPolicyLoanAvailable": false,
+      "detailDataPolicy": "legacy",
+      "loanProgress": [
+        "Tiếp nhận",
+        "Thẩm định",
+        "Hội đồng / Cấp trên",
+        "Hoàn tất quyết định"
+      ],
+      "supplementButtons": [
+        "Yêu cầu bổ sung (12)"
+      ]
+    },
+    "ENTERPRISE": {
+      "loginStatus": 401,
+      "skippedKnownFailedLogin": true,
+      "authViews": [
+        {
+          "mode": "register",
+          "title": "Tạo tài khoản",
+          "inputs": [
+            "email",
+            "text",
+            "tel",
+            "password"
+          ]
+        },
+        {
+          "mode": "verify",
+          "title": "Xác minh email",
+          "inputs": [
+            "email",
+            "text"
+          ]
+        },
+        {
+          "mode": "forgot",
+          "title": "Quên mật khẩu",
+          "inputs": [
+            "email"
+          ]
+        },
+        {
+          "mode": "reset",
+          "title": "Đặt lại mật khẩu"
+        }
+      ],
+      "loginOverflow": false
+    }
+  },
+  "runtimeErrors": []
+}

@@ -35,7 +35,7 @@ export function PortalAuth({onLogin,resetToken,onResetConsumed}:{onLogin:(accoun
 
     <section className="portal-card portal-auth">
       <h2>{title}</h2>
-      <p className="portal-card-subtitle">{mode==='verify'?'Nhập mã trong email. Nếu chưa nhận được, kiểm tra thư rác hoặc yêu cầu gửi lại.':mode==='forgot'?'Nhập email tài khoản doanh nghiệp đã xác minh để nhận liên kết đặt lại mật khẩu.':mode==='reset'?'Liên kết có hiệu lực 10 phút và chỉ dùng một lần.':'Dùng email đã xác minh để quản lý đề nghị vay.'}</p>
+      <p className="portal-card-subtitle">{mode==='register'?'Nhập email để nhận mã xác minh và bắt đầu chuẩn bị đề nghị vay.':mode==='verify'?'Nhập mã 6 chữ số được gửi đến email bên dưới. Bạn có thể dán toàn bộ mã.':mode==='forgot'?'Nhập email tài khoản để nhận liên kết đặt lại mật khẩu.':mode==='reset'?'Tạo mật khẩu mới để đăng nhập lại. Liên kết có hiệu lực 10 phút và chỉ dùng một lần.':'Đăng nhập bằng email đã xác minh để tiếp tục hồ sơ của bạn.'}</p>
       <form onSubmit={e=>{e.preventDefault();void run(async()=>{
         if(mode==='login'){
           const result=await portalApi.post<{accessToken:string;account:PortalAccount}>('/auth/login',{email:email.trim(),password});

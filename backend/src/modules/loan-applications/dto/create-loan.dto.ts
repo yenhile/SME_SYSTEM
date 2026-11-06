@@ -1,10 +1,12 @@
-import { IsNotEmpty, IsString, IsNumber, IsEnum, Min, Max, IsInt, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsEnum, Matches, Min, Max, IsInt, IsOptional } from 'class-validator';
 import { LoanType } from '@prisma/client';
+import { TAX_CODE_MESSAGE, TAX_CODE_PATTERN } from '../../../common/tax-code';
 
 export class CreateLoanDto {
   // Thông tin Doanh nghiệp
   @IsNotEmpty({ message: 'Mã số thuế không được để trống' })
   @IsString()
+  @Matches(TAX_CODE_PATTERN, { message: TAX_CODE_MESSAGE })
   taxCode: string;
 
   @IsNotEmpty({ message: 'Tên doanh nghiệp không được để trống' })

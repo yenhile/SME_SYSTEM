@@ -1,0 +1,144 @@
+﻿
+> sme-loan-ai-tooling@0.1.0 codegraph
+> node scripts/check-codegraph.mjs && node scripts/run-codegraph.mjs deps backend/src/modules/assignments/assignment.transactions.ts --json
+
+CODEGRAPH OK version=3.17.0 files=182 nodes=3715 edges=7428 backend=117 frontend=53 ml=7
+{
+  "file": "backend/src/modules/assignments/assignment.transactions.ts",
+  "results": [
+    {
+      "file": "backend/src/modules/assignments/assignment.transactions.ts",
+      "imports": [
+        {
+          "file": "backend/src/modules/portal/portal.approved-policy.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/assignments/assignment-safety.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/assignments/assignment-coordination.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/workflow/loan-policy.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/companies/company-snapshot.ts",
+          "typeOnly": false
+        }
+      ],
+      "importedBy": [
+        {
+          "file": "backend/src/modules/portal/portal.service.ts"
+        },
+        {
+          "file": "backend/src/modules/assignments/assignments.service.ts"
+        },
+        {
+          "file": "backend/src/modules/assignments/assignment-change-requests.service.ts"
+        }
+      ],
+      "definitions": [
+        {
+          "name": "person",
+          "kind": "constant",
+          "line": 8
+        },
+        {
+          "name": "historyInclude",
+          "kind": "constant",
+          "line": 9
+        },
+        {
+          "name": "transferLoan",
+          "kind": "function",
+          "line": 10
+        },
+        {
+          "name": "tx",
+          "kind": "parameter",
+          "line": 10
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 10
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 10
+        },
+        {
+          "name": "managerId",
+          "kind": "parameter",
+          "line": 10
+        },
+        {
+          "name": "changeRequestId",
+          "kind": "parameter",
+          "line": 10
+        },
+        {
+          "name": "transferPortal",
+          "kind": "function",
+          "line": 39
+        },
+        {
+          "name": "tx",
+          "kind": "parameter",
+          "line": 39
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 39
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 39
+        },
+        {
+          "name": "managerId",
+          "kind": "parameter",
+          "line": 39
+        },
+        {
+          "name": "include",
+          "kind": "parameter",
+          "line": 39
+        },
+        {
+          "name": "changeRequestId",
+          "kind": "parameter",
+          "line": 39
+        },
+        {
+          "name": "assignmentPrediction",
+          "kind": "function",
+          "line": 69
+        },
+        {
+          "name": "service",
+          "kind": "parameter",
+          "line": 69
+        },
+        {
+          "name": "applicationId",
+          "kind": "parameter",
+          "line": 69
+        },
+        {
+          "name": "replayed",
+          "kind": "parameter",
+          "line": 69
+        }
+      ]
+    }
+  ]
+}
+

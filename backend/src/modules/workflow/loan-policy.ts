@@ -8,6 +8,12 @@ export function assertBranchAmount(value: unknown) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount <= 0 || amount > BRANCH_LIMIT) throw new BadRequestException(BRANCH_LIMIT_MESSAGE);
 }
+export function assertOfficialAmount(value: unknown, proposedAmount: unknown) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) throw new BadRequestException('Hạn mức vay phải là số dương hợp lệ.');
+  if (amount > BRANCH_LIMIT) throw new BadRequestException('Hạn mức chính thức tối đa 10 tỷ đồng.');
+  if (amount > Number(proposedAmount)) throw new BadRequestException('Hạn mức chính thức không được vượt số tiền đề xuất.');
+}
 export type LoanActor = { id: string; activeRole: string };
 /** Run against the freshly locked row, never just the guard's earlier copy. */
 export async function assertLoanWrite(tx:any,loan: any, actor: LoanActor, receptionOnly = false) {

@@ -1,0 +1,744 @@
+{
+  "checks": [
+    {
+      "label": "Portal reference primary is navy",
+      "pass": true
+    },
+    {
+      "label": "Portal hover reference",
+      "pass": true
+    },
+    {
+      "label": "Staff login has no subtitle at 1440px",
+      "pass": true
+    },
+    {
+      "label": "Staff login logo matches Portal at 1440px",
+      "pass": true
+    },
+    {
+      "label": "Staff login primary matches Portal at 1440px",
+      "pass": true
+    },
+    {
+      "label": "Staff login fits 1440px",
+      "pass": true
+    },
+    {
+      "label": "Staff login has no subtitle at 375px",
+      "pass": true
+    },
+    {
+      "label": "Staff login logo matches Portal at 375px",
+      "pass": true
+    },
+    {
+      "label": "Staff login primary matches Portal at 375px",
+      "pass": true
+    },
+    {
+      "label": "Staff login fits 375px",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/1440: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/1440: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/1440: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/1440: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/1440: primary button matches Portal",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/1440: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/1440: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/375: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/375: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/375: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/375: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/375: primary button matches Portal",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/375: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "ADMIN/users/375: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "ADMIN: primary hover matches Portal",
+      "pass": true
+    },
+    {
+      "label": "ADMIN: focus uses Portal accent",
+      "pass": true
+    },
+    {
+      "label": "ADMIN: account accent is blue",
+      "pass": true
+    },
+    {
+      "label": "CBTD/1440: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/1440: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/1440: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/1440: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/1440: primary button matches Portal",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/1440: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/1440: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "CBTD/375: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/375: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/375: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/375: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/375: primary button matches Portal",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/375: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "CBTD/companies/375: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "CBTD: primary hover matches Portal",
+      "pass": true
+    },
+    {
+      "label": "CBTD: focus uses Portal accent",
+      "pass": true
+    },
+    {
+      "label": "CBTD: account accent is blue",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/1440: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/1440: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/1440: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/1440: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/1440: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/1440: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/375: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/375: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/375: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/375: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/375: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN/dashboard/375: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN: primary hover matches Portal",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN: focus uses Portal accent",
+      "pass": true
+    },
+    {
+      "label": "THAM_QUYEN: account accent is blue",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/1440: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/1440: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/1440: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/1440: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/1440: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/1440: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/375: logo has no bank subtitle",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/375: shared logo matches Portal",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/375: brand wordmark matches Portal",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/375: blue navigation matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/375: background matches Portal palette",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY/dashboard/375: no document horizontal overflow",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY: primary hover matches Portal",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY: focus uses Portal accent",
+      "pass": true
+    },
+    {
+      "label": "QUAN_LY: account accent is blue",
+      "pass": true
+    },
+    {
+      "label": "No browser runtime exceptions",
+      "pass": true
+    }
+  ],
+  "views": [
+    {
+      "role": "ADMIN",
+      "tab": "users",
+      "width": 1440,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(15, 23, 42)",
+          "border": "rgb(255, 255, 255)",
+          "radius": "5px",
+          "width": "130.016px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgba(0, 0, 0, 0)",
+          "radius": "6px",
+          "width": "239px",
+          "height": "42px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    },
+    {
+      "role": "ADMIN",
+      "tab": "users",
+      "width": 375,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(15, 23, 42)",
+          "border": "rgb(255, 255, 255)",
+          "radius": "5px",
+          "width": "130.016px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(241, 245, 249)",
+          "radius": "6px",
+          "width": "116.922px",
+          "height": "42px",
+          "fontSize": "13px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    },
+    {
+      "role": "CBTD",
+      "tab": "companies",
+      "width": 1440,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(15, 23, 42)",
+          "border": "rgb(255, 255, 255)",
+          "radius": "5px",
+          "width": "58.3906px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgba(0, 0, 0, 0)",
+          "radius": "6px",
+          "width": "239px",
+          "height": "42px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    },
+    {
+      "role": "CBTD",
+      "tab": "companies",
+      "width": 375,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": {
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(15, 23, 42)",
+          "border": "rgb(255, 255, 255)",
+          "radius": "5px",
+          "width": "58.3906px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(241, 245, 249)",
+          "radius": "6px",
+          "width": "150px",
+          "height": "42px",
+          "fontSize": "13px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    },
+    {
+      "role": "THAM_QUYEN",
+      "tab": "dashboard",
+      "width": 1440,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": null,
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgba(0, 0, 0, 0)",
+          "radius": "6px",
+          "width": "239px",
+          "height": "42px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    },
+    {
+      "role": "THAM_QUYEN",
+      "tab": "dashboard",
+      "width": 375,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": null,
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(241, 245, 249)",
+          "radius": "6px",
+          "width": "150.516px",
+          "height": "42px",
+          "fontSize": "13px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    },
+    {
+      "role": "QUAN_LY",
+      "tab": "dashboard",
+      "width": 1440,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": null,
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgba(0, 0, 0, 0)",
+          "radius": "6px",
+          "width": "239px",
+          "height": "42px",
+          "fontSize": "14px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    },
+    {
+      "role": "QUAN_LY",
+      "tab": "dashboard",
+      "width": 375,
+      "style": {
+        "logo": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(30, 64, 175)",
+          "radius": "10px",
+          "width": "40px",
+          "height": "40px",
+          "fontSize": "14px",
+          "fontWeight": "400"
+        },
+        "title": {
+          "color": "rgb(15, 23, 42)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "rgb(15, 23, 42)",
+          "radius": "0px",
+          "width": "39.5781px",
+          "height": "23px",
+          "fontSize": "20px",
+          "fontWeight": "800"
+        },
+        "subtitle": null,
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+        "button": null,
+        "active": {
+          "color": "rgb(30, 64, 175)",
+          "background": "rgb(239, 246, 255)",
+          "border": "rgb(241, 245, 249)",
+          "radius": "6px",
+          "width": "150.516px",
+          "height": "42px",
+          "fontSize": "13px",
+          "fontWeight": "500"
+        },
+        "surface": "rgb(248, 250, 252)",
+        "overflow": false
+      }
+    }
+  ],
+  "screenshots": [
+    "01-portal-desktop.png",
+    "02-portal-mobile.png",
+    "03-staff-login-1440.png",
+    "03-staff-login-375.png",
+    "04-admin-users-1440.png",
+    "04-admin-users-375.png",
+    "05-admin-account.png",
+    "04-cbtd-companies-1440.png",
+    "04-cbtd-companies-375.png",
+    "05-cbtd-account.png",
+    "04-tham_quyen-dashboard-1440.png",
+    "04-tham_quyen-dashboard-375.png",
+    "05-tham_quyen-account.png",
+    "04-quan_ly-dashboard-1440.png",
+    "04-quan_ly-dashboard-375.png",
+    "05-quan_ly-account.png"
+  ],
+  "errors": [],
+  "portalReference": {
+    "logo": {
+      "color": "rgb(30, 64, 175)",
+      "background": "rgb(239, 246, 255)",
+      "border": "rgb(30, 64, 175)",
+      "radius": "10px",
+      "width": "40px",
+      "height": "40px",
+      "fontSize": "14px",
+      "fontWeight": "400"
+    },
+    "title": {
+      "color": "rgb(15, 23, 42)",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "rgb(15, 23, 42)",
+      "radius": "0px",
+      "width": "105.562px",
+      "height": "23px",
+      "fontSize": "20px",
+      "fontWeight": "800"
+    },
+    "subtitle": {
+      "color": "rgb(100, 116, 139)",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "rgb(100, 116, 139)",
+      "radius": "0px",
+      "width": "105.562px",
+      "height": "18px",
+      "fontSize": "12px",
+      "fontWeight": "400"
+    },
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-building2\" aria-hidden=\"true\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>",
+    "button": {
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(15, 23, 42)",
+      "border": "rgb(255, 255, 255)",
+      "radius": "8px",
+      "width": "374px",
+      "height": "46px",
+      "fontSize": "15px",
+      "fontWeight": "600"
+    },
+    "active": null,
+    "surface": "rgb(248, 250, 252)",
+    "overflow": false
+  },
+  "portalHover": "rgb(30, 41, 59)"
+}

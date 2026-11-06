@@ -43,6 +43,15 @@ export async function reportEvidence(tx: any, loan: any) {
     loanType:loan.loanType,loanTermMonths:loan.loanTermMonths,documents,
     supplements:supplements.map((s:any)=>({id:s.id,status:s.status,portalSupplement:s.portalSupplement,requestContent:s.requestContent,resolvedAt:s.resolvedAt}))}));
 }
+/** Căn cứ không còn đọc được cũng tính là đã đổi: bản đã trình không còn dùng để quyết định được. */
+export async function isEvidenceChanged(db:any, loan:any, evidenceHash:string) {
+  try {
+    return digest(await reportEvidence(db,loan)) !== evidenceHash;
+  } catch (error) {
+    if (error instanceof ConflictException) return true;
+    throw error;
+  }
+}
 export async function assertIndependent(tx:any, loan:any, user:{id:string}) {
   if (loan.assignedTo === user.id || loan.intakeOfficerId === user.id) throw new ForbiddenException('Người tiếp nhận hoặc lập tờ trình không được tự quyết định hồ sơ.');
   const prior = await tx.appraisalReportEvent.findFirst({where:{report:{applicationId:loan.id},actorId:user.id,kind:{in:['DRAFT_SAVED','SUBMITTED']}}});

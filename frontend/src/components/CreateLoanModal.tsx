@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../api/client';
 import { Company, LoanType } from '../types';
 import { describeTaxCheck, type TaxCheckResult } from './taxCheck';
+import { taxCodeError } from './loanInputRules';
 import { X, Search, Building2, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react';
 
 interface CreateLoanModalProps {
@@ -40,8 +41,9 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
   const isExceedBranchLimit = Number(proposedAmount) > 10000000000;
 
   const handleCheckTaxCode = async () => {
-    if (!taxCode.trim()) {
-      setStatusMsg({ text: 'Vui lòng nhập Mã số thuế để kiểm tra', type: 'error' });
+    const taxProblem = taxCodeError(taxCode);
+    if (taxProblem) {
+      setStatusMsg({ text: taxProblem, type: 'error' });
       return;
     }
 
@@ -74,12 +76,14 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
     e.preventDefault();
     if(Number(proposedAmount)>10000000000){setStatusMsg({text:'Chi nhánh tiếp nhận tối đa 10 tỷ đồng mỗi hồ sơ. Vui lòng liên hệ ngân hàng với nhu cầu cao hơn.',type:'error'});return;}
     if (taxBlocked) return;
+    const taxProblem = taxCodeError(taxCode);
+    if (taxProblem) { setStatusMsg({ text: taxProblem, type: 'error' }); return; }
     setSubmitting(true);
     setStatusMsg(null);
 
     try {
       await api.post('/loan-applications', {
-        taxCode,
+        taxCode: taxCode.trim(),
         companyName,
         industry,
         establishedYear: Number(establishedYear),
@@ -124,7 +128,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
             </div>
             <div>
               <h3 style={{ fontSize: '16px', color: 'var(--text-primary)' }}>Tiếp nhận Hồ sơ Vay vốn Doanh nghiệp SME</h3>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Khởi tạo hồ sơ tín dụng mới vào công đoạn Tiếp nhận</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Khởi tạo hồ sơ tín dụng mới vào công đoạn Tiếp nhận</p>
             </div>
           </div>
           <button onClick={onClose} className="btn btn-secondary" style={{ padding: '6px' }}>
@@ -141,7 +145,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   alignItems: 'center',
                   gap: 8,
                   padding: '10px 14px',
-                  borderRadius: 6,
+                  borderRadius: 4,
                   fontSize: '13px',
                   backgroundColor: statusMsg.type === 'success' ? 'var(--badge-green-bg)' : 'var(--badge-red-bg)',
                   border: `1px solid ${statusMsg.type === 'success' ? 'var(--badge-green-border)' : 'var(--badge-red-border)'}`,
@@ -154,8 +158,8 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
             )}
 
             {/* Khối 1: Thông tin Doanh nghiệp Trắng Sáng Thoáng Đãng */}
-            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-              <h4 style={{ fontSize: '13px', color: 'var(--primary)', marginBottom: '14px', textTransform: 'uppercase', fontWeight: 700 }}>
+            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <h4 style={{ fontSize: '13px', color: 'var(--primary)', marginBottom: '14px', fontWeight: 600 }}>
                 1. Thông tin Doanh nghiệp SME
               </h4>
 
@@ -167,6 +171,8 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   <div style={{ display: 'flex', gap: 6 }}>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={13}
                       placeholder="0312345678"
                       value={taxCode}
                       onChange={(e) => { setTaxCode(e.target.value); setTaxBlocked(false); }}
@@ -307,8 +313,8 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
             </div>
 
             {/* Khối 2: Nhu cầu vay vốn & Cảnh báo rủi ro Risk Alerts */}
-            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-              <h4 style={{ fontSize: '13px', color: 'var(--primary)', marginBottom: '14px', textTransform: 'uppercase', fontWeight: 700 }}>
+            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <h4 style={{ fontSize: '13px', color: 'var(--primary)', marginBottom: '14px', fontWeight: 600 }}>
                 2. Nhu cầu Đề xuất Vay vốn & Đánh giá sơ bộ
               </h4>
 
@@ -348,7 +354,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                       <AlertTriangle size={12} /> Vượt giới hạn tiếp nhận 10 tỷ
                     </div>
                   ) : (
-                    <span style={{ fontSize: '11px', color: 'var(--badge-green-text)', display: 'block', marginTop: 4 }}>
+                    <span style={{ fontSize: '12px', color: 'var(--badge-green-text)', display: 'block', marginTop: 4 }}>
                       Trong giới hạn tiếp nhận (≤ 10 tỷ)
                     </span>
                   )}
@@ -376,7 +382,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
                   background: isHighDebt ? 'var(--badge-amber-bg)' : '#f8fafc',
                   border: `1px solid ${isHighDebt ? 'var(--badge-amber-border)' : 'var(--border-color)'}`,
                   padding: '10px 14px',
-                  borderRadius: 6,
+                  borderRadius: 4,
                   marginBottom: 14,
                   display: 'flex',
                   alignItems: 'center',
@@ -385,7 +391,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <AlertCircle size={16} color={isHighDebt ? '#ea580c' : 'var(--primary)'} />
-                  <span style={{ fontSize: '12.5px', color: isHighDebt ? '#9a3412' : 'var(--text-secondary)' }}>
+                  <span style={{ fontSize: '12px', color: isHighDebt ? '#9a3412' : 'var(--text-secondary)' }}>
                     Chỉ số Đòn bẩy Nợ/Vốn chủ sở hữu sơ bộ: <strong>{debtToEquity} lần</strong>
                     {isHighDebt && ' — Cảnh báo: Tỷ lệ cao (> 2.0), có thể tăng xác suất trễ hạn khi thẩm định!'}
                   </span>
@@ -411,7 +417,7 @@ export const CreateLoanModal: React.FC<CreateLoanModalProps> = ({ isOpen, onClos
             <button type="button" onClick={onClose} className="btn btn-secondary">
               Hủy bỏ
             </button>
-            <button type="submit" disabled={submitting || taxBlocked} className="btn btn-primary">
+            <button type="submit" disabled={submitting || taxBlocked || isExceedBranchLimit} className="btn btn-primary">
               {submitting ? 'Đang tạo hồ sơ...' : 'Tạo hồ sơ vay mới'}
             </button>
           </div>

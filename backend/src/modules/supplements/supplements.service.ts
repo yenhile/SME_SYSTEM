@@ -193,8 +193,6 @@ export class SupplementsService {
     let nextStatus: LoanStatus = LoanStatus.PENDING_APPRAISAL;
     if (request.application.currentStage === StageCode.TIEP_NHAN) {
       nextStatus = LoanStatus.RECEIVED;
-    } else if (request.application.currentStage === StageCode.CAP_TREN) {
-      nextStatus = LoanStatus.WAITING_HEAD_OFFICE;
     }
 
     await tx.loanApplication.update({

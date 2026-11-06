@@ -17,6 +17,8 @@
     "test:reminders": "npm run build && node --test test/supplement-reminders.test.cjs test/overdue-supplements.test.cjs",
     "test:close-overdue": "npm run build && node --test test/close-overdue.test.cjs",
     "test:tracking": "npm run build && node --test test/portal-tracking.test.cjs",
+    "test:document-codes": "node scripts/run-tests.cjs test/document-codes.test.cjs test/portal-foundation-v2-contract.test.cjs",
+    "check:document-codes": "node scripts/check-document-codes.cjs --isolated",
     "test:companies": "npm run build && node --test test/companies-access.test.cjs",
     "test:access": "npm run build && node --test test/loan-access.test.cjs",
     "test:portal-policy": "node scripts/run-tests.cjs test/portal-approved-policy.test.cjs test/portal-policy.test.cjs test/portal-readiness.test.cjs test/portal-foundation-rules.test.cjs",

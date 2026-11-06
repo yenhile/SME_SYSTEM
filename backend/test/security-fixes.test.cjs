@@ -117,12 +117,17 @@ test('deleting a document after the confirmation withdraws it too',async()=>{
   await service.delete('d1',{id:'u',activeRole:'CBTD'});
   assert.equal(state.deleted,1);assert.equal(state.updates.length,1);assert.equal(state.updates[0].isDocumentComplete,false);
 });
-test('nothing changes when the loan was not confirmed or is past reception',async()=>{
-  for(const loan of [loanAt('TIEP_NHAN','RECEIVED',false),loanAt('TIEP_NHAN','SUPPLEMENT_REQUIRED',false),loanAt('THAM_DINH','PENDING_APPRAISAL',true),loanAt('CAP_TREN','WAITING_HEAD_OFFICE',true)]) {
+test('nothing changes when the loan was not confirmed',async()=>{
+  for(const loan of [loanAt('TIEP_NHAN','RECEIVED',false),loanAt('TIEP_NHAN','SUPPLEMENT_REQUIRED',false)]) {
     const {state,service}=documents(loan);
-    await service.create('l1',dto,'u',loan.currentStage==='TIEP_NHAN'?'CBTD':'THAM_QUYEN');
+    await service.create('l1',dto,'u','CBTD');
     assert.equal(state.created,1);assert.equal(state.updates.length,0,`${loan.currentStage}/${loan.currentStatus}`);
   }
+});
+test('documents cannot be added once the loan is past reception',async()=>{
+  const {state,service}=documents(loanAt('THAM_DINH','PENDING_APPRAISAL',true));
+  await assert.rejects(service.create('l1',dto,'u','THAM_QUYEN'),e=>e.getStatus()===403);
+  assert.equal(state.created,0);assert.equal(state.updates.length,0);
 });
 test('a missing loan is rejected and no document is stored',async()=>{
   const {state,service}=documents(null);

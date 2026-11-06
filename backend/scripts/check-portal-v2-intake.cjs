@@ -233,7 +233,7 @@ async function runChecks(h) {
     const login = expect(await post('/portal/auth/login',{}, {email:account.email,password}),201,'verified fixture login');
     portals.push({token:login.accessToken,account});
   }
-  for(const [i,stageCode] of ['TIEP_NHAN','THAM_DINH','CAP_TREN','HOAN_TAT'].entries()) await db.workflowStage.create({data:{stageCode,stageName:stageCode,standardSlaHours:[8,24,16,4][i],orderIndex:i+1}});
+  for(const [i,stageCode] of ['TIEP_NHAN','THAM_DINH','HOAN_TAT'].entries()) await db.workflowStage.create({data:{stageCode,stageName:stageCode,standardSlaHours:[8,24,4][i],orderIndex:i+1}});
   const portal=portals[0], manager=actors.QUAN_LY, officer=actors.CBTD;
   const {PDFDocument} = require('pdf-lib');
   const pdfDoc = await PDFDocument.create();pdfDoc.addPage([120,120]);

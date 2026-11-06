@@ -25,8 +25,8 @@ function preview(fn){return async()=>{
 };}
 function fixture(existing){
   const rows=new Map(existing?[[existing.id,existing]]:[]),locks=[];
-  let creates=0,transactions=0;
-  const tx={$queryRaw:async(strings,...values)=>{locks.push({sql:strings.join('?'),values});return [];},portalRequest:{
+  let creates=0,transactions=0,allocated=0;
+  const tx={$queryRaw:async(strings,...values)=>{const sql=strings.join('?');if(sql.includes("nextval('portal_request_reference_seq'"))return[{value:String(++allocated)}];locks.push({sql,values});return [];},portalRequest:{
     findUnique:async({where})=>rows.get(where.id)||null,
     create:async({data})=>{creates++;const row={id:data.id||'generated',revision:0,documents:[],...data};rows.set(row.id,row);return row;},
   }};
@@ -53,6 +53,7 @@ test('keyed create returns the current v2 request on retry without overwriting s
   const f=fixture();
   const first=await f.service.create('owner',{formVersion:2,clientRequestId:key,data:{revenuePeriod:'2026'}});
   assert.equal(first.id,key);assert.equal(first.data.revenuePeriod,'2026');
+  assert.equal(first.reference,'DN-1');
   Object.assign(first,{revision:4,data:{companyName:'Saved later'}});
   const retry=await f.service.create('owner',{formVersion:2,clientRequestId:key,data:{companyName:'Retry payload'}});
   assert.equal(retry.reference,first.reference);assert.equal(retry.revision,4);assert.deepEqual(retry.data,{companyName:'Saved later'});
@@ -60,6 +61,7 @@ test('keyed create returns the current v2 request on retry without overwriting s
   assert.equal(f.locks.length,2);assert.match(f.locks[0].sql,/pg_advisory_xact_lock\(hashtext/);
   assert.equal(f.locks[0].values[0],f.locks[1].values[0]);assert.ok(f.locks[0].values[0].includes('owner'));assert.ok(f.locks[0].values[0].includes(key));
   assert.deepEqual((await f.service.create('owner',{formVersion:2,clientRequestId:key,data:{unexpected:'stale payload'}})).data,{companyName:'Saved later'});
+  assert.equal((await f.service.create('owner',{formVersion:2,clientRequestId:'22222222-2222-4222-8222-222222222222',data:{}})).reference,'DN-2');
 }));
 test('key collisions hide foreign ownership and reject legacy records with the same generic conflict',preview(async()=>{
   const messages=[];
@@ -79,7 +81,7 @@ test('unkeyed creates preserve direct legacy and preview creation',preview(async
   const f=fixture();
   assert.equal((await f.service.create('owner',{data:{companyName:'Legacy'}})).formVersion,1);
   assert.equal((await f.service.create('owner',{formVersion:2,data:{}})).formVersion,2);
-  assert.deepEqual(f.counts(),{creates:2,transactions:0});
+  assert.deepEqual(f.counts(),{creates:2,transactions:2});
 }));
 test('a racing unique collision becomes a generic conflict without leaking database details',preview(async()=>{
   const service=new PortalService({$transaction:async()=>{throw new Prisma.PrismaClientKnownRequestError('private account details',{code:'P2002',clientVersion:'test'});}});

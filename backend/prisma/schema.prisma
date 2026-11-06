@@ -27,7 +27,6 @@ enum LoanType {
 enum StageCode {
   TIEP_NHAN
   THAM_DINH
-  CAP_TREN
   HOAN_TAT
 }
 
@@ -36,7 +35,6 @@ enum LoanStatus {
   CHECKED               // Đã kiểm duyệt checklist đầy đủ
   SUPPLEMENT_REQUIRED   // Chờ doanh nghiệp bổ sung chứng từ
   PENDING_APPRAISAL     // Đang chờ/trong quá trình thẩm định
-  WAITING_HEAD_OFFICE   // Chờ cấp trên phản hồi (vượt 10 tỷ)
   APPROVED              // Đã phê duyệt cấp tín dụng
   REJECTED              // Bị từ chối khoản vay
   CLOSED_TIMEOUT        // Đóng hồ sơ do quá hạn bổ sung

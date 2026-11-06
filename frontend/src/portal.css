@@ -2,11 +2,7 @@
 .portal-shell * { box-sizing:border-box; }
 .portal-header { position:sticky; top:0; z-index:50; background:#FFFFFF; border-bottom:1px solid #E2E8F0; padding:14px max(24px,calc((100vw - 1200px)/2)); display:flex; justify-content:space-between; align-items:center; gap:20px; box-shadow:0 1px 2px 0 rgba(0, 0, 0, 0.02); }
 .portal-brand { display:flex; align-items:center; gap:12px; text-decoration:none; }
-.portal-brand-icon, .portal-brand>span { display:grid; place-items:center; background:#EFF6FF; border-radius:10px; width:40px; height:40px; color:#1E40AF; flex-shrink:0; transition:transform 0.15s ease; }
-.portal-brand:hover .portal-brand-icon { transform:scale(1.04); }
-.portal-brand-text { display:flex; flex-direction:column; }
-.portal-brand-title { font-weight:800; font-size:20px; letter-spacing:-0.025em; color:#0F172A; line-height:1.15; }
-.portal-brand-subtitle, .portal-brand small { display:block; font-size:12px; font-weight:400; color:#64748B; margin-top:1px; }
+.portal-brand:hover .sme-brand-icon { transform:scale(1.04); }
 .portal-header-actions { display:flex; align-items:center; gap:18px; font-size:13px; }
 .portal-header-actions small { display:block; font-size:12px; font-weight:400; color:#64748B; }
 .portal-main { flex:1; max-width:1200px; width:100%; margin:auto; padding:32px 24px 48px; display:flex; flex-direction:column; justify-content:center; }
@@ -53,9 +49,9 @@
 .portal-auth small, .portal-field-hint { font-size:11px; font-weight:400; color:#64748B; margin-top:2px; }
 
 /* Primary Button across entire Enterprise Portal: Xanh Navy đậm (#0F172A) */
-.portal-shell .btn-primary, .portal-auth .btn-primary { height:44px; padding:0 20px; border-radius:8px; background:#0F172A!important; color:#FFFFFF!important; font-weight:600; font-size:14px; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(15, 23, 42, 0.08); transition:all 0.2s ease-in-out; }
+.portal-shell .btn-primary, .portal-auth .btn-primary { height:44px; padding:0 20px; border-radius:8px; background:#5146E5!important; color:#FFFFFF!important; font-weight:600; font-size:14px; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(15, 23, 42, 0.08); transition:all 0.2s ease-in-out; }
 .portal-auth .btn-primary { height:46px; width:100%; margin-top:8px; font-size:15px; }
-.portal-shell .btn-primary:hover:not(:disabled), .portal-auth .btn-primary:hover:not(:disabled) { background:#1E293B!important; box-shadow:0 4px 14px rgba(15, 23, 42, 0.16); transform:translateY(-1px); }
+.portal-shell .btn-primary:hover:not(:disabled), .portal-auth .btn-primary:hover:not(:disabled) { background:#4338CA!important; box-shadow:0 4px 14px rgba(15, 23, 42, 0.16); transform:translateY(-1px); }
 .portal-shell .btn-primary:active:not(:disabled), .portal-auth .btn-primary:active:not(:disabled) { transform:translateY(0); }
 .portal-shell .btn-primary:disabled, .portal-auth .btn-primary:disabled { opacity:0.55!important; cursor:not-allowed; transform:none; }
 

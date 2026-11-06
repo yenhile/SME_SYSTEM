@@ -21,7 +21,7 @@ async function runRound3Checks(h){
   const login=expect(await call('/auth/login',null,{username:user.username,password}),201,'staff login');actors[name]={user,token:login.accessToken,role:code};
  }
  const account=await db.portalAccount.create({data:{email:randomUUID()+'@example.test',passwordHash:hash,contactName:'Synthetic enterprise',phone:'0900000000',verifiedAt:new Date()}});
- for(const [i,code]of ['TIEP_NHAN','THAM_DINH','CAP_TREN','HOAN_TAT'].entries())await db.workflowStage.upsert({where:{stageCode:code},update:{},create:{stageCode:code,stageName:code,standardSlaHours:[8,24,16,4][i],orderIndex:i+1}});
+ for(const [i,code]of ['TIEP_NHAN','THAM_DINH','HOAN_TAT'].entries())await db.workflowStage.upsert({where:{stageCode:code},update:{},create:{stageCode:code,stageName:code,standardSlaHours:[8,24,4][i],orderIndex:i+1}});
  const login=expect(await call('/portal/auth/login',null,{email:account.email,password}),201,'enterprise login');
  const portal={token:login.accessToken,role:''},officer=actors.officer,manager=actors.manager,other=actors.other;
  process.env.PORTAL_V2_ROLLOUT_ENABLED='true';

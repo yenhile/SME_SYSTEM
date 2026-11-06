@@ -20,7 +20,7 @@ Không tạo thêm Markdown kế hoạch/review/acceptance trong `docs`. Bằng 
 
 ## Ranh giới nghiệp vụ và bằng chứng
 
-Một chi nhánh; Portal V2 vốn lưu động sản xuất/thương mại/dịch vụ; đề nghị mới tối đa 10 tỷ. `CAP_TREN` còn trong schema/luồng tương thích không có nghĩa đề nghị mới vượt hạn mức được đi tiếp. Quyền theo vai trò và đối tượng; tài khoản đa vai trò vẫn chịu maker-checker theo actor/lịch sử.
+Một chi nhánh; Portal V2 vốn lưu động sản xuất/thương mại/dịch vụ; đề nghị mới tối đa 10 tỷ. Quy trình có ba công đoạn Tiếp nhận, Thẩm định, Hoàn tất; không có công đoạn Cấp trên, hồ sơ vượt hạn mức không được phê duyệt. Quyền theo vai trò và đối tượng; tài khoản đa vai trò vẫn chịu maker-checker theo actor/lịch sử.
 
 Phân biệt dữ liệu đủ gửi, CBTD kiểm tra đạt để tiếp nhận, và đủ chứng từ để chuyển bước. Giữ snapshot/SLA/ML; không annualize/fake0, không overwrite Company. ML chỉ dự báo nguy cơ trễ SLA, không quyết định tín dụng; dữ liệu huấn luyện tổng hợp không chứng minh hiệu quả ngoài thực tế.
 

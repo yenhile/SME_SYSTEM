@@ -28,12 +28,30 @@ export class LoanApplicationsController {
     @Query('status') status?: LoanStatus,
     @Query('keyword') keyword?: string,
     @Query('myOnly') myOnly?: string,
+    @Query('code') code?: string,
+    @Query('company') company?: string,
+    @Query('loanType') loanType?: string,
+    @Query('officer') officer?: string,
+    @Query('overdueOnly') overdueOnly?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('queue') queue?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.loanService.findAll(user, {
       stage,
       status,
       keyword,
       myOnly: myOnly === 'true',
+      code,
+      company,
+      loanType,
+      officer,
+      overdueOnly,
+      page,
+      pageSize,
+      queue,
+      sort,
     });
   }
 

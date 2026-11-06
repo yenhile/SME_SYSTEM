@@ -61,7 +61,7 @@ async function runRolloutChecks(h){
   expect(await call(`/workflow/${id}/transition`,{token:f.officerToken,role:'THAM_QUYEN'},{targetStage:'HOAN_TAT',targetStatus:'APPROVED',approvedAmount:100000000,interestRate:8,reportVersionId:report.versions[0].id}),403,'historical maker cannot approve after reassignment');
   expect(await call(`/workflow/${id}/transition`,approver,{targetStage:'HOAN_TAT',targetStatus:'APPROVED',approvedAmount:100000000,interestRate:8,reportVersionId:v1}),409,'old version blocked');
   const doc=(await db.document.findMany({where:{applicationId:id}}))[0];
-  expect(await call(`/documents/${doc.id}`,approver,undefined,'DELETE'),400,'submitted evidence cannot be deleted');
+  expect(await call(`/documents/${doc.id}`,approver,undefined,'DELETE'),403,'the authority cannot delete documents');
   const {reportEvidence,digest:reportDigest}=require('../dist/modules/appraisal/appraisal.logic');
   const evidenceBeforeMasterChange=reportDigest(await db.$transaction(tx=>reportEvidence(tx,loan)));
   await db.company.update({where:{id:loan.companyId},data:{phone:'0900000001'}}); // Owned fixture: shared master changes must not rewrite the loan profile.
@@ -77,7 +77,7 @@ async function runRolloutChecks(h){
   expect(await call('/loan-applications',officer,broad),400,'counter over-limit blocked');
   const exact=expect(await call('/loan-applications',officer,{...broad,proposedAmount:10000000000}),201,'exactly 10 billion accepted');
   check(exact.loan.businessPolicyVersion==='SME_BRANCH_20261031_V1','new counter loan has business policy');
-  expect(await call(`/workflow/${exact.loan.id}/transition`,officer,{targetStage:'CAP_TREN',targetStatus:'WAITING_HEAD_OFFICE'}),400,'new application cannot go to higher level');
+  expect(await call(`/workflow/${exact.loan.id}/transition`,officer,{targetStage:'CAP_TREN',targetStatus:'PENDING_APPRAISAL'}),400,'removed stage code is rejected');
   const savedRollout=process.env.PORTAL_V2_ROLLOUT_ENABLED;process.env.PORTAL_V2_ROLLOUT_ENABLED='true';
   try{
     const config=expect(await call('/portal/requests/form-config',portal),200,'released V2 config');check(config.rolloutEnabled&&config.supportedScopes.includes('SERVICES'),'expanded scope advertised');
@@ -131,9 +131,8 @@ async function runRolloutChecks(h){
     check(requestState.assignedTo===null||raceState.isActive,'no intake assigned to an inactive account after race');
   }finally{savedRollout===undefined?delete process.env.PORTAL_V2_ROLLOUT_ENABLED:process.env.PORTAL_V2_ROLLOUT_ENABLED=savedRollout;}
   const legacy=await db.loanApplication.create({data:{applicationCode:'SYNTHETIC-LEGACY-'+randomUUID(),companyId:loan.companyId,loanPurpose:'Legacy fixture',loanType:'VAY_VON_LUU_DONG',proposedAmount:20000000000,loanTermMonths:12,assignedTo:f.officerId,currentStage:'THAM_DINH',currentStatus:'PENDING_APPRAISAL'}});
-  expect(await call('/workflow/'+legacy.id+'/transition',approver,{targetStage:'HOAN_TAT',targetStatus:'APPROVED',approvedAmount:20000000000,interestRate:8}),400,'legacy over-limit still needs its old escalation');
-  expect(await call('/workflow/'+legacy.id+'/transition',approver,{targetStage:'CAP_TREN',targetStatus:'WAITING_HEAD_OFFICE'}),201,'legacy escalation retained');
-  expect(await call('/workflow/'+legacy.id+'/transition',approver,{targetStage:'HOAN_TAT',targetStatus:'APPROVED',approvedAmount:20000000000,interestRate:8}),201,'legacy decision does not require fabricated report');
+  expect(await call('/workflow/'+legacy.id+'/transition',approver,{targetStage:'HOAN_TAT',targetStatus:'APPROVED',approvedAmount:20000000000,interestRate:8}),400,'legacy over-limit cannot be approved at the branch');
+  expect(await call('/workflow/'+legacy.id+'/transition',approver,{targetStage:'HOAN_TAT',targetStatus:'REJECTED',rejectionReasonCode:'TC02',rejectionNote:'Legacy over-limit fixture'}),201,'legacy decision does not require fabricated report');
   const raceLoan=expect(await call('/loan-applications',officer,{...h.browserData,taxCode:'7000000001',proposedAmount:100000000}),201,'create decision race fixture');
   const racePath=`/appraisals/${raceLoan.loan.id}`;
   const proof=new FormData();proof.append('file',new Blob([h.browserPdf],{type:'application/pdf'}),'decision-race.pdf');proof.append('documentType','PHAP_LY');

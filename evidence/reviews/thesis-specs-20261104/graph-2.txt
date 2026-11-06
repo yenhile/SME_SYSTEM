@@ -1,0 +1,367 @@
+﻿
+> sme-loan-ai-tooling@0.1.0 codegraph
+> node scripts/check-codegraph.mjs && node scripts/run-codegraph.mjs deps backend/src/modules/supplements/portal-supplements.service.ts --json
+
+CODEGRAPH OK version=3.17.0 files=182 nodes=3715 edges=7428 backend=117 frontend=53 ml=7
+{
+  "file": "backend/src/modules/supplements/portal-supplements.service.ts",
+  "results": [
+    {
+      "file": "backend/src/modules/supplements/portal-supplements.service.ts",
+      "imports": [
+        {
+          "file": "backend/src/prisma.service.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/portal/portal.validation.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/portal/portal.validation.ts",
+          "typeOnly": true
+        },
+        {
+          "file": "backend/src/modules/supplements/portal-supplement.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/workflow/sla/sla-policy.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/common/storage.ts",
+          "typeOnly": false
+        },
+        {
+          "file": "backend/src/modules/assignments/assignment-coordination.ts",
+          "typeOnly": false
+        }
+      ],
+      "importedBy": [
+        {
+          "file": "backend/src/modules/supplements/supplements.controller.ts"
+        },
+        {
+          "file": "backend/src/modules/supplements/portal-supplements.controller.ts"
+        },
+        {
+          "file": "backend/src/modules/supplements/supplements.module.ts"
+        }
+      ],
+      "definitions": [
+        {
+          "name": "hash",
+          "kind": "function",
+          "line": 12
+        },
+        {
+          "name": "value",
+          "kind": "parameter",
+          "line": 12
+        },
+        {
+          "name": "PortalSupplementsService",
+          "kind": "class",
+          "line": 14
+        },
+        {
+          "name": "dir",
+          "kind": "property",
+          "line": 15
+        },
+        {
+          "name": "PortalSupplementsService.constructor",
+          "kind": "method",
+          "line": 16
+        },
+        {
+          "name": "prisma",
+          "kind": "parameter",
+          "line": 16
+        },
+        {
+          "name": "PortalSupplementsService.body",
+          "kind": "method",
+          "line": 17
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 17
+        },
+        {
+          "name": "keys",
+          "kind": "parameter",
+          "line": 17
+        },
+        {
+          "name": "PortalSupplementsService.owner",
+          "kind": "method",
+          "line": 20
+        },
+        {
+          "name": "tx",
+          "kind": "parameter",
+          "line": 20
+        },
+        {
+          "name": "requestId",
+          "kind": "parameter",
+          "line": 20
+        },
+        {
+          "name": "accountId",
+          "kind": "parameter",
+          "line": 20
+        },
+        {
+          "name": "applicationId",
+          "kind": "parameter",
+          "line": 20
+        },
+        {
+          "name": "PortalSupplementsService.list",
+          "kind": "method",
+          "line": 24
+        },
+        {
+          "name": "requestId",
+          "kind": "parameter",
+          "line": 24
+        },
+        {
+          "name": "accountId",
+          "kind": "parameter",
+          "line": 24
+        },
+        {
+          "name": "PortalSupplementsService.details",
+          "kind": "method",
+          "line": 28
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 28
+        },
+        {
+          "name": "PortalSupplementsService.locked",
+          "kind": "method",
+          "line": 32
+        },
+        {
+          "name": "tx",
+          "kind": "parameter",
+          "line": 32
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 32
+        },
+        {
+          "name": "scope",
+          "kind": "parameter",
+          "line": 32
+        },
+        {
+          "name": "PortalSupplementsService.pending",
+          "kind": "method",
+          "line": 43
+        },
+        {
+          "name": "r",
+          "kind": "parameter",
+          "line": 43
+        },
+        {
+          "name": "PortalSupplementsService.save",
+          "kind": "method",
+          "line": 46
+        },
+        {
+          "name": "tx",
+          "kind": "parameter",
+          "line": 46
+        },
+        {
+          "name": "r",
+          "kind": "parameter",
+          "line": 46
+        },
+        {
+          "name": "m",
+          "kind": "parameter",
+          "line": 46
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 46
+        },
+        {
+          "name": "kind",
+          "kind": "parameter",
+          "line": 46
+        },
+        {
+          "name": "fingerprint",
+          "kind": "parameter",
+          "line": 46
+        },
+        {
+          "name": "PortalSupplementsService.review",
+          "kind": "method",
+          "line": 53
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 53
+        },
+        {
+          "name": "itemId",
+          "kind": "parameter",
+          "line": 53
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 53
+        },
+        {
+          "name": "user",
+          "kind": "parameter",
+          "line": 53
+        },
+        {
+          "name": "PortalSupplementsService.returnCorrections",
+          "kind": "method",
+          "line": 72
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 72
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 72
+        },
+        {
+          "name": "user",
+          "kind": "parameter",
+          "line": 72
+        },
+        {
+          "name": "clock",
+          "kind": "parameter",
+          "line": 72
+        },
+        {
+          "name": "PortalSupplementsService.respond",
+          "kind": "method",
+          "line": 89
+        },
+        {
+          "name": "requestId",
+          "kind": "parameter",
+          "line": 89
+        },
+        {
+          "name": "accountId",
+          "kind": "parameter",
+          "line": 89
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 89
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 89
+        },
+        {
+          "name": "clock",
+          "kind": "parameter",
+          "line": 89
+        },
+        {
+          "name": "PortalSupplementsService.upload",
+          "kind": "method",
+          "line": 102
+        },
+        {
+          "name": "requestId",
+          "kind": "parameter",
+          "line": 102
+        },
+        {
+          "name": "accountId",
+          "kind": "parameter",
+          "line": 102
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 102
+        },
+        {
+          "name": "itemId",
+          "kind": "parameter",
+          "line": 102
+        },
+        {
+          "name": "file",
+          "kind": "parameter",
+          "line": 102
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 102
+        },
+        {
+          "name": "PortalSupplementsService.download",
+          "kind": "method",
+          "line": 135
+        },
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 135
+        },
+        {
+          "name": "fileId",
+          "kind": "parameter",
+          "line": 135
+        },
+        {
+          "name": "scope",
+          "kind": "parameter",
+          "line": 135
+        },
+        {
+          "name": "PortalSupplementsService.fileBytes",
+          "kind": "method",
+          "line": 142
+        },
+        {
+          "name": "m",
+          "kind": "parameter",
+          "line": 142
+        },
+        {
+          "name": "f",
+          "kind": "parameter",
+          "line": 142
+        }
+      ]
+    }
+  ]
+}
+
