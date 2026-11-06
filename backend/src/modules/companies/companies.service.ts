@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { assertOfficerMayWriteCompany } from './company-access';
+import {assertNoCompanyConflict} from '../assignments/assignment-coordination';
+import {lockCompany} from './company-snapshot';
+import { assertTaxCode } from '../../common/tax-code';
 
 @Injectable()
 export class CompaniesService {
@@ -69,8 +72,12 @@ export class CompaniesService {
     phone: string;
     address: string;
   }, user?: { id: string; activeRole?: string }) {
-    if (this.isOfficer(user)) await assertOfficerMayWriteCompany(this.prisma, data.taxCode, user!.id);
-    return this.prisma.company.upsert({
+    assertTaxCode(data.taxCode);
+    return this.prisma.$transaction(async tx=>{
+    if(user?.id)await assertNoCompanyConflict(tx,user.id,data.taxCode);
+    await lockCompany(tx,data.taxCode);
+    if (this.isOfficer(user)) await assertOfficerMayWriteCompany(tx, data.taxCode, user!.id);
+    return tx.company.upsert({
       where: { taxCode: data.taxCode },
       update: {
         companyName: data.companyName,
@@ -83,6 +90,7 @@ export class CompaniesService {
         address: data.address,
       },
       create: data,
+    });
     });
   }
 }

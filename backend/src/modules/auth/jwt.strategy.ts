@@ -31,9 +31,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const availableRoles = user.roles.map((r) => r.role.code);
+    if (!availableRoles.length) {
+      throw new UnauthorizedException('Tài khoản chưa được cấp vai trò nào.');
+    }
+
     const activeRole = request.headers['x-active-role'] || availableRoles[0];
     if (!availableRoles.includes(activeRole)) {
-      throw new ForbiddenException('Vai trò này chưa được cấp cho tài khoản.');
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Forbidden',
+        errorCode: 'ACTIVE_ROLE_INVALID',
+        message: 'Vai trò này chưa được cấp cho tài khoản.',
+        availableRoles,
+      });
     }
     return {
       id: user.id,

@@ -1,3 +1,5 @@
+import {assertNoCoordinationConflict} from '../assignments/assignment-coordination';
+import { uploadRoot } from '../../common/storage';
 import { Injectable, BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, unlink } from 'node:fs/promises';
@@ -10,7 +12,7 @@ import { closeStagePause, openStagePause } from '../workflow/sla/sla-policy';
 const hash=(value:any)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 @Injectable()
 export class PortalSupplementsService {
-  private readonly dir=join(process.cwd(),'uploads','supplements');
+  private readonly dir=join(uploadRoot(),'supplements');
   constructor(private prisma:PrismaService) {}
   private body(body:any,keys:string[]) {
     if(!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).some(k=>!keys.includes(k))) throw new BadRequestException('Thông tin thao tác không hợp lệ.');
@@ -54,6 +56,7 @@ export class PortalSupplementsService {
       const r=await this.locked(tx,id),m=metadata(r),fingerprint=hash({itemId,accepted:body.accepted,message:body.message});
       // The guard runs before this transaction; assignment/stage can change while waiting for the row locks.
       if(!user?.id || (user.activeRole==='CBTD' && r.application.assignedTo!==user.id)) throw new ForbiddenException('Bạn chỉ được truy cập hồ sơ được phân công.');
+      await assertNoCoordinationConflict(tx,{applicationId:r.applicationId},user.id);
       const expectedRole=r.application.currentStage==='TIEP_NHAN'?'CBTD':'THAM_QUYEN';
       if(user.activeRole!==expectedRole || r.application.completedAt || r.application.currentStage==='HOAN_TAT') throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
       if(replay(m,body.clientRequestId,'review',fingerprint)) return safeView(r);
@@ -71,6 +74,7 @@ export class PortalSupplementsService {
     return this.prisma.$transaction(async tx=> {
       const r=await this.locked(tx,id),m=metadata(r),fingerprint=hash({kind:'return'});
       if(!user?.id || (user.activeRole==='CBTD' && r.application.assignedTo!==user.id)) throw new ForbiddenException('Bạn chỉ được truy cập hồ sơ được phân công.');
+      await assertNoCoordinationConflict(tx,{applicationId:r.applicationId},user.id);
       const expectedRole=r.application.currentStage==='TIEP_NHAN'?'CBTD':'THAM_QUYEN';
       if(user.activeRole!==expectedRole || r.application.completedAt || r.application.currentStage==='HOAN_TAT') throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
       if(replay(m,body.clientRequestId,'return',fingerprint)) return safeView(r);

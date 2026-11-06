@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-11-02T12:46:44.555Z",
+  "targetDatabase": "postgresql://sme_user:******@localhost:5432/sme_loan?schema=public",
+  "baseline": {
+    "users": 4,
+    "companies": 4,
+    "loans": 4,
+    "portalAccounts": 1
+  },
+  "postCheck": {
+    "users": 4,
+    "companies": 4,
+    "loans": 4,
+    "portalAccounts": 1
+  },
+  "results": [
+    {
+      "file": "sme-branch-rollout.sql",
+      "durationMs": 2148,
+      "status": "SUCCESS"
+    },
+    {
+      "file": "round2-assignment-safety.sql",
+      "durationMs": 2545,
+      "status": "SUCCESS"
+    },
+    {
+      "file": "round2-assignment-coordination.sql",
+      "durationMs": 1696,
+      "status": "SUCCESS"
+    },
+    {
+      "file": "round3-intake.sql",
+      "durationMs": 1766,
+      "status": "SUCCESS"
+    },
+    {
+      "file": "portal-account-recovery.sql",
+      "durationMs": 2039,
+      "status": "SUCCESS"
+    }
+  ]
+}

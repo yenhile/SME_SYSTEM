@@ -1,0 +1,35 @@
+﻿{
+    "rewritten":  28,
+    "added":  1,
+    "total":  29,
+    "validations":  [
+                        {
+                            "file":  "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\output\\thesis-review-20261104\\Dac_ta_29_UseCase_SME_theo_mau.docx",
+                            "tables":  29,
+                            "mainFlowRows":  100,
+                            "captionCount":  29,
+                            "schema":  "5 metadata rows + merged gray sections + Actor/System",
+                            "xmlValid":  true
+                        },
+                        {
+                            "file":  "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\output\\thesis-review-20261104\\Bao_cao_NHD89_muc_3_8_29_dac_ta.docx",
+                            "tables":  29,
+                            "mainFlowRows":  100,
+                            "captionCount":  29,
+                            "schema":  "5 metadata rows + merged gray sections + Actor/System",
+                            "xmlValid":  true
+                        }
+                    ],
+    "originalReportUnchanged":  true,
+    "originalHash":  "EA37CE4503C1ACA885A69BB018A4720524015F98A3B04ACEE934F1EBF3428326",
+    "originalBodyElementsPreserved":  539,
+    "unchangedPackageParts":  23,
+    "imagesPreserved":  13,
+    "sourceFingerprintsVerified":  44,
+    "runtimeTestsRun":  false,
+    "wordVisualLayoutVerified":  false,
+    "documents":  [
+                      "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\output\\thesis-review-20261104\\Dac_ta_29_UseCase_SME_theo_mau.docx",
+                      "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\output\\thesis-review-20261104\\Bao_cao_NHD89_muc_3_8_29_dac_ta.docx"
+                  ]
+}

@@ -1,5 +1,6 @@
 ﻿/* Real HTTP/PostgreSQL checks in an owned empty namespace only. No public migration/seed. */
 const assert=require('node:assert/strict');
+const {assignmentFixture}=require('./assignment-fixtures.cjs');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {randomUUID,createHash}=require('node:crypto');
@@ -10,6 +11,7 @@ async function runMvpChecks(h) {
   const {base,db}=h;let checks=0;
   const check=(value,label)=>{assert.ok(value,label);checks++;};
   async function call(endpoint,{token,role,method='GET',body,binary=false}={}) {
+    body=await assignmentFixture(db,endpoint,body);
     const headers={};if(token)headers.Authorization=`Bearer ${token}`;if(role)headers['X-Active-Role']=role;
     if(body!==undefined&&!(body instanceof FormData))headers['Content-Type']='application/json';
     const response=await fetch(base+endpoint,{method,headers,body:body instanceof FormData?body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(25000)});

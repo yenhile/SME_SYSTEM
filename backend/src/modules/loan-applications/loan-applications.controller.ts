@@ -28,29 +28,47 @@ export class LoanApplicationsController {
     @Query('status') status?: LoanStatus,
     @Query('keyword') keyword?: string,
     @Query('myOnly') myOnly?: string,
+    @Query('code') code?: string,
+    @Query('company') company?: string,
+    @Query('loanType') loanType?: string,
+    @Query('officer') officer?: string,
+    @Query('overdueOnly') overdueOnly?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('queue') queue?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.loanService.findAll(user, {
       stage,
       status,
       keyword,
       myOnly: myOnly === 'true',
+      code,
+      company,
+      loanType,
+      officer,
+      overdueOnly,
+      page,
+      pageSize,
+      queue,
+      sort,
     });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.loanService.findOne(id);
+  findOne(@Param('id') id: string,@CurrentUser() user:any) {
+    return this.loanService.findOne(id,new Date(),user);
   }
 
   @Put(':id/check-documents')
   @Roles(RoleCode.CBTD)
-  checkDocuments(@Param('id') id: string, @Body('isComplete') isComplete: boolean) {
-    return this.loanService.checkDocuments(id, isComplete);
+  checkDocuments(@Param('id') id: string, @Body('isComplete') isComplete: boolean, @CurrentUser() user: any) {
+    return this.loanService.checkDocuments(id, isComplete, user);
   }
 
   @Put(':id/set-amount')
   @Roles(RoleCode.CBTD)
-  setAmount(@Param('id') id: string, @Body('officialAmount') officialAmount: number) {
-    return this.loanService.setOfficialAmount(id, Number(officialAmount));
+  setAmount(@Param('id') id: string, @Body('officialAmount') officialAmount: number, @CurrentUser() user: any) {
+    return this.loanService.setOfficialAmount(id, Number(officialAmount), user);
   }
 }

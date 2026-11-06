@@ -8,6 +8,8 @@ import { ResolveSupplementDto } from './dto/resolve-supplement.dto';
 import { LoanStatus, SupplementStatus, StageCode } from '@prisma/client';
 import { SLA_POLICY_PA1, closeStagePause, openStagePause } from '../workflow/sla/sla-policy';
 
+import { assertLoanWrite } from '../workflow/loan-policy';
+
 @Injectable()
 export class SupplementsService {
   private readonly logger = new Logger(SupplementsService.name);
@@ -31,6 +33,7 @@ export class SupplementsService {
       throw new NotFoundException(`Không tìm thấy hồ sơ với ID: ${applicationId}`);
     }
 
+    await assertLoanWrite(tx,loan, {id:userId,activeRole:activeRole ?? (loan.currentStage === 'TIEP_NHAN' ? 'CBTD' : 'THAM_QUYEN')});
     let portalSupplement:any;
     if(dto.items!==undefined) {
       if(activeRole!==(loan.currentStage===StageCode.TIEP_NHAN?'CBTD':'THAM_QUYEN')) throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
@@ -127,6 +130,7 @@ export class SupplementsService {
       throw new NotFoundException(`Không tìm thấy yêu cầu bổ sung ID: ${supplementId}`);
     }
 
+    await assertLoanWrite(tx,request.application, {id:userId,activeRole:activeRole ?? (request.application.currentStage === 'TIEP_NHAN' ? 'CBTD' : 'THAM_QUYEN')});
     let m:any;
     if(request.portalSupplement) {
       if(activeRole!==(request.application.currentStage===StageCode.TIEP_NHAN?'CBTD':'THAM_QUYEN')) throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
@@ -189,8 +193,6 @@ export class SupplementsService {
     let nextStatus: LoanStatus = LoanStatus.PENDING_APPRAISAL;
     if (request.application.currentStage === StageCode.TIEP_NHAN) {
       nextStatus = LoanStatus.RECEIVED;
-    } else if (request.application.currentStage === StageCode.CAP_TREN) {
-      nextStatus = LoanStatus.WAITING_HEAD_OFFICE;
     }
 
     await tx.loanApplication.update({

@@ -1,0 +1,116 @@
+﻿
+> sme-loan-ai-tooling@0.1.0 codegraph
+> node scripts/check-codegraph.mjs && node scripts/run-codegraph.mjs context resolveStageSla --file backend/src/modules/workflow/sla/sla-policy.ts --no-source --json
+
+CODEGRAPH OK version=3.17.0 files=182 nodes=3715 edges=7428 backend=117 frontend=53 ml=7
+{
+  "name": "resolveStageSla",
+  "results": [
+    {
+      "name": "resolveStageSla",
+      "kind": "function",
+      "file": "backend/src/modules/workflow/sla/sla-policy.ts",
+      "line": 36,
+      "role": "utility",
+      "endLine": 49,
+      "source": null,
+      "signature": {
+        "params": "db: ActivationReader, now: Date, requireCoverage = true",
+        "returnType": "Promise<StageSlaMode>"
+      },
+      "complexity": {
+        "cognitive": 8,
+        "cyclomatic": 6,
+        "maxNesting": 3,
+        "maintainabilityIndex": 55,
+        "halsteadVolume": 547.33
+      },
+      "children": [
+        {
+          "name": "db",
+          "kind": "parameter",
+          "line": 36,
+          "endLine": null
+        },
+        {
+          "name": "now",
+          "kind": "parameter",
+          "line": 36,
+          "endLine": null
+        },
+        {
+          "name": "requireCoverage",
+          "kind": "parameter",
+          "line": 36,
+          "endLine": null
+        }
+      ],
+      "callees": [
+        {
+          "name": "calendarByVersion",
+          "kind": "function",
+          "file": "backend/src/modules/workflow/sla/sla-policy.ts",
+          "line": 11,
+          "endLine": 15,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "CalendarCoverageError",
+          "kind": "class",
+          "file": "backend/src/modules/workflow/sla/working-time.ts",
+          "line": 43,
+          "endLine": 48,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "CalendarCoverageError.constructor",
+          "kind": "method",
+          "file": "backend/src/modules/workflow/sla/working-time.ts",
+          "line": 44,
+          "endLine": 47,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "workingMillisBetween",
+          "kind": "function",
+          "file": "backend/src/modules/workflow/sla/working-time.ts",
+          "line": 77,
+          "endLine": 111,
+          "summary": "Số mili giây làm việc giữa `start` và `end`, đã loại các khoảng tạm dừng.",
+          "source": null
+        }
+      ],
+      "callers": [
+        {
+          "name": "PortalService.accept",
+          "kind": "method",
+          "file": "backend/src/modules/portal/portal.service.ts",
+          "line": 311
+        },
+        {
+          "name": "LoanApplicationsService.create",
+          "kind": "method",
+          "file": "backend/src/modules/loan-applications/loan-applications.service.ts",
+          "line": 18
+        },
+        {
+          "name": "run",
+          "kind": "function",
+          "file": "backend/src/modules/workflow/workflow.service.ts",
+          "line": 25
+        },
+        {
+          "name": "WorkflowService.closeOverdueSupplement",
+          "kind": "method",
+          "file": "backend/src/modules/workflow/workflow.service.ts",
+          "line": 102
+        }
+      ],
+      "relatedTests": []
+    }
+  ]
+}
+

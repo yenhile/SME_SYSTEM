@@ -26,5 +26,5 @@ export function assessReadiness(data:Record<string,any>,documents:FileBasis[]) {
 }
 export function companyReadiness(data:Record<string,any>,company:Record<string,any>) {
   const differences=['industry','establishedYear','annualRevenue','charterCapital'].filter(k=>['annualRevenue','charterCapital'].includes(k)?Number(company[k])!==data[k]:company[k]!==data[k]);
-  return {compatible:differences.length===0,requiresConfirmation:true,differences,annualPeriod:data.revenuePeriod??null,message:differences.length?'Dữ liệu tài chính/ngành/năm thành lập khác Company hiện hữu. Cần đối chiếu theo quyền cập nhật riêng; hệ thống không tự ghi đè.':'Company chưa lưu kỳ tài chính; CBTD phải đối chiếu độ cập nhật và nguồn trước khi xác nhận tiếp nhận.'};
+  return {compatible:differences.length===0,requiresConfirmation:true,differences,annualPeriod:data.revenuePeriod??null,message:differences.length?'Dữ liệu tài chính/ngành/năm thành lập khác dữ liệu doanh nghiệp đã lưu. Cần đối chiếu theo quyền cập nhật riêng; hệ thống không tự ghi đè.':'Dữ liệu doanh nghiệp đã lưu chưa có kỳ tài chính; CBTD phải đối chiếu độ cập nhật và nguồn trước khi xác nhận tiếp nhận.'};
 }

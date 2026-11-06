@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import ts from 'typescript';
+const source=await fs.readFile(new URL('../src/components/notificationTarget.ts',import.meta.url),'utf8');
+const {outputText}=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}});
+const {notificationTarget}=await import('data:text/javascript;base64,'+Buffer.from(outputText).toString('base64'));
+test('coordination notice opens its minimal receipt before any linked case',()=>{assert.deepEqual(notificationTarget({assignmentChangeRequestId:'receipt',applicationId:'loan',requestId:'portal'}),{kind:'coordination',id:'receipt'});});
+test('existing Portal and Loan notices retain their own destination',()=>{assert.deepEqual(notificationTarget({requestId:'portal'}),{kind:'intake',id:'portal'});assert.deepEqual(notificationTarget({applicationId:'loan'}),{kind:'loan',id:'loan'});});
+test('plain handover notice for a former owner cannot open a case',()=>{assert.equal(notificationTarget({requestId:null,applicationId:null,assignmentChangeRequestId:null}),null);});

@@ -1,0 +1,29 @@
+{
+  "pass": true,
+  "browserChecks": 75,
+  "apiChecks": 137,
+  "portalRegressionChecks": 90,
+  "assignmentSafety": {
+    "pass": true,
+    "checks": 62,
+    "schema": "portal_v2_it_b0110e8ecab14be8925ffa6a6f07cf24"
+  },
+  "coordination": {
+    "pass": true,
+    "checks": 155,
+    "schema": "portal_v2_it_b0110e8ecab14be8925ffa6a6f07cf24"
+  },
+  "round3": {
+    "pass": true,
+    "checks": 129,
+    "schema": "portal_v2_it_b0110e8ecab14be8925ffa6a6f07cf24",
+    "ownedNamespace": true
+  },
+  "migration": {
+    "pass": true,
+    "repeated": 2,
+    "legacyPreserved": true
+  },
+  "evidence": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\.codex_tmp\\sme-rollout\\1793619716278",
+  "schema": "portal_v2_it_b0110e8ecab14be8925ffa6a6f07cf24"
+}

@@ -1,3 +1,4 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 require('reflect-metadata');
@@ -36,7 +37,7 @@ function reminders(rows) {
     internalNotification:{create:async({data})=>{state.notices.push(data);return data;}},
   };
   const mailer={sendSupplementReminder:async(email,code)=>{state.emails.push({email,code});}};
-  return {state,service:new SupplementRemindersService(prisma,mailer)};
+  return {state,service:new SupplementRemindersService(withCoordination(prisma),mailer)};
 }
 
 // C.9.5(4): phản hồi đủ chờ ngân hàng kiểm tra không bị nhắc thiếu hay đánh dấu quá hạn.
@@ -72,7 +73,7 @@ function closer(supplements) {
     slaPolicyActivation:{findFirst:async()=>null},
     applicationStagePause:{findMany:async()=>[],updateMany:async()=>({count:0})},
   };
-  const service=new WorkflowService({$transaction:async fn=>fn(tx)},{predictForApplication:async()=>{}});
+  const service=new WorkflowService(withCoordination({$transaction:async fn=>fn(tx)}),{predictForApplication:async()=>{}});
   const close=now=>service.closeOverdueSupplement('loan1',{reason:'Quá hạn'},{id:'m',activeRole:'QUAN_LY'},now);
   close.updates=updates;
   return close;

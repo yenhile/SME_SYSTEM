@@ -9,7 +9,8 @@ export interface PortalData {
   contactPhone?: string; contactEmail?: string; revenuePeriod?: string; neededAt?: string; preferredBranch?: string;
   hasExistingDebt?: boolean;
   annualRevenueBasis?: {documentId?:string;fullYearCompleted?:boolean};
-  businessScope?: 'MANUFACTURING' | 'OTHER';
+  businessScope?: 'MANUFACTURING' | 'TRADING' | 'SERVICES' | 'OTHER';
+  serviceProofMode?: 'CONTRACT_OR_ORDER' | 'ACCEPTANCE_INVOICE';
   representative?: { mode?: 'LEGAL_REPRESENTATIVE' | 'AUTHORIZED'; name?: string };
   submissionDeclaration?: { accepted?: boolean; version?: string };
   collateral?: { mode?: 'PROPOSED' | 'NONE_REQUESTED' | 'UNDECIDED'; description?: string };
@@ -30,14 +31,15 @@ export interface ApprovedIntakeAssessment {
   canSubmit: false; canAccept: false; businessValidity: 'NOT_REVIEWED'; creditDecision: null; note: string;
 }
 export interface IntakeUser { id: string; fullName: string; username: string }
-export interface PortalRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'RETURNED' | 'ACCEPTED'; data: PortalData; documents: PortalDocument[]; submittedAt?: string; acceptedAt?: string; loanId?: string; assignedTo?: string | null; assignedBy?: string | null; assignedAt?: string | null; assignedOfficer?: IntakeUser | null; formVersion?: number; checklistVersion?: string; revision?: number; account?: PortalAccount; checklistSnapshot?: Record<string, unknown> | null }
+export interface PortalRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'RETURNED' | 'ACCEPTED'; data: PortalData; documents: PortalDocument[]; submittedAt?: string; acceptedAt?: string; loanId?: string; assignedTo?: string | null; assignmentVersion?:number; currentLoanOfficer?:IntakeUser|null;coordinationRestrictions?:{writeBlocked:boolean;decisionBlocked:boolean}; assignmentReceipt?:{id:string;toUserId:string;replayed:boolean}; assignedBy?: string | null; assignedAt?: string | null; assignedOfficer?: IntakeUser | null; formVersion?: number; checklistVersion?: string; revision?: number; account?: PortalAccount; checklistSnapshot?: Record<string, unknown> | null }
 export interface PortalAccount { id: string; email: string; contactName: string; phone: string }
 export interface PortalFormConfig {
+  rolloutEnabled?: boolean; branchLimit?: number; supportedScopes?: string[]; supportedLoanTypes?: string[];
   intakeCycleEnabled?: boolean;
   readinessVersion?:'MVP1';
   mvpPolicy?: {version:string;status:string;canSubmit:boolean};
   approvedIntakePolicy?: { canSubmit: boolean; canAccept: boolean; activationStatus: 'IMPLEMENTATION_INCOMPLETE' | 'ENABLED'; note: string;
-    policy: { version: string; status: 'APPROVED'; formVersion: 2; scope: 'MANUFACTURING_WORKING_CAPITAL_DEMO';
+    policy: { version: string; status: 'APPROVED'; formVersion: 2; scope: string;
       annualPeriodRule: 'PREVIOUS_COMPLETED_CALENDAR_YEAR'; timezone: 'Asia/Ho_Chi_Minh';
       declaration: { version: string; text: string }; requiredFields: string[]; requirements: ApprovedIntakeRequirement[] } };
   submitPolicyVersion?: string | null;

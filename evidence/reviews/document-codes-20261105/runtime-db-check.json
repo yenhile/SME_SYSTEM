@@ -1,0 +1,10 @@
+{
+  "pass": true,
+  "database": "sme_loan",
+  "schema": "public",
+  "dn_usage": true,
+  "sme_usage": true,
+  "can_create_request": true,
+  "can_create_loan": true,
+  "consumedSequence": false
+}

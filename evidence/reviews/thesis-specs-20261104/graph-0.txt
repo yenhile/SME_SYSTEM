@@ -1,0 +1,254 @@
+﻿
+> sme-loan-ai-tooling@0.1.0 codegraph
+> node scripts/check-codegraph.mjs && node scripts/run-codegraph.mjs context accept --file backend/src/modules/portal/portal.service.ts --no-source --json
+
+CODEGRAPH OK version=3.17.0 files=182 nodes=3715 edges=7428 backend=117 frontend=53 ml=7
+{
+  "name": "accept",
+  "results": [
+    {
+      "name": "PortalService.accept",
+      "kind": "method",
+      "file": "backend/src/modules/portal/portal.service.ts",
+      "line": 311,
+      "role": "dead-unresolved",
+      "endLine": 369,
+      "source": null,
+      "signature": null,
+      "complexity": {
+        "cognitive": 54,
+        "cyclomatic": 28,
+        "maxNesting": 4,
+        "maintainabilityIndex": 36.2,
+        "halsteadVolume": 8307.96
+      },
+      "children": [
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 311,
+          "endLine": null
+        },
+        {
+          "name": "userId",
+          "kind": "parameter",
+          "line": 311,
+          "endLine": null
+        },
+        {
+          "name": "confirmExistingCompany",
+          "kind": "parameter",
+          "line": 311,
+          "endLine": null
+        },
+        {
+          "name": "confirmExistingCompanyFinancials",
+          "kind": "parameter",
+          "line": 311,
+          "endLine": null
+        },
+        {
+          "name": "expectedRevision",
+          "kind": "parameter",
+          "line": 311,
+          "endLine": null
+        },
+        {
+          "name": "submissionId",
+          "kind": "parameter",
+          "line": 311,
+          "endLine": null
+        },
+        {
+          "name": "clock",
+          "kind": "parameter",
+          "line": 311,
+          "endLine": null
+        }
+      ],
+      "callees": [
+        {
+          "name": "sameJson",
+          "kind": "function",
+          "file": "backend/src/modules/portal/portal.snapshot.ts",
+          "line": 5,
+          "endLine": 5,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "readV2Snapshot",
+          "kind": "function",
+          "file": "backend/src/modules/portal/portal.snapshot.ts",
+          "line": 19,
+          "endLine": 29,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "evaluatePolicy",
+          "kind": "function",
+          "file": "backend/src/modules/portal/portal.policy.ts",
+          "line": 74,
+          "endLine": 114,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "resolveTestPolicy",
+          "kind": "function",
+          "file": "backend/src/modules/portal/portal.policy.ts",
+          "line": 117,
+          "endLine": 128,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "validatePortalData",
+          "kind": "function",
+          "file": "backend/src/modules/portal/portal.validation.ts",
+          "line": 17,
+          "endLine": 36,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "resolveStageSla",
+          "kind": "function",
+          "file": "backend/src/modules/workflow/sla/sla-policy.ts",
+          "line": 36,
+          "endLine": 49,
+          "summary": "Chốt cách tính cho công đoạn sắp mở tại thời điểm `now`: mốc kích hoạt gần nhất có hiệu lực (activat...",
+          "source": null
+        },
+        {
+          "name": "assertNoCoordinationConflict",
+          "kind": "function",
+          "file": "backend/src/modules/assignments/assignment-coordination.ts",
+          "line": 7,
+          "endLine": 10,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "assertNoCompanyConflict",
+          "kind": "function",
+          "file": "backend/src/modules/assignments/assignment-coordination.ts",
+          "line": 16,
+          "endLine": 20,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "obsoleteCoordination",
+          "kind": "function",
+          "file": "backend/src/modules/assignments/assignment-coordination.ts",
+          "line": 23,
+          "endLine": 29,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "assertBranchAmount",
+          "kind": "function",
+          "file": "backend/src/modules/workflow/loan-policy.ts",
+          "line": 7,
+          "endLine": 10,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "lockOfficer",
+          "kind": "function",
+          "file": "backend/src/modules/workflow/loan-policy.ts",
+          "line": 21,
+          "endLine": 23,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "PortalService.cycle",
+          "kind": "method",
+          "file": "backend/src/modules/portal/portal.service.ts",
+          "line": 36,
+          "endLine": 36,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "PortalService.usesCycle",
+          "kind": "method",
+          "file": "backend/src/modules/portal/portal.service.ts",
+          "line": 37,
+          "endLine": 37,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "PortalService.companyComparison",
+          "kind": "method",
+          "file": "backend/src/modules/portal/portal.service.ts",
+          "line": 39,
+          "endLine": 44,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "PortalService.legacyOnly",
+          "kind": "method",
+          "file": "backend/src/modules/portal/portal.service.ts",
+          "line": 82,
+          "endLine": 84,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "PortalService.physicalFiles",
+          "kind": "method",
+          "file": "backend/src/modules/portal/portal.service.ts",
+          "line": 244,
+          "endLine": 252,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "ordered",
+          "kind": "function",
+          "file": "backend/src/modules/portal/portal.service.ts",
+          "line": 331,
+          "endLine": 331,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "companySnapshot",
+          "kind": "function",
+          "file": "backend/src/modules/companies/company-snapshot.ts",
+          "line": 2,
+          "endLine": 5,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "lockCompany",
+          "kind": "function",
+          "file": "backend/src/modules/companies/company-snapshot.ts",
+          "line": 13,
+          "endLine": 15,
+          "summary": null,
+          "source": null
+        }
+      ],
+      "callers": [
+        {
+          "name": "PortalIntakesController.accept",
+          "kind": "method",
+          "file": "backend/src/modules/portal/portal.controller.ts",
+          "line": 93
+        }
+      ],
+      "relatedTests": []
+    }
+  ]
+}
+

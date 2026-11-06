@@ -25,6 +25,14 @@ export class PortalMailer {
     finally {transport.close();}
   }
 
+  async sendPasswordReset(email:string,link:string) {
+    const transport=this.createTransport();
+    try {
+      await transport.sendMail({from:process.env.SMTP_FROM||'noreply@sme-loan.local',to:email,subject:'SME Loan - Đặt lại mật khẩu',text:`Đặt lại mật khẩu cổng doanh nghiệp tại: ${link}\nLiên kết hết hạn sau 10 phút và chỉ dùng một lần. Nếu bạn không yêu cầu, hãy bỏ qua email này.`});
+    } catch {throw new ServiceUnavailableException('Không gửi được email đặt lại mật khẩu.');}
+    finally {transport.close();}
+  }
+
   /** Nhắc doanh nghiệp bổ sung chứng từ; nội dung chỉ nêu mã hồ sơ, không kèm dữ liệu hồ sơ. */
   async sendSupplementReminder(email: string, applicationCode: string) {
     const transport = this.createTransport();

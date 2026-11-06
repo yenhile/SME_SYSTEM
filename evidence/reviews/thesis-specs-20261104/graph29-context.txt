@@ -1,0 +1,166 @@
+﻿
+> sme-loan-ai-tooling@0.1.0 codegraph
+> node scripts/check-codegraph.mjs && node scripts/run-codegraph.mjs context mutate --file backend/src/modules/appraisal/appraisal.service.ts --no-source --json
+
+CODEGRAPH OK version=3.17.0 files=182 nodes=3715 edges=7428 backend=117 frontend=53 ml=7
+{
+  "name": "mutate",
+  "results": [
+    {
+      "name": "AppraisalService.mutate",
+      "kind": "method",
+      "file": "backend/src/modules/appraisal/appraisal.service.ts",
+      "line": 58,
+      "role": "dead-unresolved",
+      "endLine": 114,
+      "source": null,
+      "signature": null,
+      "complexity": {
+        "cognitive": 85,
+        "cyclomatic": 38,
+        "maxNesting": 5,
+        "maintainabilityIndex": 30.1,
+        "halsteadVolume": 6070
+      },
+      "children": [
+        {
+          "name": "id",
+          "kind": "parameter",
+          "line": 58,
+          "endLine": null
+        },
+        {
+          "name": "kind",
+          "kind": "parameter",
+          "line": 58,
+          "endLine": null
+        },
+        {
+          "name": "body",
+          "kind": "parameter",
+          "line": 58,
+          "endLine": null
+        },
+        {
+          "name": "user",
+          "kind": "parameter",
+          "line": 58,
+          "endLine": null
+        }
+      ],
+      "callees": [
+        {
+          "name": "assertNoCoordinationConflict",
+          "kind": "function",
+          "file": "backend/src/modules/assignments/assignment-coordination.ts",
+          "line": 7,
+          "endLine": 10,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "assertBranchAmount",
+          "kind": "function",
+          "file": "backend/src/modules/workflow/loan-policy.ts",
+          "line": 7,
+          "endLine": 10,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "validateReport",
+          "kind": "function",
+          "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+          "line": 8,
+          "endLine": 18,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "digest",
+          "kind": "function",
+          "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+          "line": 19,
+          "endLine": 19,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "reportEvidence",
+          "kind": "function",
+          "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+          "line": 20,
+          "endLine": 45,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "assertIndependent",
+          "kind": "function",
+          "file": "backend/src/modules/appraisal/appraisal.logic.ts",
+          "line": 46,
+          "endLine": 50,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "PredictionService.predictForApplication",
+          "kind": "method",
+          "file": "backend/src/modules/prediction/prediction.service.ts",
+          "line": 15,
+          "endLine": 131,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "AppraisalService.view",
+          "kind": "method",
+          "file": "backend/src/modules/appraisal/appraisal.service.ts",
+          "line": 11,
+          "endLine": 53,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "AppraisalService.body",
+          "kind": "method",
+          "file": "backend/src/modules/appraisal/appraisal.service.ts",
+          "line": 54,
+          "endLine": 57,
+          "summary": null,
+          "source": null
+        },
+        {
+          "name": "WorkflowService.transitionStage",
+          "kind": "method",
+          "file": "backend/src/modules/workflow/workflow.service.ts",
+          "line": 24,
+          "endLine": 96,
+          "summary": null,
+          "source": null
+        }
+      ],
+      "callers": [
+        {
+          "name": "AppraisalController.save",
+          "kind": "method",
+          "file": "backend/src/modules/appraisal/appraisal.controller.ts",
+          "line": 30
+        },
+        {
+          "name": "AppraisalController.submit",
+          "kind": "method",
+          "file": "backend/src/modules/appraisal/appraisal.controller.ts",
+          "line": 32
+        },
+        {
+          "name": "AppraisalController.clarify",
+          "kind": "method",
+          "file": "backend/src/modules/appraisal/appraisal.controller.ts",
+          "line": 34
+        }
+      ],
+      "relatedTests": []
+    }
+  ]
+}

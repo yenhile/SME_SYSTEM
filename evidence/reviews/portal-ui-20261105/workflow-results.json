@@ -1,0 +1,33 @@
+{
+  "method": "SHA256 of the TypeScript AST node source, compared with pre-edit baseline",
+  "checks": [
+    {
+      "symbol": "canSendApproved",
+      "unchanged": true
+    },
+    {
+      "symbol": "received",
+      "unchanged": true
+    },
+    {
+      "symbol": "persist",
+      "unchanged": true
+    },
+    {
+      "symbol": "mutate",
+      "unchanged": true
+    },
+    {
+      "symbol": "navigate",
+      "unchanged": true
+    },
+    {
+      "symbol": "useRemote",
+      "unchanged": true
+    },
+    {
+      "symbol": "submitTestRequest",
+      "unchanged": true
+    }
+  ]
+}

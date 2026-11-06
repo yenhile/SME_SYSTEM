@@ -1,0 +1,29 @@
+﻿{
+    "backendPid":  17420,
+    "rebuilt":  true,
+    "databaseReady":  true,
+    "source":  "Compiled local backend after approved migration",
+    "health":  {
+                   "status":  "ok",
+                   "services":  {
+                                    "backend":  "ready",
+                                    "database":  "ready",
+                                    "prediction":  "ready"
+                                },
+                   "timestamp":  "2026-11-05T09:21:45.316Z"
+               },
+    "runtimeHashes":  [
+                          {
+                              "sha256":  "D684FA2CC78590F76AB1709B52376BAC50EC89C8A8CE1E1273620E89983076F1",
+                              "file":  "backend/dist/common/document-codes.js"
+                          },
+                          {
+                              "sha256":  "CE65262A0A98DE271DC834B638B3440AAE8914DFF048E326F4D69638C13E5766",
+                              "file":  "backend/dist/modules/portal/portal.service.js"
+                          },
+                          {
+                              "sha256":  "1D9248C8C1509607D27753991B4680B490ACF60B0006B8C781BBB24B0002D2B4",
+                              "file":  "backend/dist/modules/loan-applications/loan-applications.service.js"
+                          }
+                      ]
+}

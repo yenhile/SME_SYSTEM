@@ -1,3 +1,4 @@
+const {withCoordination}=require('./helpers/coordination-fixture.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 require('reflect-metadata');
@@ -12,7 +13,7 @@ function fixture(version=2) {
     update:async({data})=>Object.assign(state,data),
     create:async({data})=>data,
   }};
-  return {state,service:new PortalService({...tx,$transaction:async fn=>fn(tx)})};
+  return {state,service:new PortalService(withCoordination({...tx,$transaction:async fn=>fn(tx)}))};
 }
 function preview(fn) {
   return async()=>{const old=[process.env.NODE_ENV,process.env.PORTAL_FOUNDATION_PREVIEW];
@@ -52,7 +53,7 @@ test('preview opt-in is denied in production even when feature flag is enabled',
 });
 test('document history heads include withdrawn final versions but require ownership',async()=>{
   let query;
-  const service=new PortalService({portalRequest:{findFirst:async({where})=>where.accountId==='owner'?{id:'request',documents:[]}:null},portalDocument:{findMany:async args=>{query=args;return[{id:'withdrawn',withdrawnAt:new Date()}];}}});
+  const service=new PortalService(withCoordination({portalRequest:{findFirst:async({where})=>where.accountId==='owner'?{id:'request',documents:[]}:null},portalDocument:{findMany:async args=>{query=args;return[{id:'withdrawn',withdrawnAt:new Date()}];}}}));
   assert.equal((await service.documentHeads('request','owner')).length,1);
   assert.deepEqual(query.where,{requestId:'request',nextVersion:{is:null}});
   assert.equal(query.select.filePath,undefined);
@@ -67,7 +68,7 @@ test('staff V2 download serves only frozen snapshot bytes and metadata',async()=
   const doc={id:'doc',requestId:'request',filePath:'own.pdf',fileName:'original.pdf',documentGroup:'A',fileSize:buffer.length,mimeType:'application/pdf',version:1,coverage:[],uploadedAt:new Date(),sha256:createHash('sha256').update(buffer).digest('hex')};
   const r={id:'request',accountId:'owner',formVersion:2,revision:0,data:{},checklistVersion:'TEST-1',submittedAt:new Date()};
   r.checklistSnapshot=createV2Snapshot(r,{version:'TEST-1'},[],[doc],r.submittedAt);
-  const service=new PortalService({portalDocument:{findFirst:async()=>doc}}); service.dir=dir; service.one=async()=>r;
+  const service=new PortalService(withCoordination({portalDocument:{findFirst:async()=>doc}})); service.dir=dir; service.one=async()=>r;
   try {
     await fs.writeFile(path.join(dir,doc.filePath),buffer);
     assert.deepEqual((await service.download('request','doc',undefined,{id:'officer',roles:['CBTD']})).buffer,buffer);

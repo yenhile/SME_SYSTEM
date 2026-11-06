@@ -1,0 +1,851 @@
+﻿[NODE 295 p]
+CHƯƠNG 3. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG
+[NODE 296 bookmarkStart]
+
+[NODE 297 p]
+3.1 Thu thập yêu cầu
+[NODE 298 bookmarkStart]
+
+[NODE 299 p]
+3.1.1 Mục tiêu phỏng vấn
+[NODE 300 p]
+Mục tiêu phỏng vấn nhằm làm rõ quy trình xử lý hồ sơ vay của khách hàng doanh nghiệp nhỏ và vừa tại chi nhánh ngân hàng, từ bước tiếp nhận hồ sơ cho đến khi có kết quả thẩm định. Đồng thời, nhóm tập trung tìm hiểu các đối tượng tham gia quy trình, các trạng thái của hồ sơ và quy tắc chuyển bước, cách xử lý hồ sơ thiếu, yêu cầu bổ sung và các trường hợp ngoại lệ. Một phần quan trọng của buổi phỏng vấn là tìm hiểu thời gian xử lý, cách xác định hồ sơ xử lý chậm và nhu cầu theo dõi của người quản lý chi nhánh. Kết quả phỏng vấn làm cơ sở để nhóm phân tích và thiết kế hệ thống quản lý quy trình xét duyệt hồ sơ vay.
+[NODE 301 bookmarkStart]
+
+[NODE 302 p]
+3.1.2 Kế hoạch phỏng vấn
+[NODE 303 bookmarkStart]
+
+[NODE 304 bookmarkStart]
+
+[NODE 305 bookmarkStart]
+
+[NODE 306 bookmarkStart]
+
+[NODE 307 bookmarkStart]
+
+[NODE 308 bookmarkStart]
+
+[NODE 309 p]
+Bảng 3.1: Bảng kế hoạch phỏng vấn
+[NODE 310 tbl]
+Người được phỏng vấn: Chị Thu Trang, Giám đốc chi nhánh Ngân hàng TMCP Công Thương Việt Nam (VietinBank)   | Người Phỏng Vấn: Lê Thị Yến Nhi, /                                Voòng Thị Yến Trang
+Địa điểm | Google Meet | Ngày phỏng vấn: 11/09/2026Thời Điểm Bắt Đầu: 9h20 sáng.
+ChươngTrình | Giới thiệu nội dung và sơ lược đề tài của nhóm. / Tiến hành phỏng vấn các câu hỏi phỏng vấn đã chuẩn bị trước để thu thập yêu cầu của nghiệp vụ của ngân hàng. / Thời gian phỏng vấn dự kiến khoảng 45 phút. / Sau khi thu thập được yêu cầu, nhóm cảm ơn người được phỏng vấn đã dành thời gian để nhóm có thể hiểu rõ nghiệp vụ và xây dựng hệ thống đúng với thực tế.
+[NODE 311 p]
+
+[NODE 312 p]
+Theo kết quả phỏng vấn, ngân hàng hiện tiếp nhận và thẩm định hồ sơ vay doanh nghiệp nhỏ và vừa theo cách thủ công, chưa nhập dữ liệu hồ sơ lên hệ thống. Một hồ sơ do cán bộ tín dụng tiếp nhận và kiểm tra, yêu cầu doanh nghiệp bổ sung khi thiếu giấy tờ, sau đó được thẩm định thêm một lần nữa qua cấp thẩm quyền để đưa ra kết quả đạt hoặc không đạt. Hai công đoạn tiếp nhận và yêu cầu bổ sung là nơi dễ chậm trễ nhất. Nhóm nhận thấy việc xử lý thủ công khiến khó theo dõi một hồ sơ đang ở bước nào và do ai phụ trách, chưa có cơ chế nhắc hạn hay cảnh báo hồ sơ chậm, và việc chuyển hồ sơ khi cán bộ vắng mặt dựa vào trao đổi trực tiếp. Để khắc phục, nhóm đề xuất xây dựng hệ thống số hóa quy trình xét duyệt hồ sơ vay, gồm các chức năng: quản lý hồ sơ qua các công đoạn, lưu lịch sử chuyển bước, yêu cầu và nhắc bổ sung chứng từ, theo dõi thời gian xử lý (SLA), phân công điều chuyển cán bộ và dự báo nguy cơ chậm xử lý hồ sơ.
+[NODE 313 bookmarkStart]
+
+[NODE 314 p]
+3.1.3 Tổng hợp kết quả phỏng vấn
+[NODE 315 bookmarkStart]
+
+[NODE 316 bookmarkStart]
+
+[NODE 317 bookmarkStart]
+
+[NODE 318 bookmarkStart]
+
+[NODE 319 bookmarkStart]
+
+[NODE 320 bookmarkStart]
+
+[NODE 321 p]
+Bảng 3.2: Bảng tổng hợp thu thập yêu cầu phỏng vấn
+[NODE 322 tbl]
+STT | Câu hỏi / Trả lời
+1 | Câu hỏi: Quy trình xử lý hồ sơ vay của doanh nghiệp nhỏ và vừa tại chi nhánh bắt đầu và kết thúc tại thời điểm nào?  / Trả lời: Bắt đầu từ thời điểm tiếp nhận hoặc thời điểm bắt đầu, DN đề cập tới NH. Kết thúc tùy vào từng quy trình, ví dụ quy trình vay vốn.
+2 | Câu hỏi: Một hồ sơ vay SME thông thường trải qua những công đoạn chính nào, và có loại hồ sơ nào xử lý khác đáng kể không?  / Trả lời: Tiếp nhận hồ sơ -> Yêu cầu bổ sung nếu thiếu -> Thẩm định hồ sơ -> Báo kết quả đạt & không đạt. Không có loại hồ sơ nào xử lý khác.
+3 | Câu hỏi: Những vị trí nào tham gia xử lý hồ sơ, ai xử lý chính và ai theo dõi tổng thể tiến độ hồ sơ?  / Trả lời: Cán bộ tín dụng hoặc cán bộ thẩm quyền. Trong NH nội bộ, cán bộ tín dụng xử lý một hồ sơ vay SME. Người theo dõi tổng thể tùy từng chi nhánh, có thể là cán bộ tín dụng hoặc cả cán bộ thẩm quyền.
+4 | Câu hỏi: Công đoạn nào xử lý tại chi nhánh, công đoạn nào chuyển cấp phê duyệt khác; một người có được đảm nhiệm nhiều vai trò và một công đoạn có cần nhiều cấp kiểm tra không?  / Trả lời: Khi DN gửi hồ sơ với hạn mức tối đa là 10 tỷ sẽ xử lý tại chi nhánh thông qua cán bộ tín dụng và thẩm quyền. Nếu số tiền vượt quá 10 tỷ sẽ gửi lên cấp cao hơn để phê duyệt. Cán bộ tín dụng đảm nhiệm cả thẩm quyền được trong phạm vi vay xét duyệt hồ sơ; không cần nhiều cấp kiểm tra, cán bộ tín dụng có thể được phép thẩm quyền trong phạm vi cho phép trong nội bộ ngân hàng.
+5 | Câu hỏi: Khi tiếp nhận hồ sơ mới cần làm những công việc nào, điều kiện chuyển sang công đoạn sau là gì và việc chuyển do ai thực hiện?  / Trả lời: Yêu cầu bổ sung nếu thiếu hồ sơ, giấy tờ. Điều kiện chuyển bước là thẩm định hồ sơ đó có đạt yêu cầu không. Cán bộ tín dụng tiếp nhận hồ sơ, thu thập yêu cầu, sau đó hồ sơ được thẩm định thêm lần nữa thông qua cấp thẩm quyền.
+6 | Câu hỏi: Hồ sơ không đáp ứng yêu cầu thì trả lại cho ai, quay về bước nào, và có công đoạn nào được bỏ qua không?  / Trả lời: NH tiếp nhận hồ sơ, kiểm tra hồ sơ và yêu cầu bổ sung nếu thiếu. Không có công đoạn nào được bỏ qua.
+7 | Câu hỏi: Một hồ sơ có những trạng thái nào và trạng thái được cập nhật tự động hay thủ công?  / Trả lời: Tiếp nhận hồ sơ và đợi thẩm định, kết quả đạt hoặc không đạt. Ngân hàng tiếp nhận hồ sơ và thẩm định thủ công, chưa nhập dữ liệu trên hệ thống.
+8 | Câu hỏi: Ai có quyền thay đổi trạng thái hồ sơ, và có cần lưu thời điểm chuyển, người thực hiện và trạng thái trước đó không?  / Trả lời: Cán bộ tín dụng có quyền thay đổi trạng thái. Có, cần lưu lại.
+9 | Câu hỏi: Có các trạng thái đặc biệt (chờ bổ sung, tạm dừng, hủy, từ chối, trả lại) không, và khi doanh nghiệp thiếu giấy tờ thì yêu cầu bổ sung được thực hiện như thế nào?  / Trả lời: Có, nếu hồ sơ thiếu thì yêu cầu bổ sung; hồ sơ không đạt yêu cầu thì từ chối. Việc yêu cầu bổ sung tiếp tục thực hiện theo quy trình ngân hàng tiếp nhận hồ sơ.
+10 | Câu hỏi: Hồ sơ có thể được yêu cầu bổ sung nhiều lần không, có cần theo dõi số lần không, và nếu cán bộ phụ trách nghỉ phép, nghỉ việc hoặc quá tải thì chuyển hồ sơ thế nào?  / Trả lời: NH cho phép DN bổ sung hồ sơ nhiều lần và không cần theo dõi số lần bổ sung, chỉ cần đáp ứng đủ hồ sơ yêu cầu để thẩm định. Các nhân viên đều nắm rõ nghiệp vụ vay vốn nên khi cán bộ tín dụng cancel hồ sơ này có thể liên hệ qua cán bộ khác hỗ trợ bình thường.
+11 | Câu hỏi: Hồ sơ có bị hủy hoặc dừng giữa quy trình không, và khi bị từ chối có cần lưu lý do, lịch sử xử lý không?  / Trả lời: Hồ sơ cần đầy đủ giấy tờ yêu cầu từ NH. Nếu DN chậm gửi hồ sơ quá hạn thời gian NH yêu cầu thì NH có thể loại hồ sơ đó nếu chưa đáp ứng đủ yêu cầu bổ sung. Thẩm định chỉ có hai kết quả là đạt và không đạt; không đạt thì NH loại hồ sơ, không cần lưu lại.
+12 | Câu hỏi: Ngân hàng có quy định thời gian xử lý tiêu chuẩn không, và khi nào hồ sơ được xem là xử lý chậm hoặc quá hạn?  / Trả lời: Thời gian xử lý tùy thuộc thời điểm tiếp nhận hồ sơ còn thiếu, phụ thuộc NH thông báo thời gian nộp các giấy tờ còn thiếu. Sau khi hồ sơ đạt, vay vốn được; nếu thời gian giải ngân quá hạn sẽ ảnh hưởng uy tín DN, vào nợ xấu của NH.
+13 | Câu hỏi: Thời gian chờ khách hàng bổ sung hồ sơ hoặc chờ đơn vị bên ngoài có được tính vào thời gian xử lý/SLA của ngân hàng không?  / Trả lời: Không.
+14 | Câu hỏi: Trong thực tế, công đoạn nào thường mất nhiều thời gian hoặc dễ xảy ra chậm trễ nhất?  / Trả lời: Tiếp nhận hồ sơ và yêu cầu bổ sung hồ sơ.
+15 | Câu hỏi: Nếu có hệ thống hỗ trợ quản lý toàn bộ quy trình, ở vai trò quản lý chi nhánh, anh/chị cần nhìn thấy những thông tin nào để biết hồ sơ nào đang xử lý, đang ở bước nào, ai phụ trách và hồ sơ nào cần được chú ý? Trả lời: Ở giai đoạn tiếp nhận hồ sơ từ DN SME.
+[NODE 323 p]
+
+[NODE 324 bookmarkStart]
+
+[NODE 325 p]
+3.2 Phân tích yêu cầu
+[NODE 326 bookmarkStart]
+
+[NODE 327 p]
+3.2.1 Yêu cầu chức năng (Functional Requirement)
+[NODE 328 p]
+- Doanh nghiệp
+[NODE 329 p]
++ Đăng ký tài khoản trên cổng doanh nghiệp và xác minh email bằng mã gồm 6 số.
+[NODE 330 p]
++ Lập đề nghị vay theo danh mục chứng từ bắt buộc, lưu nháp và gửi cho ngân hàng.
+[NODE 331 p]
++ Theo dõi tiến độ xử lý đề nghị qua 4 mốc (Tiếp nhận, Thẩm định, Phê duyệt, Hoàn tất), kèm trạng thái và giải thích dễ hiểu.
+[NODE 332 p]
++ Nhận yêu cầu bổ sung chứng từ và gửi bổ sung theo hướng dẫn.
+[NODE 333 p]
++ Gửi đề nghị chỉnh sửa khi phát hiện sai thông tin đã gửi.
+[NODE 334 p]
+- Cán bộ tín dụng
+[NODE 335 p]
++ Tiếp nhận đề nghị của doanh nghiệp đã được Quản lý phân công, hoặc tạo hồ sơ trực tiếp tại quầy.
+[NODE 336 p]
++ Tra cứu doanh nghiệp theo mã số thuế khi tạo hồ sơ; chỉ xem đầy đủ thông tin doanh nghiệp thuộc hồ sơ của mình.
+[NODE 337 p]
++ Tải lên, xem và tải xuống chứng từ của hồ sơ được phân công.
+[NODE 338 p]
++ Xác nhận hồ sơ đã đủ chứng từ và xác định hạn mức vay ở công đoạn Tiếp nhận, trước khi chuyển Thẩm định.
+[NODE 339 p]
++ Yêu cầu doanh nghiệp bổ sung chứng từ, kiểm tra từng tài liệu bổ sung và hoàn tất yêu cầu bổ sung.
+[NODE 340 p]
++ Chuyển hồ sơ sang công đoạn Thẩm định khi đã đủ chứng từ.
+[NODE 341 p]
++ Xem lịch sử xử lý của hồ sơ mình phụ trách; sau khi hồ sơ rời Tiếp nhận thì chỉ xem, không thao tác.
+[NODE 342 p]
++ Xem kết quả dự báo nguy cơ chậm của hồ sơ mình phụ trách, chỉ để nắm hồ sơ nào sắp trễ.
+[NODE 343 p]
++ Nhận thông báo nhắc bổ sung ở mốc ngày 5 và thông báo quá hạn ở mốc ngày 10.
+[NODE 344 p]
+- Cán bộ thẩm quyền
+[NODE 345 p]
++ Xem các hồ sơ từ công đoạn Thẩm định trở đi.
+[NODE 346 p]
++ Thẩm định hồ sơ và yêu cầu doanh nghiệp bổ sung chứng từ khi cần. 
+[NODE 347 p]
++ Phê duyệt hoặc từ chối hồ sơ; khi từ chối phải chọn lý do theo danh mục và ghi chú.
+[NODE 348 p]
++ Không được tự thẩm định hoặc phê duyệt hồ sơ mà mình đã phụ trách ở Tiếp nhận.
+[NODE 349 p]
++ Xem bảng theo dõi (dashboard) thời gian xử lý, cảnh báo sớm và dự báo nguy cơ chậm để sắp xếp ưu tiên xử lý. Danh sách cảnh báo không gồm hồ sơ đang ở Tiếp nhận.
+[NODE 350 p]
+- Quản lý chi nhánh
+[NODE 351 p]
++ Xem toàn bộ hồ sơ trong chi nhánh, tiến độ và người phụ trách.
+[NODE 352 p]
++ Xem dashboard thời gian xử lý (SLA), cảnh báo sớm và danh sách hồ sơ quá hạn bổ sung.
+[NODE 353 p]
++ Phân công hồ sơ cho cán bộ tín dụng, điều chuyển hồ sơ và xem khối lượng công việc của từng cán bộ; không được giao hồ sơ cho chính mình.
+[NODE 354 p]
++ Đóng hồ sơ quá hạn bổ sung và ghi lý do; không đóng hồ sơ mình phụ trách.
+[NODE 355 p]
++ Tính lại dự báo nguy cơ chậm của hồ sơ khi cần.
+[NODE 356 p]
+- Quản trị viên
+[NODE 357 p]
++ Tạo, sửa tài khoản nội bộ và cấp nhiều vai trò cho một tài khoản.
+[NODE 358 p]
++ Khóa hoặc mở khóa tài khoản; không tự khóa mình, không khóa hoặc bỏ vai trò CBTD của người còn hồ sơ chưa hoàn tất.
+[NODE 359 p]
++ Cấu hình thời gian xử lý chuẩn (SLA) cho từng công đoạn.
+[NODE 360 bookmarkStart]
+
+[NODE 361 p]
+3.2.2 Yêu cầu phi chức năng (Non - Functional Requirement)
+[NODE 362 p]
+Bảo mật và phân quyền: Mọi chức năng nội bộ yêu cầu đăng nhập; vai trò đang dùng được kiểm tra ở máy chủ, không chỉ ẩn trên giao diện. CBTD chỉ truy cập hồ sơ được phân công, doanh nghiệp chỉ xem đề nghị của chính mình. Mật khẩu tối thiểu 8 ký tự. Đăng nhập nhân viên bị khóa 15 phút sau 5 lần sai liên tiếp.
+[NODE 363 p]
+Toàn vẹn dữ liệu: Một hồ sơ giữ nguyên mã từ đầu đến cuối; mỗi lần chuyển bước được ghi cùng lịch sử trong một giao dịch có khóa hồ sơ, nên không bị ghi trùng khi nhiều người thao tác cùng lúc. Hồ sơ đã hoàn tất không cho chỉnh sửa.
+[NODE 364 p]
+Khả năng truy vết: Mỗi công đoạn lưu thời điểm vào và ra, người xử lý, ghi chú và kết quả SLA.
+[NODE 365 p]
+Quản lý tệp đính kèm: Mỗi tệp chứng từ tối đa 10 MB; tải xuống phải qua kiểm tra quyền truy cập hồ sơ.
+[NODE 366 p]
+Độ tin cậy của dự báo: Khi dịch vụ dự báo gặp lỗi, hệ thống báo lỗi thật (không tự đưa ra xác suất giả), giữ kết quả dự báo cũ nếu có và không làm hỏng bước chuyển hồ sơ đã hoàn thành.
+[NODE 367 p]
+Giao diện người dùng: Ứng dụng web chạy trên trình duyệt, mỗi vai trò chỉ thấy các mục thuộc quyền của mình; doanh nghiệp được giải thích trạng thái hồ sơ bằng ngôn ngữ dễ hiểu.
+[NODE 368 p]
+Khả năng mở rộng: Phần dự báo chạy thành dịch vụ riêng, có thể thay mô hình mà không ảnh hưởng phần quản lý hồ sơ.
+[NODE 369 p]
+Thời gian phản hồi: Thời gian phản hồi mỗi thao tác không vượt quá … giây 
+[NODE 370 p]
+Triển khai: Hệ thống đóng gói để chạy bằng Docker Compose. Hiện mới chạy trên máy cục bộ; việc triển khai lên máy chủ là dự định.
+[NODE 371 bookmarkStart]
+
+[NODE 372 p]
+3.3 Quy tắc nghiệp vụ (Business Rule)
+[NODE 373 p]
+- Quy trình xử lý hồ sơ
+[NODE 374 p]
++ Hồ sơ đi một chiều qua các công đoạn Tiếp nhận, Thẩm định và Hoàn tất. 
+[NODE 375 p]
++ Một hồ sơ giữ nguyên mã hồ sơ từ đầu đến cuối quy trình.
+[NODE 376 p]
++ Hồ sơ chỉ được chuyển sang Thẩm định khi CBTD phụ trách đã xác nhận đủ chứng từ và hồ sơ không còn yêu cầu bổ sung đang mở.
+[NODE 377 p]
++ Ở công đoạn Thẩm định, Thẩm quyền chọn một trong hai hướng: phê duyệt hoặc từ chối. Khi từ chối phải chọn lý do theo danh mục và ghi chú.
+[NODE 378 p]
++ Hồ sơ đã hoàn tất không được sửa chứng từ, chuyển bước hay điều chuyển.
+[NODE 379 p]
+- Bổ sung chứng từ
+[NODE 380 p]
++ Khi hồ sơ thiếu giấy tờ, CBTD yêu cầu doanh nghiệp bổ sung. 
+[NODE 381 p]
++ Mốc thời gian: ngày 0 gửi yêu cầu bổ sung; ngày 5 nhắc cán bộ phụ trách và gửi email nhắc doanh nghiệp (nếu hồ sơ qua Portal); ngày 10 đánh dấu quá hạn, báo cho cán bộ phụ trách và hiện trên Dashboard của Quản lý.
+[NODE 382 p]
++ Các mốc tính theo ngày lịch giờ Việt Nam; mốc rơi vào thứ Bảy hoặc Chủ nhật thì lùi sang thứ Hai.
+[NODE 383 p]
++ Hệ thống không tự đóng hồ sơ quá hạn; chỉ Quản lý được đóng thủ công và phải ghi lý do.
+[NODE 384 p]
+- Thời gian xử lý (SLA)
+[NODE 385 p]
++ Thời gian chờ doanh nghiệp bổ sung không tính vào SLA của ngân hàng: SLA tạm dừng khi gửi yêu cầu bổ sung và tiếp tục khi doanh nghiệp gửi phản hồi. 
+[NODE 386 p]
++ SLA tính theo giờ làm việc tại Việt Nam, thứ Hai đến thứ Sáu, từ 08:00 đến 12:00 và từ 13:00 đến 17:00.
+[NODE 387 p]
++ Quản trị viên cấu hình thời gian chuẩn cho từng công đoạn; thay đổi chỉ áp dụng cho công đoạn mở mới, không đổi lịch sử cũ.
+[NODE 388 p]
++ Điều chuyển hồ sơ không xóa thời gian đã dùng và không tự tạm dừng SLA.
+[NODE 389 p]
+- Phân quyền và kiểm soát
+[NODE 390 p]
++ CBTD chỉ xem và xử lý hồ sơ được phân công; sau khi hồ sơ rời Tiếp nhận, CBTD chỉ xem. Thẩm quyền xem từ công đoạn Thẩm định trở đi; Quản lý xem toàn bộ hồ sơ nhưng chỉ theo dõi và phân công; Quản trị viên không có chức năng nghiệp vụ.
+[NODE 391 p]
++ Người đã phụ trách hồ sơ ở Tiếp nhận không được dùng vai trò Thẩm quyền để thẩm định, từ chối hoặc phê duyệt chính hồ sơ đó.
+[NODE 392 p]
++ Chỉ Quản lý được phân công và điều chuyển hồ sơ; Quản lý không được giao hồ sơ cho chính mình và không đóng hồ sơ mình phụ trách.
+[NODE 393 p]
++ Cán bộ chỉ thao tác trên doanh nghiệp và hồ sơ của mình; doanh nghiệp đã có hồ sơ ở cán bộ khác thì hệ thống chỉ báo là đã tồn tại.
+[NODE 394 p]
++ Không khóa tài khoản hoặc gỡ vai trò CBTD của người còn hồ sơ chưa hoàn tất; phải điều chuyển hồ sơ trước. Quản trị viên không tự khóa chính mình hoặc tự bỏ quyền Quản trị.
+[NODE 395 p]
+- Lưu vết
+[NODE 396 p]
++ Mỗi công đoạn của hồ sơ lưu thời điểm vào và ra, người xử lý, ghi chú và kết quả SLA; hồ sơ bị từ chối hoặc đóng còn lưu lý do và người thực hiện.
+[NODE 397 p]
+- Cổng doanh nghiệp
+[NODE 398 p]
++ Doanh nghiệp chỉ thấy đề nghị của chính mình; không thấy ghi chú nội bộ, tên cán bộ phụ trách, điểm hay dự báo, số tiền được duyệt.
+[NODE 399 p]
++ Mã xác minh email có hiệu lực 10 phút; muốn gửi lại phải chờ 60 giây.
+[NODE 400 p]
+- Dự báo nguy cơ chậm xử lý hồ sơ
+[NODE 401 p]
++ Dự báo chỉ dùng để sắp xếp ưu tiên xử lý nguy cơ trễ SLA, không phải quyết định tín dụng.
+[NODE 402 p]
++ Hệ thống tự tính dự báo khi hồ sơ vào Thẩm định; CBTD chỉ xem kết quả, Thẩm quyền và Quản lý được tính lại. Khi công đoạn tính SLA theo giờ làm việc thì dự báo hiển thị "không áp dụng" vì mô hình chưa huấn luyện lại.
+[NODE 403 bookmarkStart]
+
+[NODE 404 p]
+3.4 Mô hình quy trình nghiệp vụ (BPMN)
+[NODE 405 bookmarkStart]
+
+[NODE 406 p]
+3.5 Sơ đồ trạng thái hồ sơ
+[NODE 407 bookmarkStart]
+
+[NODE 408 p]
+3.6 Sơ đồ chức năng
+[NODE 409 bookmarkStart]
+
+[NODE 410 p]
+3.7 Sơ đồ use case
+[NODE 411 p]
+
+[NODE 412 bookmarkStart]
+
+[NODE 413 p]
+3.8. Đặc tả use case
+[NODE 414 bookmarkStart]
+
+[NODE 415 p]
+3.8.1 Use case Đăng nhập
+[NODE 416 p]
+Bảng 3.1: Đặc tả use case Đăng nhập
+[NODE 417 tbl]
+Tên use case | Đăng nhập
+Mô tả | Cho phép người dùng nội bộ đăng nhập vào hệ thống.
+Tiền điều kiện | Đã có tài khoản hợp lệ và thông tin đăng nhập.
+Hậu điều kiện | Đăng nhập thành công.
+Actor chính | Cán bộ tín dụng, Cán bộ thẩm quyền, Quản lý chi nhánh, Quản trị viên
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Truy cập hệ thống. | 2. Hiển thị form đăng nhập gồm “Tên đăng nhập” và “Mật khẩu”.
+3. Điền tên đăng nhập và mật khẩu vào form. | 
+4. Nhấn nút “Đăng nhập”. | 5. Hệ thống kiểm tra tính hợp lệ của thông tin đăng nhập.
+ | 6. Nếu hợp lệ, hệ thống xác thực và cho phép truy cập trang đầu theo vai trò.
+Luồng sự kiện ngoại lệ (Exception flow)
+ | 6.1. Sai tên đăng nhập hoặc mật khẩu: hệ thống thông báo “Tên đăng nhập hoặc mật khẩu không chính xác.” Quay lại bước 3.
+[NODE 418 p]
+
+[NODE 419 bookmarkStart]
+
+[NODE 420 p]
+3.8.2 Use case Tiếp nhận hồ sơ vay
+[NODE 421 p]
+3.8.2.1 Phân rã Use case Tiếp nhận hồ sơ vay
+[NODE 422 p]
+
+[NODE 423 p]
+3.8.2.2 Đặc tả Use case Kiểm tra checklist
+[NODE 424 p]
+Bảng 3.2: Đặc tả use case Kiểm tra checklist
+[NODE 425 tbl]
+Tên use case | Kiểm tra checklist
+Mô tả | Mở rộng từ: Tiếp nhận hồ sơ vay. Cho phép cán bộ tín dụng kiểm tra từng mục tài liệu của đề nghị vay đã nộp.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách đề nghị.
+Hậu điều kiện | Từng mục được ghi nhận “Đã kiểm tra đạt” hoặc “Cần chỉnh sửa”.
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn “Danh sách hồ sơ”, chọn thẻ “Chờ tiếp nhận”. | 2. Hệ thống hiển thị danh sách đề nghị được giao.
+3. Nhấn nút “Xem đề nghị” tại đề nghị cần kiểm tra. | 4. Hệ thống hiển thị chi tiết đề nghị và danh sách mục cần kiểm tra.
+5. Xem tài liệu của từng mục và nhấn nút “Kiểm tra đạt”. | 6. Hệ thống cập nhật mục thành “Đã kiểm tra đạt”.
+Luồng sự kiện thay thế (Alternative flow)
+5.1. Mục chưa đạt: nhập lý do vào ô “Ghi nhận / lý do cần sửa” và nhấn nút “Yêu cầu sửa mục này”. Hệ thống cập nhật mục thành “Cần chỉnh sửa”. Chuyển sang use case “Trả sửa đề nghị”.
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Đề nghị đã thay đổi trong lúc kiểm tra: hệ thống báo “Lần gửi đã thay đổi.” Kết thúc use case.
+[NODE 426 bookmarkStart]
+
+[NODE 427 p]
+3.8.2.3 Đặc tả Use case Trả sửa đề nghị
+[NODE 428 p]
+Bảng 3.3: Đặc tả use case Trả sửa đề nghị
+[NODE 429 tbl]
+Tên use case | Trả sửa đề nghị
+Mô tả | Mở rộng từ: Tiếp nhận hồ sơ vay. Cho phép cán bộ tín dụng trả đề nghị về để doanh nghiệp chỉnh sửa khi checklist có mục chưa đạt.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách đề nghị. Có ít nhất một mục “Cần chỉnh sửa”.
+Hậu điều kiện | Đề nghị chuyển trạng thái “Cần chỉnh sửa đề nghị”.
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn “Danh sách hồ sơ”, chọn thẻ “Chờ tiếp nhận”. | 2. Hiển thị danh sách đề nghị được giao.
+3. Nhấn nút “Xem đề nghị” tại đề nghị cần xử lý. | 4. Hiển thị chi tiết đề nghị và checklist.
+5. Nhập nội dung cần sửa vào ô “Dữ liệu cần doanh nghiệp chỉnh sửa (nếu có)” và nhấn nút “Trả đề nghị để chỉnh sửa”. | 6. Hiển thị thông báo “Gửi danh sách chỉnh sửa tổng hợp cho doanh nghiệp?”.
+7. Nhấn “OK”. | 8. Chuyển trạng thái “Cần chỉnh sửa đề nghị”.
+ | 9. Hiển thị “Danh sách cần chỉnh sửa”.
+Luồng sự kiện thay thế (Alternative flow)
+4.1. Doanh nghiệp đã gửi đề nghị xin chỉnh sửa: nhập “Lý do xử lý đề nghị xin sửa” và nhấn nút “Đồng ý và trả sửa”. Hệ thống chuyển trạng thái “Cần chỉnh sửa đề nghị”. Kết thúc use case.
+Luồng sự kiện ngoại lệ (Exception flow)
+8.1. Doanh nghiệp đang có đề nghị xin sửa chưa xử lý: hệ thống báo “Cần xử lý đề nghị xin sửa của doanh nghiệp trước.” Kết thúc use case.
+[NODE 430 bookmarkStart]
+
+[NODE 431 p]
+3.8.2.4 Đặc tả Use case Đối soát công ty
+[NODE 432 p]
+Bảng 3.4: Đặc tả use case Đối soát công ty
+[NODE 433 tbl]
+Tên use case | Đối soát công ty
+Mô tả | Mở rộng từ: Tiếp nhận hồ sơ vay. Cho phép cán bộ tín dụng gửi yêu cầu đối soát khi thông tin doanh nghiệp khai báo khác dữ liệu đã có trong hệ thống.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách đề nghị. Mã số thuế đã có trong hệ thống.
+Hậu điều kiện | Yêu cầu đối soát được gửi tới quản lý chi nhánh, đề nghị tạm chưa tiếp nhận được.
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ", chọn thẻ "Chờ tiếp nhận". | 2. Hiển thị danh sách đề nghị được giao.
+3. Nhấn nút "Xem đề nghị". | 4. Hiển thị chi tiết đề nghị.
+5. Nhấn nút "Đối chiếu dữ liệu Company". | 6. Hiển thị các thông tin khác nhau giữa dữ liệu đã có và bản doanh nghiệp gửi.
+7. Nhập "Căn cứ đề nghị đối soát" và nhấn nút "Gửi đối soát Company". | 8. Ghi nhận yêu cầu đối soát.
+ | 9. Thông báo cho quản lý chi nhánh.
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Thông tin đã khớp: hệ thống báo "Thông tin đã khớp; không cần cập nhật Company." Kết thúc use case.
+8.1. Đã có yêu cầu đối soát đang chờ: hệ thống báo "Đang có đối soát Company chờ xử lý." Kết thúc use case.
+[NODE 434 p]
+3.8.2.5 Đặc tả Use case Tiếp nhận đề nghị
+[NODE 435 p]
+Bảng 3.5: Đặc tả use case Tiếp nhận đề nghị
+[NODE 436 tbl]
+Tên use case | Tiếp nhận đề nghị
+Mô tả | Mở rộng từ: Tiếp nhận hồ sơ vay. Cho phép cán bộ tín dụng tiếp nhận đề nghị vay đã đạt checklist để tạo hồ sơ vay.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách đề nghị. Checklist của đề nghị đã đạt toàn bộ.
+Hậu điều kiện | Hồ sơ vay được tạo với trạng thái "Mới tiếp nhận". Đề nghị chuyển trạng thái "Đã tiếp nhận".
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ", chọn thẻ "Chờ tiếp nhận". | 2. Hiển thị danh sách đề nghị được giao.
+3. Nhấn nút "Xem đề nghị" tại đề nghị cần tiếp nhận. | 4. Hiển thị chi tiết đề nghị và kết quả checklist.
+5. Nhấn nút "Kiểm tra doanh nghiệp để tiếp nhận". | 6. Hiển thị kết quả kiểm tra mã số thuế và nút "Tiếp nhận thành hồ sơ vay".
+7. Nhấn nút "Tiếp nhận thành hồ sơ vay". | 8. Hiển thị thông báo "Xác nhận tiếp nhận đề nghị và tạo hồ sơ vay?".
+9. Nhấn "OK". | 10. Tạo hồ sơ vay.
+ | 11. Chuyển đề nghị sang "Đã tiếp nhận".
+ | 12. Mở chi tiết hồ sơ vay vừa tạo.
+Luồng sự kiện thay thế (Alternative flow)
+6.1. Mã số thuế đã có trong hệ thống: hệ thống hiển thị doanh nghiệp hiện có. Cán bộ đánh dấu ô "Tôi xác nhận dùng doanh nghiệp hiện có để tạo hồ sơ vay..." rồi tiếp tục bước 7.
+6.2. Thông tin khai báo khác dữ liệu đã có: chuyển sang use case "Đối soát công ty".
+Luồng sự kiện ngoại lệ (Exception flow)
+5.1. Checklist chưa đạt toàn bộ hoặc doanh nghiệp đang có yêu cầu xin chỉnh sửa chờ xử lý: nút "Kiểm tra doanh nghiệp để tiếp nhận" không bấm được và hệ thống hiển thị "Chưa đủ điều kiện tiếp nhận...". Kết thúc use case.
+[NODE 437 p]
+3.8.3 Use case Quản lý chứng từ
+[NODE 438 p]
+3.8.3.1 Phân rã Use case Quản lý chứng từ
+[NODE 439 p]
+3.8.3.2 Đặc tả Use case Yêu cầu bổ sung
+[NODE 440 p]
+Bảng 3.6: Đặc tả use case Yêu cầu bổ sung
+[NODE 441 tbl]
+Tên use case | Yêu cầu bổ sung
+Mô tả | Mở rộng từ: Quản lý chứng từ. Cho phép cán bộ tín dụng yêu cầu doanh nghiệp bổ sung tài liệu sau khi đã tiếp nhận hồ sơ.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách hồ sơ. Hồ sơ không có yêu cầu bổ sung đang chờ.
+Hậu điều kiện | Hồ sơ chuyển trạng thái "Chờ bổ sung (Tạm dừng SLA)".
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ". | 2. Hiển thị giao diện "Danh sách hồ sơ".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần xử lý. | 4. Hiển thị chi tiết hồ sơ.
+5. Chọn thẻ "Yêu cầu bổ sung" và nhấn nút "Tạo yêu cầu bổ sung theo danh mục". | 6. Hiển thị form "Tạo yêu cầu bổ sung (tạm dừng SLA)".
+7. Nhập "Nội dung gửi doanh nghiệp", chọn "Loại tài liệu", nhập "Lý do cần bổ sung" cho từng mục và nhấn nút "Gửi yêu cầu & Tạm dừng SLA". | 8. Chuyển trạng thái "Chờ bổ sung (Tạm dừng SLA)".
+ | 9. Thông báo "Đã gửi yêu cầu bổ sung."
+Luồng sự kiện thay thế (Alternative flow)
+7.1. Cần bổ sung nhiều tài liệu: nhấn nút "Thêm mục". Hệ thống thêm một mục mới vào form. Tiếp tục bước 7.
+Luồng sự kiện ngoại lệ (Exception flow)
+8.1. Hai mục trùng nhau: hệ thống báo "Mục bổ sung trùng nhau." Quay lại bước 7.
+[NODE 442 p]
+3.8.3.3 Đặc tả Use case Giải quyết bổ sung
+[NODE 443 p]
+Bảng 3.7: Đặc tả use case Giải quyết bổ sung
+[NODE 444 tbl]
+Tên use case | Giải quyết bổ sung
+Mô tả | Mở rộng từ: Quản lý chứng từ. Cho phép cán bộ tín dụng kiểm tra tài liệu doanh nghiệp đã bổ sung và hoàn tất yêu cầu bổ sung.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách hồ sơ. Doanh nghiệp đã gửi tài liệu bổ sung.
+Hậu điều kiện | Yêu cầu bổ sung chuyển "Đã hoàn tất". Hồ sơ hết trạng thái chờ bổ sung.
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ". | 2. Hiển thị giao diện "Danh sách hồ sơ".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần xử lý. | 4. Hiển thị chi tiết hồ sơ.
+5. Chọn thẻ "Yêu cầu bổ sung". | 6. Hiển thị các mục bổ sung ở trạng thái "Đã gửi, chờ kiểm tra" kèm tài liệu.
+7. Nhập "Thông điệp gửi doanh nghiệp" và nhấn nút "Chấp nhận mục" cho từng mục. | 8. Cập nhật mục thành "Đã chấp nhận".
+9. Nhấn nút "Hoàn tất yêu cầu & Chạy lại SLA". | 10. Chuyển yêu cầu thành "Đã hoàn tất".
+ | 11. Thông báo "Đã hoàn tất yêu cầu bổ sung."
+Luồng sự kiện thay thế (Alternative flow)
+7.1. Tài liệu chưa đạt: nhấn nút "Yêu cầu thay thế". Hệ thống cập nhật mục thành "Cần thay thế". Cán bộ nhấn nút "Gửi danh sách sửa cho doanh nghiệp", hệ thống thông báo "Đã gửi danh sách sửa cho doanh nghiệp." Kết thúc use case.
+Luồng sự kiện ngoại lệ (Exception flow)
+10.1. Còn mục chưa được chấp nhận: hệ thống báo "Cần chấp nhận tất cả mục bổ sung trước khi hoàn tất." Quay lại bước 7.
+[NODE 445 p]
+3.8.3.4 Đặc tả Use case Xác nhận đủ hồ sơ
+[NODE 446 p]
+Bảng 3.8: Đặc tả use case Xác nhận đủ hồ sơ
+[NODE 447 tbl]
+Tên use case | Xác nhận đủ hồ sơ
+Mô tả | Mở rộng từ: Quản lý chứng từ. Cho phép cán bộ tín dụng xác nhận hồ sơ đã đủ chứng từ để lập tờ trình.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách hồ sơ. Hồ sơ ở công đoạn Tiếp nhận và không chờ bổ sung.
+Hậu điều kiện | Hồ sơ chuyển trạng thái "Đã đủ hồ sơ".
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ". | 2. Hiển thị giao diện "Danh sách hồ sơ".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần xử lý. | 4. Hiển thị chi tiết hồ sơ và nhắc kiểm tra danh mục chứng từ.
+5. Chọn thẻ "Danh mục chứng từ". | 6. Hiển thị danh sách tài liệu nộp ban đầu và tài liệu bổ sung.
+7. Nhấn nút "Xác nhận hồ sơ đầy đủ". | 8. Chuyển trạng thái "Đã đủ hồ sơ", nút đổi thành "Đã xác nhận đủ chứng từ".
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Hồ sơ đang chờ bổ sung: không hiển thị nút "Xác nhận hồ sơ đầy đủ". Kết thúc use case.
+[NODE 448 p]
+3.8.4 Use case Xác định hạn mức
+[NODE 449 p]
+Bảng 3.9: Đặc tả use case Xác định hạn mức
+[NODE 450 tbl]
+Tên use case | Xác định hạn mức
+Mô tả | Cho phép cán bộ tín dụng nhập hạn mức tín dụng chính thức cho hồ sơ vay.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách hồ sơ. Hồ sơ ở công đoạn Tiếp nhận và không chờ bổ sung.
+Hậu điều kiện | Hạn mức chính thức được cập nhật.
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ". | 2. Hiển thị giao diện "Danh sách hồ sơ".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần xử lý. | 4. Hiển thị chi tiết hồ sơ với ô "HẠN MỨC CHÍNH THỨC".
+5. Nhấn nút "Sửa". | 6. Hiển thị ô nhập "Hạn mức tín dụng phê duyệt chính thức (VNĐ)".
+7. Nhập hạn mức và nhấn nút "Lưu hạn mức". | 8. Cập nhật hạn mức chính thức trên chi tiết hồ sơ.
+Luồng sự kiện ngoại lệ (Exception flow)
+7.1. Hạn mức vượt 10 tỷ đồng: hệ thống hiển thị "Vượt hạn mức chi nhánh (tối đa 10 tỷ đồng)." và nút "Lưu hạn mức" không bấm được. Quay lại bước 7.
+[NODE 451 p]
+
+[NODE 452 p]
+3.8.5 Use case Lập tờ trình
+[NODE 453 p]
+3.8.5.1 Phân rã Use case Lập tờ trình
+[NODE 454 p]
+
+[NODE 455 p]
+3.8.5.2 Đặc tả Use case Lưu nháp tờ trình
+[NODE 456 p]
+Bảng 3.10: Đặc tả use case Lưu nháp tờ trình
+[NODE 457 tbl]
+Tên use case | Lưu nháp tờ trình
+Mô tả | Mở rộng từ: Lập tờ trình. Cho phép cán bộ tín dụng soạn và lưu nháp nội dung tờ trình tín dụng.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách hồ sơ. Tờ trình ở trạng thái "Đang lập" hoặc "CBTD cần làm rõ".
+Hậu điều kiện | Bản nháp tờ trình được lưu.
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ". | 2. Hiển thị giao diện "Danh sách hồ sơ".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần lập tờ trình. | 4. Hiển thị chi tiết hồ sơ và khung "Tờ trình tín dụng" gồm 8 ô nội dung.
+5. Nhập nội dung các ô và nhấn nút "Lưu nháp tờ trình". | 6. Thông báo "Đã lưu bản nháp."
+ | 7. Cho phép bấm "Trình tờ trình".
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Tờ trình vừa được thay đổi ở nơi khác: hệ thống báo "Tờ trình đã thay đổi. Vui lòng tải lại." Kết thúc use case.
+[NODE 458 p]
+3.8.5.3 Đặc tả Use case Trình tờ trình
+[NODE 459 p]
+Bảng 3.11: Đặc tả use case Trình tờ trình
+[NODE 460 tbl]
+Tên use case | Trình tờ trình
+Mô tả | Mở rộng từ: Lập tờ trình. Cho phép cán bộ tín dụng trình tờ trình đã lưu nháp để chuyển hồ sơ sang thẩm định, kể cả trình Bản 2 sau khi được yêu cầu làm rõ.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng và được giao phụ trách hồ sơ. Hồ sơ đã "Đã đủ hồ sơ", đã có hạn mức chính thức. Tờ trình đã được lưu nháp.
+Hậu điều kiện | Tờ trình chuyển trạng thái "Đã trình, chờ quyết định". Hồ sơ chuyển sang "Đang thẩm định".
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ". | 2. Hiển thị giao diện "Danh sách hồ sơ".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần trình. | 4. Hiển thị chi tiết hồ sơ và tờ trình đã lưu nháp.
+5. Nhấn nút "Trình tờ trình". | 6. Chuyển hồ sơ sang "Đang thẩm định".
+ | 7. Thông báo "Đã trình tờ trình."
+ | 8. Hiển thị "Bản đã trình 1".
+Luồng sự kiện thay thế (Alternative flow)
+4.1. Tờ trình đang ở trạng thái "CBTD cần làm rõ": hệ thống hiển thị nội dung "Yêu cầu làm rõ". Cán bộ sửa nội dung, nhấn "Lưu nháp tờ trình" rồi "Trình tờ trình". Hệ thống tạo "Bản đã trình 2" và giữ nguyên Bản 1.
+Luồng sự kiện ngoại lệ (Exception flow)
+5.1. Nội dung vừa sửa chưa lưu nháp: nút "Trình tờ trình" không bấm được và hệ thống nhắc "Vui lòng bấm Lưu nháp tờ trình trước khi Trình tờ trình...". Quay lại bước 5.
+6.1. Chưa xác nhận đủ chứng từ, chưa có hạn mức chính thức hoặc còn yêu cầu bổ sung: hệ thống báo lý do tương ứng ("Cần xác nhận đủ chứng từ trước khi trình.", "Cần xác nhận hạn mức chính thức trước khi trình.", "Cần hoàn tất bổ sung trước khi trình."). Kết thúc use case.
+6.2. Thiếu nội dung phân tích hoặc kết luận: hệ thống báo "Cần hoàn tất các phần phân tích và kết luận trước khi trình." Kết thúc use case.
+[NODE 461 p]
+3.8.6 Use case Tra cứu hồ sơ vay
+[NODE 462 p]
+Bảng 3.12: Đặc tả use case Tra cứu hồ sơ vay
+[NODE 463 tbl]
+Tên use case | Tra cứu hồ sơ vay
+Mô tả | Cho phép cán bộ tín dụng tìm kiếm và xem chi tiết các hồ sơ vay mình phụ trách.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ tín dụng.
+Hậu điều kiện | Hiển thị hồ sơ cần tìm.
+Actor chính | Cán bộ tín dụng
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ". | 2. Hiển thị danh sách hồ sơ dạng "Kanban Board".
+3. Nhập mã hồ sơ, tên doanh nghiệp hoặc MST vào ô tìm kiếm và nhấn nút "Tìm". | 4. Hiển thị các hồ sơ phù hợp.
+5. Nhấn nút "Chi tiết" tại hồ sơ cần xem. | 6. Hiển thị chi tiết hồ sơ.
+Luồng sự kiện thay thế (Alternative flow)
+3.1. Chọn bộ lọc công đoạn hoặc trạng thái: hệ thống hiển thị hồ sơ theo bộ lọc.
+3.2. Nhấn nút "Danh sách bảng": hệ thống hiển thị hồ sơ dạng bảng.
+Luồng sự kiện ngoại lệ (Exception flow)
+4.1. Không có hồ sơ phù hợp: hệ thống hiển thị danh sách trống. Quay lại bước 3.
+[NODE 464 p]
+
+[NODE 465 p]
+3.8.7 Use case Thẩm định hồ sơ vay
+[NODE 466 p]
+3.8.7.1 Phân rã Use case Thẩm định hồ sơ vay
+[NODE 467 p]
+
+[NODE 468 p]
+3.8.7.2 Đặc tả Use case Xem xét tờ trình
+[NODE 469 p]
+Bảng 3.13: Đặc tả use case Xem xét tờ trình
+[NODE 470 tbl]
+Tên use case | Xem xét tờ trình
+Mô tả | Mở rộng từ: Thẩm định hồ sơ vay. Cho phép cán bộ thẩm quyền xem hồ sơ, tờ trình và cảnh báo nguy cơ trễ hạn trước khi ra quyết định.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ thẩm quyền. Hồ sơ ở công đoạn Thẩm định.
+Hậu điều kiện | Hiển thị đầy đủ hồ sơ và tờ trình để thẩm định.
+Actor chính | Cán bộ thẩm quyền
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Thẩm định & phê duyệt". | 2. Hiển thị giao diện "Thẩm định & phê duyệt".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần xem xét. | 4. Hiển thị chi tiết hồ sơ, cảnh báo nguy cơ trễ hạn SLA và tờ trình ở chế độ chỉ xem.
+5. Chọn các thẻ "Tiến trình công đoạn SLA", "Danh mục chứng từ", "Yêu cầu bổ sung". | 6. Hiển thị nội dung tương ứng.
+Luồng sự kiện thay thế (Alternative flow)
+4.1. Nhấn nút "Chạy lại AI": hệ thống cập nhật mức rủi ro và xác suất trễ hạn.
+4.2. Nhấn vào "Bản đã trình" để xem các bản tờ trình trước: hệ thống hiển thị nội dung bản đó.
+Luồng sự kiện ngoại lệ (Exception flow)
+4.3. Cán bộ không độc lập với hồ sơ: hệ thống hiển thị cảnh báo, vẫn cho xem nhưng không cho quyết định hay yêu cầu làm rõ. Kết thúc use case.
+[NODE 471 p]
+3.8.7.3 Đặc tả Use case Yêu cầu làm rõ tờ trình
+[NODE 472 p]
+Bảng 3.14: Đặc tả use case Yêu cầu làm rõ tờ trình
+[NODE 473 tbl]
+Tên use case | Yêu cầu làm rõ tờ trình
+Mô tả | Mở rộng từ: Thẩm định hồ sơ vay. Cho phép cán bộ thẩm quyền yêu cầu cán bộ tín dụng giải trình thêm nội dung tờ trình.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ thẩm quyền và độc lập với hồ sơ. Tờ trình ở trạng thái "Đã trình, chờ quyết định".
+Hậu điều kiện | Tờ trình chuyển trạng thái "CBTD cần làm rõ".
+Actor chính | Cán bộ thẩm quyền
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Thẩm định & phê duyệt". | 2. Hiển thị giao diện "Thẩm định & phê duyệt".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần xử lý. | 4. Hiển thị chi tiết hồ sơ và tờ trình.
+5. Nhập "Nội dung cần CBTD làm rõ" và nhấn nút "Yêu cầu làm rõ tờ trình". | 6. Chuyển tờ trình sang "CBTD cần làm rõ".
+ | 7. Thông báo "Đã gửi yêu cầu làm rõ cho CBTD."
+Luồng sự kiện ngoại lệ (Exception flow)
+4.1. Cán bộ không độc lập với hồ sơ: hệ thống hiển thị cảnh báo và vô hiệu hóa nút "Yêu cầu làm rõ tờ trình". Kết thúc use case.
+[NODE 474 p]
+3.8.8 Use case Quyết định tín dụng
+[NODE 475 p]
+3.8.8.1 Phân rã Use case Quyết định tín dụng
+[NODE 476 p]
+
+[NODE 477 p]
+3.8.8.2 Đặc tả Use case Phê duyệt
+[NODE 478 p]
+Bảng 3.15: Đặc tả use case Phê duyệt
+[NODE 479 tbl]
+Tên use case | Phê duyệt
+Mô tả | Mở rộng từ: Quyết định tín dụng. Cho phép cán bộ thẩm quyền phê duyệt khoản vay kèm số tiền và lãi suất.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ thẩm quyền và độc lập với hồ sơ (không phải người thụ lý, tiếp nhận hay lập tờ trình). Hồ sơ đã có tờ trình.
+Hậu điều kiện | Hồ sơ chuyển trạng thái "Đã phê duyệt", kết thúc xử lý.
+Actor chính | Cán bộ thẩm quyền
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Thẩm định & phê duyệt". | 2. Hiển thị giao diện "Thẩm định & phê duyệt".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần quyết định. | 4. Hiển thị chi tiết hồ sơ và tờ trình.
+5. Nhấn nút "Phê duyệt Khoản vay". | 6. Hiển thị form "Xác nhận Phê duyệt Cấp tín dụng" gồm số tiền và lãi suất phê duyệt.
+7. Nhập số tiền, lãi suất và nhấn nút "Xác nhận Phê duyệt". | 8. Chuyển trạng thái "Đã phê duyệt".
+Luồng sự kiện ngoại lệ (Exception flow)
+7.2. Số tiền vượt hạn mức chính thức, nhỏ hơn hoặc bằng 0, hoặc lãi suất ngoài khoảng 0–100%: hệ thống báo lỗi tại ô nhập và nút "Xác nhận Phê duyệt" không bấm được. Quay lại bước 7.
+4.1. Cán bộ không độc lập với hồ sơ: hệ thống hiển thị cảnh báo và vô hiệu hóa nút "Phê duyệt Khoản vay". Kết thúc use case.
+[NODE 480 p]
+3.8.8.3 Đặc tả Use case Từ chối
+[NODE 481 p]
+Bảng 3.16: Đặc tả use case Từ chối
+[NODE 482 tbl]
+Tên use case | Từ chối
+Mô tả | Mở rộng từ: Quyết định tín dụng. Cho phép cán bộ thẩm quyền từ chối khoản vay kèm lý do chuẩn và giải trình.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền cán bộ thẩm quyền và độc lập với hồ sơ. Hồ sơ đã có tờ trình.
+Hậu điều kiện | Hồ sơ chuyển trạng thái "Bị từ chối", kết thúc xử lý.
+Actor chính | Cán bộ thẩm quyền
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Thẩm định & phê duyệt". | 2. Hiển thị giao diện "Thẩm định & phê duyệt".
+3. Nhấn nút "Chi tiết" tại hồ sơ cần quyết định. | 4. Hiển thị chi tiết hồ sơ và tờ trình.
+5. Nhấn nút "Từ chối (TC01 - TC05)". | 6. Hiển thị form gồm "Mã lý do từ chối" (TC01–TC05) và "Ghi chú giải trình chi tiết".
+7. Chọn lý do, nhập giải trình và nhấn nút "Xác nhận Từ chối hồ sơ". | 8. Chuyển trạng thái "Bị từ chối".
+Luồng sự kiện ngoại lệ (Exception flow)
+7.2. Chưa nhập giải trình: hệ thống báo "Vui lòng nhập lý do giải thích từ chối". Quay lại bước 7.
+4.1. Cán bộ không độc lập với hồ sơ: hệ thống hiển thị cảnh báo và vô hiệu hóa nút "Từ chối (TC01 - TC05)". Kết thúc use case.
+[NODE 483 p]
+
+[NODE 484 p]
+3.8.9 Use case Phân công hồ sơ
+[NODE 485 p]
+3.8.9.1 Phân rã Use case Phân công hồ sơ
+[NODE 486 p]
+3.8.9.2 Đặc tả Use case Phân công cán bộ tín dụng
+[NODE 487 p]
+Bảng 3.17: Đặc tả use case Phân công cán bộ tín dụng
+[NODE 488 tbl]
+Tên use case | Phân công cán bộ tín dụng
+Mô tả | Mở rộng từ: Phân công hồ sơ. Cho phép quản lý chi nhánh giao đề nghị vay mới cho một cán bộ tín dụng phụ trách.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh. Đề nghị ở trạng thái "Chờ phân công".
+Hậu điều kiện | Đề nghị chuyển trạng thái "Đã phân công — chờ tiếp nhận". Cán bộ được giao nhận thông báo.
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ", chọn thẻ "Chờ tiếp nhận". | 2. Hiển thị danh sách đề nghị từ cổng doanh nghiệp.
+3. Nhấn nút "Xem đề nghị" tại đề nghị chưa phân công. | 4. Hiển thị chi tiết đề nghị và form "Phân công cán bộ tín dụng".
+5. Chọn cán bộ tín dụng, nhập "Ghi chú phân công" và nhấn nút "Phân công đề nghị". | 6. Hiển thị thông báo "Xác nhận phân công đề nghị cho cán bộ đã chọn?".
+7. Nhấn "OK". | 8. Chuyển trạng thái "Đã phân công — chờ tiếp nhận".
+ | 9. Thông báo "Đã lưu phân công."
+Luồng sự kiện ngoại lệ (Exception flow)
+8.1. Đề nghị vừa được người khác phân công: hệ thống báo phân công đã thay đổi và hiển thị nút "Tải lại phân công". Kết thúc use case.
+[NODE 489 p]
+3.8.9.3 Đặc tả Use case Điều chuyển hồ sơ
+[NODE 490 p]
+Bảng 3.18: Đặc tả use case Điều chuyển hồ sơ
+[NODE 491 tbl]
+Tên use case | Điều chuyển hồ sơ
+Mô tả | Mở rộng từ: Phân công hồ sơ. Cho phép quản lý chi nhánh chuyển hồ sơ vay đang xử lý sang cán bộ tín dụng khác.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh. Hồ sơ chưa kết thúc.
+Hậu điều kiện | Hồ sơ được giao cho cán bộ mới. Cán bộ cũ và cán bộ mới nhận thông báo.
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Điều chuyển & phân công". | 2. Hiển thị bảng tải công việc của cán bộ và danh sách hồ sơ đang xử lý.
+3. Nhấn nút "Điều chuyển" tại hồ sơ cần chuyển. | 4. Hiển thị form "Điều chuyển Hồ sơ" gồm cán bộ nhận và lý do điều chuyển.
+5. Chọn cán bộ nhận, nhập "Lý do điều chuyển" và nhấn nút "Xác nhận Điều chuyển". | 6. Cập nhật cán bộ phụ trách.
+ | 7. Thông báo "Điều chuyển hồ sơ thành công."
+Luồng sự kiện thay thế (Alternative flow)
+1.1. Đề nghị chưa được tiếp nhận: tại "Danh sách hồ sơ" → thẻ "Chờ tiếp nhận" → "Xem đề nghị", chọn cán bộ khác, nhập "Lý do điều chuyển" và nhấn nút "Điều chuyển đề nghị". Hệ thống cập nhật cán bộ phụ trách đề nghị.
+Luồng sự kiện ngoại lệ (Exception flow)
+5.2. Chưa nhập lý do điều chuyển: hệ thống báo "Vui lòng nhập lý do điều chuyển, tối đa 2.000 ký tự." Quay lại bước 5.
+6.1. Hồ sơ đã kết thúc: hệ thống báo "Hồ sơ đã kết thúc, không thể điều chuyển." Kết thúc use case.
+[NODE 492 p]
+3.8.9.4 Đặc tả Use case Duyệt đề nghị điều phối
+[NODE 493 p]
+Bảng 3.19: Đặc tả use case Duyệt đề nghị điều phối
+[NODE 494 tbl]
+Tên use case | Duyệt đề nghị điều phối
+Mô tả | Mở rộng từ: Phân công hồ sơ. Cho phép quản lý chi nhánh chấp thuận hoặc không chấp thuận đề nghị chuyển người xử lý do cán bộ tín dụng gửi.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh. Có đề nghị điều phối "Chờ quản lý xử lý".
+Hậu điều kiện | Đề nghị chuyển trạng thái "Đã chấp thuận điều phối" hoặc "Không chấp thuận điều phối".
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Điều chuyển & phân công". | 2. Hiển thị danh sách "Đề nghị điều phối chờ quản lý".
+3. Nhấn nút "Xem điều phối" tại đề nghị cần xử lý. | 4. Hiển thị chi tiết đề nghị và lý do của cán bộ.
+5. Chọn "Cán bộ nhận bàn giao", nhập "Căn cứ quyết định" và nhấn nút "Chấp thuận và bàn giao". | 6. Chuyển hồ sơ sang cán bộ mới.
+ | 7. Cập nhật trạng thái "Đã chấp thuận điều phối".
+Luồng sự kiện thay thế (Alternative flow)
+5.1. Không đồng ý điều phối: nhập "Căn cứ quyết định", đánh dấu "Tôi xác nhận CBTD hiện tại còn đủ điều kiện và thực tế có thể tiếp tục xử lý" và nhấn nút "Không chấp thuận điều phối". Hệ thống cập nhật trạng thái "Không chấp thuận điều phối".
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Đề nghị đã được giải quyết hoặc hết hiệu lực: hệ thống báo "Đề nghị đã được giải quyết hoặc hết hiệu lực." Kết thúc use case.
+[NODE 495 p]
+3.8.9.5 Đặc tả Use case Duyệt báo xung đột lợi ích (COI)
+[NODE 496 p]
+Bảng 3.20: Đặc tả use case Duyệt báo xung đột lợi ích (COI)
+[NODE 497 tbl]
+Tên use case | Duyệt báo xung đột lợi ích (COI)
+Mô tả | Mở rộng từ: Phân công hồ sơ. Cho phép quản lý chi nhánh xử lý báo cáo xung đột lợi ích của cán bộ tín dụng bằng cách bàn giao hồ sơ hoặc kết luận không có xung đột.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh. Có đề nghị lý do "Xung đột lợi ích" đang chờ xử lý.
+Hậu điều kiện | Đề nghị được giải quyết, hồ sơ được mở khóa thao tác.
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Điều chuyển & phân công". | 2. Hiển thị danh sách "Đề nghị điều phối chờ quản lý", đề nghị xung đột lợi ích được ưu tiên trên đầu.
+3. Nhấn nút "Xem điều phối" tại đề nghị xung đột lợi ích. | 4. Hiển thị chi tiết đề nghị và cảnh báo hồ sơ đang bị chặn thao tác.
+5. Chọn "Cán bộ nhận bàn giao", nhập "Căn cứ quyết định" và nhấn nút "Chấp thuận và bàn giao". | 6. Chuyển hồ sơ sang cán bộ mới.
+ | 7. Cập nhật trạng thái "Đã chấp thuận điều phối".
+Luồng sự kiện thay thế (Alternative flow)
+5.1. Kết luận không có xung đột: nhập "Căn cứ quyết định", đánh dấu hai ô xác nhận (cán bộ còn tiếp tục xử lý được và không có xung đột lợi ích) rồi nhấn nút "Không chấp thuận điều phối". Hệ thống cập nhật trạng thái "Không chấp thuận điều phối", cán bộ cũ tiếp tục xử lý.
+[NODE 498 p]
+3.8.9.6 Đặc tả Use case Duyệt đối soát công ty
+[NODE 499 p]
+Bảng 3.21: Đặc tả use case Duyệt đối soát công ty
+[NODE 500 tbl]
+Tên use case | Duyệt đối soát công ty
+Mô tả | Mở rộng từ: Phân công hồ sơ. Cho phép quản lý chi nhánh xác nhận hoặc không chấp thuận yêu cầu cập nhật thông tin doanh nghiệp do cán bộ tín dụng gửi.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh. Đề nghị có yêu cầu đối soát công ty đang chờ.
+Hậu điều kiện | Thông tin doanh nghiệp được cập nhật theo bản gửi, hoặc giữ nguyên nếu không chấp thuận.
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Danh sách hồ sơ", chọn thẻ "Chờ tiếp nhận". | 2. Hiển thị danh sách đề nghị.
+3. Nhấn nút "Xem đề nghị" tại đề nghị có yêu cầu đối soát. | 4. Hiển thị thông tin doanh nghiệp trước và sau khi đối soát.
+5. Nhập "Căn cứ quyết định đối soát" và nhấn nút "Xác nhận đối soát và cập nhật Company". | 6. Hiển thị thông báo xác nhận cập nhật Company.
+7. Nhấn "OK". | 8. Cập nhật thông tin doanh nghiệp.
+ | 9. Hồ sơ vay cũ giữ nguyên thông tin trước đó.
+Luồng sự kiện thay thế (Alternative flow)
+5.1. Không đồng ý: nhập căn cứ và nhấn nút "Không chấp thuận đối soát". Hệ thống giữ nguyên thông tin doanh nghiệp.
+[NODE 501 p]
+[CẦN XÁC NHẬN: các nút duyệt đối soát đang nằm trong khối "Vướng mắc cần xử lý" của màn hình đề nghị, là khối sắp gỡ cùng "Quản lý vấn đề hồ sơ". Cần giữ lại phần đối soát công ty khi gỡ.]
+[NODE 502 p]
+3.8.10 Use case Theo dõi hồ sơ
+[NODE 503 p]
+3.8.10.1 Phân rã Use case Theo dõi hồ sơ
+[NODE 504 p]
+3.8.10.2 Đặc tả Use case Xem cảnh báo xử lý chậm
+[NODE 505 p]
+Bảng 3.22: Đặc tả use case Xem cảnh báo xử lý chậm
+[NODE 506 tbl]
+Tên use case | Xem cảnh báo xử lý chậm
+Mô tả | Mở rộng từ: Theo dõi hồ sơ. Cho phép quản lý chi nhánh xem các hồ sơ có nguy cơ trễ hạn SLA do mô hình học máy cảnh báo.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh.
+Hậu điều kiện | Hiển thị danh sách hồ sơ có nguy cơ trễ hạn.
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Dashboard tổng quan". | 2. Hiển thị giao diện "Dashboard tổng quan" và "Bảng Cảnh báo Sớm AI" gồm mức độ rủi ro, xác suất trễ và nguyên nhân chính.
+3. Nhấn nút "Xử lý" tại hồ sơ cần xem. | 4. Hiển thị chi tiết hồ sơ.
+Luồng sự kiện thay thế (Alternative flow)
+3.1. Nhấn nút "Điều phối cán bộ": hệ thống chuyển sang giao diện "Điều chuyển & phân công".
+Luồng sự kiện ngoại lệ (Exception flow)
+2.1. Không có hồ sơ có nguy cơ: hệ thống hiển thị "Không có hồ sơ nào trong diện cảnh báo nguy cơ trễ hạn." Kết thúc use case.
+[NODE 507 p]
+3.8.10.3 Đặc tả Use case Xem báo cáo thống kê
+[NODE 508 p]
+Bảng 3.23: Đặc tả use case Xem báo cáo thống kê
+[NODE 509 tbl]
+Tên use case | Xem báo cáo thống kê
+Mô tả | Mở rộng từ: Theo dõi hồ sơ. Cho phép quản lý chi nhánh xem các chỉ số xử lý hồ sơ và điểm nghẽn SLA của chi nhánh.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh.
+Hậu điều kiện | Hiển thị số liệu thống kê.
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Dashboard tổng quan". | 2. Hiển thị các chỉ số "Hồ sơ đang xử lý", "Tỷ lệ đúng hạn SLA", "Cảnh báo Đỏ (AI High Risk)", "Hồ sơ đã phê duyệt".
+3. Xem bảng "Phân tích Điểm nghẽn Quy trình SLA". | 4. Hiển thị SLA định mức, thời gian thực tế trung bình, số lượt trễ hạn và đánh giá điểm nghẽn của từng công đoạn.
+Luồng sự kiện ngoại lệ (Exception flow)
+2.1. Không tải được số liệu: hệ thống báo lỗi. Kết thúc use case.
+[NODE 510 p]
+3.8.11 Use case Đóng hồ sơ quá hạn
+[NODE 511 p]
+Bảng 3.24: Đặc tả use case Đóng hồ sơ quá hạn
+[NODE 512 tbl]
+Tên use case | Đóng hồ sơ quá hạn
+Mô tả | Cho phép quản lý chi nhánh đóng hồ sơ mà doanh nghiệp không bổ sung chứng từ sau thời hạn.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản lý chi nhánh và không phải người phụ trách hay người tiếp nhận hồ sơ. Hồ sơ đang chờ bổ sung và đã quá hạn.
+Hậu điều kiện | Hồ sơ chuyển trạng thái "Đã đóng (quá hạn bổ sung)", kết thúc xử lý.
+Actor chính | Quản lý chi nhánh
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Dashboard tổng quan". | 2. Hiển thị danh sách "Hồ sơ quá hạn bổ sung chứng từ".
+3. Chọn hồ sơ cần đóng. | 4. Hiển thị chi tiết hồ sơ.
+5. Nhấn nút "Đóng hồ sơ do quá hạn". | 6. Hiển thị form "Đóng hồ sơ do quá hạn bổ sung".
+7. Nhập "Lý do đóng hồ sơ" và nhấn nút "Xác nhận đóng hồ sơ". | 8. Chuyển trạng thái "Đã đóng (quá hạn bổ sung)".
+Luồng sự kiện ngoại lệ (Exception flow)
+4.1. Quản lý đang phụ trách hoặc là người tiếp nhận hồ sơ: hệ thống hiển thị cảnh báo và vô hiệu hóa nút "Đóng hồ sơ do quá hạn". Kết thúc use case.
+8.1. Doanh nghiệp đã gửi đủ chứng từ và đang chờ ngân hàng kiểm tra: hệ thống không cho đóng hồ sơ. Kết thúc use case.
+[NODE 513 p]
+3.8.12 Use case Quản lý người dùng
+[NODE 514 p]
+3.8.12.1 Phân rã Use case Quản lý người dùng
+[NODE 515 p]
+3.8.12.2 Đặc tả Use case Thêm người dùng
+[NODE 516 p]
+Bảng 3.25: Đặc tả use case Thêm người dùng
+[NODE 517 tbl]
+Tên use case | Thêm người dùng
+Mô tả | Mở rộng từ: Quản lý người dùng. Cho phép quản trị viên tạo tài khoản cho cán bộ mới.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản trị viên.
+Hậu điều kiện | Tài khoản mới được tạo và hiển thị trong danh sách.
+Actor chính | Quản trị viên
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Liên hệ cá nhân". | 2. Hiển thị giao diện danh sách người dùng.
+3. Nhấn nút "Tạo mới liên hệ". | 4. Hiển thị form "Tạo tài khoản" gồm "Tên đăng nhập", "Mật khẩu ban đầu", "Email", "Họ tên", "Chi nhánh", "Điện thoại" và "Vai trò".
+5. Nhập thông tin, chọn ít nhất một vai trò và nhấn nút "Lưu tài khoản". | 6. Thêm tài khoản vào danh sách.
+ | 7. Thông báo "Đã lưu tài khoản và vai trò."
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Tên đăng nhập hoặc email đã tồn tại: hệ thống báo "Tên đăng nhập hoặc Email đã tồn tại trong hệ thống." Quay lại bước 5.
+[NODE 518 p]
+3.8.12.3 Đặc tả Use case Sửa người dùng
+[NODE 519 p]
+Bảng 3.26: Đặc tả use case Sửa người dùng
+[NODE 520 tbl]
+Tên use case | Sửa người dùng
+Mô tả | Mở rộng từ: Quản lý người dùng. Cho phép quản trị viên cập nhật thông tin và vai trò của tài khoản cán bộ.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản trị viên.
+Hậu điều kiện | Thông tin và vai trò của tài khoản được cập nhật.
+Actor chính | Quản trị viên
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Liên hệ cá nhân". | 2. Hiển thị giao diện danh sách người dùng.
+3. Nhấn nút "Sửa / Cấp quyền" tại tài khoản cần sửa. | 4. Hiển thị form "Cập nhật tài khoản" gồm "Họ tên", "Chi nhánh", "Điện thoại" và "Vai trò".
+5. Sửa thông tin hoặc chọn lại vai trò và nhấn nút "Lưu tài khoản". | 6. Cập nhật tài khoản trong danh sách.
+ | 7. Thông báo "Đã lưu tài khoản và vai trò."
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Tự bỏ vai trò Quản trị của chính mình: hệ thống báo "Không thể tự khóa tài khoản hoặc tự bỏ quyền Quản trị của chính mình." Quay lại bước 5.
+6.2. Bỏ vai trò cán bộ tín dụng khi cán bộ còn hồ sơ chưa bàn giao: hệ thống báo lỗi kèm số hồ sơ cần điều chuyển trước. Quay lại bước 5.
+[NODE 521 p]
+3.8.12.4 Đặc tả Use case Khóa và mở khóa tài khoản
+[NODE 522 p]
+Bảng 3.27: Đặc tả use case Khóa và mở khóa tài khoản
+[NODE 523 tbl]
+Tên use case | Khóa và mở khóa tài khoản
+Mô tả | Mở rộng từ: Quản lý người dùng. Cho phép quản trị viên khóa hoặc mở khóa tài khoản cán bộ.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản trị viên.
+Hậu điều kiện | Trạng thái tài khoản được cập nhật thành "Đã khóa" hoặc "Hoạt động".
+Actor chính | Quản trị viên
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Liên hệ cá nhân". | 2. Hiển thị giao diện danh sách người dùng.
+3. Nhấn nút "Sửa / Cấp quyền" tại tài khoản cần khóa. | 4. Hiển thị form "Cập nhật tài khoản".
+5. Bỏ chọn ô "Tài khoản hoạt động" (hoặc chọn lại để mở khóa) và nhấn nút "Lưu tài khoản". | 6. Cập nhật trạng thái tài khoản.
+ | 7. Thông báo "Đã lưu tài khoản và vai trò."
+Luồng sự kiện ngoại lệ (Exception flow)
+6.1. Tự khóa tài khoản của chính mình: hệ thống báo "Không thể tự khóa tài khoản hoặc tự bỏ quyền Quản trị của chính mình." Kết thúc use case.
+6.2. Cán bộ còn hồ sơ chưa hoàn tất hoặc đề nghị đang phụ trách: hệ thống báo lỗi kèm số hồ sơ cần điều chuyển trước. Kết thúc use case.
+[NODE 524 p]
+3.8.13 Use case Cấu hình SLA
+[NODE 525 p]
+Bảng 3.28: Đặc tả use case Cấu hình SLA
+[NODE 526 tbl]
+Tên use case | Cấu hình SLA
+Mô tả | Cho phép quản trị viên điều chỉnh thời gian xử lý chuẩn (giờ) của từng công đoạn.
+Tiền điều kiện | Đăng nhập thành công vào hệ thống. Được phân quyền quản trị viên.
+Hậu điều kiện | Định mức SLA mới được áp dụng cho các công đoạn mở sau khi lưu.
+Actor chính | Quản trị viên
+Luồng sự kiện chính (Basic flow)
+Actor | System
+1. Nhấn chọn "Cấu hình SLA". | 2. Hiển thị danh sách công đoạn gồm "Tên công đoạn" và "SLA (giờ)".
+3. Nhập số giờ mới cho công đoạn và nhấn nút "Lưu" tại dòng đó. | 4. Thông báo "Đã cập nhật <tên công đoạn>."

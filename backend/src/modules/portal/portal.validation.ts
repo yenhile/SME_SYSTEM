@@ -99,7 +99,7 @@ async function validateWorkbook(buffer: Buffer) {
 export async function validatePortalFile(group: string, file: PortalFile) {
   const ext = file && extname(file.originalname).toLowerCase();
   const allowed = group==='B'||group==='F' ? ['.pdf','.xlsx'] : group==='E' ? ['.pdf','.jpg','.jpeg','.png'] : ['.pdf'];
-  if (!groups.includes(group) || !file?.buffer || !allowed.includes(ext) || !file.size || file.size !== file.buffer.length || file.size > 10*1024*1024) throw new BadRequestException('Nhóm hoặc loại tệp không hợp lệ; dung lượng tối đa 10 MB.');
+  if (!groups.includes(group) || !file?.buffer || !allowed.includes(ext) || !file.size || file.size !== file.buffer.length || file.size > 10*1024*1024) throw new BadRequestException('Tệp không đúng định dạng cho loại tài liệu này hoặc vượt 10 MB.');
   try {
     if (ext === '.pdf') {
       if (!file.buffer.subarray(0,5).equals(Buffer.from('%PDF-')) || !file.buffer.subarray(-2048).includes(Buffer.from('%%EOF'))) throw new Error('PDF signature');

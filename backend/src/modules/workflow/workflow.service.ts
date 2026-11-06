@@ -1,12 +1,32 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { LoanStatus, StageCode, SupplementStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
+import {assertNoCoordinationConflict,obsoleteCoordination} from '../assignments/assignment-coordination';
 import { PredictionService } from '../prediction/prediction.service';
 import { TransitionStageDto } from './dto/transition-stage.dto';
 import { CloseOverdueDto } from './dto/close-overdue.dto';
 import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
 import { waitingOn } from '../supplements/portal-supplement';
 import { computeStageClosing, loadPauseIntervals, resolveStageSla } from './sla/sla-policy';
+import { assertBranchAmount } from './loan-policy';
+import { assertReportDecision } from '../appraisal/appraisal.logic';
+import { isPublicRejectionReasonCode, PUBLIC_REJECTION_REASONS } from '../portal/portal.tracking';
+import { Prisma } from '@prisma/client';
+
+function decisionNotice(applicationCode: string, dto: TransitionStageDto) {
+  if (dto.targetStatus === LoanStatus.APPROVED) {
+    return {
+      title: 'Hồ sơ đã được phê duyệt',
+      message: `Hồ sơ ${applicationCode} đã được phê duyệt ${Number(dto.approvedAmount).toLocaleString('vi-VN')} VNĐ, lãi suất ${Number(dto.interestRate).toLocaleString('vi-VN')}%/năm.`,
+    };
+  }
+  const code = dto.rejectionReasonCode as string;
+  return {
+    title: 'Hồ sơ bị từ chối',
+    message: `Hồ sơ ${applicationCode} bị từ chối: ${code} - ${PUBLIC_REJECTION_REASONS[code]}. Giải trình: ${dto.rejectionNote?.trim()}`,
+  };
+}
+
 @Injectable()
 export class WorkflowService {
   private readonly logger = new Logger(WorkflowService.name);
@@ -15,37 +35,50 @@ export class WorkflowService {
   async getWorkflowHistory(applicationId: string) {
     return this.prisma.applicationStageHistory.findMany({ where: { applicationId }, include: { stage: true, handler: { select: { id: true, fullName: true, username: true } } }, orderBy: { enteredAt: 'asc' } });
   }
-  async transitionStage(applicationId: string, dto: TransitionStageDto, user: { id: string; activeRole: string }, clock: Date = new Date()) {
-    const updated = await this.prisma.$transaction(async tx => {
+  async transitionStage(applicationId: string, dto: TransitionStageDto, user: { id: string; activeRole: string }, clock: Date = new Date(), transaction?: Prisma.TransactionClient) {
+    const run = async (tx: Prisma.TransactionClient) => {
       // Serialize competing transitions of the same application.
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
       const loan = await tx.loanApplication.findUnique({ where: { id: applicationId } });
       if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ.');
+      await assertNoCoordinationConflict(tx,{applicationId},user.id,dto.targetStage==='HOAN_TAT'&&['APPROVED','REJECTED'].includes(dto.targetStatus));
       if (loan.completedAt || loan.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc, không thể chuyển trạng thái.');
       if (loan.currentStatus === LoanStatus.SUPPLEMENT_REQUIRED) throw new BadRequestException('Cần giải quyết yêu cầu bổ sung trước khi chuyển công đoạn.');
       const fromReception = loan.currentStage === StageCode.TIEP_NHAN;
       if (user.activeRole !== (fromReception ? 'CBTD' : 'THAM_QUYEN')) throw new ForbiddenException('Vai trò đang dùng không được xử lý công đoạn này.');
       if (fromReception && loan.assignedTo !== user.id) throw new ForbiddenException('Hồ sơ chưa được phân công cho bạn.');
       if (!fromReception && loan.assignedTo === user.id) throw new ForbiddenException('Bạn đã xử lý hồ sơ này ở công đoạn Tiếp nhận nên không được tự thẩm định hoặc phê duyệt.');
-      if (!fromReception && loan.assignedTo === user.id) throw new ForbiddenException('Bạn đã xử lý hồ sơ này ở công đoạn Tiếp nhận nên không được tự thẩm định hoặc phê duyệt.');
+      let decidedReport: { report: any; version: any } | null = null;
+      if (loan.businessPolicyVersion) {
+        assertBranchAmount(loan.officialAmount || loan.proposedAmount);
+        if (fromReception) {
+          const report = await tx.appraisalReport.findUnique({where:{applicationId}});
+          if (report?.status !== 'SUBMITTED') throw new BadRequestException('Cần lập và trình tờ trình trước khi chuyển Thẩm định.');
+        } else {
+          decidedReport = await assertReportDecision(tx,loan,user,dto.reportVersionId);
+        }
+      }
       const amount = Number(loan.officialAmount || loan.proposedAmount);
       if (fromReception) {
         if (dto.targetStage !== StageCode.THAM_DINH || dto.targetStatus !== LoanStatus.PENDING_APPRAISAL) throw new BadRequestException('Tiếp nhận chỉ được chuyển sang Thẩm định.');
         if (!loan.isDocumentComplete || loan.currentStatus !== LoanStatus.CHECKED) throw new BadRequestException('Cần xác nhận đầy đủ chứng từ trước khi chuyển thẩm định.');
       } else if (dto.targetStage === StageCode.HOAN_TAT && dto.targetStatus === LoanStatus.REJECTED) {
-        if (!dto.rejectionReasonCode || !dto.rejectionNote?.trim()) throw new BadRequestException('Cần mã và lý do từ chối.');
-      } else if (loan.currentStage === StageCode.THAM_DINH && dto.targetStage === StageCode.CAP_TREN && dto.targetStatus === LoanStatus.WAITING_HEAD_OFFICE) {
-        // Escalation follows appraisal; the existing policy also allows escalation below the limit.
+        if (!isPublicRejectionReasonCode(dto.rejectionReasonCode)) throw new BadRequestException('Mã lý do từ chối không hợp lệ. Phải thuộc danh mục chuẩn TC01-TC05.');
+        if (!dto.rejectionNote?.trim()) throw new BadRequestException('Cần mã và lý do từ chối.');
       } else if (dto.targetStage === StageCode.HOAN_TAT && dto.targetStatus === LoanStatus.APPROVED) {
-        if (loan.currentStage === StageCode.THAM_DINH && amount > 10000000000) throw new BadRequestException('Khoản vay vượt 10 tỷ phải trình cấp trên trước khi phê duyệt.');
+        if (amount > 10000000000) throw new BadRequestException('Khoản vay vượt hạn mức chi nhánh (tối đa 10 tỷ), không thể phê duyệt.');
         if (!Number.isFinite(dto.approvedAmount) || dto.approvedAmount! <= 0 || dto.approvedAmount! > amount) throw new BadRequestException('Số tiền phê duyệt phải dương và không vượt hạn mức.');
         if (!Number.isFinite(dto.interestRate) || dto.interestRate! < 0 || dto.interestRate! > 100) throw new BadRequestException('Lãi suất phải từ 0 đến 100%.');
       } else throw new BadRequestException('Cặp công đoạn và trạng thái không hợp lệ.');
       if (dto.officialAmount !== undefined) throw new BadRequestException('Xác định hạn mức ở công đoạn tiếp nhận, trước khi chuyển thẩm định.');
       const target = await tx.workflowStage.findUnique({ where: { stageCode: dto.targetStage } });
       if (!target) throw new BadRequestException('Chưa cấu hình công đoạn đích.');
+      if (decidedReport) {
+        await tx.appraisalReport.update({ where: { id: decidedReport.report.id }, data: { status: 'DECIDED', decidedVersionId: decidedReport.version.id, revision: { increment: 1 } } });
+      }
       const now = clock;
       const terminal = dto.targetStage === StageCode.HOAN_TAT;
+      if(terminal)await obsoleteCoordination(tx,{applicationId},'LOAN_COMPLETED');
       // Cách tính của công đoạn mới được chốt ngay lúc mở; công đoạn đang mở giữ cách tính đã lưu của nó.
       const mode = await resolveStageSla(tx, now, !terminal);
       const current = await tx.applicationStageHistory.findFirst({ where: { applicationId, exitedAt: null }, orderBy: { enteredAt: 'desc' } });
@@ -58,14 +91,18 @@ export class WorkflowService {
         handledBy: user.id, notes: dto.notes, ...mode,
         ...(terminal ? { exitedAt: now, actualDurationHours: 0, netWorkDurationHours: 0 } : {}),
       } });
+      if (terminal && loan.assignedTo) {
+        await tx.internalNotification.createMany({ data: [{ userId: loan.assignedTo, applicationId, ...decisionNotice(loan.applicationCode, dto) }] });
+      }
       return tx.loanApplication.update({ where: { id: applicationId }, data: {
         currentStage: dto.targetStage, currentStatus: dto.targetStatus,
         completedAt: terminal ? now : null,
         ...(dto.targetStatus === LoanStatus.APPROVED ? { approvedAmount: dto.approvedAmount, interestRate: dto.interestRate } : {}),
         ...(dto.targetStatus === LoanStatus.REJECTED ? { rejectionReasonCode: dto.rejectionReasonCode, rejectionNote: dto.rejectionNote } : {}),
       } });
-    });
-    if (updated.currentStage !== StageCode.HOAN_TAT) {
+    };
+    const updated = transaction ? await run(transaction) : await this.prisma.$transaction(run);
+    if (!transaction && updated.currentStage !== StageCode.HOAN_TAT) {
       try { await this.predictionService.predictForApplication(applicationId); }
       catch (err) { this.logger.warn(`Không cập nhật được dự báo AI: ${(err as Error).message}`); }
     }
@@ -85,7 +122,10 @@ export class WorkflowService {
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id = ${applicationId} FOR UPDATE`;
       const loan = await tx.loanApplication.findUnique({ where: { id: applicationId } });
       if (!loan) throw new NotFoundException('Không tìm thấy hồ sơ.');
-      if (loan.assignedTo === user.id) throw new ForbiddenException('Bạn đang phụ trách hồ sơ này nên không được tự đóng hồ sơ.');
+      await assertNoCoordinationConflict(tx,{applicationId},user.id);
+      if (loan.assignedTo === user.id || (loan.intakeOfficerId && loan.intakeOfficerId === user.id)) {
+        throw new ForbiddenException('Bạn đang phụ trách hoặc là người tiếp nhận ban đầu của hồ sơ này nên không được tự đóng hồ sơ.');
+      }
       if (loan.completedAt || loan.currentStage === StageCode.HOAN_TAT) throw new BadRequestException('Hồ sơ đã kết thúc.');
       if (loan.currentStatus !== LoanStatus.SUPPLEMENT_REQUIRED) throw new BadRequestException('Chỉ đóng được hồ sơ đang chờ bổ sung.');
       const pending = await tx.supplementRequest.findMany({ where: { applicationId, status: SupplementStatus.PENDING } });
@@ -112,6 +152,7 @@ export class WorkflowService {
         slaStandardHours: target.standardSlaHours, handledBy: user.id, ...mode,
         notes: `Đóng hồ sơ do quá hạn bổ sung: ${reason}`,
       } });
+      await obsoleteCoordination(tx,{applicationId},'LOAN_COMPLETED');
       return tx.loanApplication.update({ where: { id: applicationId }, data: {
         currentStage: StageCode.HOAN_TAT, currentStatus: LoanStatus.CLOSED_TIMEOUT, completedAt: now, rejectionReasonCode: 'TC05', rejectionNote: reason, updatedAt: now,
       } });

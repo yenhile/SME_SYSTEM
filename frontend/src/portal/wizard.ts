@@ -1,4 +1,26 @@
-import type { PortalData } from './model';
+import type { PortalData, PortalRequest } from './model';
+
+export interface DraftRecovery { data: PortalData; baseRevision: number; step: number; updatedAt: string; conflict?: boolean }
+
+export function loanTypeOptions(labels:Record<string,string>, supported=['VAY_VON_LUU_DONG'], current?:string):Record<string,string> {
+  const options=Object.fromEntries(supported.filter(key=>Object.hasOwn(labels,key)).map(key=>[key,labels[key]]));
+  if(current && !Object.hasOwn(options,current)) options[current]=labels[current]??current;
+  return options;
+}
+
+/** Private recovery can populate an editable draft, never a submitted record. */
+export function initialDraftState(initial: Pick<PortalRequest, 'data' | 'revision'> | null, recovery: DraftRecovery | null, editable: boolean, defaults: PortalData) {
+  const restore = editable && !!recovery;
+  return {
+    data: restore ? recovery.data : initial?.data ?? defaults,
+    baseRevision: restore ? recovery.baseRevision : initial?.revision ?? 0,
+    step: restore ? Math.min(5, Math.max(1, Number(recovery.step) || 1)) : 1,
+    dirty: editable && (restore || !initial),
+    conflict: restore && (!!recovery.conflict || (!!initial && recovery.baseRevision !== (initial.revision ?? 0))),
+    recoveryApplied: restore,
+    retainedRecovery: editable ? null : recovery,
+  };
+}
 
 export interface WizardIssue { path: string; step: number; message: string; severity: 'error' | 'warning' }
 
@@ -41,7 +63,7 @@ export function validateV2(input: PortalData, review = false): WizardIssue[] {
     if (!object(value)) { add(path, step, 'Cấu trúc dữ liệu không hợp lệ.'); return; }
     for (const key of Object.keys(value)) if (!allowed.includes(key)) add(path ? `${path}.${key}` : key, step, 'Trường dữ liệu không hỗ trợ.');
   };
-  shape(input, ['taxCode','companyName','industry','establishedYear','annualRevenue','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths','companyType','establishedDate','contactName','contactPosition','contactPhone','contactEmail','revenuePeriod','annualRevenueBasis','neededAt','preferredBranch','hasExistingDebt','collateral','capitalPlan','businessScope','representative','submissionDeclaration'], '', 1);
+  shape(input, ['taxCode','companyName','industry','establishedYear','annualRevenue','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths','companyType','establishedDate','contactName','contactPosition','contactPhone','contactEmail','revenuePeriod','annualRevenueBasis','neededAt','preferredBranch','hasExistingDebt','collateral','capitalPlan','businessScope','serviceProofMode','representative','submissionDeclaration'], '', 1);
   if (input.representative !== undefined) shape(input.representative, ['mode','name'], 'representative', 1);
   if (input.submissionDeclaration !== undefined) shape(input.submissionDeclaration, ['accepted','version'], 'submissionDeclaration', 5);
   if(input.annualRevenueBasis!==undefined){shape(input.annualRevenueBasis,['documentId','fullYearCompleted'],'annualRevenueBasis',4);const basis=input.annualRevenueBasis;if(object(basis)){if(basis.documentId!==undefined&&(typeof basis.documentId!=='string'||!basis.documentId.trim()||basis.documentId.length>4000))add('annualRevenueBasis.documentId',4,'Chọn tài liệu nguồn hợp lệ.');if(basis.fullYearCompleted!==undefined&&typeof basis.fullYearCompleted!=='boolean')add('annualRevenueBasis.fullYearCompleted',4,'Xác nhận kỳ hoàn thành phải là có/không.');}}
@@ -54,7 +76,8 @@ export function validateV2(input: PortalData, review = false): WizardIssue[] {
   const data = normalizeV2(input);
   const supplied = (value: unknown) => value !== undefined;
   const text = (value: unknown, path: string, step: number) => { if (supplied(value) && (typeof value !== 'string' || !value.trim() || value.length > 4000)) add(path, step, 'Vui lòng nhập văn bản hợp lệ (tối đa 4.000 ký tự).'); };
-  if (data.businessScope !== undefined && !['MANUFACTURING','OTHER'].includes(data.businessScope)) add('businessScope', 1, 'Phạm vi hoạt động không hợp lệ.');
+  if (data.serviceProofMode!==undefined && !['CONTRACT_OR_ORDER','ACCEPTANCE_INVOICE'].includes(data.serviceProofMode)) add('serviceProofMode',1,'Căn cứ dịch vụ không hợp lệ.');
+  if (data.businessScope !== undefined && !['MANUFACTURING','TRADING','SERVICES','OTHER'].includes(data.businessScope)) add('businessScope', 1, 'Phạm vi hoạt động không hợp lệ.');
   if (object(data.representative)) {
     if (data.representative.mode !== undefined && !['LEGAL_REPRESENTATIVE','AUTHORIZED'].includes(String(data.representative.mode))) add('representative.mode', 1, 'Tư cách người gửi không hợp lệ.');
     text(data.representative.name, 'representative.name', 1);

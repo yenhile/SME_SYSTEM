@@ -16,9 +16,11 @@ const tag = `portal_it_${Date.now()}_${randomUUID().slice(0, 6)}`;
 const password = 'PortalTest@123456';
 const owned = { emails: [], users: [], companies: [] };
 let prisma;
+const {assignmentFixture}=require('./assignment-fixtures.cjs');
 let assertions = 0;
 
 async function call(endpoint, { token, role, body, method = 'GET', raw = false } = {}) {
+  body=await assignmentFixture(prisma,endpoint,body);
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   if (role) headers['X-Active-Role'] = role;

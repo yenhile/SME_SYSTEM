@@ -16,6 +16,8 @@ export class PortalAuthController {
   @Post('verify-email') verify(@Body() body:any,@Req() req:any) {return this.auth.verify(body,req.ip);}
   @Post('resend-verification') resend(@Body() body:any,@Req() req:any) {return this.auth.resend(body,req.ip);}
   @Post('login') login(@Body() body:any,@Req() req:any) {return this.auth.login(body,req.ip);}
+  @Post('forgot-password') forgot(@Body() body:any,@Req() req:any) {return this.auth.forgotPassword(body,req.ip);}
+  @Post('reset-password') reset(@Body() body:any,@Req() req:any) {return this.auth.resetPassword(body,req.ip);}
   @Get('me') @UseGuards(PortalGuard) me(@Req() req:any) {return req.portalAccount;}
 }
 @Controller('portal/requests')
@@ -66,7 +68,7 @@ export class PortalIntakesController {
   @Get() list(@Req() req:any) {return this.service.list(undefined,req.user);}
   @Get('officers') @Roles(RoleCode.QUAN_LY)
   officers() {return this.service.officers();}
-  @Get('form-config') config() {return this.service.formConfig();}
+  @Get('form-config') @Roles(RoleCode.CBTD,RoleCode.QUAN_LY,RoleCode.THAM_QUYEN) config() {return this.service.formConfig();}
   @Post(':id/assign') @Roles(RoleCode.QUAN_LY)
   assign(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.assign(id,body,req.user.id);}
   @Get(':id/assignment-history')
@@ -78,6 +80,12 @@ export class PortalIntakesController {
   review(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.reviewIntake(id,body,req.user);}
   @Post(':id/return-correction') @Roles(RoleCode.CBTD)
   returnCorrection(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.returnIntake(id,body,req.user);}
+  @Post(':id/correction-decision') @Roles(RoleCode.CBTD)
+  correctionDecision(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.decideIntakeCorrection(id,body,req.user);}
+  @Post(':id/company-reconciliation') @Roles(RoleCode.CBTD)
+  reconciliation(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.requestCompanyReconciliation(id,body,req.user);}
+  @Post(':id/company-reconciliation/resolve') @Roles(RoleCode.QUAN_LY)
+  resolveReconciliation(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.resolveCompanyReconciliation(id,body,req.user);}
   @Post(':id/issues') @Roles(RoleCode.QUAN_LY)
   issue(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.intakeIssue(id,body,req.user);}
   @Get(':id/documents/:documentId/download') async download(@Req() req:any,@Param('id') id:string,@Param('documentId') documentId:string) {return downloadResponse(await this.service.download(id,documentId,undefined,req.user));}

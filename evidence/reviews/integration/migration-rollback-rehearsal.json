@@ -1,0 +1,102 @@
+{
+  "timestamp": "2026-11-02T12:06:05.628Z",
+  "rehearsalSchema": "rehearsal_rollout_8a585ba49dbe43d890b2f01e23faae6e",
+  "checksums": {
+    "sme-branch-rollout.sql": {
+      "path": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\backend\\prisma\\sme-branch-rollout.sql",
+      "sha256": "6842e06bdcc608801394fa67ab7413f6aabedabbdf1a4ee2623cf5d62141c6c1",
+      "sizeBytes": 1581
+    },
+    "round2-assignment-safety.sql": {
+      "path": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\backend\\prisma\\round2-assignment-safety.sql",
+      "sha256": "0f6ad598ee9a5513901fccf6376c83be52cb21cef3c9206af66e657a08f694ea",
+      "sizeBytes": 993
+    },
+    "round2-assignment-coordination.sql": {
+      "path": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\backend\\prisma\\round2-assignment-coordination.sql",
+      "sha256": "a76904f970e22a5d7cbc0cf4b98e0a58c08b44523f9f12b110b454640656d501",
+      "sizeBytes": 6436
+    },
+    "round3-intake.sql": {
+      "path": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\backend\\prisma\\round3-intake.sql",
+      "sha256": "288ab2a9931d027f7a5b5c494df98930eac72e82ce5e7c38017f7e89cfa6eaae",
+      "sizeBytes": 417
+    },
+    "portal-account-recovery.sql": {
+      "path": "T:\\KhoaLuanTotNghiep\\sme-loan-workflow\\backend\\prisma\\portal-account-recovery.sql",
+      "sha256": "9dcddf7d7c8c8fb6b64180a90b7144a34a1ed4335b5655acc16079e64088c400",
+      "sizeBytes": 589
+    }
+  },
+  "migrations": [
+    {
+      "name": "sme-branch-rollout.sql",
+      "durationMs": 1399,
+      "status": "SUCCESS"
+    },
+    {
+      "name": "round2-assignment-safety.sql",
+      "durationMs": 1521,
+      "status": "SUCCESS"
+    },
+    {
+      "name": "round2-assignment-coordination.sql",
+      "durationMs": 1493,
+      "status": "SUCCESS"
+    },
+    {
+      "name": "round3-intake.sql",
+      "durationMs": 1609,
+      "status": "SUCCESS"
+    },
+    {
+      "name": "portal-account-recovery.sql",
+      "durationMs": 1415,
+      "status": "SUCCESS"
+    }
+  ],
+  "idempotencyRerun": [
+    {
+      "name": "sme-branch-rollout.sql",
+      "durationMs": 1428,
+      "status": "SUCCESS_IDEMPOTENT"
+    },
+    {
+      "name": "round2-assignment-safety.sql",
+      "durationMs": 1367,
+      "status": "SUCCESS_IDEMPOTENT"
+    },
+    {
+      "name": "round2-assignment-coordination.sql",
+      "durationMs": 1393,
+      "status": "SUCCESS_IDEMPOTENT"
+    },
+    {
+      "name": "round3-intake.sql",
+      "durationMs": 1377,
+      "status": "SUCCESS_IDEMPOTENT"
+    },
+    {
+      "name": "portal-account-recovery.sql",
+      "durationMs": 1270,
+      "status": "SUCCESS_IDEMPOTENT"
+    }
+  ],
+  "rollbackLevel1": {
+    "method": "PostgreSQL Transaction Rollback (Atomic abort)",
+    "durationMs": 9,
+    "dataPreserved": true,
+    "status": "VERIFIED"
+  },
+  "rollbackLevel2": {
+    "method": "Point-in-Time Schema Snapshot Restore (Level 2 Disaster Recovery)",
+    "snapshotDurationMs": 22,
+    "restoreDurationMs": 108,
+    "dataPreserved": true,
+    "status": "VERIFIED"
+  },
+  "preservation": {},
+  "totalMigrationTimeMs": 7437,
+  "totalIdempotencyTimeMs": 6835,
+  "pass": true
+}

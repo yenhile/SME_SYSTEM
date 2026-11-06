@@ -27,7 +27,6 @@ enum LoanType {
 enum StageCode {
   TIEP_NHAN
   THAM_DINH
-  CAP_TREN
   HOAN_TAT
 }
 
@@ -36,7 +35,6 @@ enum LoanStatus {
   CHECKED               // Đã kiểm duyệt checklist đầy đủ
   SUPPLEMENT_REQUIRED   // Chờ doanh nghiệp bổ sung chứng từ
   PENDING_APPRAISAL     // Đang chờ/trong quá trình thẩm định
-  WAITING_HEAD_OFFICE   // Chờ cấp trên phản hồi (vượt 10 tỷ)
   APPROVED              // Đã phê duyệt cấp tín dụng
   REJECTED              // Bị từ chối khoản vay
   CLOSED_TIMEOUT        // Đóng hồ sơ do quá hạn bổ sung
@@ -96,6 +94,9 @@ model User {
   portalAssignmentsTo PortalAssignment[] @relation("PortalAssignmentTo")
   portalAssignmentHistory PortalAssignment[] @relation("PortalAssignmentManager")
   internalNotifications InternalNotification[]
+  coordinationSent AssignmentChangeRequest[] @relation("CoordinationSender")
+  coordinationResolved AssignmentChangeRequest[] @relation("CoordinationResolver")
+  coordinationTarget AssignmentChangeRequest[] @relation("CoordinationTarget")
 
   @@map("users")
 }
@@ -153,6 +154,7 @@ model LoanApplication {
   id                  String      @id @default(uuid())
   applicationCode     String      @unique @map("application_code") // SME-YYYYMMDD-XXXX
   companyId           String      @map("company_id")
+  companySnapshot     Json?       @map("company_snapshot")
   loanPurpose         String      @map("loan_purpose")
   loanType            LoanType    @map("loan_type")
   proposedAmount      Decimal     @map("proposed_amount") @db.Decimal(18, 2)
@@ -163,6 +165,7 @@ model LoanApplication {
   currentStage        StageCode   @default(TIEP_NHAN) @map("current_stage")
   currentStatus       LoanStatus  @default(RECEIVED) @map("current_status")
   assignedTo          String?     @map("assigned_to")
+  assignmentVersion   Int         @default(0) @map("assignment_version")
   rejectionReasonCode String?     @map("rejection_reason_code") // TC01 - TC05
   rejectionNote       String?     @map("rejection_note")
   isDocumentComplete  Boolean     @default(false) @map("is_document_complete")
@@ -170,6 +173,8 @@ model LoanApplication {
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
   completedAt         DateTime?   @map("completed_at")
+  businessPolicyVersion String?   @map("business_policy_version")
+  intakeOfficerId     String?     @map("intake_officer_id")
 
   // Quan hệ
   company            Company                   @relation(fields: [companyId], references: [id])
@@ -178,11 +183,55 @@ model LoanApplication {
   documents          Document[]
   supplementRequests SupplementRequest[]
   assignments        ApplicationAssignment[]
+  coordinationRequests AssignmentChangeRequest[]
   delayPredictions   DelayPrediction[]
   portalRequest      PortalRequest?
   internalNotifications InternalNotification[]
+  appraisalReport    AppraisalReport?
 
   @@map("loan_applications")
+}
+
+model AppraisalReport {
+  id            String @id @default(uuid())
+  applicationId String @unique @map("application_id")
+  revision      Int @default(0)
+  status        String @default("DRAFT")
+  draft         Json
+  clarification Json?
+  decidedVersionId String? @map("decided_version_id")
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  versions      AppraisalReportVersion[]
+  events        AppraisalReportEvent[]
+  @@map("appraisal_reports")
+}
+
+model AppraisalReportVersion {
+  id          String @id @default(uuid())
+  reportId    String @map("report_id")
+  sequence    Int
+  content     Json
+  evidence    Json
+  evidenceHash String @map("evidence_hash")
+  submittedBy String @map("submitted_by")
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  report      AppraisalReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  @@unique([reportId, sequence])
+  @@map("appraisal_report_versions")
+}
+
+model AppraisalReportEvent {
+  id          String @id @default(uuid())
+  reportId    String @map("report_id")
+  actorId     String @map("actor_id")
+  kind        String
+  clientRequestId String @map("client_request_id")
+  payloadHash String @map("payload_hash")
+  payload     Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  report      AppraisalReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  @@unique([reportId, clientRequestId])
+  @@map("appraisal_report_events")
 }
 
 // ==========================================
@@ -289,6 +338,10 @@ model PortalAccount {
   email String @unique
   passwordHash String @map("password_hash")
   contactName String @map("contact_name")
+  authVersion Int @default(0) @map("auth_version")
+  passwordResetHash String? @unique @map("password_reset_hash")
+  passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
+  passwordResetSentAt DateTime? @map("password_reset_sent_at")
   phone String
   verifiedAt DateTime? @map("verified_at")
   verificationHash String? @map("verification_hash")
@@ -316,6 +369,7 @@ model PortalRequest {
   acceptedAt DateTime? @map("accepted_at")
   acceptedBy String? @map("accepted_by")
   assignedTo String? @map("assigned_to")
+  assignmentVersion Int @default(0) @map("assignment_version")
   assignedBy String? @map("assigned_by")
   assignedAt DateTime? @map("assigned_at")
   loanId String? @unique @map("loan_id")
@@ -328,11 +382,13 @@ model PortalRequest {
   loan LoanApplication? @relation(fields: [loanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   documents PortalDocument[]
   assignments PortalAssignment[]
+  coordinationRequests AssignmentChangeRequest[]
   notifications InternalNotification[]
   submissions PortalSubmission[]
   intakeOperations PortalIntakeOperation[]
   intakeIssues PortalIntakeIssue[]
   correctionRequest Json? @map("correction_request")
+  correctionHistory Json @default("[]") @map("correction_history")
   @@index([accountId, status])
   @@index([assignedTo, status])
   @@map("portal_requests")
@@ -373,6 +429,8 @@ model PortalIntakeIssue {
   requestId String @map("request_id")
   description String
   proposal String
+  kind String?
+  context Json?
   publicMessage String @map("public_message")
   status String @default("OPEN")
   resolution String?
@@ -390,6 +448,10 @@ model PortalAssignment {
   requestId String @map("request_id")
   fromUserId String? @map("from_user_id")
   toUserId String @map("to_user_id")
+  clientRequestId String? @map("client_request_id")
+  payloadHash String? @map("payload_hash")
+  assignmentChangeRequestId String? @map("assignment_change_request_id")
+  assignmentChangeRequest AssignmentChangeRequest? @relation(fields: [assignmentChangeRequestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   managerId String @map("manager_id")
   note String?
   assignedAt DateTime @default(now()) @map("assigned_at")
@@ -398,6 +460,7 @@ model PortalAssignment {
   toUser User @relation("PortalAssignmentTo", fields: [toUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   manager User @relation("PortalAssignmentManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   @@index([requestId, assignedAt])
+  @@unique([requestId, clientRequestId])
   @@map("portal_assignments")
 }
 
@@ -406,6 +469,8 @@ model InternalNotification {
   userId String @map("user_id")
   requestId String? @map("request_id")
   applicationId String? @map("application_id")
+  assignmentChangeRequestId String? @map("assignment_change_request_id")
+  assignmentChangeRequest AssignmentChangeRequest? @relation(fields: [assignmentChangeRequestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   title String
   message String
   createdAt DateTime @default(now()) @map("created_at")
@@ -470,6 +535,10 @@ model ApplicationAssignment {
   reassignedBy  String   @map("reassigned_by")
   reassignedAt  DateTime @default(now()) @map("reassigned_at")
   reason        String?
+  clientRequestId String? @map("client_request_id")
+  payloadHash String? @map("payload_hash")
+  assignmentChangeRequestId String? @map("assignment_change_request_id")
+  assignmentChangeRequest AssignmentChangeRequest? @relation(fields: [assignmentChangeRequestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   application LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   fromUser    User?           @relation("FromUser", fields: [fromUserId], references: [id])
@@ -477,6 +546,43 @@ model ApplicationAssignment {
   manager     User            @relation("ReassignedBy", fields: [reassignedBy], references: [id])
 
   @@map("application_assignments")
+  @@unique([applicationId, clientRequestId])
+}
+
+model AssignmentChangeRequest {
+  id String @id @default(uuid())
+  portalRequestId String? @map("portal_request_id")
+  applicationId String? @map("application_id")
+  requestedById String @map("requested_by_id")
+  assignmentVersionAtRequest Int @map("assignment_version_at_request")
+  reasonCode String @map("reason_code")
+  reason String
+  status String @default("PENDING")
+  requestVersion Int @default(0) @map("request_version")
+  createdAt DateTime @default(now()) @map("created_at")
+  resolvedAt DateTime? @map("resolved_at")
+  resolvedById String? @map("resolved_by_id")
+  decisionReason String? @map("decision_reason")
+  resolutionCode String? @map("resolution_code")
+  targetOfficerId String? @map("target_officer_id")
+  managerRecipientCount Int @default(0) @map("manager_recipient_count")
+  createClientRequestId String @map("create_client_request_id")
+  createPayloadHash String @map("create_payload_hash")
+  resolutionClientRequestId String? @map("resolution_client_request_id")
+  resolutionPayloadHash String? @map("resolution_payload_hash")
+  portalRequest PortalRequest? @relation(fields: [portalRequestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  application LoanApplication? @relation(fields: [applicationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requester User @relation("CoordinationSender", fields: [requestedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resolver User? @relation("CoordinationResolver", fields: [resolvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  targetOfficer User? @relation("CoordinationTarget", fields: [targetOfficerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  portalAssignments PortalAssignment[]
+  loanAssignments ApplicationAssignment[]
+  notifications InternalNotification[]
+  @@unique([requestedById, createClientRequestId])
+  @@index([status, createdAt])
+  @@index([applicationId, status])
+  @@index([portalRequestId, status])
+  @@map("assignment_change_requests")
 }
 
 // ==========================================

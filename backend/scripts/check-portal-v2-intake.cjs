@@ -1,3 +1,4 @@
+const {assignmentFixture}=require('./assignment-fixtures.cjs');
 /* Real HTTP/PostgreSQL integration, with a TEST_ONLY policy injected into this process.
  * Never imports main.js, seeds public, resets a database, or enables the normal server.
  * Build backend first. KEEP_TEST_SERVER_MS=60000 optionally holds fixtures for browser QA
@@ -13,7 +14,7 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const root = path.resolve(__dirname, '..');
-const uploadDir = path.join(root, 'uploads');
+
 const password = 'IsolatedPortalTest123!';
 const legacyFields = ['taxCode','companyName','industry','establishedYear','annualRevenue','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths'];
 const policy = {
@@ -42,6 +43,13 @@ function verifyTarget(url, schema) {
 }
 
 async function startIsolated(options={}) {
+  const uploadDir = options.uploadRoot ? path.resolve(options.uploadRoot) : path.join(root,'uploads');
+  if(options.uploadRoot) {
+    assert.equal(path.dirname(uploadDir),path.resolve(root,'..','.codex_tmp'));
+    assert.ok(path.basename(uploadDir).startsWith('rollout-uploads-'));
+    assert.equal(await fs.stat(uploadDir).then(()=>true,e=>{if(e.code==='ENOENT')return false;throw e;}),false,'Upload directory must be newly owned');
+  }
+  await fs.mkdir(uploadDir,{recursive:true});
   // backend/.env là file cục bộ (không nằm trong git); khi thiếu thì dùng DATABASE_URL từ biến môi trường, vẫn qua verifyTarget.
   const config = dotenv.parse(await fs.readFile(path.join(root,'.env')).catch(e=>{if(e.code!=='ENOENT') throw e;return '';}));
   const baseUrl = process.env.DATABASE_URL || config.DATABASE_URL;
@@ -54,7 +62,7 @@ async function startIsolated(options={}) {
   const ownedFiles = new Set();
   const originalWrite = fs.writeFile;
   let app, db, created = false, closed = false;
-  const envKeys = ['DATABASE_URL','NODE_ENV','PORTAL_FOUNDATION_PREVIEW','PORTAL_V2_SUBMIT_ENABLED','PORTAL_V2_INTAKE_ENABLED','ML_SERVICE_URL'];
+  const envKeys = ['DATABASE_URL','NODE_ENV','PORTAL_FOUNDATION_PREVIEW','PORTAL_V2_SUBMIT_ENABLED','PORTAL_V2_INTAKE_ENABLED','PORTAL_V2_ROLLOUT_ENABLED','ML_SERVICE_URL','UPLOAD_ROOT'];
   const savedEnv = Object.fromEntries(envKeys.map(k=>[k,process.env[k]]));
   const originalCwd = process.cwd();
   const priorFiles = new Set(await fs.readdir(uploadDir).catch(e=>{if(e.code==='ENOENT') return []; throw e;}));
@@ -93,6 +101,12 @@ async function startIsolated(options={}) {
       } catch(e) { errors.push('Owned schema cleanup failed: '+e.message); }
     }
     await admin.$disconnect();
+    if(options.uploadRoot) {
+      assert.equal(await fs.realpath(uploadDir),uploadDir);
+      assert.equal(path.dirname(uploadDir),path.resolve(root,'..','.codex_tmp'));
+      assert.ok(path.basename(uploadDir).startsWith('rollout-uploads-'));
+      await fs.rm(uploadDir,{recursive:true,force:true});
+    }
     for (const k of envKeys) savedEnv[k]===undefined ? delete process.env[k] : process.env[k]=savedEnv[k];
     process.chdir(originalCwd);
     if(errors.length) throw Error(errors.join('; '));
@@ -109,6 +123,8 @@ async function startIsolated(options={}) {
     let schemaPath=path.join(root,'prisma/schema.prisma'),migrationDir;
     if(options.approvedIntake){
       let legacy=await fs.readFile(schemaPath,'utf8');
+      if(options.accountRecoveryMigration) legacy=legacy.replace(/^  (authVersion|passwordResetHash|passwordResetExpiresAt|passwordResetSentAt) [^\r\n]*\r?\n/gm,'');
+      if(options.round3Migration) legacy=legacy.replace(/^  (companySnapshot|correctionHistory) [^\r\n]*\r?\n/gm,'');
       for(const model of ['PortalSubmission','PortalIntakeOperation','PortalIntakeIssue'])legacy=legacy.replace(new RegExp('model '+model+' \\{[\\s\\S]*?\\n\\}\\r?\\n','g'),'');
       legacy=legacy.replace(/^  RETURNED\r?\n/m,'').replace(/^  (submissions PortalSubmission\[\]|intakeOperations PortalIntakeOperation\[\]|intakeIssues PortalIntakeIssue\[\]|correctionRequest Json\?[^\r\n]*)\r?\n/gm,'');
       migrationDir=await fs.mkdtemp(path.join(os.tmpdir(),'sme-intake-schema-'));
@@ -124,6 +140,7 @@ async function startIsolated(options={}) {
         await admin.$executeRawUnsafe(`INSERT INTO "${schema}".portal_accounts(id,email,password_hash,contact_name,phone) VALUES ($1,$2,$3,$4,$5)`,sentinelAccount,'migration-sentinel@example.test','synthetic-unused-hash','Synthetic migration sentinel','0900000000');
         await admin.$executeRawUnsafe(`INSERT INTO "${schema}".portal_requests(id,reference,account_id,data,updated_at) VALUES ($1,$2,$3,$4::jsonb,CURRENT_TIMESTAMP)`,sentinelRequest,'MIGRATION-SENTINEL',sentinelAccount,JSON.stringify({companyName:'Synthetic legacy preserved',annualRevenue:0}));
         const before=JSON.stringify((await admin.$queryRawUnsafe(`SELECT row_to_json(r) AS row FROM "${schema}".portal_requests r WHERE id=$1`,sentinelRequest))[0].row);
+        const accountBefore=(await admin.$queryRawUnsafe(`SELECT row_to_json(a) AS row FROM "${schema}".portal_accounts a WHERE id=$1`,sentinelAccount))[0].row;
         for(let repeat=0;repeat<2;repeat++){
           const migration=spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','execute','--file',path.join(root,'prisma/portal-intake-cycle.sql'),'--schema',schemaPath],{cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true});
           assert.equal(migration.status,0,'Additive SQL migration failed; output withheld');
@@ -131,6 +148,16 @@ async function startIsolated(options={}) {
         const after=(await admin.$queryRawUnsafe(`SELECT row_to_json(r) AS row FROM "${schema}".portal_requests r WHERE id=$1`,sentinelRequest))[0].row;
         assert.equal(after.correction_request,null);delete after.correction_request;
         assert.equal(JSON.stringify(after),before,'Migration changed legacy request data');
+        if(options.accountRecoveryMigration){
+          for(let repeat=0;repeat<2;repeat++){
+            const migration=spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','execute','--file',path.join(root,'prisma/portal-account-recovery.sql'),'--schema',schemaPath],{cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true});
+            assert.equal(migration.status,0,'Recovery migration failed; connection output withheld');
+          }
+          const accountAfter=(await admin.$queryRawUnsafe(`SELECT row_to_json(a) AS row FROM "${schema}".portal_accounts a WHERE id=$1`,sentinelAccount))[0].row;
+          assert.equal(accountAfter.auth_version,0);assert.equal(accountAfter.password_reset_hash,null);assert.equal(accountAfter.password_reset_expires_at,null);assert.equal(accountAfter.password_reset_sent_at,null);
+          for(const key of ['auth_version','password_reset_hash','password_reset_expires_at','password_reset_sent_at'])delete accountAfter[key];
+          assert.deepEqual(accountAfter,accountBefore,'Recovery migration changed existing account fields');
+        }
       }finally{
         // Only these two known files in this runner-owned temporary directory are removed.
         await fs.unlink(schemaPath).catch(e=>{if(e.code!=='ENOENT')throw e;});await fs.rmdir(migrationDir);
@@ -138,7 +165,16 @@ async function startIsolated(options={}) {
     }
     // Do not echo CLI output: configuration diagnostics can contain connection secrets.
     assert.equal(push.status,0,`Isolated schema push failed (exit ${push.status}); output withheld`);
-    Object.assign(process.env,{DATABASE_URL:isolatedUrl,NODE_ENV:'test',PORTAL_FOUNDATION_PREVIEW:'true',PORTAL_V2_SUBMIT_ENABLED:'true',ML_SERVICE_URL:'http://127.0.0.1:8000'});
+    if(options.coordinationMigration)for(let repeat=0;repeat<2;repeat++){
+      const migration=spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','execute','--file',path.join(root,'prisma/round2-assignment-coordination.sql'),'--schema',path.join(root,'prisma/schema.prisma')],{cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true});
+      assert.equal(migration.status,0,'Coordination additive SQL failed; output withheld');
+    }
+    if(options.uploadRoot) process.env.UPLOAD_ROOT=uploadDir;
+    if(options.approvedIntake)for(let repeat=0;repeat<2;repeat++){
+      const migration=spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','execute','--file',path.join(root,'prisma/round3-intake.sql'),'--schema',path.join(root,'prisma/schema.prisma')],{cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true});
+      assert.equal(migration.status,0,'Round 3 additive SQL migration failed; output withheld');
+    }
+    Object.assign(process.env,{DATABASE_URL:isolatedUrl,NODE_ENV:'test',PORTAL_FOUNDATION_PREVIEW:'true',PORTAL_V2_SUBMIT_ENABLED:'true',PORTAL_V2_ROLLOUT_ENABLED:'false',ML_SERVICE_URL:'http://127.0.0.1:8000'});
     if(options.approvedIntake) process.env.PORTAL_V2_INTAKE_ENABLED='true'; else delete process.env.PORTAL_V2_INTAKE_ENABLED;
     process.chdir(root);
     require('reflect-metadata');
@@ -157,7 +193,7 @@ async function startIsolated(options={}) {
     app.useGlobalPipes(new ValidationPipe({transform:true,whitelist:true,forbidNonWhitelisted:false}));
     await app.listen(3002,'127.0.0.1');
     db = new PrismaClient({datasources:{db:{url:isolatedUrl}}});
-    return {app,db,schema,policy,close,base:'http://127.0.0.1:3002/api'};
+    return {app,db,schema,policy,close,uploadRoot:uploadDir,base:'http://127.0.0.1:3002/api'};
   } catch(e) {
     await close().catch(cleanup=>{e.message+='; '+cleanup.message;});
     throw e;
@@ -165,11 +201,13 @@ async function startIsolated(options={}) {
 }
 
 async function runChecks(h) {
+  const uploadDir=h.uploadRoot;
   const {db,base} = h;
   let checks = 0;
   const limitations = [];
   const check = (value,label) => {assert.ok(value,label);checks++;};
   async function call(endpoint,{token,role,method='GET',body}={}) {
+    body=await assignmentFixture(db,endpoint,body);
     const headers = {};
     if(token) headers.Authorization=`Bearer ${token}`;
     if(role) headers['X-Active-Role']=role;
@@ -195,7 +233,7 @@ async function runChecks(h) {
     const login = expect(await post('/portal/auth/login',{}, {email:account.email,password}),201,'verified fixture login');
     portals.push({token:login.accessToken,account});
   }
-  for(const [i,stageCode] of ['TIEP_NHAN','THAM_DINH','CAP_TREN','HOAN_TAT'].entries()) await db.workflowStage.create({data:{stageCode,stageName:stageCode,standardSlaHours:[8,24,16,4][i],orderIndex:i+1}});
+  for(const [i,stageCode] of ['TIEP_NHAN','THAM_DINH','HOAN_TAT'].entries()) await db.workflowStage.create({data:{stageCode,stageName:stageCode,standardSlaHours:[8,24,4][i],orderIndex:i+1}});
   const portal=portals[0], manager=actors.QUAN_LY, officer=actors.CBTD;
   const {PDFDocument} = require('pdf-lib');
   const pdfDoc = await PDFDocument.create();pdfDoc.addPage([120,120]);

@@ -13,18 +13,17 @@ const fixture = path.join(base, 'repo');
 const inventory = JSON.parse(fs.readFileSync(path.join(repo, 'docs/ai/skills-inventory.json'), 'utf8'));
 const sources = [
   'AGENTS.md', 'GEMINI.md', 'Project.md', 'README.md', 'docker-compose.yml',
-  'start-local.ps1', 'run-local-dev.ps1',
+  'start-local.ps1', 'run-local-dev.ps1', 'start-use.ps1', 'start-use.bat',
   '.agents/AGENTS.md', '.agents/AI-SETUP.md', '.agents/skills.json',
   '.agents/rules', '.agents/workflow', 'docs/ai',
-  'docs/Phan_quyen_va_luong_nghiep_vu.md',
-  'docs/Dac_ta_chi_tiet_Use_Case_SME_Loan.md',
-  'docs/Thiet_ke_Co_so_du_lieu_SME_Loan.md',
-  'docs/Bao_cao_Mo_hinh_Machine_Learning.md',
-  'backend/package.json', 'backend/prisma/schema.prisma', 'backend/src',
+  'docs/SME_MASTER.md', 'docs/SME_KY_THUAT.md',
+  '.env.example', 'evidence/reviews', 'archive/docs-before-consolidation-2026-11-02.zip',
+  'backend/package.json', 'backend/prisma', 'backend/src',
   'frontend/package.json', 'frontend/src',
   'ml-service/requirements.txt', 'ml-service/app/main.py',
   'ml-service/app/schemas.py', 'ml-service/app/predictor.py',
   'ml-service/app/model/model_metadata.json',
+  'ml-service/scripts',
   'scripts/check-ai-rules.mjs', 'scripts/check-ai-rules.test.mjs',
   'package.json', 'package-lock.json', '.codegraphrc.json', 'scripts/check-codegraph.mjs', 'scripts/check-codegraph.test.mjs',
   'scripts/run-codegraph.mjs',
@@ -38,6 +37,12 @@ try {
     assert(!path.relative(repo, source).startsWith('..'));
     assert(!path.relative(fixture, destination).startsWith('..'));
     fs.mkdirSync(path.dirname(destination), { recursive: true });
+    // A valid synthetic host entry isolates negative cases in the disposable
+    // fixture. The real repository validator still reports a missing GEMINI.md.
+    if (relative === 'GEMINI.md' && !fs.existsSync(source)) {
+      fs.writeFileSync(destination, '# Gemini fixture\nRead AGENTS.md and .agents/AGENTS.md. SME-AI-011 and SME-AI-012 apply; follow .agents/workflow/impact-analysis.md.\n');
+      continue;
+    }
     fs.cpSync(source, destination, { recursive: true });
   }
   function run(name, expectedExit, diagnostic) {

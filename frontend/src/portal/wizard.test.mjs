@@ -1,6 +1,34 @@
 import assert from 'node:assert/strict';
+import * as draftRules from './wizard.ts';
 import { test } from 'node:test';
 import { normalizeV2, validateV2, capitalTotals, sameDraft } from './wizard.ts';
+
+test('new V2 options match supported products; existing unsupported values remain visible',()=>{
+  const labels={VAY_VON_LUU_DONG:'Working capital',THAU_CHI:'Overdraft'};
+  assert.deepEqual(draftRules.loanTypeOptions(labels,['VAY_VON_LUU_DONG']),{VAY_VON_LUU_DONG:'Working capital'});
+  assert.equal(draftRules.loanTypeOptions(labels,['VAY_VON_LUU_DONG'],'THAU_CHI').THAU_CHI,'Overdraft');
+  assert.equal(draftRules.loanTypeOptions(labels,['VAY_VON_LUU_DONG'],'OLD_UNKNOWN').OLD_UNKNOWN,'OLD_UNKNOWN');
+});
+
+test('locked submissions display server data and retain recovery separately',()=>{
+  const recovery={data:{companyName:'Unsent local company',proposedAmount:100},baseRevision:1,step:3,updatedAt:'2026-11-01'};
+  for(const status of ['SUBMITTED','ASSIGNED','ACCEPTED']){
+    const initial={status,data:{companyName:'Submitted company',proposedAmount:200},revision:5};
+    const state=draftRules.initialDraftState(initial,recovery,false,{});
+    assert.equal(state.data.companyName,'Submitted company');assert.equal(state.data.proposedAmount,200);
+    assert.equal(state.baseRevision,5);assert.equal(state.dirty,false);assert.equal(state.conflict,false);
+    assert.equal(state.recoveryApplied,false);assert.equal(state.retainedRecovery,recovery);
+  }
+});
+
+test('editable drafts retain local changes and require conflict resolution for stale recovery',()=>{
+  const recovery={data:{companyName:'Unsent local company'},baseRevision:1,step:3,updatedAt:'2026-11-01'};
+  for(const status of ['DRAFT','RETURNED']){
+    const state=draftRules.initialDraftState({status,data:{companyName:'Server'},revision:5},recovery,true,{});
+    assert.equal(state.data.companyName,'Unsent local company');assert.equal(state.baseRevision,1);
+    assert.equal(state.dirty,true);assert.equal(state.conflict,true);assert.equal(state.recoveryApplied,true);
+  }
+});
 
 test('JSONB key order does not create a false conflict and array order remains meaningful', () => {
   assert.equal(sameDraft({ contactName: 'A', contactEmail: 'a@example.test', capitalPlan: { ownFunds: 0, costs: [{ name: 'A', amount: 1 }] } }, { capitalPlan: { costs: [{ amount: 1, name: 'A' }], ownFunds: 0 }, contactEmail: 'a@example.test', contactName: 'A' }), true);

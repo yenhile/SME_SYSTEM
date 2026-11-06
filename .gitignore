@@ -6,6 +6,7 @@ dist/
 .venv/
 __pycache__/
 uploads/
+evidence/private-backups/
 *.py[cod]
 .pytest_cache/
 .idea/

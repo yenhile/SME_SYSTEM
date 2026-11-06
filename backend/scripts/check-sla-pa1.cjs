@@ -12,9 +12,11 @@ const root = path.resolve(__dirname, '..');
 const vn = (date, time) => new Date(`${date}T${time}:00+07:00`);
 
 function applySlaSql() {
-  const run = spawnSync(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'execute', '--file', path.join(root, 'prisma/sla-pa1.sql'), '--schema', path.join(root, 'prisma/schema.prisma')],
-    { cwd: root, env: { ...process.env }, encoding: 'utf8', timeout: 60000, windowsHide: true });
-  assert.equal(run.status, 0, 'SQL PA1 failed; output withheld');
+  for (const file of ['prisma/sla-pa1.sql', 'prisma/document-codes.sql']) {
+    const run = spawnSync(process.execPath, [require.resolve('prisma/build/index.js'), 'db', 'execute', '--file', path.join(root, file), '--schema', path.join(root, 'prisma/schema.prisma')],
+      { cwd: root, env: { ...process.env }, encoding: 'utf8', timeout: 60000, windowsHide: true });
+    assert.equal(run.status, 0, `${file} failed; output withheld`);
+  }
 }
 
 async function runChecks(h) {
@@ -41,7 +43,7 @@ async function runChecks(h) {
   const cbtd2 = await user('cbtd2', 'CBTD');
   const approver = await user('approver', 'THAM_QUYEN');
   const manager = await user('manager', 'QUAN_LY');
-  for (const [i, [code, sla]] of [['TIEP_NHAN', 4], ['THAM_DINH', 24], ['CAP_TREN', 16], ['HOAN_TAT', 4]].entries()) {
+  for (const [i, [code, sla]] of [['TIEP_NHAN', 4], ['THAM_DINH', 24], ['HOAN_TAT', 4]].entries()) {
     await db.workflowStage.create({ data: { stageCode: code, stageName: code, standardSlaHours: sla, orderIndex: i + 1 } });
   }
 
@@ -53,11 +55,13 @@ async function runChecks(h) {
       charterCapital: 1e9, representativeName: 'Synthetic Representative', phone: '0900000000', address: 'Synthetic address',
       loanPurpose: 'Synthetic working capital', loanType: 'VAY_VON_LUU_DONG', proposedAmount: 1e9, loanTermMonths: 12,
     }, cbtd.id, clock);
+    await db.loanApplication.update({ where: { id: result.loan.id }, data: { businessPolicyVersion: null } });
+    result.loan.businessPolicyVersion = null;
     return result.loan;
   };
   const history = loanId => db.applicationStageHistory.findMany({ where: { applicationId: loanId }, include: { stage: true }, orderBy: [{ enteredAt: 'asc' }, { id: 'asc' }] });
   const toAppraisal = async (loan, clock, actor = cbtd) => {
-    await loans.checkDocuments(loan.id, true);
+    await loans.checkDocuments(loan.id, true, asCbtd(actor));
     return workflow.transitionStage(loan.id, { targetStage: 'THAM_DINH', targetStatus: 'PENDING_APPRAISAL' }, asCbtd(actor), clock);
   };
   const stage = (rows, code) => rows.find(r => r.stage.stageCode === code);
@@ -115,7 +119,8 @@ async function runChecks(h) {
   // 6. Điều chuyển không đặt lại đồng hồ: công đoạn giữ nguyên thời điểm vào và cách tính.
   const moved = await newLoan(vn('2026-10-27', '09:00'));
   const before = (await history(moved.id))[0];
-  await assignments.reassign(moved.id, { newOfficerId: cbtd2.id, reason: 'Synthetic reassignment' }, manager.id);
+  const movedLoan = await db.loanApplication.findUnique({ where: { id: moved.id } });
+  await assignments.reassign(moved.id, { newOfficerId: cbtd2.id, reason: 'Synthetic reassignment', expectedAssignmentVersion: movedLoan.assignmentVersion, clientRequestId: randomUUID() }, manager.id);
   const after = (await history(moved.id))[0];
   eq(after.enteredAt.getTime(), before.enteredAt.getTime(), 'reassignment keeps the stage entry time');
   eq(after.slaPolicy, 'PA1', 'reassignment keeps the stage policy');
@@ -125,7 +130,7 @@ async function runChecks(h) {
   // 7. Ngoài kỳ lịch: không tự quay về 24/7; thao tác bị từ chối và dữ liệu không đổi.
   await assert.rejects(newLoan(vn('2026-11-09', '10:00')), e => /không bao phủ/.test(e.message)); checks++;
   const edge = await newLoan(vn('2026-11-06', '15:00'));
-  await loans.checkDocuments(edge.id, true);
+  await loans.checkDocuments(edge.id, true, asCbtd(cbtd));
   await assert.rejects(
     workflow.transitionStage(edge.id, { targetStage: 'THAM_DINH', targetStatus: 'PENDING_APPRAISAL' }, asCbtd(cbtd), vn('2026-11-09', '10:00')),
     e => /không bao phủ/.test(e.message)); checks++;
@@ -304,7 +309,7 @@ async function runChecks(h) {
     const { DocumentsService } = require('../dist/modules/documents/documents.service');
     const documentsService = app.get(DocumentsService, { strict: false });
     const confirmed = await newLoan(vn('2026-10-27', '09:00'));
-    await loans.checkDocuments(confirmed.id, true);
+    await loans.checkDocuments(confirmed.id, true, asCbtd(cbtd));
     let state = await db.loanApplication.findUnique({ where: { id: confirmed.id } });
     eq(state.currentStatus, 'CHECKED', 'documents: loan confirmed complete');
     const addedDoc = await documentsService.create(confirmed.id, { documentType: 'PHAP_LY', fileName: 'synthetic.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/synthetic.pdf' }, cbtd.id);
@@ -312,18 +317,18 @@ async function runChecks(h) {
     eq(state.isDocumentComplete, false, 'documents: adding a document withdraws the confirmation');
     eq(state.currentStatus, 'RECEIVED', 'documents: loan returns to RECEIVED after a document change');
     await assert.rejects(workflow.transitionStage(confirmed.id, { targetStage: 'THAM_DINH', targetStatus: 'PENDING_APPRAISAL' }, asCbtd(cbtd), vn('2026-10-27', '12:00')), e => e.getStatus() === 400); checks++;
-    await loans.checkDocuments(confirmed.id, true);
-    await documentsService.delete(addedDoc.id);
+    await loans.checkDocuments(confirmed.id, true, asCbtd(cbtd));
+    await documentsService.delete(addedDoc.id, asCbtd(cbtd));
     state = await db.loanApplication.findUnique({ where: { id: confirmed.id } });
     eq(state.isDocumentComplete, false, 'documents: deleting a document withdraws the confirmation');
     eq(await db.document.count({ where: { id: addedDoc.id } }), 0, 'documents: the document was removed');
-    await loans.checkDocuments(confirmed.id, true);
+    await loans.checkDocuments(confirmed.id, true, asCbtd(cbtd));
     await toAppraisal(confirmed, vn('2026-10-27', '12:00')).catch(() => null);
     eq((await db.loanApplication.findUnique({ where: { id: confirmed.id } })).currentStage, 'THAM_DINH', 'documents: after confirming again the loan moves on');
-    const lateDoc = await documentsService.create(confirmed.id, { documentType: 'KHAC', fileName: 'late.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/late.pdf' }, approver.id);
+    await assert.rejects(documentsService.create(confirmed.id, { documentType: 'KHAC', fileName: 'late.pdf', fileSize: 10, mimeType: 'application/pdf', filePath: 'seed/late.pdf' }, approver.id, 'THAM_QUYEN'), e => e.getStatus() === 403); checks++;
     state = await db.loanApplication.findUnique({ where: { id: confirmed.id } });
-    eq(state.currentStatus, 'PENDING_APPRAISAL', 'documents: a document added at appraisal does not touch the loan status');
-    ok(lateDoc.id, 'documents: appraisal-stage document stored');
+    eq(state.currentStatus, 'PENDING_APPRAISAL', 'documents: a refused upload at appraisal does not touch the loan status');
+    eq(await db.document.count({ where: { applicationId: confirmed.id, fileName: 'late.pdf' } }), 0, 'documents: no appraisal-stage document stored');
 
     // ===== Mốc 3: hiển thị, Dashboard, dự báo =====
     const { DashboardService } = require('../dist/modules/dashboard/dashboard.service');

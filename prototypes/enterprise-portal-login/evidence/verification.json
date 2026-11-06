@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-11-03T09:01:49.937Z",
+  "checks": [
+    "No horizontal overflow at 1440px",
+    "Named email and password fields at 1440px",
+    "No horizontal overflow at 390px",
+    "Named email and password fields at 390px",
+    "No horizontal overflow at 1280px",
+    "Named email and password fields at 1280px",
+    "No horizontal overflow at 375px",
+    "Named email and password fields at 375px",
+    "No horizontal overflow at 320px",
+    "Named email and password fields at 320px",
+    "Error state has accessible message and invalid input",
+    "Loading state prevents duplicate actions and input edits",
+    "Empty submit focuses required email",
+    "Invalid email is explained inline",
+    "Missing password focuses password",
+    "Password visibility toggle updates accessible state",
+    "Valid local submission enters loading",
+    "Simulation completes without a session and clears password",
+    "Future flow #forgot is explicitly simulated",
+    "Future flow #register is explicitly simulated",
+    "Future flow #verify is explicitly simulated",
+    "Keyboard navigation reaches forgot password",
+    "No requests outside the isolated prototype origin",
+    "No API requests",
+    "No local or session storage written",
+    "No uncaught browser exceptions"
+  ],
+  "requests": [
+    "http://127.0.0.1:50962/",
+    "http://127.0.0.1:50962/styles.css",
+    "http://127.0.0.1:50962/app.js"
+  ],
+  "exceptions": [],
+  "scope": "Isolated login prototype only; no SME API or database access"
+}

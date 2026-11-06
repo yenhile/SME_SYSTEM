@@ -9,11 +9,18 @@ export const PUBLIC_REJECTION_REASONS: Record<string, string> = {
   TC04: 'Tài sản bảo đảm không đủ điều kiện',
   TC05: 'Quá hạn thời gian bổ sung chứng từ',
 };
-const GENERIC_REJECTION = 'Hồ sơ không được chấp thuận';
+export const GENERIC_REJECTION = 'Hồ sơ không được chấp thuận';
+
+export const PUBLIC_REJECTION_CODES = ['TC01', 'TC02', 'TC03', 'TC04', 'TC05'] as const;
+export type PublicRejectionReasonCode = (typeof PUBLIC_REJECTION_CODES)[number];
+
+export function isPublicRejectionReasonCode(code: unknown): code is PublicRejectionReasonCode {
+  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(PUBLIC_REJECTION_REASONS, code);
+}
 
 const STEP_LABELS = ['Tiếp nhận', 'Thẩm định', 'Phê duyệt', 'Hoàn tất'] as const;
 const STEP_CODES = ['RECEIVE', 'APPRAISAL', 'APPROVAL', 'DONE'] as const;
-const STAGE_ORDER = ['TIEP_NHAN', 'THAM_DINH', 'CAP_TREN'];
+const STAGE_ORDER = ['TIEP_NHAN', 'THAM_DINH'];
 
 export type StepState = 'done' | 'current' | 'pending' | 'stopped';
 
@@ -44,7 +51,6 @@ const LOAN_STATUS: Record<string, { code: string; label: string; message: string
   CHECKED: { code: 'RECEIVED', label: 'Đang kiểm tra hồ sơ', message: 'Ngân hàng đang kiểm tra tính đầy đủ của hồ sơ.' },
   SUPPLEMENT_REQUIRED: { code: 'SUPPLEMENT_REQUIRED', label: 'Cần bổ sung chứng từ', message: 'Ngân hàng cần bổ sung chứng từ. Vui lòng mở mục "Bổ sung hồ sơ sau tiếp nhận" để gửi tài liệu.' },
   PENDING_APPRAISAL: { code: 'APPRAISAL', label: 'Đang thẩm định', message: 'Hồ sơ đang được thẩm định.' },
-  WAITING_HEAD_OFFICE: { code: 'HEAD_OFFICE', label: 'Đang chờ cấp có thẩm quyền xét duyệt', message: 'Hồ sơ đang được trình cấp có thẩm quyền xem xét.' },
   APPROVED: { code: 'APPROVED', label: 'Đã được phê duyệt', message: 'Hồ sơ đã được phê duyệt. Ngân hàng sẽ liên hệ về các bước tiếp theo.' },
   REJECTED: { code: 'REJECTED', label: 'Không được chấp thuận', message: 'Hồ sơ không được chấp thuận.' },
   CLOSED_TIMEOUT: { code: 'CLOSED', label: 'Đã đóng do quá hạn bổ sung', message: 'Hồ sơ đã được đóng do quá hạn bổ sung chứng từ. Vui lòng liên hệ ngân hàng để được hướng dẫn.' },
@@ -83,8 +89,9 @@ export function buildTracking(request: TrackingRequest, loan?: TrackingLoan | nu
   const status = LOAN_STATUS[loan.currentStatus] ?? LOAN_STATUS.RECEIVED;
   const result: any = { ...base, status: { ...status }, steps: steps(loanSteps(loan)) };
   if (loan.currentStatus === 'REJECTED') {
-    const code = loan.rejectionReasonCode && PUBLIC_REJECTION_REASONS[loan.rejectionReasonCode] ? loan.rejectionReasonCode : null;
-    result.rejection = { code, label: code ? PUBLIC_REJECTION_REASONS[code] : GENERIC_REJECTION };
+    const valid = isPublicRejectionReasonCode(loan.rejectionReasonCode);
+    const code = valid ? loan.rejectionReasonCode : null;
+    result.rejection = { code, label: valid ? PUBLIC_REJECTION_REASONS[code!] : GENERIC_REJECTION };
   }
   return result;
 }

@@ -1,3 +1,4 @@
+const {assignmentFixture}=require('./assignment-fixtures.cjs');
 /* Real approved-policy API/PostgreSQL checks in an owned portal_v2_it_* schema.
  * No public seed/reset. startIsolated verifies target and owns cleanup of test uploads.
  */
@@ -12,6 +13,7 @@ async function runChecks(h){
   const {db,base}=h;let checks=0;
   const check=(v,m)=>{assert.ok(v,m);checks++;};
   async function call(endpoint,actor={},body,method=body===undefined?'GET':'POST',binary=false){
+    body=await assignmentFixture(db,endpoint,body);
     const headers={};if(actor.token)headers.Authorization=`Bearer ${actor.token}`;if(actor.role)headers['X-Active-Role']=actor.role;
     if(body!==undefined&&!(body instanceof FormData))headers['Content-Type']='application/json';
     const response=await fetch(base+endpoint,{method,headers,body:body instanceof FormData?body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
@@ -31,7 +33,7 @@ async function runChecks(h){
     const account=await db.portalAccount.create({data:{email:`cycle${i}@example.test`,passwordHash:hash,contactName:'Synthetic contact',phone:'0900000000',verifiedAt:new Date()}});
     const login=expect(await call('/portal/auth/login',{}, {email:account.email,password}),201,'portal login');portals.push({account,token:login.accessToken});
   }
-  for(const [i,code]of ['TIEP_NHAN','THAM_DINH','CAP_TREN','HOAN_TAT'].entries())await db.workflowStage.create({data:{stageCode:code,stageName:code,standardSlaHours:[8,24,16,4][i],orderIndex:i+1}});
+  for(const [i,code]of ['TIEP_NHAN','THAM_DINH','HOAN_TAT'].entries())await db.workflowStage.create({data:{stageCode:code,stageName:code,standardSlaHours:[8,24,4][i],orderIndex:i+1}});
   const portal=portals[0],foreign=portals[1],officer=actors.CBTD,other=actors.OTHER,manager=actors.QUAN_LY;
   const year=String(new Date(Date.now()+7*3600000).getUTCFullYear()-1);
   const data={taxCode:'7888888888',companyName:'Synthetic Cycle Manufacturing',industry:'Sản xuất',establishedYear:2020,annualRevenue:0,charterCapital:500000000,representativeName:'Synthetic Representative',phone:'0900000000',address:'Synthetic address',loanPurpose:'Materials',loanType:'VAY_VON_LUU_DONG',proposedAmount:100000000,loanTermMonths:12,businessScope:'MANUFACTURING',revenuePeriod:year,representative:{mode:'LEGAL_REPRESENTATIVE'},submissionDeclaration:{accepted:true,version:'portal-enterprise-submission-v1'},hasExistingDebt:false,collateral:{mode:'NONE_REQUESTED'}};

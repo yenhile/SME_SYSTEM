@@ -15,7 +15,7 @@ const capitalText = ['businessActivity','otherFundsSource','repaymentSource'];
 const capitalDates = ['useFrom','useTo','recoveryDate'];
 
 function previewEnabled(): boolean {
-  return process.env.PORTAL_FOUNDATION_PREVIEW === 'true' && ['development','test'].includes(process.env.NODE_ENV || '');
+  return process.env.PORTAL_V2_ROLLOUT_ENABLED === 'true' || process.env.PORTAL_FOUNDATION_PREVIEW === 'true' && ['development','test'].includes(process.env.NODE_ENV || '');
 }
 
 export function assertPreviewEnabled(): void {
@@ -51,7 +51,7 @@ function amount(value: unknown, field: string): void {
 
 /** Validate draft shape only. No v2 requiredness or lending policy is activated here. */
 export function validateDraftV2(input: unknown): Record<string, any> {
-  const data = objectFields(input, [...legacyFields,...textFields,...dateFields,'revenuePeriod','annualRevenueBasis','hasExistingDebt','collateral','capitalPlan','businessScope','representative','submissionDeclaration'], 'draft');
+  const data = objectFields(input, [...legacyFields,...textFields,...dateFields,'revenuePeriod','annualRevenueBasis','hasExistingDebt','collateral','capitalPlan','businessScope','serviceProofMode','representative','submissionDeclaration'], 'draft');
   validatePortalData(Object.fromEntries(Object.entries(data).filter(([key]) => legacyFields.includes(key))));
   for (const field of textFields) if (data[field] !== undefined) text(data[field], field);
   for (const field of dateFields) if (data[field] !== undefined) date(data[field], field);
@@ -60,7 +60,8 @@ export function validateDraftV2(input: unknown): Record<string, any> {
   if (data.revenuePeriod !== undefined && (typeof data.revenuePeriod !== 'string' || !/^(?!0000)[0-9]{4}(?:-(?:0[1-9]|1[0-2]|Q[1-4]))?$/.test(data.revenuePeriod))) invalid('revenuePeriod');
   if (data.contactEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactEmail)) invalid('contactEmail');
   if (data.hasExistingDebt !== undefined && typeof data.hasExistingDebt !== 'boolean') invalid('hasExistingDebt');
-  if (data.businessScope !== undefined && !['MANUFACTURING','OTHER'].includes(data.businessScope)) invalid('businessScope');
+  if(data.serviceProofMode!==undefined && !['CONTRACT_OR_ORDER','ACCEPTANCE_INVOICE'].includes(data.serviceProofMode)) invalid('serviceProofMode');
+  if (data.businessScope !== undefined && !['MANUFACTURING','TRADING','SERVICES','OTHER'].includes(data.businessScope)) invalid('businessScope');
   if (data.representative !== undefined) {
     const representative = objectFields(data.representative, ['mode','name'], 'representative');
     if (representative.mode !== undefined && !['LEGAL_REPRESENTATIVE','AUTHORIZED'].includes(representative.mode)) invalid('representative.mode');
@@ -99,7 +100,7 @@ export function validateDraftV2(input: unknown): Record<string, any> {
 const catalog = [
   {code:'A',name:'Pháp lý doanh nghiệp',types:[['A_BUSINESS_REGISTRATION','Đăng ký doanh nghiệp'],['A_CHARTER','Điều lệ'],['A_REPRESENTATIVE_AUTHORITY','Thẩm quyền đại diện/ký'],['A_REPRESENTATIVE_ID','Giấy tờ định danh người đại diện'],['A_AUTHORIZATION','Văn bản ủy quyền']]},
   {code:'B',name:'Tài chính',types:[['B_FINANCIAL_STATEMENTS','Báo cáo tài chính'],['B_LATEST_FINANCIAL_STATEMENTS','Báo cáo tài chính kỳ gần nhất'],['B_RECEIVABLES_PAYABLES','Chi tiết công nợ phải thu/phải trả'],['B_INVENTORY','Chi tiết hàng tồn kho']]},
-  {code:'C',name:'Hoạt động sản xuất kinh doanh',types:[['C_BUSINESS_CONTRACT','Hợp đồng kinh doanh'],['C_INVOICE','Hóa đơn'],['C_PURCHASE_ORDER','Đơn đặt hàng'],['C_MATERIAL_CONTRACT','Hợp đồng nguyên vật liệu'],['C_QUOTATION','Báo giá'],['C_PRODUCTION_PLAN','Kế hoạch sản xuất kinh doanh']]},
+  {code:'C',name:'Hoạt động sản xuất kinh doanh',types:[['C_BUSINESS_CONTRACT','Hợp đồng kinh doanh'],['C_INVOICE','Hóa đơn'],['C_PURCHASE_ORDER','Đơn đặt hàng'],['C_MATERIAL_CONTRACT','Hợp đồng nguyên vật liệu'],['C_QUOTATION','Báo giá'],['C_PRODUCTION_PLAN','Kế hoạch sản xuất kinh doanh'],['C_TRADING_PLAN','Kế hoạch mua và bán hàng'],['C_SERVICE_PLAN','Kế hoạch thực hiện dịch vụ'],['C_SERVICE_CONTRACT','Hợp đồng dịch vụ'],['C_SERVICE_ORDER','Đơn đặt dịch vụ'],['C_SERVICE_ACCEPTANCE','Biên bản nghiệm thu dịch vụ']]},
   {code:'D',name:'Phương án sử dụng vốn',types:[['D_CAPITAL_PLAN','Phương án sử dụng vốn'],['D_LOAN_REQUEST','Đề nghị vay vốn'],['D_REPAYMENT_CASHFLOW','Dòng tiền trả nợ']]},
   {code:'E',name:'Tài sản bảo đảm',types:[['E_COLLATERAL_TITLE','Hồ sơ quyền đối với tài sản'],['E_COLLATERAL_VALUATION','Thông tin định giá tài sản']]},
   {code:'F',name:'Dư nợ hiện có',types:[['F_DEBT_STATEMENT','Thông tin dư nợ'],['F_REPAYMENT_SCHEDULE','Lịch trả nợ'],['F_BANK_STATEMENT','Sao kê ngân hàng']]},

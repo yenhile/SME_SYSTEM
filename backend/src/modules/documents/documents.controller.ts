@@ -21,22 +21,23 @@ export class DocumentsController {
   }
 
   @Post(':applicationId')
-  @Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN)
+  @Roles(RoleCode.CBTD)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   create(
     @Param('applicationId') applicationId: string,
     @Body('documentType') documentType: DocumentType,
     @UploadedFile() file: { buffer: Buffer; originalname: string; size: number; mimetype: string },
     @CurrentUser('id') userId: string,
+    @CurrentUser('activeRole') activeRole: string,
   ) {
     if (!file || !Object.values(DocumentType).includes(documentType)) throw new BadRequestException('Cần chọn tệp và loại chứng từ hợp lệ.');
-    return this.documentsService.upload(applicationId, documentType, file, userId);
+    return this.documentsService.upload(applicationId, documentType, file, userId, activeRole);
   }
 
   @Delete(':id')
-  @Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN)
-  delete(@Param('id') id: string) {
-    return this.documentsService.delete(id);
+  @Roles(RoleCode.CBTD)
+  delete(@Param('id') id: string, @CurrentUser() user: {id:string;activeRole:string}) {
+    return this.documentsService.delete(id, user);
   }
 
   @Get(':id/download')

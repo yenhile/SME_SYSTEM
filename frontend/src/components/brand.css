@@ -1,0 +1,16 @@
+.sme-brand { display: flex; align-items: center; gap: 12px; }
+.sme-brand-icon {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 40px; height: 40px; border-radius: 8px;
+  background: #eef2ff; color: #5146e5; transition: transform .15s ease;
+}
+.sme-brand-text { display: flex; flex-direction: column; }
+.sme-brand-text strong {
+  font-size: 18px; font-weight: 600; letter-spacing: -.025em;
+  line-height: 1.15; color: #0f172a;
+}
+.sme-brand-text small {
+  display: block; margin-top: 1px; font-size: 12px;
+  font-weight: 400; line-height: 1.5; color: #64748b;
+}
+.login-card > .sme-brand { justify-content: center; margin: 0 auto 18px; }

@@ -28,10 +28,9 @@ async function main() {
   // 2. Tạo danh mục Workflow Stages (Định mức SLA chuẩn)
   console.log('2. Khởi tạo các công đoạn Workflow & SLA định mức...');
   const stagesData = [
-    { stageCode: StageCode.TIEP_NHAN, stageName: 'Tiếp nhận & Kiểm tra hồ sơ', standardSlaHours: 4, orderIndex: 1 },
-    { stageCode: StageCode.THAM_DINH, stageName: 'Thẩm định hồ sơ & Năng lực rủi ro', standardSlaHours: 24, orderIndex: 2 },
-    { stageCode: StageCode.CAP_TREN, stageName: 'Trình cấp trên phê duyệt (> 10 tỷ)', standardSlaHours: 48, orderIndex: 3 },
-    { stageCode: StageCode.HOAN_TAT, stageName: 'Hoàn tất & Phê duyệt giải ngân', standardSlaHours: 8, orderIndex: 4 },
+    { stageCode: StageCode.TIEP_NHAN, stageName: 'Tiếp nhận & Kiểm tra hồ sơ', standardSlaHours: 112, orderIndex: 1 },
+    { stageCode: StageCode.THAM_DINH, stageName: 'Thẩm định hồ sơ & Năng lực rủi ro', standardSlaHours: 40, orderIndex: 2 },
+    { stageCode: StageCode.HOAN_TAT, stageName: 'Hoàn tất & Phê duyệt giải ngân', standardSlaHours: 8, orderIndex: 3 },
   ];
 
   const stages = {};
@@ -238,27 +237,6 @@ async function main() {
     },
   });
 
-  // Hồ sơ 3: Thực Phẩm Xanh - Vay 15 tỷ (> 10 tỷ: CHỜ PHẢN HỒI TỪ CẤP TRÊN)
-  await prisma.loanApplication.upsert({
-    where: { applicationCode: 'SME-20260920-0003' },
-    update: {},
-    create: {
-      applicationCode: 'SME-20260920-0003',
-      companyId: companies['0319876543'].id,
-      loanPurpose: 'Mở rộng nhà máy kho lạnh bảo quản trái cây sấy dẻo xuất khẩu Châu Âu',
-      loanType: LoanType.VAY_VON_LUU_DONG,
-      proposedAmount: 15000000000, // 15 tỷ > 10 tỷ
-      officialAmount: 15000000000,
-      loanTermMonths: 24,
-      currentStage: StageCode.CAP_TREN,
-      currentStatus: LoanStatus.WAITING_HEAD_OFFICE,
-      assignedTo: users['test_cbtd'].id,
-      isDocumentComplete: true,
-      supplementCount: 1,
-      createdAt: new Date('2026-09-20T10:00:00Z'),
-    },
-  });
-
   // Hồ sơ 4: Vận Tải Đông Á - Vay 2 tỷ (ĐANG CHỜ DOANH NGHIỆP BỔ SUNG CHỨNG TỪ - TẠM DỪNG SLA)
   const app4 = await prisma.loanApplication.upsert({
     where: { applicationCode: 'SME-20260925-0004' },
@@ -279,16 +257,26 @@ async function main() {
     },
   });
 
-  // Ghi nhận yêu cầu bổ sung cho Hồ sơ 4
-  await prisma.supplementRequest.create({
-    data: {
-      applicationId: app4.id,
-      requestContent: 'Yêu cầu cung cấp Báo cáo tài chính năm 2025 có kiểm toán và Sao kê tài khoản ngân hàng chính 6 tháng gần nhất có mộc ngân hàng.',
-      requestedBy: users['test_cbtd'].id,
-      deadlineAt: new Date('2026-10-02T17:00:00Z'),
-      status: SupplementStatus.PENDING,
-    },
-  });
+  // Ghi nhận yêu cầu bổ sung cho Hồ sơ 4; mỗi hồ sơ chỉ có một yêu cầu đang mở dù chạy seed nhiều lần.
+  const openSupplement = await prisma.supplementRequest.findFirst({ where: { applicationId: app4.id, status: SupplementStatus.PENDING } });
+  if (!openSupplement) {
+    await prisma.supplementRequest.create({
+      data: {
+        applicationId: app4.id,
+        requestContent: 'Yêu cầu cung cấp Báo cáo tài chính năm 2025 có kiểm toán và Sao kê tài khoản ngân hàng chính 6 tháng gần nhất có mộc ngân hàng.',
+        requestedBy: users['test_cbtd'].id,
+        deadlineAt: new Date('2026-10-02T17:00:00Z'),
+        status: SupplementStatus.PENDING,
+      },
+    });
+  }
+
+  // Định mức 112/40 giờ chỉ đúng khi tính theo giờ làm việc, nên PA1 được bật cùng lúc với định mức.
+  const calendarVersion = 'VN-20260101-20261231-v1';
+  const activation = await prisma.slaPolicyActivation.findFirst({ where: { policyCode: 'PA1', calendarVersion } });
+  if (!activation) {
+    await prisma.slaPolicyActivation.create({ data: { policyCode: 'PA1', calendarVersion, activatedAt: new Date(), note: 'Lịch vận hành năm 2026' } });
+  }
 
   console.log('--- SEED DỮ LIỆU THÀNH CÔNG VÀ HOÀN TẤT ---');
 }

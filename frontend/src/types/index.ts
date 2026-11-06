@@ -1,13 +1,14 @@
+import type { SlaSummaryView } from '../slaDisplay';
+
 export type RoleCode = 'ADMIN' | 'CBTD' | 'THAM_QUYEN' | 'QUAN_LY';
 
-export type StageCode = 'TIEP_NHAN' | 'THAM_DINH' | 'CAP_TREN' | 'HOAN_TAT';
+export type StageCode = 'TIEP_NHAN' | 'THAM_DINH' | 'HOAN_TAT';
 
 export type LoanStatus =
   | 'RECEIVED'
   | 'CHECKED'
   | 'SUPPLEMENT_REQUIRED'
   | 'PENDING_APPRAISAL'
-  | 'WAITING_HEAD_OFFICE'
   | 'APPROVED'
   | 'REJECTED'
   | 'CLOSED_TIMEOUT';
@@ -26,6 +27,7 @@ export interface User {
   phone?: string;
   branchName: string;
   roles: RoleCode[];
+  isActive?: boolean;
 }
 
 export interface Company {
@@ -101,6 +103,7 @@ export interface SupplementRequest {
   resolvedAt?: string;
   status: 'PENDING' | 'RESOLVED' | 'EXPIRED';
   notes?: string;
+  portalSupplement?: any;
   requester?: {
     fullName: string;
     username: string;
@@ -117,6 +120,8 @@ export interface ApplicationAssignment {
 }
 
 export interface LoanApplication {
+  businessPolicyVersion?: string | null;
+  intakeOfficerId?: string | null;
   portalRequest?: import('../portal/model').PortalRequest | null;
   source?: 'PORTAL' | 'QUAY';
   id: string;
@@ -133,6 +138,15 @@ export interface LoanApplication {
   currentStage: StageCode;
   currentStatus: LoanStatus;
   assignedTo?: string;
+  assignmentVersion?: number;
+  coordinationRestrictions?:{writeBlocked:boolean;decisionBlocked:boolean};
+  makerCheckerRestrictions?: {
+    isIndependent: boolean;
+    decisionBlocked: boolean;
+    decisionBlockReason: string | null;
+    canCloseOverdue: boolean;
+    closeOverdueBlockReason: string | null;
+  };
   assignedUser?: {
     id: string;
     fullName: string;
@@ -155,6 +169,11 @@ export interface LoanApplication {
   predictionStatus?: 'AVAILABLE' | 'INCOMPATIBLE_PA1' | 'NONE';
   slaState?: { policy: string | null; calendarVersion: string | null; waiting: 'ENTERPRISE' | 'BANK' | null; slaRunning: boolean };
   liveSla?: { historyId: string; actualDurationHours?: number; pausedDurationHours?: number; netWorkDurationHours?: number; isDelayed?: boolean; error?: string } | null;
+  slaSummary?: SlaSummaryView | null;
+  reportStatus?: string | null;
+  reportVersion?: { sequence: number; submittedAt: string } | null;
+  queueReason?: import('../appraisalQueue').QueueReason;
+  documentCount?: number;
 }
 
 export interface OverviewStats {
@@ -209,7 +228,10 @@ export interface OfficerWorkload {
   phone?: string;
   branchName: string;
   roles: RoleCode[];
+  isActive?: boolean;
   activeLoanCount: number;
+  pendingIntakeCount:number;
+  totalAssignedCount:number;
   highRiskLoanCount: number;
   workloadStatus: 'KHẢ DỤNG' | 'BẬN RỘN' | 'QUÁ TẢI';
 }
