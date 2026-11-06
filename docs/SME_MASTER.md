@@ -727,6 +727,7 @@ Quy tắc xếp tab, mỗi hồ sơ đúng một tab và số đếm theo bộ l
 
 ---
 
+<a id="kiem-thu-vai-tro-can-bo-tin-dung"></a>
 ### Kiểm thử vai trò Cán bộ tín dụng — ngày 05/11/2026
 
 **Phạm vi:** PO giao thử ở góc người dùng, không sửa code. Thử trên schema riêng đã xóa, backend 3101, frontend 5199, khổ 1280, tài khoản CBTD; đề nghị và phản hồi của doanh nghiệp, thao tác của Quản lý, Thẩm quyền đi qua API thử để dựng tình huống. Hộp xác nhận của trình duyệt được giả lập chấp nhận.
@@ -778,7 +779,7 @@ Quy tắc xếp tab, mỗi hồ sơ đúng một tab và số đếm theo bộ l
 - **Lỗi hiện có ở popup:** `AppraisalPanel` nạp lại và xóa nội dung tờ trình chưa lưu khi có thêm chứng từ hoặc hồ sơ đổi `updatedAt`; tải chi tiết lỗi thì chỉ có `alert`, không hiện gì và không có nút thử lại; yêu cầu bổ sung đã hết hạn hiện "Đang chờ bổ sung".
 - **PO chốt ngày 06/11/2026:** view chi tiết chỉ áp dụng cho CBTD; Quản lý vẫn dùng popup.
 
-**Triển khai view chi tiết hồ sơ CBTD (PO duyệt ngày 06/11/2026, chưa commit):**
+**Triển khai view chi tiết hồ sơ CBTD (PO duyệt ngày 06/11/2026, commit `6481598` trên nhánh `LeThiYenNhi`):**
 
 - **Điều hướng:** CBTD bấm hồ sơ thì chuyển sang `/ho-so/<mã hồ sơ>` thay cho popup, gồm danh sách, thông báo, đề nghị Portal đã tiếp nhận, đề nghị điều phối. Tải lại trang vẫn ở đúng hồ sơ. Danh sách giữ nguyên bộ lọc khi quay lại. Quản lý và Thẩm quyền vào `/ho-so/...` thì về trang chính; CBTD vào `/tham-dinh/...` vẫn về Danh sách.
 - **Bố cục:** đầu trang có trạng thái, hạn SLA; thanh công đoạn; bên trái là tờ trình, đề nghị gốc, chứng từ, bổ sung, tiến trình, đề nghị điều phối, lịch sử bàn giao; bên phải là "Việc cần làm" và "Khoản vay". Tờ trình đã trình hiện dạng chỉ đọc. Từ khổ dưới 1280px, "Việc cần làm" lên đầu.
@@ -806,6 +807,8 @@ Quy tắc xếp tab, mỗi hồ sơ đúng một tab và số đếm theo bộ l
 | Thẩm quyền | Vẫn mở trang thẩm định, đủ 3 thao tác quyết định |
 
 **Chưa kiểm chứng:** chọn tệp bằng tay; yêu cầu bổ sung Portal có danh mục (mới thấy khung tạo yêu cầu); đề nghị điều phối lý do thường; Quản lý xử lý xung đột lợi ích rồi CBTD được mở lại; mở từ thông báo và từ đề nghị Portal vừa tiếp nhận; hồ sơ thật trên hệ thống chính; vị trí thông báo khi cuộn ở khổ dưới 650px sau lần chỉnh cuối (mới đọc code). `round2-coordination-checks.mjs`, `check-sme-rollout-browser.mjs` có thao tác CBTD, chưa chạy và có thể phải đổi vì không còn popup.
+
+**Sau đợt thử:** lệnh kiểm tra kiểu đã sinh nhầm 71 tệp `.js`, `.d.ts` trong `frontend`, đã xóa. Phần thử trên giao diện ở trên chạy với các tệp này; không có tệp `.ts`, `.tsx` nào sửa sau khi chúng sinh ra nên logic giống mã nguồn. Sau khi xóa: build và `test:officer-case`, `test:appraisal`, `test:loan-detail`, `test:navigation` đạt; chưa thử lại trên giao diện. Ngày 06/11/2026 backend 3000 và frontend 5173 bị tắt, chưa rõ nguyên nhân; đã bật lại lúc 13:22, không seed hay migrate, API trả 401 khi chưa đăng nhập, chưa thử đăng nhập bằng tài khoản thật.
 
 **Backlog, chưa sửa:**
 
@@ -938,6 +941,8 @@ Toàn bộ 7 nhóm chức năng đã được rà soát, đồng bộ và hoàn 
 
 > [!IMPORTANT]
 > **Ranh giới nghiệm thu:** Trạng thái "ĐẠT (Local)" xác nhận toàn bộ chức năng đã được triển khai, kiểm thử tự động và thực nghiệm thành công trên hệ thống đang chạy tại máy local (`localhost:3000`, `localhost:5173`, `localhost:8000`, `localhost:8025`). Hệ thống **CHƯA phát hành ra internet hoặc máy chủ từ xa**; không quy đổi số lượng bài kiểm thử thành tỷ lệ phần trăm hoàn thiện toàn diện.
+>
+> **Mốc của bảng:** bảng này và số E2E 38/38 là kết quả mốc 02/11/2026. Các thay đổi ngày 04–06/11/2026 có kiểm chứng riêng trong từng mục ở phần 3 và tại [điểm bàn giao](#diem-ban-giao-20261106); toàn bộ E2E chưa chạy lại sau các thay đổi đó.
 
 ---
 
@@ -1011,6 +1016,46 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 ### Tổng kết phạm vi đã hoàn thành và phần còn lại
 * **Đã hoàn thành:** Toàn bộ các chức năng thuộc 7 nhóm chức năng đã được triển khai đầy đủ trên mã nguồn (`backend/` và `frontend/`), đã diễn tập migration an toàn trên DB PostgreSQL local, đã kiểm chứng E2E với 38/38 checks pass trên hệ sinh thái đang chạy, và đã cập nhật tài liệu đầy đủ.
 * **Phần còn lại chưa thực hiện trong đợt này:** Chưa phát hành hệ thống ra internet hoặc môi trường máy chủ từ xa; chưa tích hợp dịch vụ chứng thư số/chữ ký số CA thực tế; chưa thay đổi mô hình ML.
+
+<a id="diem-ban-giao-20261106"></a>
+### Điểm bàn giao ngày 06/11/2026
+
+**Git:** code ở commit `6481598`, nhánh `LeThiYenNhi`, đã push. Chưa có PR đang mở cho nhánh này; nhánh thiếu một commit gộp của PR #9 từ `main`, gộp thử không xung đột. Lần cập nhật mục này chưa commit. Không đưa vào commit: thư mục `build`, `preview-build` trong `evidence`, các tệp `tsbuildinfo`, `frontend/portal.css` (rỗng), `output/`, `prototypes/`.
+
+**Kiểm chứng gần nhất, ngày 06/11/2026:** backend 380/380; 17 gói test frontend đạt; build đạt. Sau khi xóa 71 tệp sinh nhầm chỉ chạy lại build và 4 gói liên quan. Chi tiết tại mục [Kiểm thử vai trò Cán bộ tín dụng](#kiem-thu-vai-tro-can-bo-tin-dung).
+
+**Chờ PO quyết định:**
+
+- Phương án lãi suất của Thẩm quyền: biểu theo loại vay có sàn và trần (đề xuất), cố định theo loại vay, hay giữ nhập tự do 0–100%.
+- Thẩm quyền còn yêu cầu bổ sung, xác nhận đã nhận đủ, chạy lại dự báo ngoài danh sách chức năng.
+- Form phê duyệt chưa có ô điều kiện phê duyệt hoặc ghi chú.
+- CBTD chưa được báo khi Quản lý đóng hồ sơ quá hạn bổ sung.
+- Seed còn công đoạn và hồ sơ mẫu Cấp trên; `.agents/AGENTS.md` còn cụm "ngưỡng cấp trên".
+
+**Chưa kiểm chứng:**
+
+- Toàn bộ E2E sau thay đổi 04–06/11. Các script chưa chạy lại: `check-workflow.cjs`, `round2-coordination-checks.mjs`, `round3-intake-checks.mjs`, `check-sme-rollout-browser.mjs`. Hai script `round2-coordination-checks.mjs`, `check-sme-rollout-browser.mjs` có thao tác CBTD, có thể phải đổi vì không còn popup.
+- Trang chi tiết CBTD: hồ sơ thật; chọn tệp bằng tay; yêu cầu bổ sung Portal có danh mục; đề nghị điều phối lý do thường; Quản lý xử lý xung đột lợi ích rồi CBTD được mở lại; mở từ thông báo và từ đề nghị Portal vừa tiếp nhận; giao diện sau khi xóa 71 tệp sinh nhầm.
+- Nhãn "Quá hạn" trên giao diện với dữ liệu thật; demo cần hồ sơ thật vào Thẩm định trước 23/11, việc tạo hồ sơ chờ PO cho phép.
+- Phía Portal: nhập sai MST và tệp sai trên giao diện.
+- Lọc và phân trang với dữ liệu lớn; chưa có index cho cột lọc mới.
+
+**Vận hành:**
+
+- Không dùng `start-use.ps1` để chỉ khởi động lại vì script có thể seed hoặc đẩy schema. Backend: `node --env-file=.env dist/main.js` trong `backend`. Frontend: `npm run dev` trong `frontend`.
+- Tại thời điểm ghi, dịch vụ dự báo cổng 8000 đang tắt; backend và frontend chạy ẩn nên khởi động lại máy là phải bật lại.
+- Lịch SLA chỉ có kỳ 01/01–31/12/2026, cần thêm lịch 2027.
+- SQL cần áp dụng đúng môi trường, PR không tự chạy: `document-codes.sql` (bộ đếm mã hồ sơ), `remove-cap-tren.sql` (xóa hồ sơ mẫu và công đoạn Cấp trên, tạo lại enum; `public` local đã áp dụng ngày 05/11/2026). Sao lưu trước khi chạy tệp sau.
+- Schema kiểm thử cũ `portal_v2_it_505abdfdfb5a4eb59f3b122d3b0e8bd0` còn lại, chưa dọn.
+- `check-ai-rules` còn 3 lỗi do thiếu `GEMINI.md`.
+
+**Backlog:**
+
+- Trang chi tiết CBTD: chưa cảnh báo khi rời trang với nội dung đang gõ ở form bổ sung và đề nghị điều phối.
+- Popup Quản lý: tải lỗi không mở lại được; yêu cầu hết hạn hiện "Đang chờ bổ sung". `LoanDetailModal` còn nhánh CBTD và Thẩm quyền không còn được dùng tới.
+- Trang Thẩm quyền: tải lại lỗi mất cả trang; tệp bổ sung hiện mã thay vì tên; giải trình rất dài có thể tràn ngang.
+- Khổ điện thoại: menu chiếm khoảng 590px đầu trang.
+- Giao diện: chữ menu mờ 3,63:1 chưa đạt, chờ duyệt đổi `#64748b`; vùng bấm 44px và bộ lọc rút gọn ở màn danh sách; CSS `.kanban-*` còn lại.
 
 Hai đầu việc quan trọng tiếp theo được giao cho người tiếp nhận dự án (CHƯA thực hiện trong lượt cập nhật tài liệu này):
 

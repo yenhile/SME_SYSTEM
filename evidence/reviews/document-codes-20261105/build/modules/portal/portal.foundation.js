@@ -1,0 +1,224 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PORTAL_CORE_FIELDS = exports.FINANCIAL_COMPONENTS = exports.PREVIEW_CHECKLIST_VERSION = exports.LEGACY_CHECKLIST_VERSION = void 0;
+exports.assertPreviewEnabled = assertPreviewEnabled;
+exports.validateDraftV2 = validateDraftV2;
+exports.validateCoverage = validateCoverage;
+exports.getFormConfig = getFormConfig;
+exports.checklistFor = checklistFor;
+const common_1 = require("@nestjs/common");
+const portal_validation_1 = require("./portal.validation");
+exports.LEGACY_CHECKLIST_VERSION = 'legacy-v1';
+exports.PREVIEW_CHECKLIST_VERSION = 'sme-preview-v2';
+exports.FINANCIAL_COMPONENTS = ['BALANCE_SHEET', 'INCOME_STATEMENT', 'CASH_FLOW_STATEMENT', 'NOTES'];
+exports.PORTAL_CORE_FIELDS = ['taxCode', 'companyName', 'industry', 'establishedYear', 'annualRevenue', 'charterCapital', 'representativeName', 'phone', 'address', 'loanPurpose', 'loanType', 'proposedAmount', 'loanTermMonths'];
+const legacyFields = exports.PORTAL_CORE_FIELDS;
+const textFields = ['companyType', 'contactName', 'contactPosition', 'contactPhone', 'contactEmail', 'preferredBranch'];
+const dateFields = ['establishedDate', 'neededAt'];
+const capitalText = ['businessActivity', 'otherFundsSource', 'repaymentSource'];
+const capitalDates = ['useFrom', 'useTo', 'recoveryDate'];
+function previewEnabled() {
+    return process.env.PORTAL_V2_ROLLOUT_ENABLED === 'true' || process.env.PORTAL_FOUNDATION_PREVIEW === 'true' && ['development', 'test'].includes(process.env.NODE_ENV || '');
+}
+function assertPreviewEnabled() {
+    if (!previewEnabled()) {
+        throw new common_1.ConflictException('Bản nháp v2 chỉ mở trong development/test khi bật preview.');
+    }
+}
+function invalid(field) {
+    throw new common_1.BadRequestException(`Giá trị không hợp lệ: ${field}`);
+}
+function objectFields(input, allowed, field) {
+    if (!input || typeof input !== 'object' || Array.isArray(input) || ![Object.prototype, null].includes(Object.getPrototypeOf(input)))
+        invalid(field);
+    const value = input;
+    if (Object.keys(value).some(key => !allowed.includes(key)))
+        invalid(field);
+    return value;
+}
+function text(value, field) {
+    if (typeof value !== 'string' || !value.trim() || value.length > 4000)
+        invalid(field);
+}
+function date(value, field) {
+    if (typeof value !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value) || value.startsWith('0000'))
+        invalid(field);
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value)
+        invalid(field);
+}
+function amount(value, field) {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value >= 1e16)
+        invalid(field);
+}
+function validateDraftV2(input) {
+    const data = objectFields(input, [...legacyFields, ...textFields, ...dateFields, 'revenuePeriod', 'annualRevenueBasis', 'hasExistingDebt', 'collateral', 'capitalPlan', 'businessScope', 'serviceProofMode', 'representative', 'submissionDeclaration'], 'draft');
+    (0, portal_validation_1.validatePortalData)(Object.fromEntries(Object.entries(data).filter(([key]) => legacyFields.includes(key))));
+    for (const field of textFields)
+        if (data[field] !== undefined)
+            text(data[field], field);
+    for (const field of dateFields)
+        if (data[field] !== undefined)
+            date(data[field], field);
+    for (const field of ['phone', 'contactPhone'])
+        if (data[field] !== undefined && !/^[+\d][\d\s().-]{7,19}$/.test(data[field]))
+            invalid(field);
+    if (data.establishedDate !== undefined && data.establishedYear !== undefined && Number(data.establishedDate.slice(0, 4)) !== data.establishedYear)
+        invalid('establishedYear');
+    if (data.revenuePeriod !== undefined && (typeof data.revenuePeriod !== 'string' || !/^(?!0000)[0-9]{4}(?:-(?:0[1-9]|1[0-2]|Q[1-4]))?$/.test(data.revenuePeriod)))
+        invalid('revenuePeriod');
+    if (data.contactEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactEmail))
+        invalid('contactEmail');
+    if (data.hasExistingDebt !== undefined && typeof data.hasExistingDebt !== 'boolean')
+        invalid('hasExistingDebt');
+    if (data.serviceProofMode !== undefined && !['CONTRACT_OR_ORDER', 'ACCEPTANCE_INVOICE'].includes(data.serviceProofMode))
+        invalid('serviceProofMode');
+    if (data.businessScope !== undefined && !['MANUFACTURING', 'TRADING', 'SERVICES', 'OTHER'].includes(data.businessScope))
+        invalid('businessScope');
+    if (data.representative !== undefined) {
+        const representative = objectFields(data.representative, ['mode', 'name'], 'representative');
+        if (representative.mode !== undefined && !['LEGAL_REPRESENTATIVE', 'AUTHORIZED'].includes(representative.mode))
+            invalid('representative.mode');
+        if (representative.name !== undefined)
+            text(representative.name, 'representative.name');
+    }
+    if (data.submissionDeclaration !== undefined) {
+        const declaration = objectFields(data.submissionDeclaration, ['accepted', 'version'], 'submissionDeclaration');
+        if (declaration.accepted !== undefined && typeof declaration.accepted !== 'boolean')
+            invalid('submissionDeclaration.accepted');
+        if (declaration.version !== undefined)
+            text(declaration.version, 'submissionDeclaration.version');
+    }
+    if (data.annualRevenueBasis !== undefined) {
+        const basis = objectFields(data.annualRevenueBasis, ['documentId', 'fullYearCompleted'], 'annualRevenueBasis');
+        if (basis.documentId !== undefined)
+            text(basis.documentId, 'annualRevenueBasis.documentId');
+        if (basis.fullYearCompleted !== undefined && typeof basis.fullYearCompleted !== 'boolean')
+            invalid('annualRevenueBasis.fullYearCompleted');
+    }
+    if (data.collateral !== undefined) {
+        const collateral = objectFields(data.collateral, ['mode', 'description'], 'collateral');
+        if (collateral.mode !== undefined && !['PROPOSED', 'NONE_REQUESTED', 'UNDECIDED'].includes(collateral.mode))
+            invalid('collateral.mode');
+        if (collateral.description !== undefined)
+            text(collateral.description, 'collateral.description');
+    }
+    if (data.capitalPlan !== undefined) {
+        const plan = objectFields(data.capitalPlan, [...capitalText, ...capitalDates, 'costs', 'ownFunds', 'otherFunds'], 'capitalPlan');
+        for (const field of capitalText)
+            if (plan[field] !== undefined)
+                text(plan[field], `capitalPlan.${field}`);
+        for (const field of capitalDates)
+            if (plan[field] !== undefined)
+                date(plan[field], `capitalPlan.${field}`);
+        if (plan.useFrom !== undefined && plan.useTo !== undefined && plan.useFrom > plan.useTo)
+            invalid('capitalPlan.useTo');
+        for (const field of ['ownFunds', 'otherFunds'])
+            if (plan[field] !== undefined)
+                amount(plan[field], `capitalPlan.${field}`);
+        if (plan.costs !== undefined) {
+            if (!Array.isArray(plan.costs) || plan.costs.length > 100)
+                invalid('capitalPlan.costs');
+            for (const item of plan.costs) {
+                const cost = objectFields(item, ['name', 'amount', 'plannedAt'], 'capitalPlan.costs');
+                if (cost.name !== undefined)
+                    text(cost.name, 'cost.name');
+                if (cost.amount !== undefined)
+                    amount(cost.amount, 'cost.amount');
+                if (cost.plannedAt !== undefined)
+                    date(cost.plannedAt, 'cost.plannedAt');
+            }
+        }
+    }
+    return data;
+}
+const catalog = [
+    { code: 'A', name: 'Pháp lý doanh nghiệp', types: [['A_BUSINESS_REGISTRATION', 'Đăng ký doanh nghiệp'], ['A_CHARTER', 'Điều lệ'], ['A_REPRESENTATIVE_AUTHORITY', 'Thẩm quyền đại diện/ký'], ['A_REPRESENTATIVE_ID', 'Giấy tờ định danh người đại diện'], ['A_AUTHORIZATION', 'Văn bản ủy quyền']] },
+    { code: 'B', name: 'Tài chính', types: [['B_FINANCIAL_STATEMENTS', 'Báo cáo tài chính'], ['B_LATEST_FINANCIAL_STATEMENTS', 'Báo cáo tài chính kỳ gần nhất'], ['B_RECEIVABLES_PAYABLES', 'Chi tiết công nợ phải thu/phải trả'], ['B_INVENTORY', 'Chi tiết hàng tồn kho']] },
+    { code: 'C', name: 'Hoạt động sản xuất kinh doanh', types: [['C_BUSINESS_CONTRACT', 'Hợp đồng kinh doanh'], ['C_INVOICE', 'Hóa đơn'], ['C_PURCHASE_ORDER', 'Đơn đặt hàng'], ['C_MATERIAL_CONTRACT', 'Hợp đồng nguyên vật liệu'], ['C_QUOTATION', 'Báo giá'], ['C_PRODUCTION_PLAN', 'Kế hoạch sản xuất kinh doanh'], ['C_TRADING_PLAN', 'Kế hoạch mua và bán hàng'], ['C_SERVICE_PLAN', 'Kế hoạch thực hiện dịch vụ'], ['C_SERVICE_CONTRACT', 'Hợp đồng dịch vụ'], ['C_SERVICE_ORDER', 'Đơn đặt dịch vụ'], ['C_SERVICE_ACCEPTANCE', 'Biên bản nghiệm thu dịch vụ']] },
+    { code: 'D', name: 'Phương án sử dụng vốn', types: [['D_CAPITAL_PLAN', 'Phương án sử dụng vốn'], ['D_LOAN_REQUEST', 'Đề nghị vay vốn'], ['D_REPAYMENT_CASHFLOW', 'Dòng tiền trả nợ']] },
+    { code: 'E', name: 'Tài sản bảo đảm', types: [['E_COLLATERAL_TITLE', 'Hồ sơ quyền đối với tài sản'], ['E_COLLATERAL_VALUATION', 'Thông tin định giá tài sản']] },
+    { code: 'F', name: 'Dư nợ hiện có', types: [['F_DEBT_STATEMENT', 'Thông tin dư nợ'], ['F_REPAYMENT_SCHEDULE', 'Lịch trả nợ'], ['F_BANK_STATEMENT', 'Sao kê ngân hàng']] },
+];
+function formats(group) {
+    return group === 'B' || group === 'F' ? ['pdf', 'xlsx'] : group === 'E' ? ['pdf', 'jpg', 'jpeg', 'png'] : ['pdf'];
+}
+function validateCoverage(group, input) {
+    if (!portal_validation_1.groups.includes(group) || !Array.isArray(input) || input.length < 1 || input.length > 30)
+        invalid('coverage');
+    const codes = catalog.find(item => item.code === group).types.map(item => item[0]);
+    const seen = new Set();
+    const result = input.map(item => {
+        const entry = objectFields(item, ['documentTypeCode', 'period', 'components'], 'coverage');
+        if (typeof entry.documentTypeCode !== 'string' || !codes.includes(entry.documentTypeCode))
+            invalid('documentTypeCode');
+        if (entry.period !== undefined && (typeof entry.period !== 'string' || !/^(?!0000)[0-9]{4}(?:-(?:0[1-9]|1[0-2]|Q[1-4]))?$/.test(entry.period)))
+            invalid('period');
+        const key = `${entry.documentTypeCode}:${entry.period || ''}`;
+        if (seen.has(key))
+            invalid('coverage duplicate');
+        seen.add(key);
+        const coverage = { documentTypeCode: entry.documentTypeCode, ...(entry.period === undefined ? {} : { period: entry.period }) };
+        if (entry.components !== undefined) {
+            if (group !== 'B' || entry.documentTypeCode !== 'B_FINANCIAL_STATEMENTS' || !Array.isArray(entry.components)
+                || entry.components.length < 1 || entry.components.length > exports.FINANCIAL_COMPONENTS.length
+                || entry.components.some((part) => typeof part !== 'string' || !exports.FINANCIAL_COMPONENTS.includes(part))
+                || new Set(entry.components).size !== entry.components.length)
+                invalid('coverage.components');
+            coverage.components = [...entry.components].sort();
+        }
+        return coverage;
+    });
+    return result.sort((a, b) => a.documentTypeCode.localeCompare(b.documentTypeCode) || (a.period || '').localeCompare(b.period || ''));
+}
+function getFormConfig() {
+    return {
+        formVersion: 2,
+        previewEnabled: previewEnabled(),
+        technicalLimits: { maxFileBytes: 10485760, maxActiveFiles: 60 },
+        checklistVersion: exports.PREVIEW_CHECKLIST_VERSION,
+        legacyChecklistVersion: exports.LEGACY_CHECKLIST_VERSION,
+        policyStatus: 'PENDING_POLICY',
+        canSubmit: false,
+        groups: catalog.map(group => ({
+            code: group.code,
+            name: group.name,
+            policyStatus: 'PENDING_POLICY',
+            documentTypes: group.types.map(([code, name]) => ({
+                code, name, purpose: group.name, formats: formats(group.code),
+                group: group.code, description: name, ruleVersion: 'PENDING_POLICY', alternatives: [],
+                nonApplicabilityBasis: 'PENDING_POLICY', deferralBasis: 'PENDING_POLICY',
+                policyStatus: 'PENDING_POLICY', requiredness: 'PENDING_POLICY',
+                stage: 'PENDING_POLICY', applicability: 'PENDING_POLICY', versionRule: 'APPEND_ONLY', sendRule: 'PENDING_POLICY',
+                periodRequirement: 'PENDING_POLICY', deferralStatus: 'NOT_APPROVED', substituteStatus: 'NOT_APPROVED',
+            })),
+        })),
+    };
+}
+function checklistFor(request) {
+    const formVersion = request.formVersion ?? 1;
+    const expectedVersion = formVersion === 1 ? exports.LEGACY_CHECKLIST_VERSION : exports.PREVIEW_CHECKLIST_VERSION;
+    const checklistVersion = request.checklistVersion ?? expectedVersion;
+    const unsupported = ![1, 2].includes(formVersion) || checklistVersion !== expectedVersion;
+    const preview = formVersion !== 1 || unsupported;
+    const policyStatus = unsupported ? 'UNSUPPORTED_VERSION' : preview ? 'PENDING_POLICY' : 'LEGACY_GROUP_RULES';
+    const documents = request.documents || [];
+    const superseded = new Set(documents.map(document => document.supersedesId).filter(Boolean));
+    const current = documents.filter(document => !document.withdrawnAt && !superseded.has(document.id));
+    return {
+        formVersion,
+        checklistVersion,
+        policyStatus,
+        cannotSubmit: preview,
+        groups: catalog.map(group => {
+            const files = current.filter(document => document.documentGroup === group.code);
+            return {
+                code: group.code, name: group.name,
+                required: preview ? null : true,
+                status: preview ? policyStatus : files.length ? 'UPLOADED' : 'MISSING',
+                documents: files.map(document => ({ id: document.id, coverage: document.coverage ?? null })),
+            };
+        }),
+    };
+}
+//# sourceMappingURL=portal.foundation.js.map
