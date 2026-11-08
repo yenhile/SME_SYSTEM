@@ -336,17 +336,16 @@ async function runChecks(h) {
     const dashboardService = app.get(DashboardService, { strict: false });
     const predictionService = app.get(PredictionService, { strict: false });
 
-    // --- 13. Quy tắc ML: bỏ qua khi công đoạn Tiếp nhận tính theo PA1; giữ nguyên khi tính theo cách cũ ---
-    eq(await db.delayPrediction.count({ where: { applicationId: loop.id } }), 0, 'PA1 loan: no prediction was ever stored (ML skipped after transition and resolve)');
-    const skipped = await predictionService.predictForApplication(loop.id);
-    eq(skipped.unavailable, true, 'PA1 loan: manual prediction reports unavailable');
-    eq(skipped.reason, 'PA1_INCOMPATIBLE', 'PA1 loan: manual prediction names the reason');
-    eq(await db.delayPrediction.count({ where: { applicationId: loop.id } }), 0, 'PA1 loan: manual prediction stores nothing');
-    ok(await db.delayPrediction.count({ where: { applicationId: old.id } }) >= 1, 'legacy-first loan keeps getting real predictions (ML service)');
+    // --- 13. Quy tắc ML v4: dự báo theo giờ làm việc khi công đoạn tính theo PA1; cách tính cũ thì không dự báo ---
+    const pa1Prediction = await predictionService.predictForApplication(loop.id);
+    ok(!pa1Prediction.unavailable && pa1Prediction.stage === 'THAM_DINH', 'PA1 loan: manual prediction runs on the open stage (needs ML service)');
+    ok(await db.delayPrediction.count({ where: { applicationId: loop.id } }) >= 1, 'PA1 loan: prediction stored');
+    const legacyPrediction = await predictionService.predictForApplication(old.id);
+    ok(!legacyPrediction.unavailable, 'loan whose Reception used the old calculation but whose open stage is PA1 is predicted by the open stage');
 
     // --- 14. Chi tiết hồ sơ: trạng thái SLA và số giờ đang chạy ---
     const loopView = await loans.findOne(loop.id, vn('2026-10-28', '15:00'));
-    eq(loopView.predictionStatus, 'INCOMPATIBLE_PA1', 'detail: prediction status for a PA1 loan');
+    eq(loopView.predictionStatus, 'AVAILABLE', 'detail: prediction status for a PA1 loan with a stored prediction');
     eq(loopView.slaState.policy, 'PA1', 'detail: open appraisal stage uses PA1');
     eq(loopView.slaState.waiting, null, 'detail: nobody is waited for outside a supplement');
     near(loopView.liveSla.actualDurationHours, 2, 'detail: live working hours since 12:00 (13:00-15:00)');
@@ -385,7 +384,7 @@ async function runChecks(h) {
     const waitingWarning = warnings.find(w => w.id === waiting.id);
     eq(waitingWarning.riskLevel, null, 'early warning: no invented risk level');
     eq(waitingWarning.delayProbability, null, 'early warning: no invented probability');
-    eq(waitingWarning.predictionStatus, 'INCOMPATIBLE_PA1', 'early warning: names the PA1 reason');
+    eq(waitingWarning.predictionStatus, 'NONE', 'early warning: no stored prediction for this loan');
     await db.supplementRequest.update({ where: { id: bankSupp.id }, data: { overdueAt: vn('2026-11-05', '10:00') } }); // dấu vết quá hạn đã ghi trước khi doanh nghiệp gửi đủ
     const overdueList = await dashboardService.getOverdueSupplements(vn('2026-11-06', '10:00'));
     eq(overdueList.find(item => item.id === bankSupp.id).waitingOn, 'BANK', 'overdue list: shows the bank is the party waited for');

@@ -1,0 +1,189 @@
+{
+  "split_share": {
+    "train": 0.698,
+    "valid": 0.152,
+    "test": 0.151
+  },
+  "tn_bank_hours": {
+    "p10": 14.5,
+    "p25": 20.2,
+    "p50": 29.8,
+    "p75": 43.6,
+    "p90": 62.3,
+    "p95": 77.2,
+    "p99": 120.8
+  },
+  "td_bank_hours": {
+    "p10": 8.4,
+    "p25": 12.5,
+    "p50": 20.2,
+    "p75": 33.2,
+    "p90": 52.5,
+    "p95": 68.7,
+    "p99": 114.2
+  },
+  "dn_wait_hours_among_supplement_cases": {
+    "p10": 10.5,
+    "p25": 20.1,
+    "p50": 41.4,
+    "p75": 81.0,
+    "p90": 138.5,
+    "p95": 180.5,
+    "p99": 304.8
+  },
+  "total_hours_incl_dn_wait": {
+    "p10": 28.8,
+    "p25": 40.2,
+    "p50": 59.1,
+    "p75": 93.0,
+    "p90": 146.3,
+    "p95": 191.5,
+    "p99": 300.1
+  },
+  "supplement_case_rate": 0.238,
+  "chase_ratio_total_median_incl_dn_wait": 2.357,
+  "chase_ratio_bank_hours_median": 1.333,
+  "corr_workload_vs_tn_hours": 0.084,
+  "corr_queue_vs_td_hours": 0.088,
+  "rows": {
+    "cases": 20000,
+    "tiep_nhan_snapshots": 28190,
+    "tham_dinh_snapshots": 26604
+  },
+  "tn_rows_by_point_family": {
+    "TN_T0": 20000,
+    "TN_BS": 8190
+  },
+  "td_rows_by_point_family": {
+    "TD_VAO": 20000,
+    "TD_LR": 6604
+  },
+  "late_rate_by_sla_tiep_nhan": {
+    "24": 0.647,
+    "32": 0.4484,
+    "40": 0.3009,
+    "48": 0.199,
+    "56": 0.1342,
+    "64": 0.0916,
+    "72": 0.0625,
+    "80": 0.0447,
+    "96": 0.023
+  },
+  "late_rate_by_sla_tham_dinh": {
+    "16": 0.6262,
+    "24": 0.4052,
+    "32": 0.2651,
+    "40": 0.1787,
+    "48": 0.1222,
+    "56": 0.0854,
+    "64": 0.0612,
+    "80": 0.0323
+  },
+  "sla_for_late_rate_tiep_nhan": {
+    "15%": 53.7,
+    "10%": 62.3,
+    "5%": 77.2
+  },
+  "sla_for_late_rate_tham_dinh": {
+    "15%": 43.7,
+    "10%": 52.5,
+    "5%": 68.7
+  },
+  "proposed_sla_scenario": {
+    "tn_80h_late_rate": 0.0447,
+    "td_40h_late_rate": 0.1787
+  },
+  "checks": [
+    {
+      "check": "Số tiền tối đa 10 tỷ",
+      "pass": true,
+      "detail": "max=10.0"
+    },
+    {
+      "check": "Số tiền tối thiểu 0,01 tỷ (10 triệu)",
+      "pass": true,
+      "detail": "min=0.06"
+    },
+    {
+      "check": "Không thiếu dữ liệu ở bảng hồ sơ",
+      "pass": true,
+      "detail": "tổng ô thiếu=0"
+    },
+    {
+      "check": "Không thiếu dữ liệu ở snapshot Tiếp nhận",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "Không thiếu dữ liệu ở snapshot Thẩm định",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "Mã hồ sơ không trùng",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "Thời gian không âm",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "Mỗi hồ sơ có đúng một dòng T0 và một dòng TD_VAO",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "Mọi snapshot của một hồ sơ cùng một tập (train/valid/test)",
+      "pass": true,
+      "detail": "max số tập khác nhau trên mỗi hồ sơ=1"
+    },
+    {
+      "check": "Tỷ lệ cần bổ sung gần BPIC (22,4%)",
+      "pass": true,
+      "detail": "mô phỏng=0.238, BPIC=0.224"
+    },
+    {
+      "check": "Hồ sơ có bổ sung tốn thêm giờ ngân hàng cùng bậc với BPIC (hồ sơ có bước theo dõi lâu hơn 1,27 đến 1,30 lần, đã kiểm soát kết cục)",
+      "pass": true,
+      "detail": "mô phỏng (giờ phía ngân hàng)=1.33; tổng gồm chờ doanh nghiệp=2.36 (không so với BPIC vì bước theo dõi của BPIC là ngân hàng gọi khách, khác chờ bổ sung chính thức)"
+    },
+    {
+      "check": "Tổng thời gian cả hồ sơ cùng bậc với BPIC (hồ sơ được duyệt: trung vị 81,7 giờ, P90 163,8 giờ)",
+      "pass": true,
+      "detail": "mô phỏng trung vị=59.1, P90=146.3"
+    },
+    {
+      "check": "Tải cán bộ tăng thì giờ Tiếp nhận tăng",
+      "pass": true,
+      "detail": "tương quan=0.084"
+    },
+    {
+      "check": "Hàng chờ thẩm định dài thì giờ Thẩm định tăng",
+      "pass": true,
+      "detail": "tương quan=0.088"
+    },
+    {
+      "check": "Số vòng bổ sung tăng thì giờ Tiếp nhận tăng",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "Các yếu tố ẩn không đủ để đoán (tương quan đơn lẻ vẫn vừa phải)",
+      "pass": true,
+      "detail": "|tn|=0.084, |td|=0.088"
+    },
+    {
+      "check": "Giờ đã dùng ở snapshot không vượt tổng giờ của hồ sơ",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "check": "Giờ đã dùng ở snapshot Thẩm định không vượt tổng",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "all_checks_pass": true
+}

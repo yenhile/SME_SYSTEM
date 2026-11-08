@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { predictionLabel, stageStandardText, workingDurationText } from '../slaDisplay';
+import { alertDisplay, compareAlerts, predictionLabel, slaLeftText, stageStandardText, workingDurationText } from '../slaDisplay';
+import { PeriodReport } from './PeriodReport';
 import { OverdueSupplementsPanel, type OverdueSupplementItem } from './OverdueSupplementsPanel';
 import { OverviewStats, SlaBottleneck, EarlyWarningItem } from '../types';
 import {
@@ -38,7 +39,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
       ]);
       setStats(statsData);
       setBottlenecks(bottlenecksData);
-      setWarnings(warningsData);
+      setWarnings([...warningsData].sort(compareAlerts));
       // Danh sách quá hạn bổ sung chỉ dành cho Quản lý (DEC-02).
       setOverdueSupplements(activeRole === 'QUAN_LY' ? await api.get<OverdueSupplementItem[]>('/dashboard/overdue-supplements') : []);
     } catch (err) {
@@ -88,11 +89,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
           <div className="kpi-info">
             <h4>Tỷ lệ đúng hạn SLA</h4>
             <div className="kpi-value" style={{ color: '#059669' }}>
-              {stats ? `${stats.slaOnTimeRate}%` : '—'}
+              {stats ? (stats.totalCompletedStagesPa1 > 0 ? `${stats.slaOnTimeRatePa1}%` : stats.totalCompletedStages > 0 ? `${stats.slaOnTimeRate}%` : '—') : '—'}
             </div>
             <div className="kpi-sub">
-              {stats ? `${stats.totalCompletedStages - stats.delayedStages}/${stats.totalCompletedStages} lượt đúng hạn (giờ thực, cách cũ)` : ''}
-              {stats && stats.totalCompletedStagesPa1 > 0 && <div>{`Giờ làm việc (PA1): ${stats.slaOnTimeRatePa1}% · ${stats.totalCompletedStagesPa1 - stats.delayedStagesPa1}/${stats.totalCompletedStagesPa1} lượt đúng hạn`}</div>}
+              {stats && stats.totalCompletedStagesPa1 > 0 && `Giờ làm việc: ${stats.totalCompletedStagesPa1 - stats.delayedStagesPa1}/${stats.totalCompletedStagesPa1} lượt đúng hạn`}
+              {stats && stats.totalCompletedStages > 0 && <div>{`Cách cũ (giờ thực): ${stats.slaOnTimeRate}% · ${stats.totalCompletedStages - stats.delayedStages}/${stats.totalCompletedStages} lượt đúng hạn`}</div>}
             </div>
           </div>
         </div>
@@ -102,11 +103,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
             <AlertTriangle size={22} />
           </div>
           <div className="kpi-info">
-            <h4>Cảnh báo Đỏ (AI High Risk)</h4>
+            <h4>Cảnh báo Khẩn</h4>
             <div className="kpi-value" style={{ color: '#dc2626' }}>
               {stats ? stats.highRiskLoans : '—'}
             </div>
-            <div className="kpi-sub">Hồ sơ nguy cơ trễ hạn cao (&gt; 70%)</div>
+            <div className="kpi-sub">Hồ sơ có nguy cơ trễ SLA cao</div>
           </div>
         </div>
 
@@ -168,7 +169,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
               </tr>
             </thead>
             <tbody>
-              {bottlenecks.map((st) => (
+              {bottlenecks.map((st) => {
+                // Giờ làm việc (PA1) là cách tính đang áp dụng: có dữ liệu PA1 thì hiện PA1 ở số chính, cách cũ chỉ là dòng phụ.
+                const pa1 = st.pa1 && st.pa1.totalHandled > 0 ? st.pa1 : null;
+                const v = pa1 ?? st;
+                return (
                 <tr key={st.stageCode}>
                   <td>
                     <code style={{ color: 'var(--primary)', fontWeight: 600 }}>{st.stageCode}</code>
@@ -178,13 +183,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                   </td>
                   <td>{stageStandardText(st.stageCode, st.standardSlaHours)}</td>
                   <td>
-                    <strong style={{ color: st.avgNetWorkHours > st.standardSlaHours ? '#dc2626' : 'inherit' }}>
-                      {st.stageCode === 'HOAN_TAT' ? '—' : `${st.avgNetWorkHours} giờ`}
+                    <strong style={{ color: v.avgNetWorkHours > st.standardSlaHours ? '#dc2626' : 'inherit' }}>
+                      {st.stageCode === 'HOAN_TAT' ? '—' : pa1 ? workingDurationText(v.avgNetWorkHours) : `${v.avgNetWorkHours} giờ`}
                     </strong>
-                    {st.pa1 && st.pa1.totalHandled > 0 && st.stageCode !== 'HOAN_TAT' && <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>PA1 (ngày làm việc): {workingDurationText(st.pa1.avgNetWorkHours)} · {st.pa1.totalHandled} lượt · {st.pa1.delayRate}% trễ</div>}
+                    {pa1 && st.totalHandled > 0 && st.stageCode !== 'HOAN_TAT' && <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Cách cũ (giờ thực): {st.avgNetWorkHours} giờ · {st.totalHandled} lượt</div>}
                   </td>
-                  <td>{st.totalHandled} lượt</td>
-                  <td>{st.delayedCount} lượt</td>
+                  <td>{v.totalHandled} lượt</td>
+                  <td>{v.delayedCount} lượt</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div
@@ -199,24 +204,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                       >
                         <div
                           style={{
-                            width: `${Math.min(100, st.delayRate)}%`,
+                            width: `${Math.min(100, v.delayRate)}%`,
                             height: '100%',
-                            background: st.delayRate > 15 ? '#ef4444' : 'var(--primary)',
+                            background: v.delayRate > 15 ? '#ef4444' : 'var(--primary)',
                           }}
                         />
                       </div>
-                      <span style={{ fontSize: '12px', fontWeight: 600 }}>{st.delayRate}%</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600 }}>{v.delayRate}%</span>
                     </div>
                   </td>
                   <td>
-                    {st.isBottleneck ? (
+                    {v.isBottleneck ? (
                       <span className="badge badge-soft-red">⚠️ Điểm nghẽn cao</span>
                     ) : (
                       <span className="badge badge-soft-green">Ổn định</span>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -307,9 +313,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                             : 'badge-soft-green'
                         }`}
                       >
-                        {item.riskLevel === 'CAO' ? '⚠️ ' : ''}
-                        {item.riskLevel ?? predictionLabel(item.predictionStatus)}
+                        {alertDisplay(item.riskLevel, item.delayProbability)?.code === 'KHAN' || alertDisplay(item.riskLevel, item.delayProbability)?.code === 'QUA_HAN' ? '⚠️ ' : ''}
+                        {alertDisplay(item.riskLevel, item.delayProbability)?.label ?? predictionLabel(item.predictionStatus)}
                       </span>
+                      {slaLeftText(item) && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 4 }}>{slaLeftText(item)}</div>}
                     </td>
 
                     <td>
@@ -378,6 +385,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
           </table>
         </div>
       </div>
+
+      {activeRole === 'QUAN_LY' && <PeriodReport />}
     </div>
   );
 };

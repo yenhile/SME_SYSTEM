@@ -69,6 +69,8 @@ API điều phối: `GET /assignment-change-requests/capabilities`, list/detail,
 
 ## 3. Chạy bản localhost đã được chuẩn bị
 
+**Dữ liệu demo cho máy mới (06/11/2026):** sau khi `npm run prisma:push` và `npm run prisma:seed` (seed bật PA1, đặt định mức Tiếp nhận 112 giờ và Thẩm định 40 giờ), chạy `npm run build` rồi `npm run seed:demo` trong `backend` để có 13 tài khoản mô phỏng và 194 hồ sơ quá khứ kèm lịch sử SLA và dự báo (cần ml-service đang chạy). Mật khẩu 13 tài khoản mô phỏng là `Demo@2026` (đổi bằng biến `DEMO_PASSWORD` trước khi chạy; chỉ dùng demo local). Chạy lặp an toàn; thêm `-- --reset` để dựng lại. Chi tiết và cách gỡ: đầu tệp [seed-demo.cjs](../backend/scripts/seed-demo.cjs). Đây là dữ liệu mô phỏng, không phải dữ liệu thật.
+
 ```powershell
 .\start-use.ps1
 ```
@@ -139,7 +141,9 @@ Code có calculator/interval/policy và kiểm thử PA1. Tài liệu hợp nh�
 <a id="ml"></a>
 ## 7. ML: phạm vi và giới hạn báo cáo
 
-Mô hình triển khai `v1.0-rf` là Random Forest, dữ liệu **synthetic**. Báo cáo lưu ngày 24/10 nêu 3.000 mẫu, tập kiểm thử 600, accuracy 0,9700, precision 0,8267, recall 0,9254, F1 0,8732 và ROC-AUC 0,9927. Đây là số liệu lịch sử trên dữ liệu tổng hợp, không phải đánh giá vừa chạy khi gộp tài liệu và không chứng minh hiệu quả ngân hàng thật. Báo cáo đầy đủ/công thức sinh nhãn/cross-validation/threshold được giữ nguyên trong ZIP lịch sử.
+> **Cập nhật 06/11/2026:** mô hình triển khai hiện là **v4.0** (hai mô hình theo công đoạn, nhận biết SLA theo giờ làm việc, hợp đồng `/predict` mới, trạng thái `UNAVAILABLE` thay `INCOMPATIBLE_PA1`). Mô tả, kết quả và giới hạn: [SME_MASTER mục 5](SME_MASTER.md#trang-thai-mo-hinh). Cách tái lập: `ml-service/experiments/v3` (`simulate_v4.py` → `train_v4.py`, chạy trong container `smesystem-ml-service`, xem README ở đó). Đoạn dưới đây mô tả mô hình v1 lịch sử (`delay_model.joblib` vẫn còn trong repo để rollback), không còn là mô hình đang chạy.
+
+Mô hình lịch sử `v1.0-rf` là Random Forest, dữ liệu **synthetic**. Báo cáo lưu ngày 24/10 nêu 3.000 mẫu, tập kiểm thử 600, accuracy 0,9700, precision 0,8267, recall 0,9254, F1 0,8732 và ROC-AUC 0,9927. Đây là số liệu lịch sử trên dữ liệu tổng hợp, không phải đánh giá vừa chạy khi gộp tài liệu và không chứng minh hiệu quả ngân hàng thật. Báo cáo đầy đủ/công thức sinh nhãn/cross-validation/threshold được giữ nguyên trong ZIP lịch sử.
 
 Nguồn tái lập: [scripts ML](../ml-service/scripts), [schema API](../ml-service/app/schemas.py), [metadata model](../ml-service/app/model/model_metadata.json), [dịch vụ gọi/lưu dự báo](../backend/src/modules/prediction/prediction.service.ts). Không chạy training hoặc ghi đè model trong công việc tài liệu.
 

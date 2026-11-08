@@ -1,7 +1,7 @@
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RoleCode } from '@prisma/client';
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -25,6 +25,20 @@ export class DashboardController {
   @Get('early-warnings')
   getEarlyWarningList(@CurrentUser() user: any) {
     return this.dashboardService.getEarlyWarningList(user);
+  }
+
+  /** CBTD chỉ xem cảnh báo của hồ sơ mình phụ trách; bộ lọc theo người dùng đăng nhập, không nhận tham số từ client. */
+  @Roles(RoleCode.CBTD)
+  @Get('my-warnings')
+  getMyWarnings(@CurrentUser() user: any) {
+    return this.dashboardService.getEarlyWarningList(user, user.id);
+  }
+
+  /** Báo cáo thống kê theo khoảng thời gian: chỉ Quản lý chi nhánh. */
+  @Roles(RoleCode.QUAN_LY)
+  @Get('report')
+  getPeriodReport(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.dashboardService.getPeriodReport(from, to);
   }
 
   @Roles(RoleCode.QUAN_LY)

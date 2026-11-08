@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { LoanStatus, StageCode, RiskLevel } from '@prisma/client';
 import { waitingOn } from '../supplements/portal-supplement';
-import { firstStagePolicies, predictionStatusOf } from '../prediction/prediction-status';
-import { SLA_POLICY_PA1 } from '../workflow/sla/sla-policy';
+import { predictionStatusOf } from '../prediction/prediction-status';
+import { SLA_POLICY_PA1, stageSlaSummary } from '../workflow/sla/sla-policy';
+import { buildPeriodReport, parseReportRange } from './dashboard-report';
 import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
 import {companyForLoan} from '../companies/company-snapshot';
 
@@ -42,15 +43,13 @@ export class DashboardService {
       // Cách tính cũ (giờ thực 24/7) và PA1 (giờ làm việc) khác thước đo nên không cộng chung.
       this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: null } }),
       this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: null, isDelayed: true } }),
-      // Số hồ sơ active có dự báo nguy cơ trễ cao
-      this.prisma.loanApplication.count({
-        where: {
-          currentStatus: { in: activeStatuses },
-          delayPredictions: {
-            some: { riskLevel: RiskLevel.CAO },
-          },
-        },
-      }),
+      // Số hồ sơ đang xử lý mà dự báo MỚI NHẤT là nguy cơ cao (dự báo cũ đã được chấm lại thì không tính)
+      this.prisma.loanApplication
+        .findMany({
+          where: { currentStatus: { in: activeStatuses } },
+          select: { delayPredictions: { select: { riskLevel: true }, orderBy: { predictionTimestamp: 'desc' }, take: 1 } },
+        })
+        .then(rows => rows.filter(row => row.delayPredictions[0]?.riskLevel === RiskLevel.CAO).length),
       this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: SLA_POLICY_PA1 } }),
       this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: SLA_POLICY_PA1, isDelayed: true } }),
     ]);
@@ -186,7 +185,35 @@ export class DashboardService {
   /**
    * UC18: Danh sách cảnh báo hồ sơ có nguy cơ chậm trễ (AI Early Warning)
    */
-  async getEarlyWarningList(user?: { activeRole?: string }) {
+  /**
+   * Báo cáo thống kê theo khoảng thời gian (Quản lý chi nhánh): hồ sơ tạo mới và hoàn tất, tỷ lệ duyệt, trễ SLA theo công đoạn,
+   * theo cán bộ, theo loại vay và theo tháng. Mặc định 30 ngày gần nhất; tối đa 366 ngày.
+   */
+  async getPeriodReport(from?: string, to?: string, now = new Date()) {
+    const range = parseReportRange(from, to, now);
+    const loanSelect = { createdAt: true, completedAt: true, currentStatus: true, loanType: true, proposedAmount: true, approvedAmount: true, assignedTo: true } as const;
+    const [created, completed, stageRows] = await Promise.all([
+      this.prisma.loanApplication.findMany({ where: { createdAt: { gte: range.start, lt: range.end } }, select: loanSelect }),
+      this.prisma.loanApplication.findMany({ where: { completedAt: { gte: range.start, lt: range.end } }, select: loanSelect }),
+      this.prisma.applicationStageHistory.findMany({
+        where: { exitedAt: { gte: range.start, lt: range.end }, slaPolicy: SLA_POLICY_PA1, stage: { stageCode: { in: [StageCode.TIEP_NHAN, StageCode.THAM_DINH] } } },
+        select: { handledBy: true, netWorkDurationHours: true, isDelayed: true, stage: { select: { stageCode: true } } },
+      }),
+    ]);
+    const stages = stageRows.map(row => ({ stageCode: row.stage.stageCode as string, handledBy: row.handledBy, netWorkDurationHours: row.netWorkDurationHours, isDelayed: row.isDelayed }));
+    const ids = new Set<string>();
+    for (const loan of [...created, ...completed]) if (loan.assignedTo) ids.add(loan.assignedTo);
+    for (const stage of stages) if (stage.handledBy) ids.add(stage.handledBy);
+    const users = ids.size ? await this.prisma.user.findMany({ where: { id: { in: [...ids] } }, select: { id: true, fullName: true } }) : [];
+    const officerNames = Object.fromEntries(users.map(user => [user.id, user.fullName]));
+    return buildPeriodReport({ range, created, completed, stages, officerNames });
+  }
+
+  /**
+   * Danh sách cảnh báo sớm theo xác suất trễ giảm dần. `onlyAssignedTo` giới hạn trong hồ sơ do một cán bộ phụ trách
+   * (CBTD chỉ thấy hồ sơ của mình). Kèm số giờ làm việc còn lại của công đoạn đang mở để người xử lý biết mức khẩn.
+   */
+  async getEarlyWarningList(user?: { activeRole?: string }, onlyAssignedTo?: string) {
     const activeStatuses: LoanStatus[] = [
       LoanStatus.RECEIVED,
       LoanStatus.CHECKED,
@@ -199,6 +226,7 @@ export class DashboardService {
         currentStatus: { in: activeStatuses },
         // Thẩm quyền chỉ thấy hồ sơ từ công đoạn Thẩm định trở đi.
         ...(user?.activeRole === 'THAM_QUYEN' ? { currentStage: { not: StageCode.TIEP_NHAN } } : {}),
+        ...(onlyAssignedTo ? { assignedTo: onlyAssignedTo } : {}),
       },
       include: {
         company: true,
@@ -207,10 +235,11 @@ export class DashboardService {
           orderBy: { predictionTimestamp: 'desc' },
           take: 1,
         },
+        stageHistories: { where: { exitedAt: null }, include: { pauses: true }, take: 1 },
       },
     });
+    const now = new Date();
 
-    const policies = await firstStagePolicies(this.prisma, activeLoans.map(loan => loan.id));
     const warnings = activeLoans.map((loan) => {
       const latestPred = loan.delayPredictions[0] || null;
       let topReasons: string[] = [];
@@ -222,6 +251,8 @@ export class DashboardService {
         }
       }
 
+      const open = loan.stageHistories?.[0];
+      const sla = open ? stageSlaSummary(open, (open.pauses ?? []).map(p => ({ start: p.startedAt, end: p.endedAt })), now) : null;
       return {
         id: loan.id,
         applicationCode: loan.applicationCode,
@@ -236,8 +267,12 @@ export class DashboardService {
         // Không có dự báo thì để trống và nêu tình trạng, không bịa mức/xác suất.
         riskLevel: latestPred ? latestPred.riskLevel : null,
         delayProbability: latestPred ? latestPred.delayProbability : null,
-        predictionStatus: predictionStatusOf(!!latestPred, policies.get(loan.id)),
+        predictionStatus: predictionStatusOf(!!latestPred),
         predictedAt: latestPred ? latestPred.predictionTimestamp : null,
+        modelVersion: latestPred ? latestPred.modelVersion : null,
+        slaRemainingHours: sla && !sla.waitingEnterprise ? sla.remainingHours : null,
+        slaOverdue: Boolean(sla?.isOverdue),
+        slaWaiting: Boolean(sla?.waitingEnterprise),
         topReasons,
       };
     });

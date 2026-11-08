@@ -144,7 +144,7 @@ async function seed(h) {
   const f7 = await newLoan(vn('2026-10-27', '09:00'), 'S7 PA1 đang thẩm định');
   await loans.checkDocuments(f7.id, true);
   await workflow.transitionStage(f7.id, { targetStage: 'THAM_DINH', targetStatus: 'PENDING_APPRAISAL' }, cbtd, vn('2026-10-28', '12:00'));
-  add(f7, 'PA1 ở công đoạn Thẩm định', 'Thẩm quyền: thấy số giờ đang chạy theo giờ làm việc; dự báo hiện "Chưa có dự báo tương thích PA1"; chạy lại dự báo cũng báo như vậy');
+  add(f7, 'PA1 ở công đoạn Thẩm định', 'Thẩm quyền: thấy số giờ đang chạy theo giờ làm việc; chạy lại dự báo cho ra mức nguy cơ và nguyên nhân theo số giờ làm việc đã dùng so với SLA');
   // PA1 quá hạn từ 05/11 (chỉ đóng được khi giờ thật đã tới hạn).
   const f8 = await newLoan(vn('2026-10-26', '09:00'), 'S8 PA1 sẽ quá hạn từ 05/11');
   await structured(f8, vn('2026-10-26', '10:00'), 1);

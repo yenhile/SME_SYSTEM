@@ -101,3 +101,44 @@ export function waitingOnLabel(waitingOn?: 'ENTERPRISE' | 'BANK' | null): string
   if (waitingOn === 'BANK') return 'Chờ ngân hàng kiểm tra';
   return 'Chờ doanh nghiệp';
 }
+
+// ---- Mức cảnh báo của mô hình dự báo trễ SLA (v4) ----
+export type AlertCode = 'BINH_THUONG' | 'CHU_Y' | 'KHAN' | 'QUA_HAN';
+export interface AlertView { code: AlertCode; label: string; tone: 'green' | 'amber' | 'red' }
+
+/**
+ * Mức cảnh báo từ mức nguy cơ đã lưu: THẤP → Bình thường, TRUNG BÌNH → Chú ý (xác suất từ 35%), CAO → Khẩn (từ 60%).
+ * Xác suất đúng 1 chỉ do đường "đã vượt SLA" của dịch vụ dự báo tạo ra (mô hình luôn nhỏ hơn 1), nên hiện là Quá hạn.
+ * Không có mức thì trả null: giao diện nói "chưa dự báo", không bịa mức.
+ */
+export function alertDisplay(riskLevel?: string | null, probability?: number | null): AlertView | null {
+  if (!riskLevel) return null;
+  if (probability !== null && probability !== undefined && probability >= 1) return { code: 'QUA_HAN', label: 'Quá hạn', tone: 'red' };
+  if (riskLevel === 'CAO') return { code: 'KHAN', label: 'Khẩn', tone: 'red' };
+  if (riskLevel === 'TRUNG_BINH') return { code: 'CHU_Y', label: 'Chú ý', tone: 'amber' };
+  return { code: 'BINH_THUONG', label: 'Bình thường', tone: 'green' };
+}
+
+export interface PredictionView { riskLevel: string; delayProbability: number; modelVersion?: string; predictionTimestamp?: string }
+
+/** Ví dụ "Khẩn · 72,9%". */
+export function predictionHeadline(prediction: PredictionView, digits = 1): string {
+  const alert = alertDisplay(prediction.riskLevel, prediction.delayProbability);
+  const percent = `${(prediction.delayProbability * 100).toLocaleString('vi-VN', { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+  return `${alert?.label ?? prediction.riskLevel} · ${percent}`;
+}
+
+/** Số giờ làm việc còn lại đến hạn SLA, ví dụ "còn 1 ngày 3 giờ"; hồ sơ tạm dừng hoặc quá hạn được nói rõ. */
+export function slaLeftText(item: { slaRemainingHours?: number | null; slaOverdue?: boolean; slaWaiting?: boolean }): string | null {
+  if (item.slaWaiting) return 'SLA tạm dừng (chờ doanh nghiệp)';
+  if (item.slaOverdue) return 'Đã quá hạn SLA';
+  if (item.slaRemainingHours === null || item.slaRemainingHours === undefined) return null;
+  return `còn ${workingDurationText(item.slaRemainingHours)} làm việc`;
+}
+
+/** Thứ tự ưu tiên xử lý: Quá hạn, Khẩn, Chú ý, Bình thường, chưa có dự báo; cùng mức thì xác suất cao hơn trước. */
+const ALERT_RANK: Record<AlertCode, number> = { QUA_HAN: 0, KHAN: 1, CHU_Y: 2, BINH_THUONG: 3 };
+export function compareAlerts(a: { riskLevel?: string | null; delayProbability?: number | null }, b: { riskLevel?: string | null; delayProbability?: number | null }): number {
+  const rank = (x: typeof a) => { const alert = alertDisplay(x.riskLevel, x.delayProbability); return alert ? ALERT_RANK[alert.code] : 4; };
+  return rank(a) - rank(b) || (b.delayProbability ?? -1) - (a.delayProbability ?? -1);
+}

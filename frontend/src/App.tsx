@@ -10,6 +10,9 @@ import { LoginPage } from './components/LoginPage';
 import { LoanList } from './components/LoanList';
 import { AppraisalQueue } from './components/AppraisalQueue';
 import { DashboardView } from './components/DashboardView';
+import { MyWarningsPanel } from './components/MyWarningsPanel';
+import { AccountPage } from './components/AccountPage';
+import type { AccountPageKind } from './components/AccountDialogs';
 import { AssignmentsView } from './components/AssignmentsView';
 import { CreateLoanModal } from './components/CreateLoanModal';
 import { LoanDetailModal } from './components/LoanDetailModal';
@@ -25,6 +28,7 @@ function Workspace() {
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
   const [coordinationId, setCoordinationId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [accountPage, setAccountPage] = useState<AccountPageKind | null>(null);
   const [revision, setRevision] = useState(0);
   const [intakeTarget, setIntakeTarget] = useState<{ id: string; revision: number } | null>(null);
   const isAuthority = activeRole === 'THAM_QUYEN';
@@ -106,10 +110,15 @@ function Workspace() {
     setAppraisalRef(null);
     setCaseRef(null);
   };
+  const openAccountPage = (kind: AccountPageKind) => {
+    if (!confirmLeave()) return;
+    setAccountPage(kind);
+  };
   const changeTab = (next: Tab) => {
     if (!confirmLeave()) return false;
     const leavingCase = Boolean(caseRef);
     leaveAppraisal();
+    setAccountPage(null);
     setTab(next);
     if (leavingCase) { refresh(); restoreListScroll(); }
     return true;
@@ -130,8 +139,9 @@ function Workspace() {
   return (
     <div className="app-container">
       <Navbar
-        activeTab={activeTab}
+        activeTab={accountPage ? ('' as Tab) : activeTab}
         onTabChange={changeTab}
+        onOpenAccountPage={openAccountPage}
         onOpenIntake={id => {
           setSelectedLoanId(null);
           if (!changeTab('loans')) return;
@@ -189,10 +199,13 @@ function Workspace() {
       )}
 
       <main className="main-content">
+        {accountPage && <AccountPage kind={accountPage} onBack={() => setAccountPage(null)} />}
+        <div hidden={Boolean(accountPage)}>
         {appraisalRef ? (
           <AppraisalWorkspace key={appraisalRef} reference={appraisalRef} lookup={lookup} onOpenForReview={openLoan} onBack={() => changeTab(lookup || tab === 'loans' ? 'loans' : 'appraisal')} onChanged={refresh} onResolved={showAppraisalCode} />
         ) : activeTab === 'loans' && (
           <div hidden={Boolean(caseRef)}>
+            {isOfficer && <MyWarningsPanel refreshKey={revision} onSelectLoan={openLoanForLookup} />}
             <LoanList
               intakeTarget={intakeTarget}
               refreshKey={revision}
@@ -208,6 +221,7 @@ function Workspace() {
         {activeTab === 'assignments' && <AssignmentsView onOpenCase={openCase} />}
         {activeTab === 'users' && <AdminView section="users" />}
         {activeTab === 'settings' && <AdminView section="settings" />}
+        </div>
       </main>
 
       {showCreate && activeRole === 'CBTD' && <CreateLoanModal isOpen onClose={() => setShowCreate(false)} onSuccess={refresh} />}

@@ -155,7 +155,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
                 <th>Số điện thoại</th>
                 <th>Chi nhánh</th>
                 <th>Hồ sơ đang xử lý</th>
-                <th>Hồ sơ cảnh báo đỏ (AI)</th>
+                <th>Hồ sơ cảnh báo Khẩn</th>
                 <th>Tình trạng tải</th>
               </tr>
             </thead>
@@ -166,7 +166,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
                     <div style={{ fontWeight: 600 }}>{officer.fullName}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>@{officer.username}</div>
                   </td>
-                  <td>{officer.phone || '0901234567'}</td>
+                  <td>{officer.phone || '—'}</td>
                   <td>{officer.branchName}</td>
                   <td>
                     <strong style={{ fontSize: '14px', color: 'var(--primary-hover)' }}>{officer.totalAssignedCount}</strong> công việc<div>{officer.activeLoanCount} hồ sơ vay · {officer.pendingIntakeCount} đề nghị Portal</div>

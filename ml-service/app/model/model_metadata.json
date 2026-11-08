@@ -1,77 +1,383 @@
 {
-  "model_version": "v1.0-rf",
-  "metrics_comparison": [
-    {
-      "model_name": "Logistic Regression (Baseline)",
-      "accuracy": 0.9667,
-      "precision": 0.7701,
-      "recall": 1.0,
-      "f1_score": 0.8701,
-      "roc_auc": 0.9982
+  "model_version": "v4.0",
+  "description": "Dự báo nguy cơ vượt SLA theo công đoạn (Tiếp nhận, Thẩm định), nhận biết SLA (giờ làm việc), xác suất đã hiệu chỉnh isotonic, hai mức cảnh báo 0,35 và 0,60.",
+  "training_data": "Dữ liệu giả lập 20.000 hồ sơ (experiments/v3/simulate_v4.py), hiệu chỉnh hình dạng theo BPI Challenge 2012; tham số thời gian là giả định demo. Chưa phải dữ liệu ngân hàng thật.",
+  "sla_grid_hours": {
+    "TIEP_NHAN": [
+      24,
+      32,
+      40,
+      48,
+      56,
+      64,
+      80,
+      96,
+      112,
+      128
+    ],
+    "THAM_DINH": [
+      16,
+      24,
+      32,
+      40,
+      48,
+      56,
+      64,
+      80
+    ]
+  },
+  "thresholds": {
+    "watch": 0.35,
+    "urgent": 0.6
+  },
+  "stages": {
+    "tiep_nhan": {
+      "model": "gb",
+      "valid_logloss": {
+        "lr": 0.3738,
+        "gb": 0.3638
+      },
+      "scenarios": {
+        "A_80_40": {
+          "sla_hours": 80,
+          "late_rate": 0.0874,
+          "overall": {
+            "auc_model": 0.7635,
+            "auc_baseline": 0.7419,
+            "brier_model": 0.0666,
+            "brier_baseline": 0.0685,
+            "brier_prior": 0.0798
+          },
+          "per_point": {
+            "TN_D": {
+              "n": 11230,
+              "late_rate": 0.0994,
+              "auc_model": 0.7587,
+              "auc_baseline": 0.742
+            },
+            "TN_EV": {
+              "n": 1218,
+              "late_rate": 0.092,
+              "auc_model": 0.8985,
+              "auc_baseline": 0.8843
+            },
+            "TN_T0": {
+              "n": 3016,
+              "late_rate": 0.0411,
+              "auc_model": 0.5274,
+              "auc_baseline": 0.5
+            }
+          },
+          "case_level": {
+            "cases": 3016,
+            "late_cases": 124,
+            "watch": {
+              "threshold": 0.35,
+              "alerted": 333,
+              "late_caught": 123,
+              "recall": 0.9919,
+              "precision": 0.3694,
+              "false_alarm_share_of_ontime": 0.0726,
+              "lead_hours_median": 24,
+              "lead_hours_p25": 16
+            },
+            "urgent": {
+              "threshold": 0.6,
+              "alerted": 174,
+              "late_caught": 111,
+              "recall": 0.8952,
+              "precision": 0.6379,
+              "false_alarm_share_of_ontime": 0.0218,
+              "lead_hours_median": 16,
+              "lead_hours_p25": 8
+            }
+          }
+        },
+        "C_112_40": {
+          "sla_hours": 112,
+          "late_rate": 0.0366,
+          "overall": {
+            "auc_model": 0.8241,
+            "auc_baseline": 0.7971,
+            "brier_model": 0.028,
+            "brier_baseline": 0.03,
+            "brier_prior": 0.0353
+          },
+          "per_point": {
+            "TN_D": {
+              "n": 11552,
+              "late_rate": 0.0428,
+              "auc_model": 0.8234,
+              "auc_baseline": 0.797
+            },
+            "TN_EV": {
+              "n": 1238,
+              "late_rate": 0.038,
+              "auc_model": 0.9446,
+              "auc_baseline": 0.9218
+            },
+            "TN_T0": {
+              "n": 3016,
+              "late_rate": 0.0126,
+              "auc_model": 0.5573,
+              "auc_baseline": 0.5
+            }
+          },
+          "case_level": {
+            "cases": 3016,
+            "late_cases": 38,
+            "watch": {
+              "threshold": 0.35,
+              "alerted": 76,
+              "late_caught": 36,
+              "recall": 0.9474,
+              "precision": 0.4737,
+              "false_alarm_share_of_ontime": 0.0134,
+              "lead_hours_median": 24.5,
+              "lead_hours_p25": 24
+            },
+            "urgent": {
+              "threshold": 0.6,
+              "alerted": 37,
+              "late_caught": 29,
+              "recall": 0.7632,
+              "precision": 0.7838,
+              "false_alarm_share_of_ontime": 0.0027,
+              "lead_hours_median": 16,
+              "lead_hours_p25": 8
+            }
+          }
+        },
+        "B_54_44": {
+          "sla_hours": 54,
+          "late_rate": 0.2291,
+          "overall": {
+            "auc_model": 0.7099,
+            "auc_baseline": 0.6879,
+            "brier_model": 0.1509,
+            "brier_baseline": 0.157,
+            "brier_prior": 0.1766
+          },
+          "per_point": {
+            "TN_D": {
+              "n": 10393,
+              "late_rate": 0.2494,
+              "auc_model": 0.7069,
+              "auc_baseline": 0.6877
+            },
+            "TN_EV": {
+              "n": 1164,
+              "late_rate": 0.2706,
+              "auc_model": 0.8627,
+              "auc_baseline": 0.8431
+            },
+            "TN_T0": {
+              "n": 3016,
+              "late_rate": 0.1432,
+              "auc_model": 0.5269,
+              "auc_baseline": 0.5
+            }
+          },
+          "case_level": {
+            "cases": 3016,
+            "late_cases": 432,
+            "watch": {
+              "threshold": 0.35,
+              "alerted": 1086,
+              "late_caught": 424,
+              "recall": 0.9815,
+              "precision": 0.3904,
+              "false_alarm_share_of_ontime": 0.2562,
+              "lead_hours_median": 22,
+              "lead_hours_p25": 14
+            },
+            "urgent": {
+              "threshold": 0.6,
+              "alerted": 653,
+              "late_caught": 354,
+              "recall": 0.8194,
+              "precision": 0.5421,
+              "false_alarm_share_of_ontime": 0.1157,
+              "lead_hours_median": 14,
+              "lead_hours_p25": 14
+            }
+          }
+        }
+      }
     },
-    {
-      "model_name": "Random Forest Classifier (Đề xuất)",
-      "accuracy": 0.97,
-      "precision": 0.8267,
-      "recall": 0.9254,
-      "f1_score": 0.8732,
-      "roc_auc": 0.9927
+    "tham_dinh": {
+      "model": "lr",
+      "valid_logloss": {
+        "lr": 0.4557,
+        "gb": 0.4585
+      },
+      "scenarios": {
+        "A_80_40": {
+          "sla_hours": 40,
+          "late_rate": 0.2874,
+          "overall": {
+            "auc_model": 0.7201,
+            "auc_baseline": 0.6865,
+            "brier_model": 0.1765,
+            "brier_baseline": 0.1789,
+            "brier_prior": 0.2048
+          },
+          "per_point": {
+            "TD_D": {
+              "n": 6593,
+              "late_rate": 0.324,
+              "auc_model": 0.7132,
+              "auc_baseline": 0.68
+            },
+            "TD_EV": {
+              "n": 846,
+              "late_rate": 0.396,
+              "auc_model": 0.8157,
+              "auc_baseline": 0.8164
+            },
+            "TD_VAO": {
+              "n": 3016,
+              "late_rate": 0.1771,
+              "auc_model": 0.6335,
+              "auc_baseline": 0.5
+            }
+          },
+          "case_level": {
+            "cases": 3016,
+            "late_cases": 534,
+            "watch": {
+              "threshold": 0.35,
+              "alerted": 1254,
+              "late_caught": 517,
+              "recall": 0.9682,
+              "precision": 0.4123,
+              "false_alarm_share_of_ontime": 0.2969,
+              "lead_hours_median": 16,
+              "lead_hours_p25": 16
+            },
+            "urgent": {
+              "threshold": 0.6,
+              "alerted": 801,
+              "late_caught": 462,
+              "recall": 0.8652,
+              "precision": 0.5768,
+              "false_alarm_share_of_ontime": 0.1366,
+              "lead_hours_median": 8.2,
+              "lead_hours_p25": 8
+            }
+          }
+        },
+        "C_112_40": {
+          "sla_hours": 40,
+          "late_rate": 0.2874,
+          "overall": {
+            "auc_model": 0.7201,
+            "auc_baseline": 0.6865,
+            "brier_model": 0.1765,
+            "brier_baseline": 0.1789,
+            "brier_prior": 0.2048
+          },
+          "per_point": {
+            "TD_D": {
+              "n": 6593,
+              "late_rate": 0.324,
+              "auc_model": 0.7132,
+              "auc_baseline": 0.68
+            },
+            "TD_EV": {
+              "n": 846,
+              "late_rate": 0.396,
+              "auc_model": 0.8157,
+              "auc_baseline": 0.8164
+            },
+            "TD_VAO": {
+              "n": 3016,
+              "late_rate": 0.1771,
+              "auc_model": 0.6335,
+              "auc_baseline": 0.5
+            }
+          },
+          "case_level": {
+            "cases": 3016,
+            "late_cases": 534,
+            "watch": {
+              "threshold": 0.35,
+              "alerted": 1254,
+              "late_caught": 517,
+              "recall": 0.9682,
+              "precision": 0.4123,
+              "false_alarm_share_of_ontime": 0.2969,
+              "lead_hours_median": 16,
+              "lead_hours_p25": 16
+            },
+            "urgent": {
+              "threshold": 0.6,
+              "alerted": 801,
+              "late_caught": 462,
+              "recall": 0.8652,
+              "precision": 0.5768,
+              "false_alarm_share_of_ontime": 0.1366,
+              "lead_hours_median": 8.2,
+              "lead_hours_p25": 8
+            }
+          }
+        },
+        "B_54_44": {
+          "sla_hours": 44,
+          "late_rate": 0.2757,
+          "overall": {
+            "auc_model": 0.7552,
+            "auc_baseline": 0.7221,
+            "brier_model": 0.1603,
+            "brier_baseline": 0.1646,
+            "brier_prior": 0.1997
+          },
+          "per_point": {
+            "TD_D": {
+              "n": 7128,
+              "late_rate": 0.3199,
+              "auc_model": 0.7535,
+              "auc_baseline": 0.7243
+            },
+            "TD_EV": {
+              "n": 891,
+              "late_rate": 0.3434,
+              "auc_model": 0.8492,
+              "auc_baseline": 0.8332
+            },
+            "TD_VAO": {
+              "n": 3016,
+              "late_rate": 0.1512,
+              "auc_model": 0.63,
+              "auc_baseline": 0.5
+            }
+          },
+          "case_level": {
+            "cases": 3016,
+            "late_cases": 456,
+            "watch": {
+              "threshold": 0.35,
+              "alerted": 1023,
+              "late_caught": 451,
+              "recall": 0.989,
+              "precision": 0.4409,
+              "false_alarm_share_of_ontime": 0.2234,
+              "lead_hours_median": 20,
+              "lead_hours_p25": 12
+            },
+            "urgent": {
+              "threshold": 0.6,
+              "alerted": 665,
+              "late_caught": 423,
+              "recall": 0.9276,
+              "precision": 0.6361,
+              "false_alarm_share_of_ontime": 0.0945,
+              "lead_hours_median": 12,
+              "lead_hours_p25": 4
+            }
+          }
+        }
+      }
     }
-  ],
-  "top_features": [
-    {
-      "feature": "supplement_count",
-      "importance": 0.6713332852611984
-    },
-    {
-      "feature": "officer_workload",
-      "importance": 0.07772482083777339
-    },
-    {
-      "feature": "annual_revenue",
-      "importance": 0.052630037925731274
-    },
-    {
-      "feature": "loan_amount",
-      "importance": 0.04813142654700465
-    },
-    {
-      "feature": "previous_stage_duration_hours",
-      "importance": 0.03748427847817128
-    },
-    {
-      "feature": "debt_to_equity",
-      "importance": 0.032128595421895924
-    },
-    {
-      "feature": "established_years",
-      "importance": 0.028781646555374775
-    },
-    {
-      "feature": "industry_Xay_Dung",
-      "importance": 0.014796600114335081
-    },
-    {
-      "feature": "loan_term_months",
-      "importance": 0.014115099806329141
-    },
-    {
-      "feature": "industry_San_Xuat",
-      "importance": 0.004519428043866582
-    }
-  ],
-  "numeric_features": [
-    "loan_amount",
-    "loan_term_months",
-    "established_years",
-    "annual_revenue",
-    "debt_to_equity",
-    "supplement_count",
-    "officer_workload",
-    "previous_stage_duration_hours"
-  ],
-  "categorical_features": [
-    "loan_type",
-    "industry"
-  ]
+  }
 }

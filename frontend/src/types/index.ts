@@ -219,6 +219,10 @@ export interface EarlyWarningItem {
   predictionStatus?: 'AVAILABLE' | 'INCOMPATIBLE_PA1' | 'NONE';
   predictedAt: string | null;
   topReasons: string[];
+  modelVersion?: string | null;
+  slaRemainingHours?: number | null;
+  slaOverdue?: boolean;
+  slaWaiting?: boolean;
 }
 
 export interface OfficerWorkload {

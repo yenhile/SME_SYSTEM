@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, RefreshCw, X } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { debtToEquityText, loanTypeLabel, moneyText, riskLabel, type AppraisalReportView } from '../appraisalWorkspace';
+import { debtToEquityText, loanTypeLabel, moneyText, type AppraisalReportView } from '../appraisalWorkspace';
 import { LEAVE_WARNING, officerAccess } from '../officerCase';
-import { predictionLabel, slaDeadlineCell, slaSummaryText } from '../slaDisplay';
+import { predictionLabel, slaDeadlineCell, slaSummaryText, predictionHeadline } from '../slaDisplay';
 import type { PortalFormConfig } from '../portal/model';
 import type { LoanApplication } from '../types';
 import { AppraisalEvidenceTabs, type EvidenceTab } from './AppraisalEvidenceTabs';
@@ -274,7 +274,7 @@ export function OfficerCaseWorkspace({ reference, refreshKey, onBack, onResolved
           {overLimit && <p className="aw-alert aw-alert-danger">Vượt hạn mức chi nhánh (tối đa 10 tỷ).</p>}
           <div className="aw-risk">
             <span className="aw-label">Nguy cơ trễ SLA</span>
-            <strong>{hasPrediction && prediction ? `${riskLabel(prediction.riskLevel)} · ${(prediction.delayProbability * 100).toFixed(1)}%` : predictionLabel(loan.predictionStatus)}</strong>
+            <strong>{hasPrediction && prediction ? predictionHeadline(prediction) : predictionLabel(loan.predictionStatus)}</strong>
             {reasons.length > 0 && <ul>{reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}
             <p className="aw-hint">Chỉ cảnh báo nguy cơ trễ hạn xử lý, không phải đánh giá tín dụng.</p>
           </div>

@@ -9,13 +9,14 @@ const {ROLES_KEY}=require('../dist/common/decorators/roles.decorator');
 // null = chỉ cần đăng nhập (không giới hạn vai trò). Quyền lọc theo hồ sơ (CBTD chỉ hồ sơ của mình, Thẩm quyền từ Thẩm định trở đi)
 // do LoanAccessGuard xử lý và được kiểm tra riêng trong loan-access.test.cjs.
 const C='CBTD',T='THAM_QUYEN',Q='QUAN_LY',A='ADMIN';
+// 06/11/2026: getMyWarnings (CBTD chỉ xem cảnh báo dự báo trễ SLA của hồ sơ mình phụ trách, chỉ đọc) theo yêu cầu của người phụ trách; PO cần xác nhận khi duyệt gói.
 const EXPECTED={
   AssignmentChangeRequestsController:{capabilities:[C,Q],list:[C,Q],detail:[C,Q],create:[C],approve:[Q],reject:[Q],cancel:[C]},
   AppraisalController:{view:[C,T,Q],save:[C],submit:[C],clarify:[T]},
   AdminController:{stages:[A],updateStage:[A]},
   AssignmentsController:{getOfficerWorkloads:[Q],getAssignmentHistory:[Q],reassign:[Q]},
   CompaniesController:{checkTaxCode:[C,T,Q],findAll:[C,T,Q],upsert:[C]},
-  DashboardController:{getOverviewStats:[Q,T],getSlaBottleneckAnalysis:[Q,T],getEarlyWarningList:[Q,T],getOverdueSupplements:[Q],getStageDistribution:[Q,T]},
+  DashboardController:{getOverviewStats:[Q,T],getSlaBottleneckAnalysis:[Q,T],getEarlyWarningList:[Q,T],getMyWarnings:[C],getPeriodReport:[Q],getOverdueSupplements:[Q],getStageDistribution:[Q,T]},
   DocumentsController:{findByApplication:[C,T,Q],create:[C],delete:[C],download:[C,T,Q]},
   LoanApplicationsController:{create:[C],findAll:[C,T,Q],findOne:[C,T,Q],checkDocuments:[C],setAmount:[C]},
   PredictionController:{predict:[T,Q]},

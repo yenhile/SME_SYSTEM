@@ -1,0 +1,635 @@
+{
+  "tiep_nhan": {
+    "best_model": "gb",
+    "valid_logloss": {
+      "lr": 0.3738,
+      "gb": 0.3638
+    },
+    "n_train_rows": 64889,
+    "scenarios": {
+      "A_80_40": {
+        "sla_hours": 80,
+        "rows": 15464,
+        "late_rate": 0.0874,
+        "overall": {
+          "auc_model": 0.7635,
+          "auc_baseline": 0.7419,
+          "brier_model": 0.0666,
+          "brier_baseline": 0.0685,
+          "brier_prior": 0.0798
+        },
+        "per_point": {
+          "TN_D": {
+            "n": 11230,
+            "late_rate": 0.0994,
+            "auc_model": 0.7587,
+            "auc_baseline": 0.742
+          },
+          "TN_EV": {
+            "n": 1218,
+            "late_rate": 0.092,
+            "auc_model": 0.8985,
+            "auc_baseline": 0.8843
+          },
+          "TN_T0": {
+            "n": 3016,
+            "late_rate": 0.0411,
+            "auc_model": 0.5274,
+            "auc_baseline": 0.5
+          }
+        },
+        "calibration_deciles": [
+          {
+            "pred": 0.011,
+            "actual": 0.013,
+            "n": 1593
+          },
+          {
+            "pred": 0.025,
+            "actual": 0.037,
+            "n": 2357
+          },
+          {
+            "pred": 0.054,
+            "actual": 0.042,
+            "n": 1998
+          },
+          {
+            "pred": 0.058,
+            "actual": 0.06,
+            "n": 532
+          },
+          {
+            "pred": 0.064,
+            "actual": 0.05,
+            "n": 1751
+          },
+          {
+            "pred": 0.08,
+            "actual": 0.06,
+            "n": 2517
+          },
+          {
+            "pred": 0.096,
+            "actual": 0.07,
+            "n": 715
+          },
+          {
+            "pred": 0.136,
+            "actual": 0.093,
+            "n": 1329
+          },
+          {
+            "pred": 0.199,
+            "actual": 0.143,
+            "n": 1446
+          },
+          {
+            "pred": 0.454,
+            "actual": 0.416,
+            "n": 1226
+          }
+        ],
+        "case_level": {
+          "cases": 3016,
+          "late_cases": 124,
+          "watch": {
+            "threshold": 0.35,
+            "alerted": 333,
+            "late_caught": 123,
+            "recall": 0.9919,
+            "precision": 0.3694,
+            "false_alarm_share_of_ontime": 0.0726,
+            "lead_hours_median": 24.0,
+            "lead_hours_p25": 16.0
+          },
+          "urgent": {
+            "threshold": 0.6,
+            "alerted": 174,
+            "late_caught": 111,
+            "recall": 0.8952,
+            "precision": 0.6379,
+            "false_alarm_share_of_ontime": 0.0218,
+            "lead_hours_median": 16.0,
+            "lead_hours_p25": 8.0
+          }
+        }
+      },
+      "C_112_40": {
+        "sla_hours": 112,
+        "rows": 15806,
+        "late_rate": 0.0366,
+        "overall": {
+          "auc_model": 0.8241,
+          "auc_baseline": 0.7971,
+          "brier_model": 0.028,
+          "brier_baseline": 0.03,
+          "brier_prior": 0.0353
+        },
+        "per_point": {
+          "TN_D": {
+            "n": 11552,
+            "late_rate": 0.0428,
+            "auc_model": 0.8234,
+            "auc_baseline": 0.797
+          },
+          "TN_EV": {
+            "n": 1238,
+            "late_rate": 0.038,
+            "auc_model": 0.9446,
+            "auc_baseline": 0.9218
+          },
+          "TN_T0": {
+            "n": 3016,
+            "late_rate": 0.0126,
+            "auc_model": 0.5573,
+            "auc_baseline": 0.5
+          }
+        },
+        "calibration_deciles": [
+          {
+            "pred": 0.006,
+            "actual": 0.009,
+            "n": 5673
+          },
+          {
+            "pred": 0.013,
+            "actual": 0.013,
+            "n": 1860
+          },
+          {
+            "pred": 0.017,
+            "actual": 0.016,
+            "n": 1988
+          },
+          {
+            "pred": 0.025,
+            "actual": 0.025,
+            "n": 3521
+          },
+          {
+            "pred": 0.056,
+            "actual": 0.043,
+            "n": 1232
+          },
+          {
+            "pred": 0.194,
+            "actual": 0.218,
+            "n": 1532
+          }
+        ],
+        "case_level": {
+          "cases": 3016,
+          "late_cases": 38,
+          "watch": {
+            "threshold": 0.35,
+            "alerted": 76,
+            "late_caught": 36,
+            "recall": 0.9474,
+            "precision": 0.4737,
+            "false_alarm_share_of_ontime": 0.0134,
+            "lead_hours_median": 24.5,
+            "lead_hours_p25": 24.0
+          },
+          "urgent": {
+            "threshold": 0.6,
+            "alerted": 37,
+            "late_caught": 29,
+            "recall": 0.7632,
+            "precision": 0.7838,
+            "false_alarm_share_of_ontime": 0.0027,
+            "lead_hours_median": 16.0,
+            "lead_hours_p25": 8.0
+          }
+        }
+      },
+      "B_54_44": {
+        "sla_hours": 54,
+        "rows": 14573,
+        "late_rate": 0.2291,
+        "overall": {
+          "auc_model": 0.7099,
+          "auc_baseline": 0.6879,
+          "brier_model": 0.1509,
+          "brier_baseline": 0.157,
+          "brier_prior": 0.1766
+        },
+        "per_point": {
+          "TN_D": {
+            "n": 10393,
+            "late_rate": 0.2494,
+            "auc_model": 0.7069,
+            "auc_baseline": 0.6877
+          },
+          "TN_EV": {
+            "n": 1164,
+            "late_rate": 0.2706,
+            "auc_model": 0.8627,
+            "auc_baseline": 0.8431
+          },
+          "TN_T0": {
+            "n": 3016,
+            "late_rate": 0.1432,
+            "auc_model": 0.5269,
+            "auc_baseline": 0.5
+          }
+        },
+        "calibration_deciles": [
+          {
+            "pred": 0.059,
+            "actual": 0.091,
+            "n": 2020
+          },
+          {
+            "pred": 0.108,
+            "actual": 0.134,
+            "n": 896
+          },
+          {
+            "pred": 0.137,
+            "actual": 0.147,
+            "n": 1959
+          },
+          {
+            "pred": 0.166,
+            "actual": 0.17,
+            "n": 965
+          },
+          {
+            "pred": 0.202,
+            "actual": 0.164,
+            "n": 1776
+          },
+          {
+            "pred": 0.217,
+            "actual": 0.184,
+            "n": 2320
+          },
+          {
+            "pred": 0.245,
+            "actual": 0.222,
+            "n": 621
+          },
+          {
+            "pred": 0.275,
+            "actual": 0.258,
+            "n": 1473
+          },
+          {
+            "pred": 0.397,
+            "actual": 0.371,
+            "n": 1108
+          },
+          {
+            "pred": 0.71,
+            "actual": 0.654,
+            "n": 1435
+          }
+        ],
+        "case_level": {
+          "cases": 3016,
+          "late_cases": 432,
+          "watch": {
+            "threshold": 0.35,
+            "alerted": 1086,
+            "late_caught": 424,
+            "recall": 0.9815,
+            "precision": 0.3904,
+            "false_alarm_share_of_ontime": 0.2562,
+            "lead_hours_median": 22.0,
+            "lead_hours_p25": 14.0
+          },
+          "urgent": {
+            "threshold": 0.6,
+            "alerted": 653,
+            "late_caught": 354,
+            "recall": 0.8194,
+            "precision": 0.5421,
+            "false_alarm_share_of_ontime": 0.1157,
+            "lead_hours_median": 14.0,
+            "lead_hours_p25": 14.0
+          }
+        }
+      }
+    }
+  },
+  "tham_dinh": {
+    "best_model": "lr",
+    "valid_logloss": {
+      "lr": 0.4557,
+      "gb": 0.4585
+    },
+    "n_train_rows": 46759,
+    "scenarios": {
+      "A_80_40": {
+        "sla_hours": 40,
+        "rows": 10455,
+        "late_rate": 0.2874,
+        "overall": {
+          "auc_model": 0.7201,
+          "auc_baseline": 0.6865,
+          "brier_model": 0.1765,
+          "brier_baseline": 0.1789,
+          "brier_prior": 0.2048
+        },
+        "per_point": {
+          "TD_D": {
+            "n": 6593,
+            "late_rate": 0.324,
+            "auc_model": 0.7132,
+            "auc_baseline": 0.68
+          },
+          "TD_EV": {
+            "n": 846,
+            "late_rate": 0.396,
+            "auc_model": 0.8157,
+            "auc_baseline": 0.8164
+          },
+          "TD_VAO": {
+            "n": 3016,
+            "late_rate": 0.1771,
+            "auc_model": 0.6335,
+            "auc_baseline": 0.5
+          }
+        },
+        "calibration_deciles": [
+          {
+            "pred": 0.118,
+            "actual": 0.112,
+            "n": 1469
+          },
+          {
+            "pred": 0.163,
+            "actual": 0.157,
+            "n": 1290
+          },
+          {
+            "pred": 0.2,
+            "actual": 0.185,
+            "n": 1423
+          },
+          {
+            "pred": 0.235,
+            "actual": 0.21,
+            "n": 1584
+          },
+          {
+            "pred": 0.312,
+            "actual": 0.259,
+            "n": 571
+          },
+          {
+            "pred": 0.329,
+            "actual": 0.312,
+            "n": 1373
+          },
+          {
+            "pred": 0.426,
+            "actual": 0.39,
+            "n": 802
+          },
+          {
+            "pred": 0.568,
+            "actual": 0.505,
+            "n": 984
+          },
+          {
+            "pred": 0.714,
+            "actual": 0.683,
+            "n": 959
+          }
+        ],
+        "case_level": {
+          "cases": 3016,
+          "late_cases": 534,
+          "watch": {
+            "threshold": 0.35,
+            "alerted": 1254,
+            "late_caught": 517,
+            "recall": 0.9682,
+            "precision": 0.4123,
+            "false_alarm_share_of_ontime": 0.2969,
+            "lead_hours_median": 16.0,
+            "lead_hours_p25": 16.0
+          },
+          "urgent": {
+            "threshold": 0.6,
+            "alerted": 801,
+            "late_caught": 462,
+            "recall": 0.8652,
+            "precision": 0.5768,
+            "false_alarm_share_of_ontime": 0.1366,
+            "lead_hours_median": 8.2,
+            "lead_hours_p25": 8.0
+          }
+        }
+      },
+      "C_112_40": {
+        "sla_hours": 40,
+        "rows": 10455,
+        "late_rate": 0.2874,
+        "overall": {
+          "auc_model": 0.7201,
+          "auc_baseline": 0.6865,
+          "brier_model": 0.1765,
+          "brier_baseline": 0.1789,
+          "brier_prior": 0.2048
+        },
+        "per_point": {
+          "TD_D": {
+            "n": 6593,
+            "late_rate": 0.324,
+            "auc_model": 0.7132,
+            "auc_baseline": 0.68
+          },
+          "TD_EV": {
+            "n": 846,
+            "late_rate": 0.396,
+            "auc_model": 0.8157,
+            "auc_baseline": 0.8164
+          },
+          "TD_VAO": {
+            "n": 3016,
+            "late_rate": 0.1771,
+            "auc_model": 0.6335,
+            "auc_baseline": 0.5
+          }
+        },
+        "calibration_deciles": [
+          {
+            "pred": 0.118,
+            "actual": 0.112,
+            "n": 1469
+          },
+          {
+            "pred": 0.163,
+            "actual": 0.157,
+            "n": 1290
+          },
+          {
+            "pred": 0.2,
+            "actual": 0.185,
+            "n": 1423
+          },
+          {
+            "pred": 0.235,
+            "actual": 0.21,
+            "n": 1584
+          },
+          {
+            "pred": 0.312,
+            "actual": 0.259,
+            "n": 571
+          },
+          {
+            "pred": 0.329,
+            "actual": 0.312,
+            "n": 1373
+          },
+          {
+            "pred": 0.426,
+            "actual": 0.39,
+            "n": 802
+          },
+          {
+            "pred": 0.568,
+            "actual": 0.505,
+            "n": 984
+          },
+          {
+            "pred": 0.714,
+            "actual": 0.683,
+            "n": 959
+          }
+        ],
+        "case_level": {
+          "cases": 3016,
+          "late_cases": 534,
+          "watch": {
+            "threshold": 0.35,
+            "alerted": 1254,
+            "late_caught": 517,
+            "recall": 0.9682,
+            "precision": 0.4123,
+            "false_alarm_share_of_ontime": 0.2969,
+            "lead_hours_median": 16.0,
+            "lead_hours_p25": 16.0
+          },
+          "urgent": {
+            "threshold": 0.6,
+            "alerted": 801,
+            "late_caught": 462,
+            "recall": 0.8652,
+            "precision": 0.5768,
+            "false_alarm_share_of_ontime": 0.1366,
+            "lead_hours_median": 8.2,
+            "lead_hours_p25": 8.0
+          }
+        }
+      },
+      "B_54_44": {
+        "sla_hours": 44,
+        "rows": 11035,
+        "late_rate": 0.2757,
+        "overall": {
+          "auc_model": 0.7552,
+          "auc_baseline": 0.7221,
+          "brier_model": 0.1603,
+          "brier_baseline": 0.1646,
+          "brier_prior": 0.1997
+        },
+        "per_point": {
+          "TD_D": {
+            "n": 7128,
+            "late_rate": 0.3199,
+            "auc_model": 0.7535,
+            "auc_baseline": 0.7243
+          },
+          "TD_EV": {
+            "n": 891,
+            "late_rate": 0.3434,
+            "auc_model": 0.8492,
+            "auc_baseline": 0.8332
+          },
+          "TD_VAO": {
+            "n": 3016,
+            "late_rate": 0.1512,
+            "auc_model": 0.63,
+            "auc_baseline": 0.5
+          }
+        },
+        "calibration_deciles": [
+          {
+            "pred": 0.112,
+            "actual": 0.107,
+            "n": 3019
+          },
+          {
+            "pred": 0.163,
+            "actual": 0.168,
+            "n": 1282
+          },
+          {
+            "pred": 0.172,
+            "actual": 0.152,
+            "n": 282
+          },
+          {
+            "pred": 0.207,
+            "actual": 0.174,
+            "n": 1156
+          },
+          {
+            "pred": 0.235,
+            "actual": 0.243,
+            "n": 1234
+          },
+          {
+            "pred": 0.323,
+            "actual": 0.303,
+            "n": 1574
+          },
+          {
+            "pred": 0.404,
+            "actual": 0.395,
+            "n": 319
+          },
+          {
+            "pred": 0.532,
+            "actual": 0.504,
+            "n": 1183
+          },
+          {
+            "pred": 0.728,
+            "actual": 0.772,
+            "n": 986
+          }
+        ],
+        "case_level": {
+          "cases": 3016,
+          "late_cases": 456,
+          "watch": {
+            "threshold": 0.35,
+            "alerted": 1023,
+            "late_caught": 451,
+            "recall": 0.989,
+            "precision": 0.4409,
+            "false_alarm_share_of_ontime": 0.2234,
+            "lead_hours_median": 20.0,
+            "lead_hours_p25": 12.0
+          },
+          "urgent": {
+            "threshold": 0.6,
+            "alerted": 665,
+            "late_caught": 423,
+            "recall": 0.9276,
+            "precision": 0.6361,
+            "false_alarm_share_of_ontime": 0.0945,
+            "lead_hours_median": 12.0,
+            "lead_hours_p25": 4.0
+          }
+        }
+      }
+    }
+  }
+}

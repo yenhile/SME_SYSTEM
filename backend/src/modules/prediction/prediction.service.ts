@@ -1,9 +1,12 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { RiskLevel } from '@prisma/client';
-import { SLA_POLICY_PA1 } from '../workflow/sla/sla-policy';
-import { PREDICTION_PA1_MESSAGE } from './prediction-status';
+import { SLA_POLICY_PA1, calendarByVersion, loadPauseIntervals } from '../workflow/sla/sla-policy';
+import { CalendarCoverageError, workingHoursBetween } from '../workflow/sla/working-time';
 import { companyForLoan } from '../companies/company-snapshot';
+import { PredictionStage, buildPredictPayload, riskLevelOf } from './prediction-features';
+import { PREDICTION_UNAVAILABLE_MESSAGES, PredictionUnavailableReason } from './prediction-status';
+
+const ACTIVE_STATUSES = ['RECEIVED', 'CHECKED', 'SUPPLEMENT_REQUIRED', 'PENDING_APPRAISAL'] as const;
 
 @Injectable()
 export class PredictionService {
@@ -12,121 +15,114 @@ export class PredictionService {
 
   constructor(private prisma: PrismaService) {}
 
+  private unavailable(reason: PredictionUnavailableReason) {
+    return { unavailable: true as const, reason, message: PREDICTION_UNAVAILABLE_MESSAGES[reason] };
+  }
+
+  /**
+   * Dự báo nguy cơ vượt SLA của công đoạn đang mở (Tiếp nhận hoặc Thẩm định), theo giờ làm việc đã dùng và SLA đang áp dụng.
+   * Chỉ dự báo khi công đoạn tính theo PA1: mô hình học trên giờ làm việc, không dùng cho cách tính 24/7 cũ.
+   */
   async predictForApplication(applicationId: string) {
     const loan = await this.prisma.loanApplication.findUnique({
       where: { id: applicationId },
       include: {
         company: true,
-        assignedUser: true,
-        stageHistories: {
-          orderBy: { enteredAt: 'desc' },
-        },
+        portalRequest: { select: { data: true } },
+        appraisalReport: { select: { id: true, status: true } },
+        supplementRequests: { orderBy: { requestedAt: 'desc' }, take: 1 },
+        stageHistories: { include: { stage: true }, orderBy: { enteredAt: 'desc' } },
       },
     });
+    if (!loan) throw new Error(`Không tìm thấy hồ sơ với id: ${applicationId}`);
+    loan.company = companyForLoan(loan);
 
-    if (!loan) {
-      throw new Error(`Không tìm thấy hồ sơ với id: ${applicationId}`);
-    }
-    loan.company=companyForLoan(loan);
+    const open = loan.stageHistories.find(h => !h.exitedAt);
+    if (!open) return this.unavailable('NO_ACTIVE_STAGE');
+    const stage = open.stage.stageCode as string;
+    if (stage !== 'TIEP_NHAN' && stage !== 'THAM_DINH') return this.unavailable('STAGE_NOT_SUPPORTED');
+    if (open.slaPolicy !== SLA_POLICY_PA1 || !open.slaCalendarVersion) return this.unavailable('LEGACY_SLA');
 
-    // C.9.2: đặc trưng previous_stage_duration_hours lấy từ công đoạn Tiếp nhận. Nếu công đoạn đó tính theo giờ làm việc (PA1)
-    // thì khác nghĩa với dữ liệu huấn luyện: không gọi ML, không tạo xác suất giả, không đổi model.
-    const firstStageOfLoan = loan.stageHistories[loan.stageHistories.length - 1];
-    if (firstStageOfLoan?.slaPolicy === SLA_POLICY_PA1) {
-      this.logger.log(`Bỏ qua dự báo cho hồ sơ ${loan.applicationCode}: công đoạn Tiếp nhận tính theo PA1, chưa có mô hình tương thích.`);
-      return { unavailable: true as const, reason: 'PA1_INCOMPATIBLE' as const, message: PREDICTION_PA1_MESSAGE };
-    }
-
-    // 1. Tính toán officer_workload (Số hồ sơ đang xử lý của cán bộ)
-    let officerWorkload = 5;
-    if (loan.assignedTo) {
-      const activeCount = await this.prisma.loanApplication.count({
-        where: {
-          assignedTo: loan.assignedTo,
-          currentStatus: {
-            in: ['RECEIVED', 'CHECKED', 'SUPPLEMENT_REQUIRED', 'PENDING_APPRAISAL'],
-          },
-        },
-      });
-      officerWorkload = Math.max(1, activeCount);
+    const now = new Date();
+    let elapsedHours: number;
+    let sinceLastEvent: number;
+    try {
+      const calendar = calendarByVersion(open.slaCalendarVersion);
+      const pauses = await loadPauseIntervals(this.prisma, open.id, open.slaPolicy);
+      elapsedHours = workingHoursBetween(open.enteredAt, now, calendar, pauses);
+      const lastEvent = await this.lastEventAt(loan, open, stage);
+      sinceLastEvent = workingHoursBetween(lastEvent, now, calendar, pauses);
+    } catch (err) {
+      if (err instanceof CalendarCoverageError) return this.unavailable('CALENDAR_OUT_OF_RANGE');
+      throw err;
     }
 
-    // 2. Tính previous_stage_duration_hours
-    let previousDuration = 3.5;
-    if (loan.stageHistories && loan.stageHistories.length > 0) {
-      const firstStage = loan.stageHistories[loan.stageHistories.length - 1];
-      if (firstStage.netWorkDurationHours) {
-        previousDuration = firstStage.netWorkDurationHours;
-      } else if (firstStage.enteredAt) {
-        const hours = (Date.now() - new Date(firstStage.enteredAt).getTime()) / (1000 * 60 * 60);
-        previousDuration = Math.round(hours * 10) / 10;
-      }
-    }
-
-    // 3. Chuẩn hóa industry sang định dạng ML
-    let industryMapped = 'Thuong_Mai_Dich_Vu';
-    const indLower = loan.company.industry.toLowerCase();
-    if (indLower.includes('sản xuất') || indLower.includes('chế biến') || indLower.includes('may mặc')) {
-      industryMapped = 'San_Xuat';
-    } else if (indLower.includes('xây dựng') || indLower.includes('cơ khí')) {
-      industryMapped = 'Xay_Dung';
-    } else if (indLower.includes('nông nghiệp') || indLower.includes('thủy sản')) {
-      industryMapped = 'Nong_Nghiep';
-    } else if (indLower.includes('vận tải') || indLower.includes('kho bãi') || indLower.includes('logistics')) {
-      industryMapped = 'Van_Tai_Kho_Bai';
-    }
-
-    const payload = {
-      application_id: loan.applicationCode,
-      loan_amount: Number(loan.officialAmount || loan.proposedAmount),
-      loan_term_months: loan.loanTermMonths,
-      loan_type: loan.loanType,
-      industry: industryMapped,
-      established_years: Math.max(1, new Date().getFullYear() - loan.company.establishedYear),
-      annual_revenue: Number(loan.company.annualRevenue),
-      debt_to_equity: Number(loan.company.annualRevenue) > 0 ? Number(loan.company.charterCapital) > 0 ? Number(loan.proposedAmount) / Number(loan.company.charterCapital) : 1.5 : 1.5,
-      supplement_count: loan.supplementCount,
-      officer_workload: officerWorkload,
-      previous_stage_duration_hours: Math.min(12, Math.max(1, previousDuration)),
-    };
+    const input = await this.collectInputs(loan, stage as PredictionStage);
+    const payload = buildPredictPayload({
+      ...input, stage: stage as PredictionStage, applicationCode: loan.applicationCode, slaHours: open.slaStandardHours,
+      elapsedHours, hoursSinceLastEvent: sinceLastEvent, industry: loan.company.industry,
+    });
 
     try {
-      this.logger.log(`Gửi yêu cầu dự báo sang ML Service: ${this.mlServiceUrl}/predict`);
+      this.logger.log(`Gửi yêu cầu dự báo (${stage}) sang ML Service: ${this.mlServiceUrl}/predict`);
       const response = await fetch(`${this.mlServiceUrl}/predict`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(4000),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(4000),
       });
-
-      if (!response.ok) {
-        throw new Error(`ML Service trả về mã lỗi: ${response.status}`);
-      }
-
+      if (response.status === 422) return this.unavailable('SLA_OUT_OF_RANGE');
+      if (!response.ok) throw new Error(`ML Service trả về mã lỗi: ${response.status}`);
       const result = await response.json();
 
-      let riskLevel: RiskLevel = RiskLevel.THAP;
-      if (result.risk_level === 'CAO') riskLevel = RiskLevel.CAO;
-      else if (result.risk_level === 'TRUNG BÌNH') riskLevel = RiskLevel.TRUNG_BINH;
-
-      // Lưu kết quả vào Database
       const prediction = await this.prisma.delayPrediction.create({
         data: {
-          applicationId: loan.id,
-          riskLevel,
-          delayProbability: result.delay_probability,
-          topReasonsJson: JSON.stringify(result.top_reasons || []),
-          modelVersion: result.model_version || 'v1.0-rf',
+          applicationId: loan.id, riskLevel: riskLevelOf(result.alert_level), delayProbability: result.delay_probability,
+          topReasonsJson: JSON.stringify(result.top_reasons || []), modelVersion: `${result.model_version || 'v4'}-${stage}`,
         },
       });
-
-      return {
-        ...prediction,
-        topReasons: result.top_reasons || [],
-      };
+      return { ...prediction, topReasons: result.top_reasons || [], alertLevel: result.alert_level as string, stage, remainingHours: result.remaining_hours as number };
     } catch (err: any) {
       this.logger.warn('Dịch vụ dự báo không khả dụng: ' + err.message);
       throw new ServiceUnavailableException('Không lấy được dự báo từ dịch vụ ML. Vui lòng thử lại sau.');
     }
+  }
+
+  /** Thời điểm thao tác gần nhất trong công đoạn: vào công đoạn, yêu cầu/hoàn tất bổ sung, hoặc sự kiện tờ trình khi thẩm định. */
+  private async lastEventAt(loan: any, open: any, stage: string): Promise<Date> {
+    const enteredAt = open.enteredAt.getTime();
+    const times: number[] = [enteredAt];
+    const supp = loan.supplementRequests?.[0];
+    if (supp) times.push(...[supp.requestedAt, supp.resolvedAt].filter(Boolean).map((d: Date) => d.getTime()));
+    if (stage === 'THAM_DINH' && loan.appraisalReport) {
+      const ev = await this.prisma.appraisalReportEvent.findFirst({ where: { reportId: loan.appraisalReport.id }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } });
+      if (ev) times.push(ev.createdAt.getTime());
+    }
+    const latest = Math.max(...times.filter(t => t >= enteredAt));
+    return new Date(Math.min(Date.now(), latest));
+  }
+
+  private async collectInputs(loan: any, stage: PredictionStage) {
+    const base = {
+      proposedAmountVnd: Number(loan.officialAmount || loan.proposedAmount), loanTermMonths: loan.loanTermMonths,
+      establishedYear: loan.company.establishedYear, annualRevenueVnd: Number(loan.company.annualRevenue),
+      portalData: (loan.portalRequest?.data ?? null) as any, supplementCount: loan.supplementCount,
+      itemsPendingReview: 0, officerWorkload: 7, tnBankHours: 0, appraisalQueueLen: 0, appraisersActive: 1, clarifyRoundsSoFar: 0, clarifyOpen: false,
+    };
+    if (stage === 'TIEP_NHAN') {
+      const lastSupp = loan.supplementRequests?.[0];
+      // Doanh nghiệp vừa bổ sung xong và hồ sơ chưa được kiểm tra lại: xấp xỉ "có tài liệu bổ sung chờ kiểm tra" (hệ thống chưa lưu số tài liệu).
+      base.itemsPendingReview = lastSupp?.resolvedAt && loan.currentStatus === 'RECEIVED' ? 1 : 0;
+      base.officerWorkload = loan.assignedTo
+        ? Math.max(1, await this.prisma.loanApplication.count({ where: { assignedTo: loan.assignedTo, currentStatus: { in: [...ACTIVE_STATUSES] } } }))
+        : 7;
+      return base;
+    }
+    const tn = loan.stageHistories.find((h: any) => h.stage.stageCode === 'TIEP_NHAN' && h.exitedAt);
+    base.tnBankHours = tn?.netWorkDurationHours ?? 0;
+    base.appraisalQueueLen = await this.prisma.loanApplication.count({ where: { currentStage: 'THAM_DINH', currentStatus: { in: [...ACTIVE_STATUSES] } } });
+    base.appraisersActive = Math.max(1, await this.prisma.user.count({ where: { isActive: true, roles: { some: { role: { code: 'THAM_QUYEN' } } } } }));
+    if (loan.appraisalReport) {
+      base.clarifyOpen = loan.appraisalReport.status === 'CLARIFICATION_REQUIRED';
+      base.clarifyRoundsSoFar = await this.prisma.appraisalReportEvent.count({ where: { reportId: loan.appraisalReport.id, kind: 'CLARIFICATION_REQUESTED' } });
+    }
+    return base;
   }
 }

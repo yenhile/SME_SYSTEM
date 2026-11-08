@@ -10,7 +10,7 @@ import { nextDocumentCode } from '../../common/document-codes';
 import { assertOfficerMayWriteCompany } from '../companies/company-access';
 import { companySnapshot, lockCompany, withLoanCompany } from '../companies/company-snapshot';
 import { SLA_POLICY_PA1, computeStageClosing, resolveStageSla, stageSlaSummary } from '../workflow/sla/sla-policy';
-import { firstStagePolicies, predictionStatusOf } from '../prediction/prediction-status';
+import { predictionStatusOf } from '../prediction/prediction-status';
 
 import { assertLoanWrite, assertBranchAmount, assertOfficialAmount, BRANCH_POLICY, lockOfficer } from '../workflow/loan-policy';
 
@@ -210,7 +210,6 @@ export class LoanApplicationsService {
 
   private async listRows(where: Prisma.LoanApplicationWhereInput, now: Date) {
     const loans = await this.prisma.loanApplication.findMany({ where, include: LIST_INCLUDE, orderBy: { createdAt: 'desc' } });
-    const policies = await firstStagePolicies(this.prisma, loans.map(loan => loan.id));
     return loans.map(loan => {
       const latest = loan.stageHistories?.[0];
       const slaSummary = latest?.exitedAt === null
@@ -219,7 +218,7 @@ export class LoanApplicationsService {
       const { appraisalReport, portalRequest, _count, ...row } = withLoanCompany(loan);
       return {
         ...row,
-        predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, policies.get(loan.id)),
+        predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0),
         slaSummary,
         reportStatus: appraisalReport?.status ?? null,
         reportVersion: appraisalReport?.versions?.[0] ? { sequence: appraisalReport.versions[0].sequence, submittedAt: appraisalReport.versions[0].submittedAt } : null,
@@ -371,7 +370,7 @@ export class LoanApplicationsService {
       source: loan.portalRequest ? 'PORTAL' : 'QUAY',
       coordinationRestrictions:await this.coordinationRestrictions(id,actor?.id),
       makerCheckerRestrictions:await this.makerCheckerRestrictions(loan,actor?.id),
-      predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0, loan.stageHistories[0]?.slaPolicy),
+      predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0),
       slaState,
       liveSla,
       slaSummary: open ? stageSlaSummary(open, pauses.map(p => ({ start: p.startedAt, end: p.endedAt })), now) : null,
