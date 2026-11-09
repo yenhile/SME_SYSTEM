@@ -38,7 +38,7 @@ export class PredictionService {
     loan.company = companyForLoan(loan);
 
     const open = loan.stageHistories.find(h => !h.exitedAt);
-    if (!open) return this.unavailable('NO_ACTIVE_STAGE');
+    if (!open) return this.unavailable(loan.completedAt || loan.currentStage === 'HOAN_TAT' ? 'NO_ACTIVE_STAGE' : 'NO_STAGE_HISTORY');
     const stage = open.stage.stageCode as string;
     if (stage !== 'TIEP_NHAN' && stage !== 'THAM_DINH') return this.unavailable('STAGE_NOT_SUPPORTED');
     if (open.slaPolicy !== SLA_POLICY_PA1 || !open.slaCalendarVersion) return this.unavailable('LEGACY_SLA');
@@ -66,7 +66,7 @@ export class PredictionService {
     try {
       this.logger.log(`Gửi yêu cầu dự báo (${stage}) sang ML Service: ${this.mlServiceUrl}/predict`);
       const response = await fetch(`${this.mlServiceUrl}/predict`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(4000),
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(process.env.ML_API_KEY ? { 'X-API-Key': process.env.ML_API_KEY } : {}) }, body: JSON.stringify(payload), signal: AbortSignal.timeout(4000),
       });
       if (response.status === 422) return this.unavailable('SLA_OUT_OF_RANGE');
       if (!response.ok) throw new Error(`ML Service trả về mã lỗi: ${response.status}`);
@@ -80,7 +80,7 @@ export class PredictionService {
       });
       return { ...prediction, topReasons: result.top_reasons || [], alertLevel: result.alert_level as string, stage, remainingHours: result.remaining_hours as number };
     } catch (err: any) {
-      this.logger.warn('Dịch vụ dự báo không khả dụng: ' + err.message);
+      this.logger.warn(`Dịch vụ dự báo không khả dụng (hồ sơ ${loan.applicationCode}, ${stage}): ${err.message}`);
       throw new ServiceUnavailableException('Không lấy được dự báo từ dịch vụ ML. Vui lòng thử lại sau.');
     }
   }
@@ -118,7 +118,14 @@ export class PredictionService {
     const tn = loan.stageHistories.find((h: any) => h.stage.stageCode === 'TIEP_NHAN' && h.exitedAt);
     base.tnBankHours = tn?.netWorkDurationHours ?? 0;
     base.appraisalQueueLen = await this.prisma.loanApplication.count({ where: { currentStage: 'THAM_DINH', currentStatus: { in: [...ACTIVE_STATUSES] } } });
-    base.appraisersActive = Math.max(1, await this.prisma.user.count({ where: { isActive: true, roles: { some: { role: { code: 'THAM_QUYEN' } } } } }));
+    // Số Thẩm quyền làm việc thật: tài khoản đang mở, chuyên trách Thẩm quyền; loại tài khoản kiểm thử test_* và tài khoản kiêm CBTD để dự báo không đổi theo số tài khoản demo.
+    base.appraisersActive = Math.max(1, await this.prisma.user.count({
+      where: {
+        isActive: true,
+        NOT: { username: { startsWith: 'test_' } },
+        AND: [{ roles: { some: { role: { code: 'THAM_QUYEN' } } } }, { roles: { none: { role: { code: 'CBTD' } } } }],
+      },
+    }));
     if (loan.appraisalReport) {
       base.clarifyOpen = loan.appraisalReport.status === 'CLARIFICATION_REQUIRED';
       base.clarifyRoundsSoFar = await this.prisma.appraisalReportEvent.count({ where: { reportId: loan.appraisalReport.id, kind: 'CLARIFICATION_REQUESTED' } });

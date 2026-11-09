@@ -33,3 +33,23 @@ test('a loan waiting for the enterprise reports no remaining hours instead of a 
   const [item]=await atClock('2026-10-27T14:00:00+07:00',()=>svc.getEarlyWarningList({activeRole:'CBTD'},'u1'));
   assert.equal(item.slaRemainingHours,null);assert.equal(item.slaWaiting,true);
 });
+
+test('a stale warning (older model or previous stage) is not shown as the current warning',async()=>{
+  const stale=(id,modelVersion,at)=>row(id,{delayPredictions:[{riskLevel:'CAO',delayProbability:0.84,predictionTimestamp:at,topReasonsJson:'[]',modelVersion}]});
+  const {svc}=service([
+    stale('old-model','v1.0',new Date()),
+    stale('old-stage','v4.0-TIEP_NHAN',new Date()),
+    stale('before-entry','v4.0-THAM_DINH',vn('2026-10-20','09:00')),
+    row('current'),
+  ]);
+  const list=await atClock('2026-10-27T14:00:00+07:00',()=>svc.getEarlyWarningList({activeRole:'QUAN_LY'}));
+  const byId=Object.fromEntries(list.map(x=>[x.id,x]));
+  for(const id of ['old-model','old-stage','before-entry']){assert.equal(byId[id].riskLevel,null,id);assert.equal(byId[id].predictionStatus,'NONE',id);}
+  assert.equal(byId.current.riskLevel,'CAO');
+});
+test('loans already past their SLA are listed first',async()=>{
+  const past=row('late',{stageHistories:[{id:'h',enteredAt:vn('2026-10-26','09:00'),pausedAt:null,pausedDurationHours:0,slaStandardHours:40,slaPolicy:'PA1',slaCalendarVersion:SIMULATED_CALENDAR_V1.version,pauses:[]}],delayPredictions:[{riskLevel:'THAP',delayProbability:0.1,predictionTimestamp:new Date(),topReasonsJson:'[]',modelVersion:'v4.0-THAM_DINH'}]});
+  const {svc}=service([row('fresh',{stageHistories:[{id:'h2',enteredAt:vn('2026-11-05','09:00'),pausedAt:null,pausedDurationHours:0,slaStandardHours:40,slaPolicy:'PA1',slaCalendarVersion:SIMULATED_CALENDAR_V1.version,pauses:[]}]}),past]);
+  const list=await atClock('2026-11-05T14:00:00+07:00',()=>svc.getEarlyWarningList({activeRole:'QUAN_LY'}));
+  assert.equal(list[0].id,'late');assert.equal(list[0].slaOverdue,true);
+});

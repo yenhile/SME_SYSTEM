@@ -88,7 +88,13 @@ test('unknown usernames are throttled the same way so valid names are not reveal
   for(let i=0;i<5;i++) await assert.rejects(service.login({username:'khong_co',password:'Sai12345'},10+i),e=>e.getStatus()===401);
   await assert.rejects(service.login({username:'KHONG_CO ',password:'Sai12345'},50),e=>e.getStatus()===429,'case and spaces do not bypass');
 });
-test('a locked-out (inactive) account message is not counted as a password guess',async()=>{
+test('a locked account is not revealed to someone who does not know the password',async()=>{
+  const {service}=auth(await account({isActive:false}));
+  await assert.rejects(service.login({username:'test_cbtd',password:'Sai12345'},10),e=>e.getStatus()===401&&!/khóa/.test(e.message));
+  for(let i=1;i<5;i++) await assert.rejects(service.login({username:'test_cbtd',password:'Sai12345'},10+i),e=>e.getStatus()===401);
+  await assert.rejects(service.login({username:'test_cbtd',password:'Sai12345'},50),e=>e.getStatus()===429,'wrong guesses on a locked account are throttled');
+});
+test('the locked-out (inactive) message is shown only with the correct password',async()=>{
   const {service}=auth(await account({isActive:false}));
   for(let i=0;i<8;i++) await assert.rejects(service.login({username:'test_cbtd',password:'Dung1234'},10+i),e=>e.getStatus()===401&&/tạm khóa/.test(e.message));
 });

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { WorkflowService } from '../workflow/workflow.service';
 import { PredictionService } from '../prediction/prediction.service';
@@ -7,6 +7,7 @@ import { assertIndependent, digest, isEvidenceChanged, reportEvidence, validateR
 import {assertNoCoordinationConflict} from '../assignments/assignment-coordination';
 @Injectable()
 export class AppraisalService {
+  private readonly logger = new Logger(AppraisalService.name);
   constructor(private prisma:PrismaService,private workflow:WorkflowService,private prediction:PredictionService) {}
   async view(id:string, actor?: { id: string; activeRole?: string }) {
     const report = await this.prisma.appraisalReport.findUnique({where:{applicationId:id},include:{versions:{orderBy:{sequence:'desc'}},events:{orderBy:{createdAt:'asc'}}}});
@@ -116,7 +117,7 @@ export class AppraisalService {
       }
       await tx.appraisalReportEvent.create({data:{reportId:report.id,actorId:user.id,kind,clientRequestId:body.clientRequestId,payloadHash,payload:kind==='CLARIFICATION_REQUESTED'?{message:body.message.trim()}:{}}});
     },{timeout:30000});
-    if(firstTransition) await this.prediction.predictForApplication(id).catch(()=>undefined);
+    if(firstTransition) await this.prediction.predictForApplication(id).catch((err:any)=>this.logger.warn(`Không tạo được dự báo khi trình tờ trình hồ sơ ${id}: ${err?.message??err}`));
     return this.view(id);
   }
 }

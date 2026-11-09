@@ -92,7 +92,7 @@ test('early warnings never invent a risk level or probability when there is no p
   const service=dashboard([
     warnRow('none'),
     warnRow('pa1'),
-    warnRow('real',{delayPredictions:[{riskLevel:'CAO',delayProbability:0.9,predictionTimestamp:new Date(),topReasonsJson:'[]'}]}),
+    warnRow('real',{delayPredictions:[{riskLevel:'CAO',delayProbability:0.9,predictionTimestamp:new Date(),topReasonsJson:'[]',modelVersion:'v4.0-THAM_DINH'}],stageHistories:[{enteredAt:new Date('2026-01-01T00:00:00Z'),exitedAt:null,pauses:[],slaPolicy:null,slaStandardHours:40}]}),
   ],[{applicationId:'pa1',slaPolicy:'PA1'},{applicationId:'none',slaPolicy:null},{applicationId:'real',slaPolicy:null}]);
   const list=await service.getEarlyWarningList();
   assert.deepEqual(list.map(x=>x.id),['real','none','pa1'].sort((a,b)=>a==='real'?-1:b==='real'?1:0),'real prediction first; predictionless rows keep a stable order after it');

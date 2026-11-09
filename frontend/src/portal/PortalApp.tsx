@@ -10,7 +10,8 @@ import './review.css';
 import { PortalAuth } from './PortalAuth';
 import { DocumentLink } from './DocumentLink';
 import { SupplementPanel } from '../components/SupplementPanel';
-import { PortalApplicationTracking } from './PortalApplicationTracking';
+import { PortalApplicationTracking, type PortalTracking } from './PortalApplicationTracking';
+import { PortalHome } from './PortalHome';
 import type { SupplementView } from './supplements';
 
 export function RequestFields({ data, errors = {}, readOnly = false, onChange }: { data: PortalData; errors?: Record<string, string>; readOnly?: boolean; onChange?: (data: PortalData) => void }) {
@@ -61,12 +62,13 @@ export function PortalApp() {
   const [requests, setRequests] = useState<PortalRequest[]>([]); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
   const [supplementCounts, setSupplementCounts] = useState<Record<string, number>>({});
   const [supplementErrors, setSupplementErrors] = useState<string[]>([]);
+  const [outcomes, setOutcomes] = useState<Record<string, PortalTracking | undefined>>({}); const [outcomesFailed, setOutcomesFailed] = useState(false);
   const loadSequence = useRef(0);
   const openSequence = useRef(0);
   const [editor, setEditor] = useState<PortalRequest | null | undefined>(undefined);
   const [config, setConfig] = useState<PortalFormConfig | null>(null); const [draftId, setDraftId] = useState('');
   const accountRef = useRef(account); accountRef.current = account;
-  const clearView = () => { accountRef.current = null; loadSequence.current++; openSequence.current++; setAccount(null); setRequests([]); setSupplementCounts({}); setSupplementErrors([]); setLoading(false); setChecking(false); setEditor(undefined); setConfig(null); };
+  const clearView = () => { accountRef.current = null; loadSequence.current++; openSequence.current++; setAccount(null); setRequests([]); setSupplementCounts({}); setSupplementErrors([]); setOutcomes({}); setOutcomesFailed(false); setLoading(false); setChecking(false); setEditor(undefined); setConfig(null); };
   const logout = () => { setPortalToken(null); clearView(); };
   useEffect(() => {
     let live = true;
@@ -91,8 +93,14 @@ export function PortalApp() {
     try {
       const values = await portalApi.get<PortalRequest[]>('/requests'); if (!current()) return; setRequests(values);
       const accepted = values.filter(item => item.status === 'ACCEPTED' && item.loanId);
-      const results = await Promise.allSettled(accepted.map(item => portalApi.get<SupplementView[]>(`/requests/${item.id}/supplements`)));
+      const [results, tracked] = await Promise.all([
+        Promise.allSettled(accepted.map(item => portalApi.get<SupplementView[]>(`/requests/${item.id}/supplements`))),
+        Promise.allSettled(accepted.map(item => portalApi.get<PortalTracking>(`/requests/${item.id}/status`))),
+      ]);
       if (!current()) return;
+      const outcomeMap: Record<string, PortalTracking> = {};
+      tracked.forEach((result, index) => { if (result.status === 'fulfilled') outcomeMap[accepted[index].id] = result.value; });
+      setOutcomes(outcomeMap); setOutcomesFailed(tracked.some(result => result.status === 'rejected'));
       const counts: Record<string, number> = {}; const failures: string[] = [];
       results.forEach((result, index) => { const item = accepted[index]; if (result.status === 'fulfilled') counts[item.id] = result.value.filter(supplement => supplement.status === 'PENDING').length; else failures.push(`${item.reference}: ${(result.reason as Error).message}`); });
       setSupplementCounts(counts); setSupplementErrors(failures);
@@ -133,6 +141,7 @@ export function PortalApp() {
       <div className="portal-section-heading portal-dashboard-heading"><div><span className="portal-eyebrow">KHÔNG GIAN DOANH NGHIỆP</span><h1>Đề nghị vay của bạn</h1><p>Chuẩn bị hồ sơ, lưu nháp và theo dõi kết quả tiếp nhận.</p></div><button className="btn btn-primary portal-create-cta" disabled={!config?.previewEnabled || loading} onClick={() => { const id = crypto.randomUUID(); setDraftId(id); remember(id); setEditor(null); }}><Plus size={17} /> Tạo đề nghị vay</button></div>
       {error && <p role="alert" className="portal-error">{error}</p>}{config && !config.previewEnabled && <p className="v2-policy">Tạo bản nháp V2 chưa mở trong môi trường này. Bạn vẫn có thể xem các đề nghị hiện có.</p>}
       {supplementErrors.length > 0 && <div className="portal-error portal-alert" role="alert"><p>Không tải được tình trạng bổ sung. Bấm Làm mới để thử lại.</p><ul>{supplementErrors.map(message => <li key={message}>{message}</li>)}</ul></div>}{Object.values(supplementCounts).some(count => count > 0) && <p className="portal-notice" role="status">Có {Object.values(supplementCounts).reduce((sum, count) => sum + count, 0)} yêu cầu bổ sung đang mở. Chọn đề nghị đã tiếp nhận để xem chi tiết và gửi tài liệu.</p>}
+      <PortalHome contactName={account.contactName} requests={requests} supplementCounts={supplementCounts} outcomes={outcomes} outcomesFailed={outcomesFailed} onOpen={id => { const item = requests.find(request => request.id === id); if (item) void open(item); }} />
       <div className="v2-dashboard-stats portal-stats-grid">
         <section className="portal-stat-card stat-draft">
           <div className="portal-stat-header"><span className="portal-stat-label">Bản nháp đang chuẩn bị</span><span className="portal-stat-icon"><FileEdit size={16} /></span></div>

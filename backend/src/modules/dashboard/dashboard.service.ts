@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { LoanStatus, StageCode, RiskLevel } from '@prisma/client';
 import { waitingOn } from '../supplements/portal-supplement';
-import { predictionStatusOf } from '../prediction/prediction-status';
+import { currentStagePrediction, predictionStatusOf } from '../prediction/prediction-status';
 import { SLA_POLICY_PA1, stageSlaSummary } from '../workflow/sla/sla-policy';
 import { buildPeriodReport, parseReportRange } from './dashboard-report';
 import { overdueAt as supplementDueAt } from '../supplements/supplement-deadlines';
@@ -47,9 +47,13 @@ export class DashboardService {
       this.prisma.loanApplication
         .findMany({
           where: { currentStatus: { in: activeStatuses } },
-          select: { delayPredictions: { select: { riskLevel: true }, orderBy: { predictionTimestamp: 'desc' }, take: 1 } },
+          select: {
+            currentStage: true,
+            delayPredictions: { select: { riskLevel: true, modelVersion: true, predictionTimestamp: true }, orderBy: { predictionTimestamp: 'desc' }, take: 1 },
+            stageHistories: { where: { exitedAt: null }, select: { enteredAt: true }, take: 1 },
+          },
         })
-        .then(rows => rows.filter(row => row.delayPredictions[0]?.riskLevel === RiskLevel.CAO).length),
+        .then(rows => rows.filter(row => currentStagePrediction(row.delayPredictions, row.currentStage, row.stageHistories[0])?.riskLevel === RiskLevel.CAO).length),
       this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: SLA_POLICY_PA1 } }),
       this.prisma.applicationStageHistory.count({ where: { exitedAt: { not: null }, slaPolicy: SLA_POLICY_PA1, isDelayed: true } }),
     ]);
@@ -241,7 +245,7 @@ export class DashboardService {
     const now = new Date();
 
     const warnings = activeLoans.map((loan) => {
-      const latestPred = loan.delayPredictions[0] || null;
+      const latestPred = currentStagePrediction(loan.delayPredictions, loan.currentStage, loan.stageHistories?.[0]);
       let topReasons: string[] = [];
       if (latestPred?.topReasonsJson) {
         try {
@@ -278,7 +282,8 @@ export class DashboardService {
     });
 
     // Sắp xếp: Xác suất trễ giảm dần (nguy cơ cao nhất lên đầu)
-    return warnings.sort((a, b) => (b.delayProbability ?? -1) - (a.delayProbability ?? -1));
+    // Hồ sơ đã quá hạn SLA (tính theo thời gian thực) luôn lên đầu, sau đó theo xác suất giảm dần.
+    return warnings.sort((a, b) => Number(b.slaOverdue) - Number(a.slaOverdue) || (b.delayProbability ?? -1) - (a.delayProbability ?? -1));
   }
 
   /**

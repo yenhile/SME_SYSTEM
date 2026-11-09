@@ -53,7 +53,7 @@ export const companyColumn: LoanColumn = {
 export function PredictionChip({ loan }: { loan: LoanApplication }) {
   const prediction = loan.delayPredictions?.[0];
   if (!prediction || isLoanFinished(loan) || loan.predictionStatus === 'INCOMPATIBLE_PA1') return null;
-  const alert = alertDisplay(prediction.riskLevel, prediction.delayProbability);
+  const alert = alertDisplay(prediction.riskLevel, prediction.delayProbability, !!loan.slaSummary?.isOverdue);
   if (!alert || alert.code === 'BINH_THUONG' || (alert.code === 'QUA_HAN' && loan.slaSummary?.isOverdue)) return null;
   return <span className={`lt-status lt-status-${alert.tone}`} title={`Nguy cơ trễ SLA: ${predictionHeadline(prediction)}`}>{alert.label}</span>;
 }

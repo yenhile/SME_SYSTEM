@@ -69,7 +69,7 @@ API điều phối: `GET /assignment-change-requests/capabilities`, list/detail,
 
 ## 3. Chạy bản localhost đã được chuẩn bị
 
-**Dữ liệu demo cho máy mới (06/11/2026):** sau khi `npm run prisma:push` và `npm run prisma:seed` (seed bật PA1, đặt định mức Tiếp nhận 112 giờ và Thẩm định 40 giờ), chạy `npm run build` rồi `npm run seed:demo` trong `backend` để có 13 tài khoản mô phỏng và 194 hồ sơ quá khứ kèm lịch sử SLA và dự báo (cần ml-service đang chạy). Mật khẩu 13 tài khoản mô phỏng là `Demo@2026` (đổi bằng biến `DEMO_PASSWORD` trước khi chạy; chỉ dùng demo local). Chạy lặp an toàn; thêm `-- --reset` để dựng lại. Chi tiết và cách gỡ: đầu tệp [seed-demo.cjs](../backend/scripts/seed-demo.cjs). Đây là dữ liệu mô phỏng, không phải dữ liệu thật.
+**Dữ liệu demo cho máy mới (06/11/2026):** sau khi `npm run prisma:push` và `npm run prisma:seed` (seed bật PA1, đặt định mức Tiếp nhận 112 giờ và Thẩm định 40 giờ), chạy `npm run build` rồi `npm run seed:demo` trong `backend` để có 7 tài khoản mô phỏng (1 Admin, 1 Quản lý, 3 CBTD, 2 Thẩm quyền; danh sách ở [README](../README.md#tai-khoan-noi-bo)) và 194 hồ sơ quá khứ kèm lịch sử SLA và dự báo (cần ml-service đang chạy). Mật khẩu lấy từ biến `DEMO_PASSWORD`; không đặt thì sinh ngẫu nhiên và in một lần. Script từ chối chạy khi `NODE_ENV=production`. Chạy lặp an toàn; **trước mỗi buổi demo chạy lại với `-- --reset`** vì đồng hồ SLA của hồ sơ mở vẫn chạy sau khi dựng. Dọn bộ tài khoản cũ: `npm run accounts:tidy`. Chi tiết và cách gỡ: đầu tệp [seed-demo.cjs](../backend/scripts/seed-demo.cjs). Đây là dữ liệu mô phỏng, không phải dữ liệu thật.
 
 ```powershell
 .\start-use.ps1

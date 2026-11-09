@@ -29,7 +29,7 @@
     "test:role-governance": "node --test scripts/check-role-governance-ui.mjs",
     "test:role-recovery": "node --test scripts/check-delayed-session-recovery.mjs",
     "test:appraisal": "node --test scripts/check-appraisal-panel-ui.mjs scripts/check-appraisal-workspace.mjs scripts/check-appraisal-queue.mjs",
-    "test:portal": "node --experimental-strip-types --test src/portal/model.test.mjs src/portal/client.test.mjs src/portal/wizard.test.mjs src/portal/intake-cycle.test.mjs",
+    "test:portal": "node --experimental-strip-types --test src/portal/model.test.mjs src/portal/client.test.mjs src/portal/wizard.test.mjs src/portal/intake-cycle.test.mjs src/portal/home.test.mjs",
     "check:portal-intake-cycle": "node scripts/check-portal-intake-cycle-browser.mjs",
     "check:portal-v2": "node scripts/check-portal-v2-browser.mjs",
     "check:portal-v2-intake": "node scripts/check-portal-v2-intake-browser.mjs",

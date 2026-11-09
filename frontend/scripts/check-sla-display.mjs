@@ -90,3 +90,15 @@ test('warnings sort Quá hạn, then Khẩn, then Chú ý, then by probability',
   ];
   assert.deepEqual([...rows].sort(display.compareAlerts).map(row => row.id), ['qua-han', 'khan-cao', 'khan-thap', 'chu-y', 'binh-thuong', 'chua-co']);
 });
+
+test('a loan past its SLA shows Overdue straight away, without waiting for the next scoring run', () => {
+  assert.equal(display.alertDisplay('CAO', 0.7, true).code, 'QUA_HAN');
+  assert.equal(display.alertDisplay('TRUNG_BINH', 0.4, true).code, 'QUA_HAN');
+  assert.equal(display.alertDisplay('CAO', 0.7, false).code, 'KHAN');
+  const rows = [{ riskLevel: 'CAO', delayProbability: 0.9 }, { riskLevel: 'TRUNG_BINH', delayProbability: 0.4, slaOverdue: true }];
+  assert.equal(rows.sort(display.compareAlerts)[0].slaOverdue, true);
+});
+
+test('with a known SLA flag, 100% probability alone is not shown as Overdue', () => {
+  assert.equal(display.alertDisplay('CAO', 1, false).code, 'KHAN');
+});

@@ -25,7 +25,7 @@ export function MyWarningsPanel({ refreshKey, onSelectLoan }: { refreshKey: numb
 
   const urgent = (items ?? [])
     .filter(item => {
-      const alert = alertDisplay(item.riskLevel, item.delayProbability);
+      const alert = alertDisplay(item.riskLevel, item.delayProbability, item.slaOverdue);
       return alert && alert.code !== 'BINH_THUONG';
     })
     .sort(compareAlerts);
@@ -40,7 +40,7 @@ export function MyWarningsPanel({ refreshKey, onSelectLoan }: { refreshKey: numb
     {!error && items !== null && urgent.length === 0 && <p style={{ fontSize: 13, margin: 0 }}>Hiện không có hồ sơ nào cần ưu tiên.</p>}
     {urgent.length > 0 && <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
       {urgent.slice(0, MAX_ROWS).map(item => {
-        const alert = alertDisplay(item.riskLevel, item.delayProbability)!;
+        const alert = alertDisplay(item.riskLevel, item.delayProbability, item.slaOverdue)!;
         const left = slaLeftText(item);
         return <li key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span className={`badge ${alert.tone === 'red' ? 'badge-soft-red' : 'badge-soft-amber'}`}>{alert.label}</span>

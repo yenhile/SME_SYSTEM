@@ -10,7 +10,7 @@ import { nextDocumentCode } from '../../common/document-codes';
 import { assertOfficerMayWriteCompany } from '../companies/company-access';
 import { companySnapshot, lockCompany, withLoanCompany } from '../companies/company-snapshot';
 import { SLA_POLICY_PA1, computeStageClosing, resolveStageSla, stageSlaSummary } from '../workflow/sla/sla-policy';
-import { predictionStatusOf } from '../prediction/prediction-status';
+import { currentStagePrediction, predictionStatusOf } from '../prediction/prediction-status';
 
 import { assertLoanWrite, assertBranchAmount, assertOfficialAmount, BRANCH_POLICY, lockOfficer } from '../workflow/loan-policy';
 
@@ -216,9 +216,11 @@ export class LoanApplicationsService {
         ? stageSlaSummary(latest, (latest.pauses ?? []).map(p => ({ start: p.startedAt, end: p.endedAt })), now)
         : null;
       const { appraisalReport, portalRequest, _count, ...row } = withLoanCompany(loan);
+      const current = currentStagePrediction(loan.delayPredictions, loan.currentStage, latest?.exitedAt === null ? latest : null);
       return {
         ...row,
-        predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0),
+        delayPredictions: current ? [current] : [],
+        predictionStatus: predictionStatusOf(!!current),
         slaSummary,
         reportStatus: appraisalReport?.status ?? null,
         reportVersion: appraisalReport?.versions?.[0] ? { sequence: appraisalReport.versions[0].sequence, submittedAt: appraisalReport.versions[0].submittedAt } : null,
@@ -365,12 +367,14 @@ export class LoanApplicationsService {
       waiting: supplementOpen ? (isPa1 ? (pauseOpen ? 'ENTERPRISE' : 'BANK') : 'ENTERPRISE') : null,
       slaRunning: open ? (isPa1 ? !pauseOpen : !open.pausedAt) : false,
     };
+    const detailCurrent = currentStagePrediction(loan.delayPredictions, loan.currentStage, open);
     return {
       ...withLoanCompany(loan),
+      delayPredictions: detailCurrent ? [detailCurrent] : [],
       source: loan.portalRequest ? 'PORTAL' : 'QUAY',
       coordinationRestrictions:await this.coordinationRestrictions(id,actor?.id),
       makerCheckerRestrictions:await this.makerCheckerRestrictions(loan,actor?.id),
-      predictionStatus: predictionStatusOf(loan.delayPredictions.length > 0),
+      predictionStatus: predictionStatusOf(!!detailCurrent),
       slaState,
       liveSla,
       slaSummary: open ? stageSlaSummary(open, pauses.map(p => ({ start: p.startedAt, end: p.endedAt })), now) : null,
