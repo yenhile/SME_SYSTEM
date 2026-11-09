@@ -59,6 +59,8 @@ Các script `start-local.ps1`/`run-local-dev.ps1` có thể push/seed dữ liệ
 
 ## Làm việc với source
 
+Giải thích mô hình dự báo trễ SLA và dữ liệu huấn luyện từ A đến Z: [ml-service/README.md](ml-service/README.md).
+
 Nguồn ngữ cảnh: [Project](Project.md). AI đọc [AGENTS](AGENTS.md), policy và preflight trước thao tác.
 
 ```powershell
