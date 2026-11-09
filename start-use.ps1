@@ -26,6 +26,6 @@ for ($i=0; $i -lt 30; $i++) {
   Start-Sleep -Milliseconds 500
 }
 if ($health.services.database -ne 'ready') { throw 'SME API/database is not ready. Check the local runtime logs.' }
-Write-Host 'Staff: http://localhost:5173/'
+Write-Host 'Staff: http://localhost:5173/noi-bo'
 Write-Host 'Enterprise: http://localhost:5173/portal'
 if (-not $smtpHostConfigured) { Write-Host 'Local verification inbox: http://localhost:8025/' }

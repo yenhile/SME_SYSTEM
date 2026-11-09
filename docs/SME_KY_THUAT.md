@@ -77,7 +77,8 @@ API điều phối: `GET /assignment-change-requests/capabilities`, list/detail,
 
 | Dịch vụ | Địa chỉ thường dùng |
 |---|---|
-| Cán bộ | http://localhost:5173/ |
+| Trang chủ công khai | http://localhost:5173/ |
+| Cán bộ (đăng nhập nội bộ) | http://localhost:5173/noi-bo |
 | Doanh nghiệp | http://localhost:5173/portal |
 | API / health | http://localhost:3000/api/health |
 | ML / health | http://localhost:8000/health |

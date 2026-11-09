@@ -235,8 +235,8 @@ function Workspace() {
 function AppContent() {
   const { user, loading, activeRole } = useAuth();
   if (loading) return <main className="login-page">Đang kiểm tra phiên đăng nhập…</main>;
-  if (!user) return window.location.pathname === '/' && !window.location.search.includes('dang-nhap') ? <BankHome /> : <LoginPage />;
-  if (window.location.search.includes('dang-nhap')) window.history.replaceState(null, '', '/');
+  if (!user) return window.location.pathname === '/' ? <BankHome /> : <LoginPage />;
+  if (window.location.pathname === '/noi-bo') window.history.replaceState(null, '', '/');
   return <Workspace key={`${user.id}:${activeRole}`} />;
 }
 

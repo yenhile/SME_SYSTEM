@@ -23,7 +23,8 @@ Script khởi động dịch vụ còn thiếu bằng cấu hình/build hiện c
 
 | Phân hệ | Địa chỉ local |
 |---|---|
-| Cán bộ ngân hàng | http://localhost:5173/ |
+| Trang chủ ngân hàng (công khai, quảng bá vay vốn doanh nghiệp) | http://localhost:5173/ |
+| Cán bộ ngân hàng (đăng nhập nội bộ) | http://localhost:5173/noi-bo |
 | Cổng doanh nghiệp | http://localhost:5173/portal |
 | Backend health | http://localhost:3000/api/health |
 | ML health | http://localhost:8000/health |
@@ -36,7 +37,7 @@ Portal V2 hiện mở vốn lưu động sản xuất/thương mại/dịch vụ
 <a id="tai-khoan-noi-bo"></a>
 ## Tài khoản nội bộ đang sử dụng
 
-Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://localhost:5173/. Mật khẩu **không ghi trong tài liệu**: lấy từ người quản trị, hoặc từ biến `DEMO_PASSWORD` / dòng in một lần khi chạy `npm run seed:demo`.
+Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://localhost:5173/noi-bo . Mật khẩu **không ghi trong tài liệu**: lấy từ người quản trị, hoặc từ biến `DEMO_PASSWORD` / dòng in một lần khi chạy `npm run seed:demo`.
 
 | Tên đăng nhập | Họ tên | Vai trò |
 |---|---|---|
@@ -50,7 +51,7 @@ Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://loca
 
 - Chi nhánh nhỏ chỉ cần **một** Quản lý; 2 Thẩm quyền khớp số người mà mô hình dự báo đã học.
 - Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **khóa**, không xóa để giữ lịch sử hồ sơ. Chạy `npm run accounts:tidy` trong `backend` để xem trước hoặc áp dụng lại; `-- --unlock-test` mở lại `test_*` khi cần chạy kiểm thử tự động (mật khẩu `test_*` chỉ dành cho kiểm thử, không dùng khi vận hành thật).
-- Trang chủ ngân hàng ở http://localhost:5173/ : mục **Doanh nghiệp → Vay vốn doanh nghiệp** dẫn tới cổng doanh nghiệp; cán bộ dùng nút **Đăng nhập** ở đầu trang.
+- Trang chủ ngân hàng ở http://localhost:5173/ : mục **Doanh nghiệp → Vay vốn doanh nghiệp** dẫn tới cổng doanh nghiệp; cán bộ không có nút đăng nhập ở trang công khai mà vào địa chỉ riêng http://localhost:5173/noi-bo .
 - Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal (xác minh email qua hộp thư nội bộ http://localhost:8025/).
 - Hồ sơ mẫu đi qua cổng doanh nghiệp đến kết quả (cần backend, ML và hộp thư nội bộ đang chạy, `PORTAL_V2_ROLLOUT_ENABLED=true`, đã áp `backend/prisma/document-codes.sql`): `DEMO_PASSWORD=... npm run seed:portal-flow` trong `backend`.
 - Trước mỗi buổi demo chạy `npm run seed:demo -- --reset` trong `backend` để hồ sơ mẫu không bị quá hạn hàng loạt.
