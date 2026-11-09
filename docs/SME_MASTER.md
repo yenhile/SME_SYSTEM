@@ -1059,7 +1059,7 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 <a id="diem-ban-giao-20261109"></a>
 ### Điểm bàn giao ngày 09/11/2026 — tài khoản, cảnh báo, trang chủ doanh nghiệp
 
-**Tài khoản (đã áp dụng trên DB local, có sao lưu trước khi đổi):** chi nhánh nhỏ dùng bộ gọn 1 Admin, **1 Quản lý**, 3 CBTD, 2 Thẩm quyền (mô hình học với 2 hoặc 3 Thẩm quyền; 2 nằm trong khoảng đó). Danh sách và vai trò ở [README](../README.md#tai-khoan-noi-bo). Mười tài khoản còn lại (4 `test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) bị **khóa, không xóa** để giữ khóa ngoại với lịch sử; 9 hồ sơ đang mở của họ được giao lại cho 3 CBTD còn dùng. Script: `npm run accounts:tidy` (xem trước; `-- --apply` để thực hiện; `-- --unlock-test` mở lại `test_*` khi cần chạy kiểm thử tự động).
+**Tài khoản (đã áp dụng trên DB local, có sao lưu trước khi đổi):** chi nhánh nhỏ dùng bộ gọn 1 Admin, **1 Quản lý**, 3 CBTD, 2 Thẩm quyền (mô hình học với 2 hoặc 3 Thẩm quyền; 2 nằm trong khoảng đó). Danh sách và vai trò ở [README](../README.md#tai-khoan-noi-bo). Mười tài khoản còn lại (4 `test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) ban đầu bị khóa (9 hồ sơ đang mở của họ được giao lại cho 3 CBTD còn dùng) và sau đó **đã xóa hẳn** (xem quyết định bên dưới). Script: `npm run accounts:tidy` (xem trước; `-- --apply` để thực hiện; `-- --unlock-test` (chỉ còn tác dụng nếu `prisma:seed` đã tạo lại `test_*`) mở lại `test_*` khi cần chạy kiểm thử tự động).
 * `seed.js`: chỉ tạo `test_*` khi chưa có, chạy lại không đặt lại mật khẩu hay mở khóa; không chạy khi `NODE_ENV=production`. Mật khẩu `123456` của `test_*` chỉ phục vụ kiểm thử tự động.
 * `seed-demo.cjs`: tạo 7 tài khoản, mật khẩu lấy từ `DEMO_PASSWORD` hoặc sinh ngẫu nhiên và in một lần (không còn mật khẩu cố định trong mã nguồn), từ chối chạy khi `NODE_ENV=production`. **Trước mỗi buổi demo chạy lại `npm run seed:demo -- --reset`** vì đồng hồ SLA vẫn chạy sau khi dựng; để lâu hồ sơ demo sẽ thành "Quá hạn".
 * Đăng nhập: chỉ báo "tài khoản bị tạm khóa" khi mật khẩu đúng; sai mật khẩu trên tài khoản khóa trả thông báo chung và tính vào giới hạn thử. Tên chi nhánh thống nhất "Chi nhánh TP.HCM".
@@ -1102,7 +1102,7 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 <a id="lo-trinh-con-lai-20261109"></a>
 #### Lộ trình xử lý các việc còn lại (đề xuất ngày 09/11/2026, chờ PO duyệt thứ tự)
 
-**Quyết định đã chốt:** các tài khoản `test_*` và tài khoản demo thừa **giữ nguyên ở trạng thái khóa, không xóa** (PO 09/11/2026); mở lại bằng `npm run accounts:tidy -- --unlock-test` khi cần chạy kiểm thử tự động. 12 commit cũ trên `main` có dòng đồng tác giả Claude được **để nguyên** (PO 09/11/2026).
+**Quyết định đã chốt:** các tài khoản `test_*` và tài khoản demo thừa (10 tài khoản) ban đầu chỉ khóa, sau đó **PO yêu cầu bỏ bớt nên đã xóa hẳn khỏi DB ngày 09/11/2026**. Trước khi xóa đã kiểm tra mọi cột lưu mã người dùng (kể cả cột không có khóa ngoại) và sao lưu DB: chỉ có bảng vai trò (xóa theo) và 1 hồ sơ đã phê duyệt (`SME-20260901-0001`) đang ghi người phụ trách là `test_cbtd`, nay hiển thị "chưa phân công"; không mất dữ liệu nào khác. Hệ thống còn đúng 7 tài khoản (1 Admin, 1 Quản lý, 3 CBTD, 2 Thẩm quyền). Cần chạy kiểm thử tự động thì `npm run prisma:seed` tạo lại `test_*`, xong nên xóa lại. 12 commit cũ trên `main` có dòng đồng tác giả Claude được **để nguyên** (PO 09/11/2026).
 
 | Bước | Việc | Đề xuất cách làm | Công sức | Cần PO quyết? | Nghiệm thu |
 |---|---|---|---|---|---|

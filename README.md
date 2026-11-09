@@ -49,7 +49,7 @@ Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://loca
 | thanh.ngo | Ngô Đức Thành | Cán bộ tín dụng (CBTD) |
 
 - Chi nhánh nhỏ chỉ cần **một** Quản lý; 2 Thẩm quyền khớp số người mà mô hình dự báo đã học.
-- Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **khóa**, không xóa để giữ lịch sử hồ sơ. Chạy `npm run accounts:tidy` trong `backend` để xem trước hoặc áp dụng lại; `-- --unlock-test` mở lại `test_*` khi cần chạy kiểm thử tự động (mật khẩu `test_*` chỉ dành cho kiểm thử, không dùng khi vận hành thật).
+- Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **xóa khỏi DB ngày 09/11/2026** (có sao lưu trước khi xóa); hệ thống chỉ còn đúng 7 tài khoản ở bảng trên. Chạy `npm run prisma:seed` sẽ tạo lại 4 tài khoản `test_*` (mật khẩu ngắn, chỉ cho kiểm thử tự động, không chạy trên production); sau khi chạy kiểm thử xong nên xóa lại. `npm run accounts:tidy` dùng khi cần khóa tài khoản thừa mới phát sinh.
 - Trang giới thiệu vay vốn là lớp đầu của cổng doanh nghiệp (http://localhost:5173/portal); cổng 5173 gốc `/` dành riêng cho cán bộ ngân hàng.
 - Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal (xác minh email qua hộp thư nội bộ http://localhost:8025/).
 - Hồ sơ mẫu đi qua cổng doanh nghiệp đến kết quả (cần backend, ML và hộp thư nội bộ đang chạy, `PORTAL_V2_ROLLOUT_ENABLED=true`, đã áp `backend/prisma/document-codes.sql`): `DEMO_PASSWORD=... npm run seed:portal-flow` trong `backend`.
