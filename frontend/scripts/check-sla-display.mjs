@@ -102,3 +102,9 @@ test('a loan past its SLA shows Overdue straight away, without waiting for the n
 test('with a known SLA flag, 100% probability alone is not shown as Overdue', () => {
   assert.equal(display.alertDisplay('CAO', 1, false).code, 'KHAN');
 });
+
+test('the time a warning was scored is shown so its hours-left reasons are not mistaken for live values', () => {
+  assert.equal(display.predictedAtText(null), null);
+  assert.equal(display.predictedAtText('not a date'), null);
+  assert.equal(display.predictedAtText('2026-11-09T03:05:00Z'), 'Dự báo lúc 10:05 09/11');
+});

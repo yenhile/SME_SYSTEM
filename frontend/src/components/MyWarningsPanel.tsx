@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Brain } from 'lucide-react';
 import { api } from '../api/client';
 import { stageLabel } from '../loanListDisplay';
-import { alertDisplay, compareAlerts, slaLeftText } from '../slaDisplay';
+import { alertDisplay, compareAlerts, predictedAtText, slaLeftText } from '../slaDisplay';
 import type { EarlyWarningItem } from '../types';
 
 const MAX_ROWS = 5;
@@ -47,7 +47,7 @@ export function MyWarningsPanel({ refreshKey, onSelectLoan }: { refreshKey: numb
           <button type="button" className="lt-code" onClick={() => onSelectLoan(item.id)}>{item.applicationCode}</button>
           <span style={{ fontSize: 13 }}>{item.companyName}</span>
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{stageLabel(item.currentStage)}{left ? ` · ${left}` : ''}</span>
-          {item.topReasons[0] && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.topReasons[0]}</span>}
+          {item.topReasons[0] && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.topReasons[0]}{predictedAtText(item.predictedAt) ? ` (${predictedAtText(item.predictedAt)})` : ''}</span>}
         </li>;
       })}
     </ul>}

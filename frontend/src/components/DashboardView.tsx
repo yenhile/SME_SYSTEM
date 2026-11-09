@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { alertDisplay, compareAlerts, predictionLabel, slaLeftText, stageStandardText, workingDurationText } from '../slaDisplay';
+import { alertDisplay, compareAlerts, predictedAtText, predictionLabel, slaLeftText, stageStandardText, workingDurationText } from '../slaDisplay';
 import { PeriodReport } from './PeriodReport';
 import { OverdueSupplementsPanel, type OverdueSupplementItem } from './OverdueSupplementsPanel';
 import { OverviewStats, SlaBottleneck, EarlyWarningItem } from '../types';
@@ -354,6 +354,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                           </li>
                         ))}
                       </ul>
+                      {predictedAtText(item.predictedAt) && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 2 }}>{predictedAtText(item.predictedAt)}</div>}
                     </td>
 
                     <td>

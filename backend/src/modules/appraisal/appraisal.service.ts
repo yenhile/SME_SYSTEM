@@ -65,7 +65,7 @@ export class AppraisalService {
   }
   async mutate(id:string,kind:'DRAFT_SAVED'|'SUBMITTED'|'CLARIFICATION_REQUESTED',body:any,user:LoanActor) {
     this.body(body);
-    const payloadHash=digest({kind,body}); let firstTransition=false;
+    const payloadHash=digest({kind,body}); let firstTransition=false,replayed=false;
     await this.prisma.$transaction(async tx=>{
       await tx.$queryRaw`SELECT id FROM loan_applications WHERE id=${id} FOR UPDATE`;
       const loan=await tx.loanApplication.findUnique({where:{id}});
@@ -85,7 +85,7 @@ export class AppraisalService {
         const prior=await tx.appraisalReportEvent.findUnique({where:{reportId_clientRequestId:{reportId:report.id,clientRequestId:body.clientRequestId}}});
         if(prior) {
           if(prior.actorId!==user.id || prior.payloadHash!==payloadHash) throw new ConflictException('Mã thao tác đã được dùng với nội dung khác.');
-          return;
+          replayed=true;return;
         }
       }
       if ((report?.revision ?? 0)!==body.expectedRevision) throw new ConflictException('Tờ trình đã thay đổi. Vui lòng tải lại.');
@@ -117,7 +117,8 @@ export class AppraisalService {
       }
       await tx.appraisalReportEvent.create({data:{reportId:report.id,actorId:user.id,kind,clientRequestId:body.clientRequestId,payloadHash,payload:kind==='CLARIFICATION_REQUESTED'?{message:body.message.trim()}:{}}});
     },{timeout:30000});
-    if(firstTransition) await this.prediction.predictForApplication(id).catch((err:any)=>this.logger.warn(`Không tạo được dự báo khi trình tờ trình hồ sơ ${id}: ${err?.message??err}`));
+    // Chấm lại khi trình (lần đầu hoặc bản mới sau làm rõ) và khi Thẩm quyền yêu cầu làm rõ; thao tác lặp (replay) không sinh dự báo trùng, lỗi ML chỉ ghi log.
+    if(!replayed && (kind==='SUBMITTED' || kind==='CLARIFICATION_REQUESTED')) await this.prediction.predictForApplication(id).catch((err:any)=>this.logger.warn(`Không tạo được dự báo sau thao tác tờ trình hồ sơ ${id}: ${err?.message??err}`));
     return this.view(id);
   }
 }

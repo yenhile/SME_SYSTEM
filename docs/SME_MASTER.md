@@ -1000,15 +1000,15 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 ## 5. Trạng thái mô hình Machine Learning
 
 > [!NOTE]
-> **Ghi nhận chính thức theo bằng chứng kỹ thuật hiện hành:**
-> “Đợt hoàn thiện chức năng giữ nguyên mô hình ML, không huấn luyện lại mô hình. ML tiếp tục dự báo nguy cơ trễ SLA, không quyết định tín dụng. Điều chỉnh mô hình là công việc bàn giao tiếp theo.”
+> **Ghi nhận (đã được thay thế bởi mô hình v4 ngày 06/11/2026 và đợt sửa ngày 09/11/2026, xem các mục cập nhật bên dưới):**
+> Đợt hoàn thiện chức năng trước đó giữ nguyên mô hình ML. ML chỉ dự báo nguy cơ trễ SLA, không quyết định tín dụng; ranh giới này vẫn giữ nguyên.
 
 * **Kiểm chứng kỹ thuật:**
   * Dịch vụ ML Service tại thư mục `ml-service/` (FastAPI) hoạt động bình thường trên cổng `:8000`, cung cấp endpoint dự báo `POST /predict`.
   * Không phát sinh bất kỳ tệp artifact `.joblib` mới nào; không có lệnh huấn luyện lại mô hình hay ghi đè dataset trong đợt hoàn thiện chức năng.
   * Hợp đồng tích hợp backend (`PredictionService`) giữ nguyên vai trò dự báo xác suất và top lý do nguy cơ trễ hạn xử lý công đoạn; sự cố kết nối ML không làm gián đoạn hay rollback các giao dịch chuyển bước nghiệp vụ của ngân hàng.
 
-**Cập nhật 06/11/2026 — mô hình v4 (đã tích hợp local, chưa commit/push; người phụ trách đã giao triển khai trong phiên làm việc, hợp đồng `/predict` đổi theo đó):**
+**Cập nhật 06/11/2026 — mô hình v4 (đã gộp vào `main` qua PR #11 ngày 09/11/2026; người phụ trách đã giao triển khai trong phiên làm việc, hợp đồng `/predict` đổi theo đó):**
 
 * **Phạm vi:** dự báo nguy cơ **vượt SLA của công đoạn đang mở** (Tiếp nhận và Thẩm định) theo **giờ làm việc đã dùng** so với SLA đang áp dụng. Không có rule base. Vẫn không quyết định tín dụng.
 * **Mô hình:** hai mô hình (Tiếp nhận: Gradient Boosting; Thẩm định: Logistic Regression), xác suất hiệu chỉnh isotonic, học với nhiều mức SLA nên đổi SLA (trong dải Tiếp nhận 24–128 giờ, Thẩm định 16–80 giờ làm việc) không phải huấn luyện lại. Hai mức cảnh báo: **Chú ý** khi xác suất ≥ 0,35, **Khẩn** khi ≥ 0,60; đã vượt SLA là **Quá hạn** (xác định, không dùng mô hình). Giải thích nguyên nhân bằng cách thay từng yếu tố bằng giá trị điển hình (tối đa 3 lý do, chỉ yếu tố vận hành; doanh thu, số năm hoạt động và thời hạn vay không được nêu vì không phải nguyên nhân làm chậm trong dữ liệu mô phỏng).
@@ -1019,6 +1019,20 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 * **Giới hạn đã biết:** (1) kết quả đo trên dữ liệu giả lập; (2) số tài liệu bổ sung chờ kiểm tra được xấp xỉ 0/1; (3) chưa kích hoạt PA1 trong DB thì chưa có dự báo (DB local đã kích hoạt ngày 06/11/2026; môi trường khác phải tự kích hoạt); (4) chấm định kỳ chạy trong tiến trình backend ([prediction-scheduler.service.ts](../backend/src/modules/prediction/prediction-scheduler.service.ts)): mỗi ngày làm việc 08:00 giờ Việt Nam chấm lại mọi hồ sơ đang mở (bỏ qua hồ sơ đang chờ doanh nghiệp, cuối tuần và ngày lễ), chấm bù sau khi khởi động cho hồ sơ chưa có dự báo trong 6 giờ; tắt bằng `PREDICTION_SCAN_ENABLED=false`, đổi giờ bằng `PREDICTION_SCAN_HOUR`; mỗi lượt thêm một dòng `delay_predictions` cho mỗi hồ sơ nên bảng tăng theo số hồ sơ mở nhân số ngày; (5) các dự báo cũ của mô hình v1 còn lưu trong DB (nếu có) không được tính lại.
 * **Kiểm chứng:** 392 test backend đạt; kiểm thử đầu-cuối trên DB tạm (backend → ml-service thật → lưu dự báo) cho cả hai công đoạn PA1 và công đoạn cách cũ; test giao diện liên quan đạt. Rollback: khôi phục `ml-service/app` và `prediction*` từ git; mô hình cũ `delay_model.joblib` vẫn nằm trong repo.
 
+**Đặc tả mô hình cảnh báo (gom về một chỗ, 09/11/2026).** Nơi duy nhất mô tả mong muốn, nghiệm thu và giới hạn; các tệp `docs/ai/*` chỉ là nhật ký lịch sử.
+
+*Mong muốn:* **M1** cảnh báo hồ sơ có nguy cơ vượt SLA trước ít nhất 1 ngày làm việc; **M2** giải thích tối đa 3 nguyên nhân vận hành; **M3** không dùng cho quyết định tín dụng, doanh nghiệp không thấy cảnh báo; **M4** lỗi ML không làm hỏng nghiệp vụ; **M5** có dự báo ngay khi tiếp nhận.
+
+*Mức cảnh báo:* Bình thường dưới 35%; Chú ý từ 35%; Khẩn từ 60%; Quá hạn khi đã vượt SLA (backend tính theo thời gian thực, không cần mô hình).
+
+*Thời điểm chấm:* chuyển công đoạn; tiếp nhận đề nghị từ cổng; tạo hồ sơ tại quầy; CBTD trình tờ trình (mỗi bản); Thẩm quyền yêu cầu làm rõ; hoàn tất bổ sung; điều chuyển cán bộ; 08:00 và 13:00 mỗi ngày làm việc (chấm bù sau khởi động cho hồ sơ chưa có dự báo trong 6 giờ); Thẩm quyền hoặc Quản lý bấm chạy lại. Thao tác lặp không sinh dự báo trùng.
+
+*Tiêu chí nghiệm thu:* **AC-ML-01** hồ sơ vừa tiếp nhận theo PA1 có dự báo `v4.0-TIEP_NHAN` ngay (kiểm chứng 09/11: có); **AC-ML-02** hồ sơ đang Thẩm định không hiện dự báo của Tiếp nhận hay của v1 (test `prediction-current-stage`, `dashboard-warnings`); **AC-ML-03** hồ sơ đã vượt SLA hiện "Quá hạn" ngay khi xem (test `check-sla-display`); **AC-ML-04** thêm hoặc khóa tài khoản không làm đổi mức cảnh báo (logic đếm đã đổi sang tài khoản chuyên trách đang mở, không phải `test_*`; **chưa có test tự động riêng và chưa tái hiện lại phép thử 2 so với 5 Thẩm quyền**); **AC-ML-05** mỗi cảnh báo có 1 đến 3 lý do, không nêu doanh thu, số năm hoạt động hay thời hạn vay (`NOT_REASONS` trong predictor.py); **AC-ML-NR-01** tắt ML thì tiếp nhận, trình tờ trình, phê duyệt vẫn thành công (test `portal-accept-prediction`, `prediction-triggers`, `appraisal` ca 10); **AC-ML-NR-02** cổng doanh nghiệp không có dữ liệu dự báo (tracking chỉ dựng từ trường công khai).
+
+*Quyết định PO ghi nhận:* **Q1** chấp nhận việc đổi hợp đồng `POST /predict` ở v4 (mục 6A cũ về giữ nguyên hợp đồng không còn hiệu lực); **Q2** CBTD được xem cảnh báo hồ sơ mình phụ trách (`GET /dashboard/my-warnings`); **Q5** chấm 2 lần mỗi ngày làm việc (08:00 và 13:00); **Q6** SLA hợp lệ đúng khoảng đã học, không nới biên; **MM-02** chấm ngay khi tiếp nhận.
+
+*Giới hạn chính thức khi trình bày:* dữ liệu huấn luyện là 20.000 hồ sơ **giả lập** (hình dạng thời gian theo BPI Challenge 2012); AUC Tiếp nhận 0,82 so với đường cơ sở chỉ dùng giờ đã dùng 0,80, Thẩm định 0,72 so với 0,69, nghĩa là mô hình chủ yếu là "đồng hồ SLA có tính xác suất và giải thích nguyên nhân", chỉ hơn đường cơ sở một chút; lúc vừa vào công đoạn mô hình gần như không phân biệt được (AUC 0,557) nên hồ sơ mới tiếp nhận hầu như hiện "Bình thường", đúng bản chất mô hình; ở SLA 112 giờ chỉ có 38 ca trễ trong tập test nên số liệu Tiếp nhận nhiễu; số tài liệu bổ sung chờ kiểm tra chỉ là xấp xỉ 0 hoặc 1; lịch làm việc chỉ tới 31/12/2026; bảng `delay_predictions` tăng mỗi ngày, chưa có cơ chế dọn.
+
 **Cập nhật 09/11/2026 — sửa lỗi cảnh báo theo review của PO (mô hình và artifact không đổi):**
 
 * **Cảnh báo chỉ nói về công đoạn hiện tại.** Bảng cảnh báo, ô đếm "Khẩn", danh sách và chi tiết hồ sơ, tải việc của CBTD chỉ dùng dự báo của mô hình v4, đúng công đoạn đang mở và tạo sau lúc hồ sơ vào công đoạn đó (`currentStagePrediction` trong [prediction-status.ts](../backend/src/modules/prediction/prediction-status.ts)). Không có thì hiện "Chưa có dự báo". Câu "đã hoàn tất, không còn công đoạn" chỉ dùng cho hồ sơ đã hoàn tất; hồ sơ đang xử lý mà thiếu lịch sử công đoạn có lý do riêng (`NO_STAGE_HISTORY`).
@@ -1027,6 +1041,8 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 * **Dải SLA** theo đúng dải đã học (Tiếp nhận 24–128 giờ, Thẩm định 16–80 giờ), bỏ biên nới ±25%. Đã thử trên dịch vụ ML đang chạy: SLA 150 và 23 giờ trả 422, 128 giờ dự báo được.
 * **Log lỗi dự báo** khi trình tờ trình và ở lượt quét theo lịch (trước đây bị nuốt).
 * **Dịch vụ ML:** thêm khóa `ML_API_KEY` (header `X-API-Key`, backend tự gửi; không đặt thì chạy local không xác thực), CORS mặc định tắt (`ML_CORS_ORIGINS` để mở), lỗi 500 không trả chi tiết kỹ thuật, dùng logger thay `print`.
+* **Thời điểm chấm bổ sung (L4, L7):** nay chấm thêm khi tạo hồ sơ tại quầy, khi Thẩm quyền yêu cầu làm rõ và khi CBTD trình lại bản mới (điều chuyển cán bộ vốn đã chấm sẵn qua `assignmentPrediction`); lượt chấm định kỳ chạy 08:00 và 13:00 (`PREDICTION_SCAN_HOURS`). Giao diện ghi "Dự báo lúc HH:mm dd/MM" cạnh lý do để số giờ trong lý do không bị nhầm với cột SLA tính theo thời gian thực (L8).
+* **Chưa làm, có chủ đích:** **L2/Q3** giữ cách đếm "tài khoản Thẩm quyền đang mở, chuyên trách, không phải `test_*`", chưa chuyển sang "có thao tác trong 30 ngày" vì tài khoản mới hoặc chưa phát sinh thao tác sẽ làm số đếm tụt về 1 (lệch giá trị điển hình 2) và gây lại đúng lỗi cảnh báo thay đổi theo số tài khoản; PO nên chốt lại nếu muốn tiêu chí theo hoạt động. **L9/Q4** chưa đổi ngưỡng Chú ý ở Thẩm định vì là điều chỉnh ý nghĩa cảnh báo thuộc quyền PO.
 * **Kiểm chứng:** backend 415/415 test đạt (thêm 2 test cảnh báo cũ/quá hạn và bộ `prediction-current-stage`); test giao diện liên quan đạt. Đã gọi API thật sau khi dựng lại container: 15 hồ sơ đang mở đều chỉ mang dự báo `v4.0` đúng công đoạn. Chưa kiểm thử bằng thao tác trên trình duyệt.
 
 ---
@@ -1036,7 +1052,7 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 
 ### Tổng kết phạm vi đã hoàn thành và phần còn lại
 * **Đã hoàn thành:** Toàn bộ các chức năng thuộc 7 nhóm chức năng đã được triển khai đầy đủ trên mã nguồn (`backend/` và `frontend/`), đã diễn tập migration an toàn trên DB PostgreSQL local, đã kiểm chứng E2E với 38/38 checks pass trên hệ sinh thái đang chạy, và đã cập nhật tài liệu đầy đủ.
-* **Phần còn lại chưa thực hiện trong đợt này:** Chưa phát hành hệ thống ra internet hoặc môi trường máy chủ từ xa; chưa tích hợp dịch vụ chứng thư số/chữ ký số CA thực tế; chưa thay đổi mô hình ML.
+* **Phần còn lại chưa thực hiện trong đợt này:** Chưa phát hành hệ thống ra internet hoặc môi trường máy chủ từ xa; chưa tích hợp dịch vụ chứng thư số/chữ ký số CA thực tế; mô hình ML đã được thay bằng v4 ngày 06/11/2026 (xem mục 5).
 
 <a id="diem-ban-giao-20261109"></a>
 ### Điểm bàn giao ngày 09/11/2026 — tài khoản, cảnh báo, trang chủ doanh nghiệp

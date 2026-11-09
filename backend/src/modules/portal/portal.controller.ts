@@ -96,7 +96,7 @@ export class PortalIntakesController {
     if(body && (Object.keys(body).some(k=>!['confirmExistingCompany','confirmExistingCompanyFinancials','expectedRevision','submissionId'].includes(k)) || ['confirmExistingCompany','confirmExistingCompanyFinancials'].some(k=>body[k]!==undefined&&typeof body[k]!=='boolean'))) throw new BadRequestException('Thông tin xác nhận không hợp lệ.');
     return this.service.accept(id,req.user.id,body?.confirmExistingCompany===true,body?.confirmExistingCompanyFinancials===true,body?.expectedRevision,body?.submissionId).then(async result=>{
       // Hồ sơ vừa được tiếp nhận từ cổng có dự báo ngay thay vì chờ lượt chấm 08:00; lỗi dự báo không làm hỏng việc tiếp nhận.
-      if(result?.loanId) await this.prediction.predictForApplication(result.loanId).catch((err:any)=>this.logger.warn('Không tạo được dự báo khi tiếp nhận hồ sơ '+result.loanId+': '+(err?.message??err)));
+      if(result?.loanId && !(result as any).replayed) await this.prediction.predictForApplication(result.loanId).catch((err:any)=>this.logger.warn('Không tạo được dự báo khi tiếp nhận hồ sơ '+result.loanId+': '+(err?.message??err)));
       return result;
     });
   }

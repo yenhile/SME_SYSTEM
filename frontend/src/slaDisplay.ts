@@ -121,6 +121,18 @@ export function alertDisplay(riskLevel?: string | null, probability?: number | n
   return { code: 'BINH_THUONG', label: 'Bình thường', tone: 'green' };
 }
 
+/** "Dự báo lúc 14:05 09/11": các lý do (số giờ còn lại...) được tính tại thời điểm này nên có thể lệch với cột SLA tính theo thời gian thực. */
+export function predictedAtText(iso?: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const vn = new Date(date.getTime() + 7 * 3600000);   // giờ Việt Nam, không phụ thuộc múi giờ và ngôn ngữ của trình duyệt
+  const two = (n: number) => String(n).padStart(2, "0");
+  const time = `${two(vn.getUTCHours())}:${two(vn.getUTCMinutes())}`;
+  const day = `${two(vn.getUTCDate())}/${two(vn.getUTCMonth() + 1)}`;
+  return `Dự báo lúc ${time} ${day}`;
+}
+
 export interface PredictionView { riskLevel: string; delayProbability: number; modelVersion?: string; predictionTimestamp?: string }
 
 /** Ví dụ "Khẩn · 72,9%". */

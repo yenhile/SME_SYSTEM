@@ -321,7 +321,7 @@ export class PortalService {
       if(r.status==='ACCEPTED') {
         const loan=r.loanId ? await tx.loanApplication.findFirst({where:{id:r.loanId,assignedTo:userId},select:{id:true}}) : null;
         if(!loan) throw new NotFoundException('Hồ sơ đã được điều chuyển hoặc không còn trong phạm vi phụ trách.');
-        return {loanId:r.loanId,request:await tx.portalRequest.findUniqueOrThrow({where:{id},include})};
+        return {loanId:r.loanId,replayed:true,request:await tx.portalRequest.findUniqueOrThrow({where:{id},include})};
       }
       if(r.status!=='ASSIGNED' || r.assignedTo!==userId) throw new NotFoundException('Không tìm thấy yêu cầu được phân công.');
       await assertNoCoordinationConflict(tx,{portalRequestId:id},userId);

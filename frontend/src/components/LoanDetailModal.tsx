@@ -7,7 +7,7 @@ import {AssignmentChangeRequestPanel} from './AssignmentChangeRequestPanel';
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { alertDisplay, predictionHeadline, predictionLabel, slaPolicyLabel, slaStateLabel, slaSummaryText, stageDurationText, stageStandardText } from '../slaDisplay';
+import { alertDisplay, predictedAtText, predictionHeadline, predictionLabel, slaPolicyLabel, slaStateLabel, slaSummaryText, stageDurationText, stageStandardText } from '../slaDisplay';
 import { PortalIntakeDetails } from './PortalIntakeDetails';
 import { SupplementPanel } from './SupplementPanel';
 import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
@@ -590,7 +590,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   }`}
                   style={{ fontSize: '12px', padding: '4px 10px', fontWeight: 600 }}
                 >
-                  Nguy cơ trễ SLA: {latestPrediction && loan.predictionStatus !== 'INCOMPATIBLE_PA1' ? alertDisplay(latestPrediction.riskLevel, latestPrediction.delayProbability)?.label ?? latestPrediction.riskLevel : loan.predictionStatus === 'INCOMPATIBLE_PA1' ? predictionLabel(loan.predictionStatus) : 'Chưa đánh giá'}
+                  Nguy cơ trễ SLA: {latestPrediction && loan.predictionStatus !== 'INCOMPATIBLE_PA1' ? alertDisplay(latestPrediction.riskLevel, latestPrediction.delayProbability, !!loan.slaSummary?.isOverdue)?.label ?? latestPrediction.riskLevel : loan.predictionStatus === 'INCOMPATIBLE_PA1' ? predictionLabel(loan.predictionStatus) : 'Chưa đánh giá'}
                 </span>
                 {canPredict && <button
                   onClick={handleRePredict}
