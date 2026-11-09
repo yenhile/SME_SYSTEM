@@ -19,6 +19,9 @@ services:
   ml-service:
     build:
       context: ./ml-service
+    environment:
+      # Khóa bảo vệ /predict: đặt ML_API_KEY trong .env để chỉ backend (cùng khóa) gọi được; để trống thì không xác thực (chỉ dùng local).
+      ML_API_KEY: ${ML_API_KEY:-}
     ports:
       - "8000:8000"
     healthcheck:
@@ -42,6 +45,9 @@ services:
       PORT: 3000
       DATABASE_URL: ${DATABASE_URL:-postgresql://sme_user:sme_password@db:5432/sme_loan?schema=public}
       ML_SERVICE_URL: ${ML_SERVICE_URL:-http://ml-service:8000}
+      ML_API_KEY: ${ML_API_KEY:-}
+      PREDICTION_SCAN_HOURS: ${PREDICTION_SCAN_HOURS:-}
+      PREDICTION_SCAN_INTERVAL_MS: ${PREDICTION_SCAN_INTERVAL_MS:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       NODE_ENV: ${NODE_ENV:-development}
       # Khóa ký đăng nhập: bắt buộc cấu hình trong .env (không có giá trị mặc định).

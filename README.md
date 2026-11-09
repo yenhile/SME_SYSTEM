@@ -49,15 +49,18 @@ Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://loca
 | thanh.ngo | Ngô Đức Thành | Cán bộ tín dụng (CBTD) |
 
 - Chi nhánh nhỏ chỉ cần **một** Quản lý; 2 Thẩm quyền khớp số người mà mô hình dự báo đã học.
-- Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **khóa**, không xóa để giữ lịch sử hồ sơ. Chạy `npm run accounts:tidy` trong `backend` để xem trước hoặc áp dụng lại; `-- --unlock-test` mở lại `test_*` khi cần chạy kiểm thử tự động (mật khẩu `test_*` chỉ dành cho kiểm thử, không dùng khi vận hành thật).
+- Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **xóa khỏi DB ngày 09/11/2026** (có sao lưu trước khi xóa); hệ thống chỉ còn đúng 7 tài khoản ở bảng trên. Chạy `npm run prisma:seed` sẽ tạo lại 4 tài khoản `test_*` (mật khẩu ngắn, chỉ cho kiểm thử tự động, không chạy trên production); sau khi chạy kiểm thử xong nên xóa lại. `npm run accounts:tidy` dùng khi cần khóa tài khoản thừa mới phát sinh.
 - Trang giới thiệu vay vốn là lớp đầu của cổng doanh nghiệp (http://localhost:5173/portal); cổng 5173 gốc `/` dành riêng cho cán bộ ngân hàng.
 - Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal (xác minh email qua hộp thư nội bộ http://localhost:8025/).
+- Dọn dữ liệu thử sau khi kiểm thử (hồ sơ "[MÔ PHỎNG]", tài khoản cổng `mo.phong.*`): `npm run cleanup:test` trong `backend` (mặc định chỉ xem trước; thêm `-- --apply` để xóa). Không đụng bộ demo, tài khoản cán bộ và các tài khoản cổng khác.
 - Hồ sơ mẫu đi qua cổng doanh nghiệp đến kết quả (cần backend, ML và hộp thư nội bộ đang chạy, `PORTAL_V2_ROLLOUT_ENABLED=true`, đã áp `backend/prisma/document-codes.sql`): `DEMO_PASSWORD=... npm run seed:portal-flow` trong `backend`.
-- Trước mỗi buổi demo chạy `npm run seed:demo -- --reset` trong `backend` để hồ sơ mẫu không bị quá hạn hàng loạt.
+- Trước mỗi buổi demo chạy `npm run demo:status` trong `backend` (chỉ đọc) để xem hồ sơ demo còn dùng được không; nếu báo cũ thì chạy `npm run demo:refresh` (dựng lại dữ liệu demo bằng `seed:demo --reset`).
 
 Các script `start-local.ps1`/`run-local-dev.ps1` có thể push/seed dữ liệu. Đọc tác động và xác định đúng DB trước khi chạy.
 
 ## Làm việc với source
+
+Giải thích mô hình dự báo trễ SLA và dữ liệu huấn luyện từ A đến Z: [ml-service/README.md](ml-service/README.md).
 
 Nguồn ngữ cảnh: [Project](Project.md). AI đọc [AGENTS](AGENTS.md), policy và preflight trước thao tác.
 

@@ -1,3 +1,4 @@
-data/*.csv
+# Chỉ giữ dữ liệu và mô hình v4. Tệp v3 cũ (nếu còn trên máy) không đưa vào git.
+data/*_v3.*
 models/
 __pycache__/

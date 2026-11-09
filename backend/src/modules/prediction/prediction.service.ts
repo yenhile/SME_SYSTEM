@@ -74,7 +74,7 @@ export class PredictionService {
 
       const prediction = await this.prisma.delayPrediction.create({
         data: {
-          applicationId: loan.id, riskLevel: riskLevelOf(result.alert_level), delayProbability: result.delay_probability,
+          applicationId: loan.id, riskLevel: riskLevelOf(result.alert_level, stage), delayProbability: result.delay_probability,
           topReasonsJson: JSON.stringify(result.top_reasons || []), modelVersion: `${result.model_version || 'v4'}-${stage}`,
         },
       });

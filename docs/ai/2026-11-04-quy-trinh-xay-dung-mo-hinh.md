@@ -336,7 +336,7 @@ Hướng mở rộng sau: dự báo nguy cơ doanh nghiệp bổ sung quá hạn
 ## 14. Nhật ký trao đổi và quyết định (04/11/2026)
 
 ### 14.1. Mô hình chạy khi nào
-- Mô hình **không chạy theo lịch mỗi ngày**. Chạy **theo sự kiện**: sau mỗi lần chuyển bước chưa hoàn tất, khi trình tờ trình lần đầu, khi tạo yêu cầu bổ sung, sau khi điều chuyển. Cán bộ thẩm quyền và Quản lý có thể **bấm tính lại** từng hồ sơ; CBTD chỉ xem. Bộ hẹn giờ duy nhất trong backend là nhắc quá hạn bổ sung lúc 08:00, không liên quan mô hình.
+- (**Đã được thay thế ngày 09/11/2026**: v4 chấm theo lịch 08:00 và 13:00 mỗi ngày làm việc, xem SME_MASTER mục 5.) Bản gốc: mô hình **không chạy theo lịch mỗi ngày**. Chạy **theo sự kiện**: sau mỗi lần chuyển bước chưa hoàn tất, khi trình tờ trình lần đầu, khi tạo yêu cầu bổ sung, sau khi điều chuyển. Cán bộ thẩm quyền và Quản lý có thể **bấm tính lại** từng hồ sơ; CBTD chỉ xem. Bộ hẹn giờ duy nhất trong backend là nhắc quá hạn bổ sung lúc 08:00, không liên quan mô hình.
 - **Khoảng hở được xác định:** nếu hồ sơ nằm yên không có sự kiện, dự báo cũ vẫn hiện. Mô hình cũng không có đặc trưng "đã ở công đoạn bao lâu", nên chạy lại hằng ngày cũng không đổi kết quả. Phát hiện hồ sơ quá hạn thực tế cần **đồng hồ SLA** (giờ đã dùng so với định mức), không phải mô hình. Đã phân biệt hai loại quy tắc: quy tắc dự báo (ước đoán trước) và quy tắc theo thời gian (đo thực tế).
 - Điểm hở khác nghi ngờ nhưng chưa kiểm chứng: đề nghị đã nộp nhưng chưa được phân công thì chưa thành khoản vay nên không có SLA công đoạn lẫn dự báo.
 

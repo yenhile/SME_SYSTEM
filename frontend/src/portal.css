@@ -329,3 +329,4 @@ button.portal-request-row:hover { background:#f8faff; }
 .portal-home-guide { list-style:none; margin:14px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
 .portal-home-guide li { display:flex; flex-direction:column; gap:2px; font-size:13px; }
 .portal-home-guide span { color:#64748B; }
+.portal-home-result-head { display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; }

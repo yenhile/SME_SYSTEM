@@ -489,3 +489,24 @@ test('9. D5-04: AppraisalService.view returns makerChecker status based on actor
   assert.equal(viewIndep.makerChecker.canClarify, true);
   assert.equal(viewIndep.makerChecker.clarifyBlockReason, null);
 });
+
+test('10. ML: each submit and each clarification request refreshes the prediction; a replayed request does not add another', async () => {
+  const { service, state } = mockAppraisalFixture(null);
+  const content = fullAnalysisContent();
+  const cbtd = { id: 'cbtd-1', activeRole: 'CBTD' };
+
+  await service.mutate('loan-1', 'DRAFT_SAVED', { expectedRevision: 0, clientRequestId: validUUID(), content }, cbtd);
+  assert.equal(state.predictions, 0, 'saving a draft is not a trigger');
+  const submitId = validUUID();
+  await service.mutate('loan-1', 'SUBMITTED', { expectedRevision: 1, clientRequestId: submitId }, cbtd);
+  assert.equal(state.predictions, 1, 'first submit');
+  await service.mutate('loan-1', 'SUBMITTED', { expectedRevision: 1, clientRequestId: submitId }, cbtd).catch(() => undefined);
+  assert.equal(state.predictions, 1, 'replay of the same request');
+
+  state.loan = mockLoan({ currentStage: 'THAM_DINH', currentStatus: 'PENDING_APPRAISAL' });
+  await service.mutate('loan-1', 'CLARIFICATION_REQUESTED', { expectedRevision: 2, clientRequestId: validUUID(), message: 'Cần làm rõ nguồn trả nợ.' }, { id: 'tq-independent', activeRole: 'THAM_QUYEN' });
+  assert.equal(state.predictions, 2, 'clarification request');
+  await service.mutate('loan-1', 'DRAFT_SAVED', { expectedRevision: 3, clientRequestId: validUUID(), content: { ...content, repaymentSource: 'Bổ sung.' } }, cbtd);
+  await service.mutate('loan-1', 'SUBMITTED', { expectedRevision: 4, clientRequestId: validUUID() }, cbtd);
+  assert.equal(state.predictions, 3, 're-submit after clarification');
+});

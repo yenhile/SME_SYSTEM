@@ -71,7 +71,7 @@ export function PortalApp() {
   const [config, setConfig] = useState<PortalFormConfig | null>(null); const [draftId, setDraftId] = useState('');
   const accountRef = useRef(account); accountRef.current = account;
   const clearView = () => { accountRef.current = null; loadSequence.current++; openSequence.current++; setAccount(null); setRequests([]); setSupplementCounts({}); setSupplementErrors([]); setOutcomes({}); setOutcomesFailed(false); setLoading(false); setChecking(false); setEditor(undefined); setConfig(null); };
-  const logout = () => { setPortalToken(null); clearView(); };
+  const logout = () => { setPortalToken(null); clearView(); history.replaceState(history.state, '', location.pathname); setEntered(false); };
   useEffect(() => {
     let live = true;
     const url=new URL(location.href);
