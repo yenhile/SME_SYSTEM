@@ -1,5 +1,5 @@
 // backend/prisma/seed.js
-const { PrismaClient, RoleCode, LoanType, StageCode, LoanStatus, DocumentType, RiskLevel, SupplementStatus } = require('@prisma/client');
+const { PrismaClient, RoleCode, LoanType, StageCode, LoanStatus, DocumentType } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
@@ -201,75 +201,7 @@ async function main() {
     },
   });
 
-  // Hồ sơ 2: Nam Thành - Vay 8 tỷ (ĐANG CHỜ THẨM ĐỊNH - CÓ CẢNH BÁO AI NGUY CƠ TRỄ HẠN CAO)
-  const app2 = await prisma.loanApplication.upsert({
-    where: { applicationCode: 'SME-20260915-0002' },
-    update: {},
-    create: {
-      applicationCode: 'SME-20260915-0002',
-      companyId: companies['0317891234'].id,
-      loanPurpose: 'Mua sắm dây chuyền máy cắt laser kim loại tấm và xe cẩu công trình',
-      loanType: LoanType.VAY_DAU_TU_TSCD,
-      proposedAmount: 8000000000,
-      officialAmount: 8000000000,
-      loanTermMonths: 60,
-      currentStage: StageCode.THAM_DINH,
-      currentStatus: LoanStatus.PENDING_APPRAISAL,
-      assignedTo: users['test_cbtd'].id,
-      isDocumentComplete: true,
-      supplementCount: 2, // Đã bổ sung 2 lần
-      createdAt: new Date('2026-09-15T09:00:00Z'),
-    },
-  });
-
-  // Gán cảnh báo AI cho Hồ sơ 2
-  await prisma.delayPrediction.create({
-    data: {
-      applicationId: app2.id,
-      riskLevel: RiskLevel.CAO,
-      delayProbability: 0.84, // 84% xác suất trễ
-      topReasonsJson: JSON.stringify([
-        'Hồ sơ đã yêu cầu bổ sung 2 lần (+35% nguy cơ)',
-        'Cán bộ thẩm quyền đang phụ trách 12 hồ sơ cùng lúc (+26% quá tải)',
-        'Khoản vay đầu tư TSCĐ quy mô lớn thuộc ngành xây dựng (+23% độ phức tạp)',
-      ]),
-      modelVersion: 'v1.0-rf',
-    },
-  });
-
-  // Hồ sơ 4: Vận Tải Đông Á - Vay 2 tỷ (ĐANG CHỜ DOANH NGHIỆP BỔ SUNG CHỨNG TỪ - TẠM DỪNG SLA)
-  const app4 = await prisma.loanApplication.upsert({
-    where: { applicationCode: 'SME-20260925-0004' },
-    update: {},
-    create: {
-      applicationCode: 'SME-20260925-0004',
-      companyId: companies['0316543210'].id,
-      loanPurpose: 'Cấp hạn mức thấu chi tài khoản thanh toán chi trả phí cầu đường & xăng dầu',
-      loanType: LoanType.THAU_CHI,
-      proposedAmount: 2000000000,
-      loanTermMonths: 12,
-      currentStage: StageCode.TIEP_NHAN,
-      currentStatus: LoanStatus.SUPPLEMENT_REQUIRED,
-      assignedTo: users['test_cbtd'].id,
-      isDocumentComplete: false,
-      supplementCount: 1,
-      createdAt: new Date('2026-09-25T14:30:00Z'),
-    },
-  });
-
-  // Ghi nhận yêu cầu bổ sung cho Hồ sơ 4; mỗi hồ sơ chỉ có một yêu cầu đang mở dù chạy seed nhiều lần.
-  const openSupplement = await prisma.supplementRequest.findFirst({ where: { applicationId: app4.id, status: SupplementStatus.PENDING } });
-  if (!openSupplement) {
-    await prisma.supplementRequest.create({
-      data: {
-        applicationId: app4.id,
-        requestContent: 'Yêu cầu cung cấp Báo cáo tài chính năm 2025 có kiểm toán và Sao kê tài khoản ngân hàng chính 6 tháng gần nhất có mộc ngân hàng.',
-        requestedBy: users['test_cbtd'].id,
-        deadlineAt: new Date('2026-10-02T17:00:00Z'),
-        status: SupplementStatus.PENDING,
-      },
-    });
-  }
+  // Hồ sơ mẫu có lịch sử công đoạn và dự báo được dựng bởi `npm run seed:demo` (scripts/seed-demo.cjs), không tạo ở đây.
 
   // Định mức 112/40 giờ chỉ đúng khi tính theo giờ làm việc, nên PA1 được bật cùng lúc với định mức.
   const calendarVersion = 'VN-20260101-20261231-v1';

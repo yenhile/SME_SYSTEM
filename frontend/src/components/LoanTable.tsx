@@ -1,8 +1,8 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight, ChevronsUpDown, RefreshCw } from 'lucide-react';
-import { isLoanFinished, loanTypeLabel, moneyText, riskLabel } from '../appraisalWorkspace';
+import { isLoanFinished, loanTypeLabel, moneyText } from '../appraisalWorkspace';
 import { compactMoney, loanStageLine, loanStatusDetail, loanStatusView, pageCount, pageSummary, stageProgress } from '../loanListDisplay';
-import { predictionLabel } from '../slaDisplay';
+import { alertDisplay, predictionHeadline, predictionLabel } from '../slaDisplay';
 import type { LoanApplication } from '../types';
 import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
 import './loan-table.css';
@@ -49,11 +49,21 @@ export const companyColumn: LoanColumn = {
   </>,
 };
 
+/** Mức cảnh báo của mô hình dự báo trễ SLA; chỉ hiện khi có dự báo và hồ sơ còn đang xử lý, Bình thường không chiếm chỗ. */
+export function PredictionChip({ loan }: { loan: LoanApplication }) {
+  const prediction = loan.delayPredictions?.[0];
+  if (!prediction || isLoanFinished(loan) || loan.predictionStatus === 'INCOMPATIBLE_PA1') return null;
+  const alert = alertDisplay(prediction.riskLevel, prediction.delayProbability);
+  if (!alert || alert.code === 'BINH_THUONG' || (alert.code === 'QUA_HAN' && loan.slaSummary?.isOverdue)) return null;
+  return <span className={`lt-status lt-status-${alert.tone}`} title={`Nguy cơ trễ SLA: ${predictionHeadline(prediction)}`}>{alert.label}</span>;
+}
+
 export function LoanStatusBadges({ loan }: { loan: LoanApplication }) {
   const status = loanStatusView(loan.currentStatus);
   return <div className="lt-badges">
     <span className={`lt-status lt-status-${status.tone}`}>{status.label}</span>
     {loan.slaSummary?.isOverdue && !isLoanFinished(loan) && <span className="lt-status lt-status-red">Quá hạn</span>}
+    <PredictionChip loan={loan} />
     {loan.currentStatus === 'SUPPLEMENT_REQUIRED' && <SupplementDeadlineBadge requests={loan.supplementRequests} />}
   </div>;
 }
@@ -106,7 +116,7 @@ function LoanDetails({ loan, onOpen }: { loan: LoanApplication; onOpen: () => vo
       <div><dt>CBTD phụ trách</dt><dd>{loan.assignedUser?.fullName || 'Chưa phân công'}</dd></div>
       <div><dt>Ngày tạo</dt><dd>{new Date(loan.createdAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</dd></div>
       <div><dt>Số lần bổ sung</dt><dd>{loan.supplementCount}</dd></div>
-      <div><dt>Nguy cơ trễ SLA</dt><dd>{hasPrediction && prediction ? `${riskLabel(prediction.riskLevel)}, ${(prediction.delayProbability * 100).toFixed(0)}%` : predictionLabel(loan.predictionStatus)}</dd></div>
+      <div><dt>Nguy cơ trễ SLA</dt><dd>{hasPrediction && prediction ? predictionHeadline(prediction, 0) : predictionLabel(loan.predictionStatus)}</dd></div>
     </dl>
     <button type="button" className="btn btn-secondary" onClick={onOpen}>Mở hồ sơ <ChevronRight size={14} aria-hidden="true" /></button>
   </div>;

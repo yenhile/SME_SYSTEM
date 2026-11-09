@@ -15,4 +15,4 @@ test('prediction failure is reported separately and retry never calls prediction
   let calls=0;const service={predictForApplication:async()=>{calls++;throw Error('synthetic dependency failure');}};
   assert.equal((await assignmentPrediction(service,'loan',false)).status,'FAILED');assert.equal((await assignmentPrediction(service,'loan',true)).status,'NOT_REPEATED');assert.equal(calls,1);
 });
-test('PA1 incompatibility has its own outcome',async()=>{assert.equal((await assignmentPrediction({predictForApplication:async()=>({unavailable:true,message:'Synthetic PA1'})},'loan',false)).status,'INCOMPATIBLE_PA1');});
+test('Unavailable prediction has its own outcome',async()=>{assert.equal((await assignmentPrediction({predictForApplication:async()=>({unavailable:true,message:'Synthetic PA1'})},'loan',false)).status,'UNAVAILABLE');});

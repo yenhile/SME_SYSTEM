@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { appraisalActions, debtToEquityText, isLoanUuid, loanTypeLabel, moneyText, riskLabel, type AppraisalReportView } from '../appraisalWorkspace';
-import { predictionLabel, slaDeadlineCell, slaStateLabel } from '../slaDisplay';
+import { appraisalActions, debtToEquityText, isLoanUuid, loanTypeLabel, moneyText, type AppraisalReportView } from '../appraisalWorkspace';
+import { predictionLabel, slaDeadlineCell, slaStateLabel, predictionHeadline } from '../slaDisplay';
 import type { PortalFormConfig } from '../portal/model';
 import type { LoanApplication } from '../types';
 import { AppraisalDecisionPanel, type DecisionSubmit } from './AppraisalDecisionPanel';
@@ -149,7 +149,7 @@ export function AppraisalWorkspace({ reference, onBack, onChanged, onResolved, l
     setBusy(true); setPredictMessage('');
     try {
       const result = await api.post<{ unavailable?: boolean; message?: string }>(`/prediction/predict/${loan.id}`);
-      if (result?.unavailable) setPredictMessage(result.message || predictionLabel('INCOMPATIBLE_PA1'));
+      if (result?.unavailable) setPredictMessage(result.message || predictionLabel('NONE'));
       await load();
     } catch (err) { setPredictMessage((err as Error).message); }
     finally { setBusy(false); }
@@ -208,7 +208,7 @@ export function AppraisalWorkspace({ reference, onBack, onChanged, onResolved, l
               <span className="aw-label">Nguy cơ trễ SLA</span>
               {!finished && !lookup && <button type="button" className="aw-link" disabled={busy} onClick={() => void rePredict()}>Chạy lại</button>}
             </div>
-            <strong>{hasPrediction && prediction ? `${riskLabel(prediction.riskLevel)} · ${(prediction.delayProbability * 100).toFixed(1)}%` : predictionLabel(loan.predictionStatus)}</strong>
+            <strong>{hasPrediction && prediction ? predictionHeadline(prediction) : predictionLabel(loan.predictionStatus)}</strong>
             {reasons.length > 0 && <ul>{reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}
             {predictMessage && <p className="aw-hint">{predictMessage}</p>}
             <p className="aw-hint">Chỉ cảnh báo nguy cơ trễ hạn xử lý, không phải đánh giá tín dụng.</p>

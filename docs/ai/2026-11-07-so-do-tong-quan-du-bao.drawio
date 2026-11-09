@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Tong quan du bao tre SLA" id="du-bao-tre-sla">
+    <mxGraphModel dx="1300" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="520" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Tổng quan giải pháp dự báo nguy cơ trễ SLA" style="text;html=1;align=left;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="0" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane1" value="A. Xây dựng mô hình (thực hiện một lần, ngoại tuyến)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#cbd5e1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="40" width="1260" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="Dữ liệu tham khảo&lt;br&gt;BPI Challenge 2012&lt;br&gt;(hồ sơ vay công khai)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="Lấy số liệu tham khảo&lt;br&gt;(thời gian chờ,&lt;br&gt;tỷ lệ phải bổ sung)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;" vertex="1" parent="1">
+          <mxGeometry x="212" y="100" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="Tạo dữ liệu hồ sơ giả lập&lt;br&gt;(20.000 hồ sơ)&lt;br&gt;và kiểm tra" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;" vertex="1" parent="1">
+          <mxGeometry x="384" y="100" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="Chuẩn bị dữ liệu huấn luyện&lt;br&gt;gắn nhãn: hồ sơ trễ&lt;br&gt;hay không trễ SLA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;" vertex="1" parent="1">
+          <mxGeometry x="556" y="100" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" value="Huấn luyện mô hình&lt;br&gt;Logistic Regression,&lt;br&gt;Gradient Boosting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;" vertex="1" parent="1">
+          <mxGeometry x="728" y="100" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a6" value="Kiểm tra độ chính xác&lt;br&gt;và chọn mô hình" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;" vertex="1" parent="1">
+          <mxGeometry x="900" y="100" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="a7" value="Mô hình dùng cho hệ thống&lt;br&gt;(Tiếp nhận, Thẩm định)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="100" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane2" value="B. Vận hành trong hệ thống (mỗi khi hồ sơ có sự kiện và mỗi ngày làm việc lúc 08:00)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#bbf7d0;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="260" width="1260" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="Sự kiện hồ sơ&lt;br&gt;(chuyển công đoạn, bổ sung,&lt;br&gt;làm rõ) hoặc 08:00" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#22c55e;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="Backend tính số giờ&lt;br&gt;làm việc đã dùng&lt;br&gt;và lấy SLA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#22c55e;" vertex="1" parent="1">
+          <mxGeometry x="212" y="320" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="Dịch vụ mô hình&lt;br&gt;POST /predict" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="384" y="320" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="Xác suất trễ SLA&lt;br&gt;và lý do chính" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#22c55e;" vertex="1" parent="1">
+          <mxGeometry x="556" y="320" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" value="Mức cảnh báo&lt;br&gt;Bình thường · Chú ý (từ 35%)&lt;br&gt;Khẩn (từ 60%) · Quá hạn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#22c55e;" vertex="1" parent="1">
+          <mxGeometry x="728" y="320" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="b6" value="Lưu kết quả&lt;br&gt;bảng delay_predictions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#22c55e;" vertex="1" parent="1">
+          <mxGeometry x="900" y="320" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="b7" value="Hiển thị trên giao diện&lt;br&gt;CBTD: hồ sơ của mình&lt;br&gt;Thẩm quyền, Quản lý:&lt;br&gt;bảng cảnh báo sớm" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#22c55e;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="320" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="Dự báo chỉ cảnh báo nguy cơ trễ hạn xử lý để cán bộ ưu tiên công việc; không quyết định tín dụng và không thay quyết định của con người." style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=12;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="20" y="445" width="1260" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ea1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a1" target="a2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a2" target="a3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a3" target="a4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a4" target="a5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea5" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a5" target="a6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ea6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a6" target="a7"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="eb1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="b1" target="b2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="b2" target="b3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="b3" target="b4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="b4" target="b5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb5" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="b5" target="b6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="eb6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="b6" target="b7"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="link" value="dùng trong dịch vụ mô hình" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1;strokeColor=#f59e0b;strokeWidth=2;fontStyle=1;fontColor=#b45309;" edge="1" parent="1" source="a7" target="b3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1142" y="225" />
+              <mxPoint x="454" y="225" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -68,6 +68,6 @@ export async function transferPortal(tx:any,id:string,body:any,managerId:string,
 
 export async function assignmentPrediction(service:any,applicationId:string,replayed:boolean){
   if(replayed)return{status:'NOT_REPEATED',message:'Thao tác đã được ghi nhận trước đó; không gọi lại dự báo.'};
-  try{const result=await service.predictForApplication(applicationId);return result?.unavailable?{status:'INCOMPATIBLE_PA1',message:result.message}:{status:'UPDATED',message:'Đã cập nhật dự báo nguy cơ trễ SLA.'};}
+  try{const result=await service.predictForApplication(applicationId);return result?.unavailable?{status:'UNAVAILABLE',message:result.message}:{status:'UPDATED',message:'Đã cập nhật dự báo nguy cơ trễ SLA.'};}
   catch{return{status:'FAILED',message:'Phân công đã được lưu; chưa cập nhật được dự báo nguy cơ trễ SLA.'};}
 }

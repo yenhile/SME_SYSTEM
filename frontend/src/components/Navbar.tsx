@@ -5,21 +5,23 @@ import { BrandLogo } from './BrandLogo';
 import { NAV_GROUPS, menuItems, type Tab } from '../navigation';
 import { NotificationBell } from './NotificationBell';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { AccountDialog, type AccountDialogKind, type AccountPageKind } from './AccountDialogs';
 import { RoleCode } from '../types';
 
 const groupIcons = { overview: BarChart3, operations: Settings, loans: FolderOpen, system: History };
-const accountItems = [
-  { label: 'Hồ sơ', icon: CircleUserRound },
-  { label: 'Cài đặt', icon: Settings },
-  { label: 'Ngôn ngữ', icon: Languages },
-  { label: 'Trợ giúp', icon: CircleHelp, divider: true },
-  { label: 'Quyền riêng tư', icon: ShieldCheck },
+const accountItems: { kind: AccountPageKind | AccountDialogKind; label: string; icon: typeof Settings; divider?: boolean }[] = [
+  { kind: 'profile', label: 'Hồ sơ', icon: CircleUserRound },
+  { kind: 'settings', label: 'Cài đặt', icon: Settings },
+  { kind: 'language', label: 'Ngôn ngữ', icon: Languages },
+  { kind: 'help', label: 'Trợ giúp', icon: CircleHelp, divider: true },
+  { kind: 'privacy', label: 'Quyền riêng tư', icon: ShieldCheck },
 ];
 
-export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpenCoordination, confirmLeave }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void; onOpenCoordination?: (id: string) => void; confirmLeave?: () => boolean }) {
+export function Navbar({ activeTab, onTabChange, onOpenAccountPage, onOpenIntake, onOpenLoan, onOpenCoordination, confirmLeave }: { activeTab: Tab; onTabChange: (tab: Tab) => void; onOpenAccountPage: (kind: AccountPageKind) => void; onOpenIntake: (id: string) => void; onOpenLoan: (id: string) => void; onOpenCoordination?: (id: string) => void; confirmLeave?: () => boolean }) {
   const { user, activeRole, selectRole, logout } = useAuth();
   const [accountOpen, setAccountOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [dialog, setDialog] = useState<AccountDialogKind | null>(null);
   const accountRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -189,11 +191,10 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpe
               </button>
               {accountItems.map(item => (
                 <button
-                  key={item.label}
+                  key={item.kind}
                   type="button"
                   className={`account-menu-item${item.divider ? ' account-menu-divider' : ''}`}
-                  disabled
-                  title={`${item.label}: chưa thiết lập chức năng.`}
+                  onClick={() => { setAccountOpen(false); if (item.kind === 'language') setDialog(item.kind); else onOpenAccountPage(item.kind); }}
                 >
                   <item.icon size={18} aria-hidden="true" />
                   {item.label}
@@ -210,5 +211,6 @@ export function Navbar({ activeTab, onTabChange, onOpenIntake, onOpenLoan, onOpe
     </header>
 
     {changePasswordOpen && <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />}
+    {dialog && <AccountDialog kind={dialog} onClose={() => setDialog(null)} />}
   </>;
 }

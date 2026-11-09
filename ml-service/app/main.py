@@ -5,12 +5,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.schemas import PredictionRequest, PredictionResponse
-from app.predictor import predictor
+from app.predictor import predictor, SlaOutOfRange
 
 app = FastAPI(
     title="SME Loan Delay Prediction Service",
     description="Dịch vụ Học máy Dự báo Nguy cơ Chậm tiến độ xử lý Hồ sơ vay Doanh nghiệp nhỏ và vừa (SME)",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -35,6 +35,8 @@ def health() -> dict:
 def predict_loan_delay(request: PredictionRequest):
     try:
         return predictor.predict(request)
+    except SlaOutOfRange as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi dự báo: {str(e)}")
 

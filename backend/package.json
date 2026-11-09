@@ -31,7 +31,8 @@
     "check:portal-foundation": "node scripts/check-portal-foundation.cjs",
     "check:portal-v2-intake": "node scripts/check-portal-v2-intake.cjs",
     "check:portal-mvp": "node scripts/check-portal-mvp-supplements.cjs",
-    "test": "node scripts/run-tests.cjs"
+    "test": "node scripts/run-tests.cjs",
+    "seed:demo": "node scripts/seed-demo.cjs"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

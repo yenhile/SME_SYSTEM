@@ -1,0 +1,13 @@
+{
+  "seed": 2026,
+  "n": 12000,
+  "sla_hours": 24,
+  "wait_base_median": 2.0,
+  "late_count": 1341,
+  "late_rate": 0.1118,
+  "max_amount_billion": 10.0,
+  "share_over_10_billion": 0.0,
+  "appraisal_hours_p50": 12.1,
+  "appraisal_hours_p90": 25.0,
+  "supplement_share": 0.2167
+}

@@ -1,34 +1,21 @@
-import { SLA_POLICY_PA1 } from '../workflow/sla/sla-policy';
-
 /**
- * Tình trạng dự báo trễ SLA của hồ sơ, để giao diện nói đúng thay vì bịa xác suất (C.9.2).
+ * Tình trạng dự báo trễ SLA của hồ sơ để giao diện nói đúng thay vì bịa xác suất.
  * - AVAILABLE: có dự báo đã lưu.
- * - INCOMPATIBLE_PA1: đặc trưng thời gian tiếp nhận của mô hình lấy từ công đoạn tính theo giờ làm việc (PA1),
- *   khác nghĩa với dữ liệu huấn luyện, nên chưa có dự báo tương thích.
- * - NONE: chưa có dự báo (ví dụ hồ sơ chưa qua bước nào kích hoạt dự báo).
+ * - NONE: chưa có dự báo (chưa có sự kiện kích hoạt, hoặc công đoạn chưa tính SLA theo giờ làm việc PA1).
+ * - INCOMPATIBLE_PA1: giữ lại cho tương thích kiểu dữ liệu cũ; mô hình v4 hỗ trợ PA1 nên backend không còn trả giá trị này.
  */
 export type PredictionStatus = 'AVAILABLE' | 'INCOMPATIBLE_PA1' | 'NONE';
 
-export const PREDICTION_PA1_MESSAGE = 'Chưa có dự báo tương thích PA1.';
+export type PredictionUnavailableReason = 'NO_ACTIVE_STAGE' | 'STAGE_NOT_SUPPORTED' | 'LEGACY_SLA' | 'CALENDAR_OUT_OF_RANGE' | 'SLA_OUT_OF_RANGE';
 
-export function predictionStatusOf(hasPrediction: boolean, firstStagePolicy: string | null | undefined): PredictionStatus {
-  if (firstStagePolicy === SLA_POLICY_PA1) return 'INCOMPATIBLE_PA1';
+export const PREDICTION_UNAVAILABLE_MESSAGES: Record<PredictionUnavailableReason, string> = {
+  NO_ACTIVE_STAGE: 'Hồ sơ đã hoàn tất, không còn công đoạn để dự báo.',
+  STAGE_NOT_SUPPORTED: 'Chỉ dự báo ở công đoạn Tiếp nhận và Thẩm định.',
+  LEGACY_SLA: 'Công đoạn này chưa tính SLA theo giờ làm việc (PA1) nên chưa có dự báo.',
+  CALENDAR_OUT_OF_RANGE: 'Thời điểm hiện tại nằm ngoài lịch làm việc đã nạp nên chưa dự báo được.',
+  SLA_OUT_OF_RANGE: 'SLA của công đoạn nằm ngoài dải mô hình đã học nên chưa dự báo.',
+};
+
+export function predictionStatusOf(hasPrediction: boolean): PredictionStatus {
   return hasPrediction ? 'AVAILABLE' : 'NONE';
-}
-
-interface FirstStageReader {
-  applicationStageHistory: { findMany(args: any): Promise<Array<{ applicationId: string; slaPolicy: string | null }>> };
-}
-
-/** Cách tính SLA của công đoạn Tiếp nhận (công đoạn đầu) của từng hồ sơ; hồ sơ không có dòng thì không có khóa. */
-export async function firstStagePolicies(db: FirstStageReader, applicationIds: string[]): Promise<Map<string, string | null>> {
-  if (!applicationIds.length) return new Map();
-  const rows = await db.applicationStageHistory.findMany({
-    where: { applicationId: { in: applicationIds }, stage: { stageCode: 'TIEP_NHAN' } },
-    select: { applicationId: true, slaPolicy: true },
-    orderBy: { enteredAt: 'asc' },
-  });
-  const policies = new Map<string, string | null>();
-  for (const row of rows) if (!policies.has(row.applicationId)) policies.set(row.applicationId, row.slaPolicy);
-  return policies;
 }

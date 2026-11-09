@@ -1,0 +1,352 @@
+{
+  "tiep_nhan__A_de_xuat_PO": {
+    "sla_hours": 80,
+    "late_rate_test": 0.0639,
+    "best_model": "lr",
+    "valid_logloss": {
+      "lr": 0.1875,
+      "rf": 0.1943,
+      "gb": 0.1918
+    },
+    "per_point": {
+      "TN_BS": {
+        "n": 1255,
+        "late_rate": 0.1187,
+        "auc_model": 0.9215,
+        "auc_baseline": 0.9209,
+        "brier_model": 0.0482,
+        "brier_baseline": 0.0487
+      },
+      "TN_T0": {
+        "n": 3016,
+        "late_rate": 0.0411,
+        "auc_model": 0.5674,
+        "auc_baseline": 0.5,
+        "brier_model": 0.0396,
+        "brier_baseline": 0.0395
+      }
+    },
+    "overall": {
+      "auc_model": 0.7707,
+      "auc_baseline": 0.7506,
+      "brier_model": 0.0421,
+      "brier_baseline": 0.0422,
+      "brier_prior_only": 0.0598
+    },
+    "calibration_deciles": [
+      {
+        "pred": 0.006,
+        "actual": 0.008,
+        "n": 492
+      },
+      {
+        "pred": 0.019,
+        "actual": 0.036,
+        "n": 496
+      },
+      {
+        "pred": 0.038,
+        "actual": 0.029,
+        "n": 859
+      },
+      {
+        "pred": 0.051,
+        "actual": 0.04,
+        "n": 1222
+      },
+      {
+        "pred": 0.073,
+        "actual": 0.059,
+        "n": 700
+      },
+      {
+        "pred": 0.089,
+        "actual": 0.041,
+        "n": 123
+      },
+      {
+        "pred": 0.351,
+        "actual": 0.346,
+        "n": 379
+      }
+    ],
+    "alert_threshold": 0.2,
+    "case_level": {
+      "cases_test": 3016,
+      "late_cases": 124,
+      "alerted_cases": 90,
+      "late_cases_alerted_before_deadline": 40,
+      "recall_late_cases": 0.3226,
+      "precision_alerts": 0.4444,
+      "false_alarm_cases": 50,
+      "false_alarm_share_of_ontime_cases": 0.0173,
+      "lead_hours_median": 28.0,
+      "lead_hours_p25": 18.3
+    }
+  },
+  "tiep_nhan__B_tre_15pct": {
+    "sla_hours": 54,
+    "late_rate_test": 0.1962,
+    "best_model": "lr",
+    "valid_logloss": {
+      "lr": 0.3873,
+      "rf": 0.3962,
+      "gb": 0.3879
+    },
+    "per_point": {
+      "TN_BS": {
+        "n": 1255,
+        "late_rate": 0.3235,
+        "auc_model": 0.8942,
+        "auc_baseline": 0.8915,
+        "brier_model": 0.1127,
+        "brier_baseline": 0.114
+      },
+      "TN_T0": {
+        "n": 3016,
+        "late_rate": 0.1432,
+        "auc_model": 0.5435,
+        "auc_baseline": 0.5,
+        "brier_model": 0.1226,
+        "brier_baseline": 0.1228
+      }
+    },
+    "overall": {
+      "auc_model": 0.7263,
+      "auc_baseline": 0.7078,
+      "brier_model": 0.1197,
+      "brier_baseline": 0.1202,
+      "brier_prior_only": 0.1577
+    },
+    "calibration_deciles": [
+      {
+        "pred": 0.05,
+        "actual": 0.052,
+        "n": 521
+      },
+      {
+        "pred": 0.125,
+        "actual": 0.129,
+        "n": 1545
+      },
+      {
+        "pred": 0.154,
+        "actual": 0.16,
+        "n": 405
+      },
+      {
+        "pred": 0.173,
+        "actual": 0.159,
+        "n": 894
+      },
+      {
+        "pred": 0.225,
+        "actual": 0.161,
+        "n": 311
+      },
+      {
+        "pred": 0.314,
+        "actual": 0.282,
+        "n": 181
+      },
+      {
+        "pred": 0.802,
+        "actual": 0.732,
+        "n": 414
+      }
+    ],
+    "alert_threshold": 0.24,
+    "case_level": {
+      "cases_test": 3016,
+      "late_cases": 432,
+      "alerted_cases": 329,
+      "late_cases_alerted_before_deadline": 150,
+      "recall_late_cases": 0.3472,
+      "precision_alerts": 0.4559,
+      "false_alarm_cases": 179,
+      "false_alarm_share_of_ontime_cases": 0.0693,
+      "lead_hours_median": 23.5,
+      "lead_hours_p25": 14.4
+    }
+  },
+  "tham_dinh__A_de_xuat_PO": {
+    "sla_hours": 40,
+    "late_rate_test": 0.2599,
+    "best_model": "gb",
+    "valid_logloss": {
+      "lr": 0.4232,
+      "rf": 0.4232,
+      "gb": 0.4196
+    },
+    "per_point": {
+      "TD_LR": {
+        "n": 1028,
+        "late_rate": 0.5029,
+        "auc_model": 0.9178,
+        "auc_baseline": 0.9118,
+        "brier_model": 0.1064,
+        "brier_baseline": 0.1077
+      },
+      "TD_VAO": {
+        "n": 3016,
+        "late_rate": 0.1771,
+        "auc_model": 0.6423,
+        "auc_baseline": 0.5,
+        "brier_model": 0.1403,
+        "brier_baseline": 0.1457
+      }
+    },
+    "overall": {
+      "auc_model": 0.7808,
+      "auc_baseline": 0.7118,
+      "brier_model": 0.1317,
+      "brier_baseline": 0.136,
+      "brier_prior_only": 0.1923
+    },
+    "calibration_deciles": [
+      {
+        "pred": 0.065,
+        "actual": 0.068,
+        "n": 473
+      },
+      {
+        "pred": 0.108,
+        "actual": 0.112,
+        "n": 347
+      },
+      {
+        "pred": 0.145,
+        "actual": 0.115,
+        "n": 662
+      },
+      {
+        "pred": 0.174,
+        "actual": 0.188,
+        "n": 691
+      },
+      {
+        "pred": 0.227,
+        "actual": 0.213,
+        "n": 732
+      },
+      {
+        "pred": 0.259,
+        "actual": 0.266,
+        "n": 368
+      },
+      {
+        "pred": 0.351,
+        "actual": 0.385,
+        "n": 390
+      },
+      {
+        "pred": 0.965,
+        "actual": 0.971,
+        "n": 381
+      }
+    ],
+    "alert_threshold": 0.32,
+    "case_level": {
+      "cases_test": 3016,
+      "late_cases": 534,
+      "alerted_cases": 180,
+      "late_cases_alerted_before_deadline": 128,
+      "recall_late_cases": 0.2397,
+      "precision_alerts": 0.7111,
+      "false_alarm_cases": 52,
+      "false_alarm_share_of_ontime_cases": 0.021,
+      "lead_hours_median": 4.5,
+      "lead_hours_p25": 2.1
+    }
+  },
+  "tham_dinh__B_tre_15pct": {
+    "sla_hours": 44,
+    "late_rate_test": 0.2223,
+    "best_model": "gb",
+    "valid_logloss": {
+      "lr": 0.385,
+      "rf": 0.3866,
+      "gb": 0.3802
+    },
+    "per_point": {
+      "TD_LR": {
+        "n": 1028,
+        "late_rate": 0.4309,
+        "auc_model": 0.9167,
+        "auc_baseline": 0.9181,
+        "brier_model": 0.1048,
+        "brier_baseline": 0.1021
+      },
+      "TD_VAO": {
+        "n": 3016,
+        "late_rate": 0.1512,
+        "auc_model": 0.6387,
+        "auc_baseline": 0.5,
+        "brier_model": 0.1249,
+        "brier_baseline": 0.1283
+      }
+    },
+    "overall": {
+      "auc_model": 0.7792,
+      "auc_baseline": 0.7199,
+      "brier_model": 0.1197,
+      "brier_baseline": 0.1217,
+      "brier_prior_only": 0.1729
+    },
+    "calibration_deciles": [
+      {
+        "pred": 0.05,
+        "actual": 0.051,
+        "n": 605
+      },
+      {
+        "pred": 0.101,
+        "actual": 0.089,
+        "n": 315
+      },
+      {
+        "pred": 0.12,
+        "actual": 0.12,
+        "n": 816
+      },
+      {
+        "pred": 0.146,
+        "actual": 0.166,
+        "n": 367
+      },
+      {
+        "pred": 0.179,
+        "actual": 0.186,
+        "n": 894
+      },
+      {
+        "pred": 0.245,
+        "actual": 0.253,
+        "n": 521
+      },
+      {
+        "pred": 0.391,
+        "actual": 0.299,
+        "n": 134
+      },
+      {
+        "pred": 0.887,
+        "actual": 0.875,
+        "n": 392
+      }
+    ],
+    "alert_threshold": 0.26,
+    "case_level": {
+      "cases_test": 3016,
+      "late_cases": 456,
+      "alerted_cases": 276,
+      "late_cases_alerted_before_deadline": 143,
+      "recall_late_cases": 0.3136,
+      "precision_alerts": 0.5181,
+      "false_alarm_cases": 133,
+      "false_alarm_share_of_ontime_cases": 0.052,
+      "lead_hours_median": 7.8,
+      "lead_hours_p25": 4.1
+    }
+  }
+}

@@ -61,3 +61,32 @@ test('hours text rounds to two decimals and shows a dash when the value is missi
   assert.equal(display.waitingOnLabel('BANK'), 'Chờ ngân hàng kiểm tra');
   assert.equal(display.waitingOnLabel('ENTERPRISE'), 'Chờ doanh nghiệp');
 });
+
+test('alert level maps the stored risk level and never invents one', () => {
+  assert.equal(display.alertDisplay(null, null), null);
+  assert.deepEqual(display.alertDisplay('THAP', 0.05), { code: 'BINH_THUONG', label: 'Bình thường', tone: 'green' });
+  assert.deepEqual(display.alertDisplay('TRUNG_BINH', 0.45), { code: 'CHU_Y', label: 'Chú ý', tone: 'amber' });
+  assert.deepEqual(display.alertDisplay('CAO', 0.7), { code: 'KHAN', label: 'Khẩn', tone: 'red' });
+  assert.deepEqual(display.alertDisplay('CAO', 1), { code: 'QUA_HAN', label: 'Quá hạn', tone: 'red' });
+});
+
+test('prediction headline and SLA time left read naturally', () => {
+  assert.equal(display.predictionHeadline({ riskLevel: 'CAO', delayProbability: 0.7285 }), 'Khẩn · 72,9%');
+  assert.equal(display.predictionHeadline({ riskLevel: 'THAP', delayProbability: 0.0072 }, 0), 'Bình thường · 1%');
+  assert.equal(display.slaLeftText({ slaRemainingHours: 11 }), 'còn 1 ngày 3 giờ làm việc');
+  assert.equal(display.slaLeftText({ slaWaiting: true, slaRemainingHours: null }), 'SLA tạm dừng (chờ doanh nghiệp)');
+  assert.equal(display.slaLeftText({ slaOverdue: true, slaRemainingHours: -4 }), 'Đã quá hạn SLA');
+  assert.equal(display.slaLeftText({}), null);
+});
+
+test('warnings sort Quá hạn, then Khẩn, then Chú ý, then by probability', () => {
+  const rows = [
+    { id: 'chu-y', riskLevel: 'TRUNG_BINH', delayProbability: 0.5 },
+    { id: 'khan-thap', riskLevel: 'CAO', delayProbability: 0.62 },
+    { id: 'qua-han', riskLevel: 'CAO', delayProbability: 1 },
+    { id: 'binh-thuong', riskLevel: 'THAP', delayProbability: 0.9 },
+    { id: 'chua-co', riskLevel: null, delayProbability: null },
+    { id: 'khan-cao', riskLevel: 'CAO', delayProbability: 0.85 },
+  ];
+  assert.deepEqual([...rows].sort(display.compareAlerts).map(row => row.id), ['qua-han', 'khan-cao', 'khan-thap', 'chu-y', 'binh-thuong', 'chua-co']);
+});

@@ -1,0 +1,35 @@
+const {test,mock}=require('node:test');
+const assert=require('node:assert/strict');
+require('reflect-metadata');
+const {DashboardService}=require('../dist/modules/dashboard/dashboard.service');
+const {SIMULATED_CALENDAR_V1}=require('../dist/modules/workflow/sla/working-time');
+
+const vn=(date,time)=>new Date(`${date}T${time}:00+07:00`);
+async function atClock(iso,fn){mock.timers.enable({apis:['Date'],now:new Date(iso).getTime()});try{return await fn();}finally{mock.timers.reset();}}
+function service(rows){
+  const seen={};
+  const prisma={loanApplication:{findMany:async(args)=>{seen.args=args;return rows;}}};
+  return {seen,svc:new DashboardService(prisma)};
+}
+const row=(id,over={})=>({id,applicationCode:`HS-${id}`,company:{companyName:'ABC',industry:'x'},officialAmount:null,proposedAmount:1e9,currentStage:'THAM_DINH',currentStatus:'PENDING_APPRAISAL',
+  supplementCount:0,assignedUser:{id:'u1',fullName:'Nguyễn A',username:'a'},assignedTo:'u1',
+  delayPredictions:[{riskLevel:'CAO',delayProbability:0.7,predictionTimestamp:new Date(),topReasonsJson:'[]',modelVersion:'v4.0-THAM_DINH'}],
+  stageHistories:[{id:'h',enteredAt:vn('2026-10-27','09:00'),pausedAt:null,pausedDurationHours:0,slaStandardHours:40,slaPolicy:'PA1',slaCalendarVersion:SIMULATED_CALENDAR_V1.version,pauses:[]}],...over});
+
+test('CBTD warnings are restricted to loans assigned to the caller and carry SLA hours left',async()=>{
+  const {svc,seen}=service([row('a')]);
+  const list=await atClock('2026-10-27T14:00:00+07:00',()=>svc.getEarlyWarningList({activeRole:'CBTD'},'u1'));
+  assert.equal(seen.args.where.assignedTo,'u1');
+  assert.equal(list[0].modelVersion,'v4.0-THAM_DINH');assert.equal(list[0].slaRemainingHours,36);assert.equal(list[0].slaOverdue,false);assert.equal(list[0].slaWaiting,false);
+});
+test('without the owner filter the query is not restricted (Manager/Appraiser dashboard unchanged)',async()=>{
+  const {svc,seen}=service([row('a')]);
+  await svc.getEarlyWarningList({activeRole:'QUAN_LY'});
+  assert.equal('assignedTo' in seen.args.where,false);
+});
+test('a loan waiting for the enterprise reports no remaining hours instead of a made-up number',async()=>{
+  const waiting=row('w',{currentStage:'TIEP_NHAN',currentStatus:'SUPPLEMENT_REQUIRED',stageHistories:[{id:'h',enteredAt:vn('2026-10-27','09:00'),pausedAt:vn('2026-10-27','10:00'),pausedDurationHours:0,slaStandardHours:112,slaPolicy:'PA1',slaCalendarVersion:SIMULATED_CALENDAR_V1.version,pauses:[{startedAt:vn('2026-10-27','10:00'),endedAt:null}]}]});
+  const {svc}=service([waiting]);
+  const [item]=await atClock('2026-10-27T14:00:00+07:00',()=>svc.getEarlyWarningList({activeRole:'CBTD'},'u1'));
+  assert.equal(item.slaRemainingHours,null);assert.equal(item.slaWaiting,true);
+});

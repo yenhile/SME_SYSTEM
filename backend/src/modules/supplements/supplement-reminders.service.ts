@@ -5,7 +5,16 @@ import { PortalMailer } from '../portal/portal.mailer';
 import { overdueAt, reminderAt } from './supplement-deadlines';
 import { waitingOn } from './portal-supplement';
 
-const DEFAULT_SCAN_INTERVAL_MS = 60 * 60 * 1000;
+const DEFAULT_SCAN_HOUR = 8;
+const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Mốc quét hằng ngày kế tiếp (giờ Việt Nam, UTC+7), luôn nằm sau thời điểm hiện tại. */
+export function nextDailyScanAt(now: Date, hour = DEFAULT_SCAN_HOUR): Date {
+  const vnDayStart = Math.floor((now.getTime() + VN_OFFSET_MS) / DAY_MS) * DAY_MS - VN_OFFSET_MS;
+  const today = vnDayStart + hour * 60 * 60 * 1000;
+  return new Date(today > now.getTime() ? today : today + DAY_MS);
+}
 
 /**
  * Quét yêu cầu bổ sung chờ doanh nghiệp (DEC-02): nhắc ở ngày 5, đánh dấu quá hạn ở ngày 10.
@@ -15,20 +24,40 @@ const DEFAULT_SCAN_INTERVAL_MS = 60 * 60 * 1000;
 export class SupplementRemindersService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SupplementRemindersService.name);
   private timer?: NodeJS.Timeout;
+  private startupTimer?: NodeJS.Timeout;
+  private stopped = false;
   private running = false;
 
   constructor(private readonly prisma: PrismaService, private readonly mailer: PortalMailer) {}
 
   onModuleInit() {
-    const interval = Number(process.env.SUPPLEMENT_SCAN_INTERVAL_MS ?? DEFAULT_SCAN_INTERVAL_MS);
-    if (process.env.NODE_ENV === 'test' || !(interval > 0)) return;
-    this.timer = setInterval(() => void this.safeScan(), interval);
-    this.timer.unref();
-    setTimeout(() => void this.safeScan(), 30_000).unref();
+    if (process.env.NODE_ENV === 'test') return;
+    // Mặc định quét một lần mỗi ngày lúc 08:00 giờ Việt Nam. SUPPLEMENT_SCAN_INTERVAL_MS (mili-giây) chỉ dùng để thử nhanh.
+    const override = Number(process.env.SUPPLEMENT_SCAN_INTERVAL_MS);
+    if (override > 0) {
+      this.timer = setInterval(() => void this.safeScan(), override);
+      this.timer.unref();
+    } else {
+      const hour = Number(process.env.SUPPLEMENT_SCAN_HOUR ?? DEFAULT_SCAN_HOUR);
+      this.scheduleDaily(Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : DEFAULT_SCAN_HOUR);
+    }
+    // Quét bù sau khi khởi động để không lỡ ngày hệ thống đang tắt; quét lặp lại không gửi nhắc hai lần.
+    this.startupTimer = setTimeout(() => void this.safeScan(), 30_000);
+    this.startupTimer.unref();
   }
 
   onModuleDestroy() {
-    if (this.timer) clearInterval(this.timer);
+    this.stopped = true;
+    if (this.timer) { clearInterval(this.timer); clearTimeout(this.timer); }
+    if (this.startupTimer) clearTimeout(this.startupTimer);
+  }
+
+  private scheduleDaily(hour: number) {
+    const delay = nextDailyScanAt(new Date(), hour).getTime() - Date.now();
+    this.timer = setTimeout(() => {
+      void this.safeScan().finally(() => { if (!this.stopped) this.scheduleDaily(hour); });
+    }, delay);
+    this.timer.unref();
   }
 
   private async safeScan() {

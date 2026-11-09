@@ -1,13 +1,13 @@
 import { AppraisalPanel } from './AppraisalPanel';
 import { DecisionResult } from './DecisionResult';
 import { documentFormat, documentTypeName, officialAmountError } from './loanInputRules';
-import { documentTypeLabel, riskLabel } from '../appraisalWorkspace';
+import { documentTypeLabel } from '../appraisalWorkspace';
 import { loanStatusView, stageLabel } from '../loanListDisplay';
 import {AssignmentChangeRequestPanel} from './AssignmentChangeRequestPanel';
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { predictionLabel, slaPolicyLabel, slaStateLabel, slaSummaryText, stageDurationText, stageStandardText } from '../slaDisplay';
+import { alertDisplay, predictionHeadline, predictionLabel, slaPolicyLabel, slaStateLabel, slaSummaryText, stageDurationText, stageStandardText } from '../slaDisplay';
 import { PortalIntakeDetails } from './PortalIntakeDetails';
 import { SupplementPanel } from './SupplementPanel';
 import { SupplementDeadlineBadge } from './SupplementDeadlineBadge';
@@ -289,7 +289,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
     setActionLoading(true);
     try {
       const result = await api.post<{ unavailable?: boolean; message?: string }>(`/prediction/predict/${loan.id}`);
-      if (result?.unavailable) alert(result.message || predictionLabel('INCOMPATIBLE_PA1'));
+      if (result?.unavailable) alert(result.message || predictionLabel('NONE'));
       await fetchDetail();
       onRefresh();
     } catch (err: any) {
@@ -590,7 +590,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   }`}
                   style={{ fontSize: '12px', padding: '4px 10px', fontWeight: 600 }}
                 >
-                  Nguy cơ trễ SLA: {latestPrediction && loan.predictionStatus !== 'INCOMPATIBLE_PA1' ? riskLabel(latestPrediction.riskLevel) : loan.predictionStatus === 'INCOMPATIBLE_PA1' ? predictionLabel(loan.predictionStatus) : 'Chưa đánh giá'}
+                  Nguy cơ trễ SLA: {latestPrediction && loan.predictionStatus !== 'INCOMPATIBLE_PA1' ? alertDisplay(latestPrediction.riskLevel, latestPrediction.delayProbability)?.label ?? latestPrediction.riskLevel : loan.predictionStatus === 'INCOMPATIBLE_PA1' ? predictionLabel(loan.predictionStatus) : 'Chưa đánh giá'}
                 </span>
                 {canPredict && <button
                   onClick={handleRePredict}
