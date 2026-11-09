@@ -128,7 +128,7 @@ Hai ngưỡng trên xác suất đã hiệu chỉnh: **Chú ý từ 0,35**, **Kh
 
 ### 4.6. Tệp mô hình
 Mỗi tệp `.joblib` là một "gói" gồm: pipeline đã huấn luyện, bộ hiệu chỉnh, danh sách đặc trưng, giá trị tham chiếu (trung vị/giá trị phổ biến, dùng để giải thích), lưới SLA, ngưỡng, phiên bản.
-**Lưu ý vận hành:** tệp `.joblib` phụ thuộc phiên bản `scikit-learn`; `requirements.txt` chỉ ghim khoảng (`>=1.6,<2.0`). Image hiện tại dùng scikit-learn **1.9.1** (kiểm tra ngày 09/11/2026). Nếu dựng lại image với phiên bản khác nhiều thì tải mô hình có thể lỗi hoặc cho kết quả khác. Khi đó huấn luyện lại bằng đúng phiên bản đang dùng.
+**Lưu ý vận hành:** tệp `.joblib` phụ thuộc phiên bản `scikit-learn`; `requirements.txt` ghim đúng `scikit-learn==1.9.1` và `pandas==3.1.1` (đã thử dựng lại image với bản ghim, mô hình tải sạch). Image hiện tại dùng scikit-learn **1.9.1** (kiểm tra ngày 09/11/2026). Nếu dựng lại image với phiên bản khác nhiều thì tải mô hình có thể lỗi hoặc cho kết quả khác. Khi đó huấn luyện lại bằng đúng phiên bản đang dùng.
 
 ---
 
@@ -219,9 +219,9 @@ Hồ sơ chuyển công đoạn; tiếp nhận đề nghị từ cổng; tạo h
 6. **Số Thẩm quyền ngoài 2–3 là ngoại suy** (mục 8.1).
 7. **`items_pending_review` chỉ xấp xỉ 0/1.**
 8. **Lịch làm việc hết 31/12/2026**: sang 01/01/2027 mọi hồ sơ báo "ngoài lịch làm việc" cho tới khi nạp lịch mới (phần SLA, do người phụ trách SLA nạp).
-9. **Bảng `delay_predictions` tăng mỗi ngày**, chưa có cơ chế dọn.
-10. **Phụ thuộc phiên bản scikit-learn** của tệp `.joblib` (mục 4.6).
-11. **Không có kiểm tra chất lượng dữ liệu v4 tự động** (bản kiểm tra của v3 đã bị gỡ cùng các tệp v3); nếu sinh lại dữ liệu, cần tự kiểm các phân phối.
+9. **Bảng `delay_predictions` tăng mỗi ngày** (nay chấm 2 lần mỗi ngày). Đã có công cụ dọn `npm run predictions:prune` trong `backend` (mặc định chỉ xem trước), nhưng cần nhớ chạy định kỳ.
+10. **Phụ thuộc phiên bản scikit-learn** của tệp `.joblib` (mục 4.6). `requirements.txt` đã ghim đúng phiên bản; nếu nâng phiên bản thì phải huấn luyện lại.
+11. **Kiểm tra chất lượng dữ liệu v4:** có `experiments/v3/check_quality_v4.py` (31 mục, hiện đạt 31/31). Nhưng đây chỉ kiểm dữ liệu "có hợp lệ và nhất quán không", không kiểm được dữ liệu có giống ngân hàng thật hay không.
 
 ---
 
@@ -232,6 +232,7 @@ Cần Python với `pandas`, `scikit-learn`, `joblib` (không cần cài lên m�
 
 ```
 python simulate_v4.py     # (tùy chọn, dữ liệu đã có sẵn trong git) sinh data/cases_v4.csv, tiep_nhan_timeline_v4.csv, tham_dinh_timeline_v4.csv
+python check_quality_v4.py   # kiểm tra chất lượng dữ liệu (31 mục), ghi results/quality_report_v4.json; chạy sau simulate, trước train
 python train_v4.py        # huấn luyện, ghi models/v4_*.joblib và results/metrics_v4.json
 ```
 Sau đó sao chép `models/v4_tiep_nhan.joblib` và `models/v4_tham_dinh.joblib` vào `app/model/`, cập nhật `app/model/model_metadata.json` (số liệu), dựng lại image `ml-service`. Đổi số hồ sơ bằng biến `SIM_N`, hạt giống bằng `SIM_SEED`.

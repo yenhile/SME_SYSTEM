@@ -1,0 +1,179 @@
+{
+  "summary": {
+    "rows": {
+      "cases": 20000,
+      "tiep_nhan_snapshots": 106705,
+      "tham_dinh_snapshots": 83629
+    },
+    "median_hours": {
+      "tiep_nhan": 29.8,
+      "tham_dinh": 20.2
+    },
+    "p90_hours": {
+      "tiep_nhan": 62.3,
+      "tham_dinh": 52.5
+    },
+    "late_rate_cases": {
+      "Tiếp nhận SLA 112": 0.0132,
+      "Tiếp nhận SLA 80": 0.0447,
+      "Thẩm định SLA 40": 0.1787
+    }
+  },
+  "checks": [
+    {
+      "check": "20.000 hồ sơ, mã hồ sơ không trùng",
+      "result": "PASS",
+      "detail": "20000 dòng, 20000 mã"
+    },
+    {
+      "check": "không có ô trống ở cả ba bảng",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Tiếp nhận: mỗi hồ sơ chỉ thuộc một tập (không rò rỉ train/valid/test)",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Tiếp nhận: tập của bảng ảnh chụp khớp tập của hồ sơ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Thẩm định: mỗi hồ sơ chỉ thuộc một tập (không rò rỉ train/valid/test)",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Thẩm định: tập của bảng ảnh chụp khớp tập của hồ sơ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "tỷ lệ chia tập gần 70/15/15 (sai lệch dưới 2 điểm %)",
+      "result": "PASS",
+      "detail": "{'train': 0.698, 'valid': 0.152, 'test': 0.151}"
+    },
+    {
+      "check": "số tiền trong 0,01–10 tỷ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "thời hạn vay thuộc {3,6,9,12}",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "ngành hợp lệ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "chế độ tài sản bảo đảm hợp lệ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "has_existing_debt chỉ 0/1",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "doanh thu không nhỏ hơn 1,2 lần số tiền vay (đúng cách sinh)",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "số Thẩm quyền chỉ 2 hoặc 3 (khoảng mô hình học)",
+      "result": "PASS",
+      "detail": "[2, 3]"
+    },
+    {
+      "check": "Tiếp nhận: mọi hồ sơ có ảnh chụp lúc vào công đoạn (elapsed = 0)",
+      "result": "PASS",
+      "detail": "20000 hồ sơ"
+    },
+    {
+      "check": "Tiếp nhận: điểm chụp lúc vào đúng tên TN_T0",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Tiếp nhận: giờ đã dùng không vượt tổng giờ của công đoạn (chỉ chụp khi hồ sơ còn mở; bằng nhau do làm tròn dưới 0,1% số dòng)",
+      "result": "PASS",
+      "detail": "9 dòng bằng nhau"
+    },
+    {
+      "check": "Tiếp nhận: giờ không có thao tác nhỏ hơn hoặc bằng giờ đã dùng",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Tiếp nhận: giờ đã dùng tăng dần trong từng hồ sơ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Tiếp nhận: tổng giờ trong bảng ảnh chụp khớp bảng hồ sơ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Thẩm định: mọi hồ sơ có ảnh chụp lúc vào công đoạn (elapsed = 0)",
+      "result": "PASS",
+      "detail": "20000 hồ sơ"
+    },
+    {
+      "check": "Thẩm định: điểm chụp lúc vào đúng tên TD_VAO",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Thẩm định: giờ đã dùng không vượt tổng giờ của công đoạn (chỉ chụp khi hồ sơ còn mở; bằng nhau do làm tròn dưới 0,1% số dòng)",
+      "result": "PASS",
+      "detail": "16 dòng bằng nhau"
+    },
+    {
+      "check": "Thẩm định: giờ không có thao tác nhỏ hơn hoặc bằng giờ đã dùng",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Thẩm định: giờ đã dùng tăng dần trong từng hồ sơ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "Thẩm định: tổng giờ trong bảng ảnh chụp khớp bảng hồ sơ",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "cột đáp án stage_hours_total không nằm trong danh sách đặc trưng",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "cột return_count (không dùng) không bị đưa vào đặc trưng",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "check": "tỷ lệ hồ sơ trễ Tiếp nhận SLA 80 trong 2%–20%",
+      "result": "PASS",
+      "detail": "{'Tiếp nhận SLA 112': 0.0132, 'Tiếp nhận SLA 80': 0.04465, 'Thẩm định SLA 40': 0.17875}"
+    },
+    {
+      "check": "tỷ lệ hồ sơ trễ Thẩm định SLA 40 trong 10%–50%",
+      "result": "PASS",
+      "detail": "{'Tiếp nhận SLA 112': 0.0132, 'Tiếp nhận SLA 80': 0.04465, 'Thẩm định SLA 40': 0.17875}"
+    },
+    {
+      "check": "tỷ lệ trễ ở SLA 112 hiếm nhưng không bằng 0 (cảnh báo: số mẫu trễ ít nên số liệu nhiễu)",
+      "result": "PASS",
+      "detail": "{'Tiếp nhận SLA 112': 0.0132, 'Tiếp nhận SLA 80': 0.04465, 'Thẩm định SLA 40': 0.17875}"
+    }
+  ]
+}
