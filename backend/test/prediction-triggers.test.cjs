@@ -26,3 +26,15 @@ test('scan hours default to 08:00 and 13:00, accept a custom list and ignore gar
   assert.deepEqual(parseScanHours('9'),[9]);
   assert.deepEqual(parseScanHours('25,abc'),[8,13]);
 });
+
+test('the next scan is the nearest of 08:00 and 13:00 Vietnam time',()=>{
+  const {nextScanAt}=require('../dist/modules/prediction/prediction-scheduler.service');
+  const vn=(iso)=>new Date(iso+'+07:00');
+  const at=(now)=>nextScanAt(vn(now),[8,13]).toISOString();
+  assert.equal(at('2026-11-09T07:59:00'),vn('2026-11-09T08:00:00').toISOString(),'just before 08:00');
+  assert.equal(at('2026-11-09T08:00:00'),vn('2026-11-09T13:00:00').toISOString(),'exactly 08:00 moves on to 13:00');
+  assert.equal(at('2026-11-09T12:00:00'),vn('2026-11-09T13:00:00').toISOString(),'noon -> 13:00 the same day');
+  assert.equal(at('2026-11-09T13:00:00'),vn('2026-11-10T08:00:00').toISOString(),'exactly 13:00 moves to 08:00 next day');
+  assert.equal(at('2026-11-09T22:00:00'),vn('2026-11-10T08:00:00').toISOString(),'evening -> 08:00 next day');
+  assert.equal(nextScanAt(vn('2026-11-09T12:00:00'),[8]).toISOString(),vn('2026-11-10T08:00:00').toISOString(),'a single hour behaves as before');
+});

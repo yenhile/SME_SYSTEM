@@ -1084,6 +1084,13 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 * **Tài khoản test:** vẫn chỉ bị khóa, chưa xóa khỏi DB vì xóa không hoàn tác và vướng khóa ngoại lịch sử.
 * Backend 424/424 test đạt; mọi bộ test frontend đạt; build đạt.
 
+**Kiểm chứng bổ sung lần 2 (09/11/2026), các việc trước đó ghi là "chưa kiểm chứng":**
+* **Khóa `ML_API_KEY` (đã thử ở cả hai phía):** phát hiện `docker-compose.yml` không truyền biến này cho cả hai dịch vụ nên tính năng không bật được khi chạy Docker; đã thêm vào compose (cùng `PREDICTION_SCAN_HOURS`, `PREDICTION_SCAN_INTERVAL_MS`). Kết quả: gọi thẳng ML không khóa hoặc sai khóa trả 401; backend cùng khóa dự báo bình thường; backend lệch khóa thì dự báo trả 503 an toàn, các màn khác vẫn 200. Mặc định để trống (không xác thực, chỉ dùng local); đã trả `.env` về không khóa.
+* **Lượt chấm định kỳ chạy thật:** chạy ở chu kỳ 1 phút thấy log "Chấm dự báo định kỳ: scanned 21, predicted 21". Phép tính giờ chấm 08:00 và 13:00 tách thành hàm `nextScanAt` có test (trước 08:00, đúng 08:00, giữa trưa, đúng 13:00, buổi tối). Chưa chờ tới đúng 13:00 thật, nhưng phần tính giờ đã được test.
+* **Tắt ML thật rồi bật lại:** tạo hồ sơ khi ML tắt vẫn thành công (201), hồ sơ tạm "chưa có dự báo"; lượt quét lỗi 3 hồ sơ liên tiếp thì dừng sớm và có log; bật ML lại thì lượt kế tiếp chấm đủ 22/22 hồ sơ, hồ sơ tạo lúc ML tắt có dự báo `v4.0-TIEP_NHAN`.
+* **Phép thử số Thẩm quyền:** tái hiện đúng ví dụ của review: đã dùng 16/40 giờ, hàng chờ 6, không làm rõ: 2 Thẩm quyền ra Khẩn 63%, 5 Thẩm quyền ra Chú ý 45%. Quét 104 tổ hợp: 18 tổ hợp đổi từ Khẩn xuống Chú ý; chênh lệch xác suất trung bình 8,9 điểm phần trăm. Với 3 Thẩm quyền (còn trong khoảng huấn luyện 2–3) kết quả gần như không đổi so với 2 (73% so với 72% ở ca 30/40 giờ), nghĩa là độ nhạy chủ yếu đến từ giá trị 5 nằm ngoài khoảng đã học; xác nhận cách đếm chỉ tính Thẩm quyền chuyên trách là đúng hướng.
+* **Dữ liệu demo cũ dần:** thêm `npm run demo:status` (chỉ đọc): đếm hồ sơ demo mở theo mức SLA và cảnh báo khi quá nửa đã quá hạn, kèm gợi ý `npm run demo:refresh`. Lúc kiểm: 15 hồ sơ mở, 1 quá hạn, dữ liệu còn dùng được. Đây là cách phát hiện sớm, không tự dựng lại dữ liệu ngầm.
+
 **Còn dang dở:** xem bảng **Lộ trình xử lý các việc còn lại** ngay bên dưới.
 
 <a id="lo-trinh-con-lai-20261109"></a>

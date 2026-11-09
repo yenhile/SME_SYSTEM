@@ -16,6 +16,11 @@ export function parseScanHours(raw?: string): number[] {
   return hours.length && hours.every(hour => Number.isInteger(hour) && hour >= 0 && hour <= 23) ? [...new Set(hours)].sort((a, b) => a - b) : DEFAULT_SCAN_HOURS;
 }
 
+/** Thời điểm chấm kế tiếp: gần nhất trong các giờ cấu hình (giờ Việt Nam), tính từ `now`. */
+export function nextScanAt(now: Date, hours: number[]): Date {
+  return new Date(Math.min(...hours.map(hour => nextDailyScanAt(now, hour).getTime())));
+}
+
 export interface ScanSummary { skipped?: string; scanned: number; predicted: number; unavailable: number; failed: number; aborted: boolean }
 
 /**
@@ -55,8 +60,7 @@ export class PredictionSchedulerService implements OnModuleInit, OnModuleDestroy
   }
 
   private scheduleDaily(hours: number[]) {
-    const now = new Date();
-    const delay = Math.min(...hours.map(hour => nextDailyScanAt(now, hour).getTime())) - Date.now();
+    const delay = nextScanAt(new Date(), hours).getTime() - Date.now();
     this.timer = setTimeout(() => {
       void this.safeScan(0).finally(() => { if (!this.stopped) this.scheduleDaily(hours); });
     }, delay);
