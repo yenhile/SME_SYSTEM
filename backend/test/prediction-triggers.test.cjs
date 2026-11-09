@@ -7,10 +7,10 @@ const {parseScanHours}=require('../dist/modules/prediction/prediction-scheduler.
 
 test('a loan created at the counter is scored straight away and an ML failure does not fail the creation',async()=>{
   const calls=[];
-  const ok=new LoanApplicationsController({create:async()=>({id:'loan-9'})},{predictForApplication:async id=>{calls.push(id);}});
-  assert.equal((await ok.create({},'cbtd')).id,'loan-9');assert.deepEqual(calls,['loan-9']);
-  const down=new LoanApplicationsController({create:async()=>({id:'loan-9'})},{predictForApplication:async()=>{throw new Error('ML tắt');}});
-  assert.equal((await down.create({},'cbtd')).id,'loan-9');
+  const ok=new LoanApplicationsController({create:async()=>({message:'ok',loan:{id:'loan-9'}})},{predictForApplication:async id=>{calls.push(id);}});   // đúng dạng LoanApplicationsService.create trả về
+  assert.equal((await ok.create({},'cbtd')).loan.id,'loan-9');assert.deepEqual(calls,['loan-9']);
+  const down=new LoanApplicationsController({create:async()=>({message:'ok',loan:{id:'loan-9'}})},{predictForApplication:async()=>{throw new Error('ML tắt');}});
+  assert.equal((await down.create({},'cbtd')).loan.id,'loan-9');
 });
 test('pressing Accept twice scores only once',async()=>{
   const calls=[];

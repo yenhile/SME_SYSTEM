@@ -1074,7 +1074,15 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 
 **Dữ liệu demo đã dựng lại (09/11/2026):** chạy `npm run seed:demo -- --reset` (194 hồ sơ quá khứ, 15 hồ sơ mở đều có dự báo) để hồ sơ mở không bị quá hạn hàng loạt. Cần chạy lại trước mỗi buổi demo.
 
-**Còn dang dở:** thử giao diện bằng trình duyệt (chưa có công cụ điều khiển trình duyệt trong phiên này); `frontend test:role-recovery` có 2 ca lỗi từ trước (vẫn lỗi khi bỏ các thay đổi của đợt này).
+**Kiểm chứng bổ sung trên hệ thống thật (09/11/2026, sau đợt sửa):**
+* **Giao diện:** chụp bằng Chrome không giao diện: trang giới thiệu cổng doanh nghiệp (máy tính 1440 px và điện thoại 520 px) và form đăng nhập cổng hiển thị đúng. Phát hiện và sửa một lỗi mà test không bắt được: tiêu đề banner bị chữ đen trên nền xanh (kế thừa màu tiêu đề toàn cục). Bộ `ui_audit.cjs` chạy cho Quản lý, CBTD, Thẩm quyền: không có lỗi console hay API lỗi. Chưa nhìn thấy bằng mắt dòng "Dự báo lúc …" trong bảng cảnh báo (nằm dưới màn hình chụp được).
+* **Điểm chấm mới (API thật):** tạo hồ sơ tại quầy có ngay `v4.0-TIEP_NHAN`; yêu cầu làm rõ cập nhật dự báo; chạy lại cho hồ sơ chưa có dự báo (SME-9) thành công. Lần thử này bắt được một lỗi mà test đơn vị bỏ sót: `LoanApplicationsService.create` trả `{ message, loan }` nên code đọc nhầm `id` và hồ sơ tạo tại quầy chưa được chấm; đã sửa code và sửa test dùng đúng dạng dữ liệu trả về.
+* **Đếm Thẩm quyền:** có test riêng (`prediction-appraisers`): 5 tài khoản Thẩm quyền trong DB cho 2 người làm việc thật; thêm tài khoản test hoặc kiêm vai không đổi số đếm; khóa một người thật thì giảm, tối thiểu 1. Phép thử dịch vụ ML cùng một hồ sơ Thẩm định (30/40 giờ, đang làm rõ): 2 Thẩm quyền ra Khẩn 73%, 5 Thẩm quyền ra Khẩn 67%, nghĩa là xác suất giảm khi số Thẩm quyền tăng (mức Khẩn/Chú ý đổi hay không tùy đầu vào, ví dụ 63% so với 45% ở phép thử gốc).
+* **Test lỗi từ trước:** `frontend test:role-recovery` lỗi do bài test dựng "bản cũ" bằng thay chuỗi xuống dòng LF trong khi file nguồn trên Windows là CRLF (không phải lỗi sản phẩm); đã chuẩn hóa xuống dòng khi đọc nguồn, nay 7/7. `check-ai-rules` báo 88 mục lỗi vì hai thư viện skill `.agents/skills/mattpocock` và `superpowers` là mục gitlink không có ánh xạ trong `.gitmodules` (không có mã nguồn trong bản clone này), thiếu `GEMINI.md` và `archive/docs-before-consolidation-2026-11-02.zip`; không liên quan ứng dụng, chưa sửa vì cần quyết định về thư viện skill của dự án.
+* **Tài khoản test:** vẫn chỉ bị khóa, chưa xóa khỏi DB vì xóa không hoàn tác và vướng khóa ngoại lịch sử.
+* Backend 424/424 test đạt; mọi bộ test frontend đạt; build đạt.
+
+**Còn dang dở:** nhìn bằng mắt bảng cảnh báo có dòng thời điểm chấm; quyết định của PO về L2/Q3 và L9/Q4 (mục 5); xóa hẳn tài khoản test nếu PO muốn; xử lý thư viện skill cho `check-ai-rules`.
 
 <a id="diem-ban-giao-20261106"></a>
 ### Điểm bàn giao ngày 06/11/2026

@@ -20,10 +20,11 @@ export class LoanApplicationsController {
   @Post()
   @Roles(RoleCode.CBTD)
   create(@Body() dto: CreateLoanDto, @CurrentUser('id') userId: string) {
-    return this.loanService.create(dto, userId).then(async (loan: any) => {
+    return this.loanService.create(dto, userId).then(async (result: any) => {
+      const loan = result?.loan;   // create() trả về { message, loan }
       // Hồ sơ tạo tại quầy có dự báo ngay thay vì chờ lượt chấm; lỗi ML chỉ ghi log.
       if (loan?.id) await this.prediction.predictForApplication(loan.id).catch((err: any) => this.logger.warn(`Không tạo được dự báo khi tạo hồ sơ ${loan.id}: ${err?.message ?? err}`));
-      return loan;
+      return result;
     });
   }
 

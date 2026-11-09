@@ -11,8 +11,8 @@
 .bank-login:hover { background:#093f7c; }
 .bank-hero-copy { flex:1; max-width:780px; padding:70px 0 40px; }
 .bank-promo-tag { display:inline-block; margin-bottom:14px; padding:6px 14px; border-radius:999px; background:rgba(255,255,255,.2); font-size:13px; font-weight:700; }
-.bank-hero-copy h1 { margin:0 0 12px; font-size:38px; line-height:1.2; }
-.bank-hero-copy p { margin:0 0 26px; font-size:18px; opacity:.95; }
+.bank-hero-copy h1 { color:#fff; margin:0 0 12px; font-size:38px; line-height:1.2; }
+.bank-hero-copy p { color:#fff; margin:0 0 26px; font-size:18px; opacity:.95; }
 .bank-promo-actions { display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin-bottom:22px; }
 .bank-promo-cta { display:inline-flex; align-items:center; gap:10px; padding:16px 32px; border-radius:12px; background:#fff; color:#0b4f9c; font-size:18px; font-weight:800; text-decoration:none; box-shadow:0 8px 20px rgba(0,0,0,.25); }
 .bank-promo-cta:hover { background:#eaf2fd; }

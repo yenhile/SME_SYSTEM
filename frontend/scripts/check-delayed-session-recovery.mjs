@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 // TEST HARNESS CHO AUTHPROVIDER THẬT (TỪ src/context/AuthContext.tsx)
 // =========================================================================
 function createAuthContextHarness(customClient, customSource = null) {
-  const sourceCode = customSource || fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8');
+  const sourceCode = customSource || fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   const { outputText } = ts.transpileModule(sourceCode, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React }
   });
@@ -184,7 +184,7 @@ const realAuthServiceProfilePayload = {
 test('Ca 1: Contract /auth/me: missing isActive must NOT mean locked; proves pre-fix failure and post-fix success', async () => {
   // 1. CHỨNG MINH THẤT BẠI TRƯỚC SỬA (Pre-fix):
   // Bản code cũ có điều kiện: if (!profile || !profile.isActive || !profile.roles?.length) logout();
-  const preFixAuthSource = fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8')
+  const preFixAuthSource = fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
     .replace('profile.isActive === false', '!profile.isActive');
 
   const clientPre = createMockClient();
@@ -242,7 +242,7 @@ test('Ca 1: Contract /auth/me: missing isActive must NOT mean locked; proves pre
 test('Ca 2: Loading state on 401/logout during restoreSession; proves pre-fix failure and post-fix success', async () => {
   // 1. CHỨNG MINH THẤT BẠI TRƯỚC SỬA (Pre-fix):
   // Bản cũ không gọi setLoading(false) trong logout() hoặc catch, và finally bị bỏ qua do sessionEpoch++
-  const preFixAuthSource = fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8')
+  const preFixAuthSource = fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
     .replace('setLoading(false);\n    [\'sme_demo_actor\'', '[\'sme_demo_actor\'')
     .replace('logout();\n        setLoading(false);', 'logout();');
 
@@ -288,7 +288,7 @@ test('Ca 2: Loading state on 401/logout during restoreSession; proves pre-fix fa
 test('Ca 3: Stale recovery error catch block must NOT logout or mutate new session; proves pre-fix failure and post-fix success', async () => {
   // 1. CHỨNG MINH THẤT BẠI TRƯỚC SỬA (Pre-fix):
   // Khối catch cũ của onRoleInvalidated không kiểm tra epoch/token:
-  const preFixAuthSource = fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8')
+  const preFixAuthSource = fs.readFileSync(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
     .replace('if (sessionEpoch.current !== currentEpoch || getAuthToken() !== token) return;\n          if (localStorage.getItem(\'sme_active_role\') !== currentRole) return;\n\n          const error = err as ApiError;', 'const error = err as ApiError;');
 
   let rejectDelayedMePre;
