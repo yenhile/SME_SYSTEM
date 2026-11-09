@@ -1082,7 +1082,24 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 * **Tài khoản test:** vẫn chỉ bị khóa, chưa xóa khỏi DB vì xóa không hoàn tác và vướng khóa ngoại lịch sử.
 * Backend 424/424 test đạt; mọi bộ test frontend đạt; build đạt.
 
-**Còn dang dở:** nhìn bằng mắt bảng cảnh báo có dòng thời điểm chấm; quyết định của PO về L2/Q3 và L9/Q4 (mục 5); xóa hẳn tài khoản test nếu PO muốn; xử lý thư viện skill cho `check-ai-rules`.
+**Còn dang dở:** xem bảng **Lộ trình xử lý các việc còn lại** ngay bên dưới.
+
+<a id="lo-trinh-con-lai-20261109"></a>
+#### Lộ trình xử lý các việc còn lại (đề xuất ngày 09/11/2026, chờ PO duyệt thứ tự)
+
+**Quyết định đã chốt:** các tài khoản `test_*` và tài khoản demo thừa **giữ nguyên ở trạng thái khóa, không xóa** (PO 09/11/2026); mở lại bằng `npm run accounts:tidy -- --unlock-test` khi cần chạy kiểm thử tự động. 12 commit cũ trên `main` có dòng đồng tác giả Claude được **để nguyên** (PO 09/11/2026).
+
+| Bước | Việc | Đề xuất cách làm | Công sức | Cần PO quyết? | Nghiệm thu |
+|---|---|---|---|---|---|
+| 1 | **Lịch làm việc 2027** (hạn cứng) | Lịch hiện hành kết thúc 31/12/2026; sau ngày đó SLA PA1 và dự báo trả "ngoài lịch làm việc" cho mọi hồ sơ. Nạp lịch 2027 (ngày nghỉ lễ, Tết) bằng đúng cơ chế đã dùng cho lịch 2026 và kích hoạt trước **15/12/2026**. | Vừa | Có: PO cung cấp hoặc duyệt danh sách ngày nghỉ 2027 | Hồ sơ vào công đoạn ngày 04/01/2027 vẫn có hạn SLA và dự báo; test lịch 2027 |
+| 2 | **Dữ liệu demo cũ dần** (lỗi 9) | Thêm lệnh `npm run demo:refresh` (dựng lại có `--reset`) và để `start-use.ps1` cảnh báo khi hồ sơ demo mở đã quá hạn quá nửa. Không tự xóa dữ liệu ngầm. | Nhỏ | Không | Chạy một lệnh là có lại đủ mức Bình thường, Chú ý, Khẩn; tài liệu ghi bước này trước mỗi buổi demo |
+| 3 | **Nhìn bằng mắt hai màn còn lại** | Chụp bảng cảnh báo của Quản lý có dòng "Dự báo lúc …" (cần cửa sổ cao hơn) và trang chủ cổng doanh nghiệp sau đăng nhập; sửa lỗi hiển thị nếu có. | Nhỏ | Không | Ảnh chụp đính kèm bằng chứng, không lỗi chữ/màu |
+| 4 | **`check-ai-rules` báo 88 mục lỗi** | Hai mục `.agents/skills/mattpocock` và `superpowers` là gitlink không có `.gitmodules`. Đề xuất: PO chọn một trong hai: (A) đưa thư viện skill vào repo đúng cách (khai báo submodule hoặc commit nội dung), hoặc (B) gỡ hai mục khỏi index và bỏ khỏi danh sách kiểm tra, kèm tạo `GEMINI.md` và bỏ tham chiếu file zip lưu trữ nếu không còn dùng. Khuyến nghị (B) nếu không dùng các thư viện này khi làm việc. | Nhỏ | Có: chọn A hay B (không tự tải công cụ) | `node scripts/check-ai-rules.mjs` không còn FAIL |
+| 5 | **Cách đếm "Thẩm quyền đang hoạt động"** (L2/Q3) | Giữ cách đếm hiện tại (tài khoản mở, chuyên trách, không phải `test_*`) làm mặc định. Nếu PO muốn tiêu chí theo hoạt động: dùng `max(số người có thao tác Thẩm định trong 30 ngày, số Thẩm quyền chuyên trách đang mở)` để tài khoản mới chưa có thao tác không làm số đếm tụt. | Nhỏ đến vừa | Có: giữ hay đổi tiêu chí | Test `prediction-appraisers` mở rộng; thêm hoặc khóa tài khoản không làm đổi mức cảnh báo |
+| 6 | **Ngưỡng "Chú ý" ở Thẩm định** (L9/Q4) | Không đổi mô hình. Phương án khuyến nghị: ở Thẩm định chỉ hiện mức Khẩn (từ 60%) và Quá hạn, ẩn Chú ý; thay thế là nâng ngưỡng Chú ý riêng cho Thẩm định (ví dụ 45%). Làm ở lớp hiển thị và đếm của backend/giao diện, đo lại tỷ lệ báo nhầm trước và sau. | Vừa | Có: đây là điều chỉnh ý nghĩa cảnh báo | Tỷ lệ báo nhầm ở Thẩm định giảm, không mất cảnh báo Khẩn; ghi rõ trong mục 5 |
+| 7 | **Dọn bảng `delay_predictions`** | Đặt chính sách giữ: mỗi hồ sơ giữ dự báo mới nhất theo từng công đoạn và mọi dòng trong 90 ngày gần nhất; dọn bằng lệnh có xem trước, chỉ chạy khi PO duyệt. Không đổi lược đồ DB. | Vừa | Có: duyệt thời gian giữ và việc xóa dữ liệu | Lệnh xem trước nêu số dòng sẽ xóa; sau khi chạy dashboard và danh sách không đổi |
+
+**Thứ tự đề nghị:** 1 (có hạn) → 2 và 3 (không cần quyết định, làm ngay) → 4 → 5 và 6 (sau khi PO chốt) → 7 (khi dữ liệu đủ lớn). Mọi bước đều giữ nguyên quy trình vay, quyền vai trò, ngưỡng tiền, định mức SLA và ranh giới "ML chỉ cảnh báo trễ SLA"; mỗi bước làm xong cập nhật mục này và README nếu đổi tài khoản.
 
 <a id="diem-ban-giao-20261106"></a>
 ### Điểm bàn giao ngày 06/11/2026
