@@ -53,7 +53,7 @@ Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://loca
 - Trang giới thiệu vay vốn là lớp đầu của cổng doanh nghiệp (http://localhost:5173/portal); cổng 5173 gốc `/` dành riêng cho cán bộ ngân hàng.
 - Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal (xác minh email qua hộp thư nội bộ http://localhost:8025/).
 - Hồ sơ mẫu đi qua cổng doanh nghiệp đến kết quả (cần backend, ML và hộp thư nội bộ đang chạy, `PORTAL_V2_ROLLOUT_ENABLED=true`, đã áp `backend/prisma/document-codes.sql`): `DEMO_PASSWORD=... npm run seed:portal-flow` trong `backend`.
-- Trước mỗi buổi demo chạy `npm run seed:demo -- --reset` trong `backend` để hồ sơ mẫu không bị quá hạn hàng loạt.
+- Trước mỗi buổi demo chạy `npm run demo:refresh` trong `backend` (dựng lại dữ liệu demo bằng `seed:demo --reset`) để hồ sơ mẫu không bị quá hạn hàng loạt.
 
 Các script `start-local.ps1`/`run-local-dev.ps1` có thể push/seed dữ liệu. Đọc tác động và xác định đúng DB trước khi chạy.
 

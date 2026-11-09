@@ -33,6 +33,7 @@
     "check:portal-mvp": "node scripts/check-portal-mvp-supplements.cjs",
     "test": "node scripts/run-tests.cjs",
     "seed:demo": "node scripts/seed-demo.cjs",
+    "demo:refresh": "node scripts/seed-demo.cjs --reset",
     "accounts:tidy": "node scripts/accounts-tidy.cjs",
     "seed:portal-flow": "node scripts/seed-portal-flow.cjs"
   },

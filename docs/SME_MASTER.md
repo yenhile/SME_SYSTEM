@@ -1099,6 +1099,20 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 | 6 | **Ngưỡng "Chú ý" ở Thẩm định** (L9/Q4) | Không đổi mô hình. Phương án khuyến nghị: ở Thẩm định chỉ hiện mức Khẩn (từ 60%) và Quá hạn, ẩn Chú ý; thay thế là nâng ngưỡng Chú ý riêng cho Thẩm định (ví dụ 45%). Làm ở lớp hiển thị và đếm của backend/giao diện, đo lại tỷ lệ báo nhầm trước và sau. | Vừa | Có: đây là điều chỉnh ý nghĩa cảnh báo | Tỷ lệ báo nhầm ở Thẩm định giảm, không mất cảnh báo Khẩn; ghi rõ trong mục 5 |
 | 7 | **Dọn bảng `delay_predictions`** | Đặt chính sách giữ: mỗi hồ sơ giữ dự báo mới nhất theo từng công đoạn và mọi dòng trong 90 ngày gần nhất; dọn bằng lệnh có xem trước, chỉ chạy khi PO duyệt. Không đổi lược đồ DB. | Vừa | Có: duyệt thời gian giữ và việc xóa dữ liệu | Lệnh xem trước nêu số dòng sẽ xóa; sau khi chạy dashboard và danh sách không đổi |
 
+**Cập nhật trạng thái sau rà soát (09/11/2026):** PO cho biết phần **SLA/lịch làm việc do người phụ trách khác đảm nhiệm** nên không thuộc phạm vi người sửa lỗi cảnh báo; việc nào làm được thì đã làm, việc còn lại ghi để chuyển tiếp.
+
+| Bước | Trạng thái | Ghi chú |
+|---|---|---|
+| 1 Lịch làm việc 2027 | **Chuyển người phụ trách SLA** | Lịch hiện hành hết 31/12/2026; cần nạp lịch 2027 trước 15/12/2026 (xem mô tả ở bảng trên). Không tự làm vì thuộc phần SLA của người khác và cần danh sách ngày nghỉ 2027 từ PO. |
+| 2 Dữ liệu demo cũ dần | **Đã làm** | Thêm `npm run demo:refresh` (dựng lại dữ liệu demo bằng `--reset`); README ghi chạy trước mỗi buổi demo. Chưa làm phần tự cảnh báo trong `start-use.ps1` (cần truy vấn DB từ PowerShell, thấy không đáng so với việc nhớ chạy một lệnh). |
+| 3 Nhìn bằng mắt | **Đã làm** | Chụp bằng Chrome không giao diện: bảng cảnh báo Quản lý (hồ sơ Quá hạn lên đầu, có dòng "Dự báo lúc …") và trang chủ cổng sau đăng nhập; không lỗi console/API. Phát hiện và sửa: dấu "·" rơi xuống dòng riêng trong khối "Kết quả hồ sơ". Cũng sửa: đăng xuất khỏi cổng quay về trang giới thiệu. |
+| 4 `check-ai-rules` | **Chưa làm, chuyển người giữ cấu hình AI** | Lỗi nằm ở cấu hình công cụ AI (hai thư viện skill là gitlink không có `.gitmodules`, thiếu `GEMINI.md` và file zip trong `archive/`), không phải ứng dụng. Cần người nắm thư viện skill chọn A (khai báo đúng submodule hoặc commit nội dung) hoặc B (gỡ khỏi kiểm tra); không tự tải hay cài công cụ theo quy định dự án. |
+| 5 Đếm Thẩm quyền hoạt động | **Không sửa, có chủ đích** | Cách đếm hiện tại (tài khoản mở, chuyên trách, không phải `test_*`) đã hết lỗi gốc: thêm hoặc khóa tài khoản demo không còn đổi mức cảnh báo (có test). Đổi sang "có thao tác trong 30 ngày" chỉ thêm độ phức tạp và dễ làm số đếm tụt khi tài khoản mới chưa có thao tác. Chỉ làm nếu PO muốn tiêu chí theo hoạt động. |
+| 6 Ngưỡng "Chú ý" ở Thẩm định | **Chưa làm, chờ PO** | Ẩn hoặc nâng ngưỡng cảnh báo là đổi ý nghĩa cảnh báo và số liệu báo cáo; theo quy định dự án không tự đổi. Người tiếp nhận thực hiện sau khi PO chốt phương án (khuyến nghị: chỉ hiện Khẩn và Quá hạn ở Thẩm định), làm ở lớp hiển thị, không huấn luyện lại. |
+| 7 Dọn `delay_predictions` | **Chưa làm, chờ PO** | Là xóa dữ liệu và cần chốt thời gian giữ. Bảng hiện còn nhỏ nên chưa gấp. |
+
+**Việc chuyển tiếp cho người khác:** (a) người phụ trách SLA: bước 1, lịch 2027 và ngày nghỉ lễ; (b) người giữ cấu hình AI: bước 4; (c) PO chốt bước 6 và 7, sau đó người tiếp nhận làm. Tài khoản `test_*` và tài khoản demo thừa vẫn khóa, không xóa.
+
 **Thứ tự đề nghị:** 1 (có hạn) → 2 và 3 (không cần quyết định, làm ngay) → 4 → 5 và 6 (sau khi PO chốt) → 7 (khi dữ liệu đủ lớn). Mọi bước đều giữ nguyên quy trình vay, quyền vai trò, ngưỡng tiền, định mức SLA và ranh giới "ML chỉ cảnh báo trễ SLA"; mỗi bước làm xong cập nhật mục này và README nếu đổi tài khoản.
 
 <a id="diem-ban-giao-20261106"></a>

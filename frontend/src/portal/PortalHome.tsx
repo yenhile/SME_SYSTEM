@@ -24,7 +24,7 @@ export function PortalHome({ contactName, requests, supplementCounts, outcomes, 
         {results.length === 0 ? <p className="portal-home-empty">Chưa có hồ sơ nào có quyết định cuối cùng.</p> :
           <ul className="portal-home-list">{results.map(result => <li key={result.requestId} className={`portal-home-result result-${result.code.toLowerCase()}`}>
             {result.code === 'APPROVED' ? <CheckCircle2 size={18} aria-hidden="true" /> : <XCircle size={18} aria-hidden="true" />}
-            <div><button type="button" className="portal-link" onClick={() => onOpen(result.requestId)}>{result.reference}</button> · <span>{result.company}</span>
+            <div><span className="portal-home-result-head"><button type="button" className="portal-link" onClick={() => onOpen(result.requestId)}>{result.reference}</button> · {result.company}</span>
               <strong className="portal-home-result-label">{result.label}</strong><small>{result.detail}</small></div>
           </li>)}</ul>}
       </section>
