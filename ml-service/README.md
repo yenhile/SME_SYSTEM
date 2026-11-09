@@ -64,7 +64,7 @@ Quy mô thực tế của bộ dữ liệu v4:
 | `tham_dinh_timeline_v4.csv` | 83.629 | ảnh chụp ở Thẩm định |
 | `generation_config_v4.json` | | hạt giống, số lượng, toàn bộ tham số (có trong git) |
 
-Các tệp CSV **không nằm trong git** (bị `.gitignore`, khoảng vài chục MB); chạy lại `simulate_v4.py` để tạo, kết quả giống hệt do hạt giống cố định.
+Các tệp CSV này **nằm trong git** (tổng khoảng 18 MB, thư mục `experiments/v3/data/`) để người tiếp nhận có sẵn dữ liệu huấn luyện; chạy lại `simulate_v4.py` sẽ cho kết quả giống hệt do hạt giống cố định.
 
 ### 3.5. Nhãn (đáp án) và cách chia dữ liệu
 - **Nhãn của một dòng:** `y = 1` nếu *tổng giờ cuối cùng của công đoạn lớn hơn SLA*, ngược lại `y = 0`. Tức là mô hình học dự đoán "cuối cùng có trễ không" từ thông tin tại thời điểm chụp.
@@ -231,7 +231,7 @@ Hồ sơ chuyển công đoạn; tiếp nhận đề nghị từ cổng; tạo h
 Cần Python với `pandas`, `scikit-learn`, `joblib` (không cần cài lên máy nếu dùng container của `ml-service`). Từ thư mục `ml-service/experiments/v3`:
 
 ```
-python simulate_v4.py     # sinh data/cases_v4.csv, tiep_nhan_timeline_v4.csv, tham_dinh_timeline_v4.csv
+python simulate_v4.py     # (tùy chọn, dữ liệu đã có sẵn trong git) sinh data/cases_v4.csv, tiep_nhan_timeline_v4.csv, tham_dinh_timeline_v4.csv
 python train_v4.py        # huấn luyện, ghi models/v4_*.joblib và results/metrics_v4.json
 ```
 Sau đó sao chép `models/v4_tiep_nhan.joblib` và `models/v4_tham_dinh.joblib` vào `app/model/`, cập nhật `app/model/model_metadata.json` (số liệu), dựng lại image `ml-service`. Đổi số hồ sơ bằng biến `SIM_N`, hạt giống bằng `SIM_SEED`.

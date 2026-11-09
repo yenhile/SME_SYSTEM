@@ -6,7 +6,7 @@ Thư mục này chứa mã sinh dữ liệu mô phỏng và huấn luyện của
 
 | Tệp | Nội dung |
 |---|---|
-| `simulate_v4.py` | Bộ mô phỏng 20.000 hồ sơ, sinh `data/cases_v4.csv`, `tiep_nhan_timeline_v4.csv`, `tham_dinh_timeline_v4.csv` (không nằm trong git; hạt giống 2026 nên chạy lại cho cùng kết quả) |
+| `simulate_v4.py` | Bộ mô phỏng 20.000 hồ sơ, sinh `data/cases_v4.csv`, `tiep_nhan_timeline_v4.csv`, `tham_dinh_timeline_v4.csv` (đã có sẵn trong git, khoảng 18 MB; hạt giống 2026 nên chạy lại cho cùng kết quả) |
 | `train_v4.py` | Huấn luyện hai mô hình, hiệu chỉnh isotonic, đánh giá, ghi `models/v4_*.joblib` và `results/metrics_v4.json` |
 | `params/bpic2012_params.json` | Tham số hình dạng phân phối rút từ BPI Challenge 2012 (chỉ số liệu tổng hợp) |
 | `data/generation_config_v4.json` | Hạt giống, số lượng và toàn bộ tham số dùng khi sinh |
