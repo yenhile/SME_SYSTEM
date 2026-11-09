@@ -50,7 +50,9 @@ Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://loca
 
 - Chi nhánh nhỏ chỉ cần **một** Quản lý; 2 Thẩm quyền khớp số người mà mô hình dự báo đã học.
 - Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **khóa**, không xóa để giữ lịch sử hồ sơ. Chạy `npm run accounts:tidy` trong `backend` để xem trước hoặc áp dụng lại; `-- --unlock-test` mở lại `test_*` khi cần chạy kiểm thử tự động (mật khẩu `test_*` chỉ dành cho kiểm thử, không dùng khi vận hành thật).
-- Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal.
+- Trang chủ ngân hàng ở http://localhost:5173/ : mục **Doanh nghiệp → Vay vốn doanh nghiệp** dẫn tới cổng doanh nghiệp; cán bộ dùng nút **Đăng nhập** ở đầu trang.
+- Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal (xác minh email qua hộp thư nội bộ http://localhost:8025/).
+- Hồ sơ mẫu đi qua cổng doanh nghiệp đến kết quả (cần backend, ML và hộp thư nội bộ đang chạy, `PORTAL_V2_ROLLOUT_ENABLED=true`, đã áp `backend/prisma/document-codes.sql`): `DEMO_PASSWORD=... npm run seed:portal-flow` trong `backend`.
 - Trước mỗi buổi demo chạy `npm run seed:demo -- --reset` trong `backend` để hồ sơ mẫu không bị quá hạn hàng loạt.
 
 Các script `start-local.ps1`/`run-local-dev.ps1` có thể push/seed dữ liệu. Đọc tác động và xác định đúng DB trước khi chạy.

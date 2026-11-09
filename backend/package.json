@@ -33,7 +33,8 @@
     "check:portal-mvp": "node scripts/check-portal-mvp-supplements.cjs",
     "test": "node scripts/run-tests.cjs",
     "seed:demo": "node scripts/seed-demo.cjs",
-    "accounts:tidy": "node scripts/accounts-tidy.cjs"
+    "accounts:tidy": "node scripts/accounts-tidy.cjs",
+    "seed:portal-flow": "node scripts/seed-portal-flow.cjs"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
