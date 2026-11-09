@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Req, UseGuards, UseInterceptors, UploadedFile, StreamableFile, BadRequestException } from '@nestjs/common';
+import { Logger, Controller, Get, Post, Put, Delete, Param, Body, Req, UseGuards, UseInterceptors, UploadedFile, StreamableFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PortalAuthService, PortalGuard } from './portal.auth';
 import { PortalService } from './portal.service';
+import { PredictionService } from '../prediction/prediction.service';
 import type { PortalFile } from './portal.validation';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -64,7 +65,8 @@ export class PortalRequestsController {
 @UseGuards(JwtAuthGuard,RolesGuard)
 @Roles(RoleCode.CBTD,RoleCode.QUAN_LY)
 export class PortalIntakesController {
-  constructor(private service:PortalService) {}
+  private readonly logger = new Logger(PortalIntakesController.name);
+  constructor(private service:PortalService,private prediction:PredictionService) {}
   @Get() list(@Req() req:any) {return this.service.list(undefined,req.user);}
   @Get('officers') @Roles(RoleCode.QUAN_LY)
   officers() {return this.service.officers();}
@@ -92,6 +94,10 @@ export class PortalIntakesController {
   @Post(':id/accept') @Roles(RoleCode.CBTD)
   accept(@Req() req:any,@Param('id') id:string,@Body() body:any) {
     if(body && (Object.keys(body).some(k=>!['confirmExistingCompany','confirmExistingCompanyFinancials','expectedRevision','submissionId'].includes(k)) || ['confirmExistingCompany','confirmExistingCompanyFinancials'].some(k=>body[k]!==undefined&&typeof body[k]!=='boolean'))) throw new BadRequestException('Thông tin xác nhận không hợp lệ.');
-    return this.service.accept(id,req.user.id,body?.confirmExistingCompany===true,body?.confirmExistingCompanyFinancials===true,body?.expectedRevision,body?.submissionId);
+    return this.service.accept(id,req.user.id,body?.confirmExistingCompany===true,body?.confirmExistingCompanyFinancials===true,body?.expectedRevision,body?.submissionId).then(async result=>{
+      // Hồ sơ vừa được tiếp nhận từ cổng có dự báo ngay thay vì chờ lượt chấm 08:00; lỗi dự báo không làm hỏng việc tiếp nhận.
+      if(result?.loanId) await this.prediction.predictForApplication(result.loanId).catch((err:any)=>this.logger.warn('Không tạo được dự báo khi tiếp nhận hồ sơ '+result.loanId+': '+(err?.message??err)));
+      return result;
+    });
   }
 }

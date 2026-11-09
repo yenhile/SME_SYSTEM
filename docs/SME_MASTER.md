@@ -1054,7 +1054,9 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 
 **Hồ sơ mẫu đi qua cổng doanh nghiệp (đã chạy):** `npm run seed:portal-flow` (cần `DEMO_PASSWORD`) chỉ dùng API: đăng ký và xác minh doanh nghiệp qua hộp thư nội bộ, tạo đề nghị, tải chứng từ, gửi, Quản lý phân công, CBTD duyệt checklist và tiếp nhận, xác định hạn mức, trình tờ trình, Thẩm quyền quyết định, doanh nghiệp xem kết quả. Một lần chạy tạo 6 đề nghị: 1 phê duyệt (DN-2), 1 từ chối TC02 (DN-3), 1 đang thẩm định (DN-4), 1 đang kiểm tra hồ sơ (DN-5), 1 chờ phân công (DN-6), 1 bản nháp (DN-7). Tên doanh nghiệp có "[MÔ PHỎNG]", mã số thuế bắt đầu 99/98, tách khỏi bộ hồ sơ huấn luyện. Script kiểm tra trạng thái cuối trên cổng (APPROVED/REJECTED) bằng assert.
 
-**Phát hiện ngoài phạm vi (ghi backlog):** hồ sơ vừa được CBTD tiếp nhận từ cổng chưa có dự báo cho đến lượt chấm 08:00 hoặc thao tác kế tiếp, vì luồng tiếp nhận từ cổng không gọi dự báo. Chưa sửa.
+**Dự báo ngay khi tiếp nhận từ cổng (đã sửa theo ủy quyền của PO, 09/11/2026):** luồng tiếp nhận từ cổng trước đây không gọi dự báo nên hồ sơ mới phải chờ lượt chấm 08:00. Nay `POST /portal-intakes/:id/accept` gọi dự báo ngay sau khi tiếp nhận ([portal.controller.ts](../backend/src/modules/portal/portal.controller.ts)); lỗi ML chỉ ghi log, không làm hỏng việc tiếp nhận. Kiểm chứng trên hệ thống đang chạy: hồ sơ vừa tiếp nhận có dự báo `v4.0-TIEP_NHAN` ngay. Hồ sơ tiếp nhận trước bản sửa vẫn chưa có dự báo cho đến lượt chấm kế tiếp.
+
+**Dữ liệu demo đã dựng lại (09/11/2026):** chạy `npm run seed:demo -- --reset` (194 hồ sơ quá khứ, 15 hồ sơ mở đều có dự báo) để hồ sơ mở không bị quá hạn hàng loạt. Cần chạy lại trước mỗi buổi demo.
 
 **Còn dang dở:** thử giao diện bằng trình duyệt (chưa có công cụ điều khiển trình duyệt trong phiên này); `frontend test:role-recovery` có 2 ca lỗi từ trước (vẫn lỗi khi bỏ các thay đổi của đợt này).
 

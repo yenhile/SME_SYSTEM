@@ -6,6 +6,7 @@ import { PortalAuthController, PortalRequestsController, PortalIntakesController
 import { PortalAuthService, PortalGuard } from './portal.auth';
 import { PortalMailer } from './portal.mailer';
 import { PortalService } from './portal.service';
+import { PredictionModule } from '../prediction/prediction.module';
 
-@Module({imports:[AuthModule,JwtModule.register({})],controllers:[PortalAuthController,PortalRequestsController,PortalIntakesController],providers:[PrismaService,PortalAuthService,PortalGuard,PortalMailer,PortalService]})
+@Module({imports:[AuthModule,PredictionModule,JwtModule.register({})],controllers:[PortalAuthController,PortalRequestsController,PortalIntakesController],providers:[PrismaService,PortalAuthService,PortalGuard,PortalMailer,PortalService]})
 export class PortalModule {}
