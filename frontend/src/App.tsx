@@ -7,7 +7,6 @@ import { LEAVE_WARNING, officerCasePath, officerCaseRefFromPath } from './office
 import { AppraisalWorkspace } from './components/AppraisalWorkspace';
 import { OfficerCaseWorkspace } from './components/OfficerCaseWorkspace';
 import { LoginPage } from './components/LoginPage';
-import { BankHome } from './components/BankHome';
 import { LoanList } from './components/LoanList';
 import { AppraisalQueue } from './components/AppraisalQueue';
 import { DashboardView } from './components/DashboardView';
@@ -235,8 +234,7 @@ function Workspace() {
 function AppContent() {
   const { user, loading, activeRole } = useAuth();
   if (loading) return <main className="login-page">Đang kiểm tra phiên đăng nhập…</main>;
-  if (!user) return window.location.pathname === '/' ? <BankHome /> : <LoginPage />;
-  if (window.location.pathname === '/noi-bo') window.history.replaceState(null, '', '/');
+  if (!user) return <LoginPage />;
   return <Workspace key={`${user.id}:${activeRole}`} />;
 }
 

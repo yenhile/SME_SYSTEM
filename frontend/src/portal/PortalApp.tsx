@@ -12,6 +12,7 @@ import { DocumentLink } from './DocumentLink';
 import { SupplementPanel } from '../components/SupplementPanel';
 import { PortalApplicationTracking, type PortalTracking } from './PortalApplicationTracking';
 import { PortalHome } from './PortalHome';
+import { ENTER_HASH, PortalLanding } from './PortalLanding';
 import type { SupplementView } from './supplements';
 
 export function RequestFields({ data, errors = {}, readOnly = false, onChange }: { data: PortalData; errors?: Record<string, string>; readOnly?: boolean; onChange?: (data: PortalData) => void }) {
@@ -58,6 +59,7 @@ function RequestEditor({ initial, onBack, onSaved, onClone }: { onClone?: (r:Por
 
 export function PortalApp() {
   const [resetToken,setResetToken]=useState<string|null>(()=>new URL(location.href).searchParams.get('reset'));
+  const [entered, setEntered] = useState(() => location.hash === ENTER_HASH);
   const [account, setAccount] = useState<PortalAccount | null>(null); const [checking, setChecking] = useState(!!localStorage.getItem(PORTAL_TOKEN_KEY));
   const [requests, setRequests] = useState<PortalRequest[]>([]); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
   const [supplementCounts, setSupplementCounts] = useState<Record<string, number>>({});
@@ -74,8 +76,8 @@ export function PortalApp() {
     let live = true;
     const url=new URL(location.href);
     if(url.searchParams.has('reset')){url.searchParams.delete('reset');history.replaceState(history.state,'',url.pathname+url.search+url.hash);}
-    const expired = () => { clearView(); setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'); };
-    const changed = () => { clearView(); setError('Phiên doanh nghiệp đã thay đổi ở tab khác. Vui lòng đăng nhập lại; bản nháp được giữ riêng theo tài khoản.'); };
+    const expired = () => { setEntered(true); clearView(); setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'); };
+    const changed = () => { setEntered(true); clearView(); setError('Phiên doanh nghiệp đã thay đổi ở tab khác. Vui lòng đăng nhập lại; bản nháp được giữ riêng theo tài khoản.'); };
     const storage = (event: StorageEvent) => { if (event.key === PORTAL_TOKEN_KEY || event.key === null) syncPortalSession(); };
     window.addEventListener('sme-portal-session-expired', expired);
     window.addEventListener('sme-portal-session-changed', changed);
@@ -136,6 +138,7 @@ export function PortalApp() {
     catch (err) { if (current()) setError((err as Error).message); } finally { if (current()) setLoading(false); }
   }
   function saved(value: PortalRequest) { if (accountRef.current?.id === account?.id) { setRequests(current => [value, ...current.filter(item => item.id !== value.id)]); setEditor(current=>current?.id===value.id?value:current); } }
+  if (!account && !checking && !resetToken && !entered) return <PortalLanding onEnter={() => { history.replaceState(history.state, '', location.pathname + ENTER_HASH); setEntered(true); }} />;
   return <div className="portal-shell"><header className="portal-header"><a className="portal-brand" href="/portal"><BrandLogo subtitle="Cổng doanh nghiệp" /></a><div className="portal-header-actions">{account && <div className="portal-account-box"><div className="portal-account-meta"><span className="portal-account-name">{account.contactName}</span><small className="portal-account-email">{account.email}</small></div><button className="btn btn-secondary portal-logout-btn" onClick={() => { if (editor === undefined || window.confirm('Đăng xuất khỏi cổng doanh nghiệp? File chưa tải lên sẽ cần chọn lại. Nội dung nháp V2 chưa lưu được giữ để khôi phục trong tab này.')) logout(); }}><LogOut size={15} /> Đăng xuất</button></div>}</div></header>
     <main className="portal-main">{checking ? <p role="status">Đang kiểm tra phiên đăng nhập…</p> : !account ? <>{error && <p role="alert" className="portal-error">{error}</p>}<PortalAuth resetToken={resetToken} onResetConsumed={()=>setResetToken(null)} onLogin={setAccount} /></> : editor !== undefined ? <Fragment key="editor">{editor && editor.status !== 'DRAFT' && <PortalApplicationTracking key={editor.id+':'+editor.revision} requestId={editor.id} />}{((editor?.formVersion ?? (editor ? 1 : 2)) === 1 ? <RequestEditor key={editor?.id ?? 'new'} initial={editor} onBack={back} onSaved={() => void load()} onClone={config?.rolloutEnabled?async old=>{const r=await portalApi.post<PortalRequest>('/requests',{formVersion:2,clientRequestId:crypto.randomUUID(),data:old.data});setDraftId(r.id);remember(r.id);saved(r);setEditor(r);}:undefined} /> : config ? <PortalWizard key={draftId} initial={editor} draftId={draftId} account={account} config={config} onBack={back} onSaved={saved} /> : <section className="portal-card"><p role="status">{error || 'Đang tải cấu hình biểu mẫu…'}</p><button className="btn btn-secondary" onClick={back}>Về danh sách</button></section>)}{editor?.status === 'ACCEPTED' && editor.loanId && <details className="portal-card supplement-entry" open><summary>Bổ sung hồ sơ sau tiếp nhận</summary><SupplementPanel key={editor.id} mode="portal" requestId={editor.id} config={config} /></details>}</Fragment> : <Fragment key="list">
       <div className="portal-section-heading portal-dashboard-heading"><div><span className="portal-eyebrow">KHÔNG GIAN DOANH NGHIỆP</span><h1>Đề nghị vay của bạn</h1><p>Chuẩn bị hồ sơ, lưu nháp và theo dõi kết quả tiếp nhận.</p></div><button className="btn btn-primary portal-create-cta" disabled={!config?.previewEnabled || loading} onClick={() => { const id = crypto.randomUUID(); setDraftId(id); remember(id); setEditor(null); }}><Plus size={17} /> Tạo đề nghị vay</button></div>

@@ -1,11 +1,10 @@
 import { ArrowRight, Briefcase, Building2, Crown, FileText, Landmark, Leaf, LogIn, ShieldCheck, TrendingUp, User } from 'lucide-react';
-import { BrandLogo } from './BrandLogo';
-import { groups } from '../portal/model';
-import './bank-home.css';
+import { BrandLogo } from '../components/BrandLogo';
+import { groups } from './model';
+import './portal-landing.css';
 
-export const PORTAL_PATH = '/portal';
-/** Địa chỉ đăng nhập của cán bộ ngân hàng; không đặt liên kết ở trang chủ công khai. */
-export const STAFF_LOGIN_PATH = '/noi-bo';
+/** Neo mở form đăng nhập/đăng ký của cổng; mọi nút vay vốn trên trang giới thiệu dẫn tới đây. */
+export const ENTER_HASH = '#dang-nhap';
 
 /** Các ô tượng trưng như trang chủ ngân hàng thật; chỉ "Doanh nghiệp" hoạt động vì hệ thống này phục vụ vay vốn doanh nghiệp. */
 const TILES = [
@@ -17,24 +16,25 @@ const TILES = [
   { label: 'Về chúng tôi', icon: ShieldCheck },
 ];
 
-/** Trang chủ công khai của ngân hàng, tập trung quảng bá cổng vay vốn doanh nghiệp. */
-export function BankHome() {
+/** Lớp giới thiệu đặt trước cổng doanh nghiệp: quảng bá vay vốn rồi mới vào đăng nhập/đăng ký. Không chứa lối vào của cán bộ ngân hàng. */
+export function PortalLanding({ onEnter }: { onEnter: () => void }) {
+  const enter = (event: { preventDefault: () => void }) => { event.preventDefault(); onEnter(); };
   return <div className="bank-home">
     <div className="bank-topbar" role="navigation" aria-label="Liên kết nhanh">
-      <a href={PORTAL_PATH}>Vay vốn doanh nghiệp</a><a href="#ho-so-can-chuan-bi">Hồ sơ cần chuẩn bị</a><a href="#ho-tro">Hỗ trợ</a>
+      <a href={ENTER_HASH} onClick={enter}>Vay vốn doanh nghiệp</a><a href="#ho-so-can-chuan-bi">Hồ sơ cần chuẩn bị</a><a href="#ho-tro">Hỗ trợ</a>
     </div>
     <div className="bank-stage">
       <header className="bank-header">
-        <a href="/" aria-label="Trang chủ"><BrandLogo subtitle="Ngân hàng" /></a>
-        <a className="bank-login" href={PORTAL_PATH}><LogIn size={18} aria-hidden="true" /> Đăng nhập doanh nghiệp</a>
+        <a href="/portal" aria-label="Trang chủ"><BrandLogo subtitle="Ngân hàng" /></a>
+        <a className="bank-login" href={ENTER_HASH} onClick={enter}><LogIn size={18} aria-hidden="true" /> Đăng nhập doanh nghiệp</a>
       </header>
       <section className="bank-hero-copy" aria-label="Vay vốn doanh nghiệp">
         <span className="bank-promo-tag">Dành cho doanh nghiệp nhỏ và vừa</span>
         <h1>Vay vốn lưu động doanh nghiệp, nộp hồ sơ trực tuyến</h1>
         <p>Hạn mức đến 10 tỷ đồng. Gửi hồ sơ, bổ sung chứng từ và nhận kết quả ngay trên cổng doanh nghiệp.</p>
         <div className="bank-promo-actions">
-          <a className="bank-promo-cta" href={PORTAL_PATH}>Đăng ký vay vốn ngay <ArrowRight size={18} aria-hidden="true" /></a>
-          <a className="bank-promo-link" href={PORTAL_PATH}>Đã có hồ sơ? Đăng nhập cổng doanh nghiệp</a>
+          <a className="bank-promo-cta" href={ENTER_HASH} onClick={enter}>Đăng ký vay vốn ngay <ArrowRight size={18} aria-hidden="true" /></a>
+          <a className="bank-promo-link" href={ENTER_HASH} onClick={enter}>Đã có hồ sơ? Đăng nhập cổng doanh nghiệp</a>
         </div>
         <ul className="bank-promo-points"><li>Nộp hồ sơ 24/7, không cần đến quầy</li><li>Theo dõi tiến độ từng bước</li><li>Nhận kết quả phê duyệt trực tiếp trên cổng</li></ul>
       </section>
@@ -49,12 +49,12 @@ export function BankHome() {
         <h2 id="bank-dn-title">Doanh nghiệp</h2>
         <p className="bank-lead">Giải pháp vốn lưu động cho doanh nghiệp nhỏ và vừa, nộp hồ sơ trực tuyến và theo dõi kết quả ngay trên cổng.</p>
         <div className="bank-cards">
-          <a className="bank-card primary" href={PORTAL_PATH}>
+          <a className="bank-card primary" href={ENTER_HASH} onClick={enter}>
             <Building2 size={28} aria-hidden="true" /><strong>Vay vốn doanh nghiệp</strong>
             <span>Vay vốn lưu động sản xuất, thương mại, dịch vụ. Hạn mức tối đa 10 tỷ đồng mỗi đề nghị.</span>
             <em>Đến cổng doanh nghiệp <ArrowRight size={16} aria-hidden="true" /></em>
           </a>
-          <a className="bank-card" href={PORTAL_PATH}>
+          <a className="bank-card" href={ENTER_HASH} onClick={enter}>
             <FileText size={28} aria-hidden="true" /><strong>Theo dõi hồ sơ vay</strong>
             <span>Đăng nhập cổng để xem tiến độ, bổ sung chứng từ và nhận kết quả cuối cùng.</span>
             <em>Đăng nhập cổng <ArrowRight size={16} aria-hidden="true" /></em>
@@ -67,7 +67,7 @@ export function BankHome() {
           <h2 id="bank-doc-title">Hồ sơ cần chuẩn bị</h2>
           <p className="bank-lead">Hồ sơ gồm 6 nhóm tài liệu. Chuẩn bị đủ trước khi gửi để ngân hàng tiếp nhận nhanh hơn.</p>
           <ul className="bank-docs">{groups.map(group => <li key={group.code}><strong>{group.code}. {group.name}</strong><span>{group.description}</span></li>)}</ul>
-          <a className="bank-cta" href={PORTAL_PATH}>Bắt đầu đề nghị vay <ArrowRight size={16} aria-hidden="true" /></a>
+          <a className="bank-cta" href={ENTER_HASH} onClick={enter}>Bắt đầu đề nghị vay <ArrowRight size={16} aria-hidden="true" /></a>
         </div>
       </section>
       <section id="ho-tro" className="bank-section" aria-labelledby="bank-help-title">
