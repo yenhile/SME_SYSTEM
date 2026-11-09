@@ -1,4 +1,5 @@
 # ml-service/app/predictor.py — mô hình v4: dự báo nguy cơ vượt SLA theo công đoạn, có giải thích nguyên nhân
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Dict, List
@@ -8,6 +9,7 @@ import pandas as pd
 
 from app.schemas import PredictionRequest, PredictionResponse
 
+logger = logging.getLogger("ml-service")
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
 ARTIFACTS = {"TIEP_NHAN": "v4_tiep_nhan.joblib", "THAM_DINH": "v4_tham_dinh.joblib"}
 TIME_GROUP = ("elapsed_hours", "sla_hours", "remaining_hours")
@@ -31,9 +33,9 @@ class DelayPredictor:
             path = os.path.join(MODEL_DIR, name)
             if os.path.exists(path):
                 self.models[stage] = joblib.load(path)
-                print(f"[ML Service] Đã tải mô hình {stage} từ: {path}")
+                logger.info("Đã tải mô hình %s từ: %s", stage, path)
             else:
-                print(f"[ML Service] Cảnh báo: chưa có mô hình tại: {path}")
+                logger.warning("Chưa có mô hình tại: %s", path)
 
     @property
     def model(self):
@@ -109,7 +111,7 @@ class DelayPredictor:
             if art is None:
                 raise RuntimeError(f"Mô hình công đoạn {req.stage} chưa được nạp.")
         grid = art["sla_grid"]
-        if not (min(grid) * 0.75 <= req.sla_hours <= max(grid) * 1.25):
+        if not (min(grid) <= req.sla_hours <= max(grid)):   # đúng dải đã học, không nới biên
             raise SlaOutOfRange(f"SLA {req.sla_hours:g} giờ nằm ngoài dải mô hình đã học ({min(grid)}–{max(grid)} giờ làm việc).")
         remaining = round(req.sla_hours - req.elapsed_hours, 2)
         now = datetime.now(timezone.utc).isoformat()

@@ -18,7 +18,7 @@ npm run seed:demo          # 13 tài khoản mô phỏng + 194 hồ sơ quá kh�
 Sau khi pull phải **build lại hai container**: `docker compose up -d --build backend ml-service`.
 
 - `seed:demo` chạy lặp an toàn (thấy dữ liệu demo rồi thì bỏ qua). Dựng lại: `npm run seed:demo -- --reset`.
-- Mật khẩu 13 tài khoản mô phỏng: `Demo@2026` (đổi bằng biến `DEMO_PASSWORD` trước khi chạy). Chỉ dùng demo local.
+- Tài khoản mô phỏng: từ 09/11/2026 còn 7 tài khoản, mật khẩu lấy từ biến `DEMO_PASSWORD` (xem SME_MASTER, điểm bàn giao 09/11/2026). Chỉ dùng demo local.
 - DB cũ đã có dữ liệu thật: **đừng** chạy `prisma:seed`/`db push` khi chưa đọc `docs/SME_KY_THUAT.md` mục 4 (xác định đúng DB, sao lưu trước). Nếu DB còn công đoạn Cấp trên, áp `backend/prisma/remove-cap-tren.sql` trước (script tự dừng nếu còn hồ sơ phụ thuộc).
 - Tài khoản mô phỏng: `khoa.tran` (Admin), `nhung.nguyen`, `duc.pham` (Quản lý), `ha.le`, `huy.vu`, `lan.dang` (Thẩm quyền), `nam.hoang`, `mai.bui`, `thanh.ngo`, `hanh.do`, `bao.phan`, `oanh.trinh` (CBTD), `dat.nguyen` (CBTD + Thẩm quyền, để thử chặn Maker-Checker). Bốn tài khoản `test_*` cũ giữ nguyên.
 

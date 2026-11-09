@@ -102,7 +102,8 @@ export class PredictionSchedulerService implements OnModuleInit, OnModuleDestroy
         const result: any = await this.prediction.predictForApplication(loan.id);
         if (result?.unavailable) summary.unavailable++; else summary.predicted++;
         consecutiveFailures = 0;
-      } catch {
+      } catch (err: any) {
+        this.logger.warn(`Quét dự báo lỗi ở hồ sơ ${loan.id}: ${err?.message ?? err}`);
         summary.failed++;
         if (++consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) { summary.aborted = true; break; }   // ML tắt: không chờ hết danh sách
       }

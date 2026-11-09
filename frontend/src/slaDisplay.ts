@@ -111,9 +111,11 @@ export interface AlertView { code: AlertCode; label: string; tone: 'green' | 'am
  * Xác suất đúng 1 chỉ do đường "đã vượt SLA" của dịch vụ dự báo tạo ra (mô hình luôn nhỏ hơn 1), nên hiện là Quá hạn.
  * Không có mức thì trả null: giao diện nói "chưa dự báo", không bịa mức.
  */
-export function alertDisplay(riskLevel?: string | null, probability?: number | null): AlertView | null {
+export function alertDisplay(riskLevel?: string | null, probability?: number | null, overdue?: boolean): AlertView | null {
   if (!riskLevel) return null;
-  if (probability !== null && probability !== undefined && probability >= 1) return { code: 'QUA_HAN', label: 'Quá hạn', tone: 'red' };
+  // Quá hạn do backend tính theo thời gian thực (slaOverdue) nên không phải chờ lượt chấm điểm kế tiếp; khi biết cờ này thì không suy ra từ xác suất 100%.
+  if (overdue === true) return { code: 'QUA_HAN', label: 'Quá hạn', tone: 'red' };
+  if (overdue === undefined && probability !== null && probability !== undefined && probability >= 1) return { code: 'QUA_HAN', label: 'Quá hạn', tone: 'red' };
   if (riskLevel === 'CAO') return { code: 'KHAN', label: 'Khẩn', tone: 'red' };
   if (riskLevel === 'TRUNG_BINH') return { code: 'CHU_Y', label: 'Chú ý', tone: 'amber' };
   return { code: 'BINH_THUONG', label: 'Bình thường', tone: 'green' };
@@ -138,7 +140,7 @@ export function slaLeftText(item: { slaRemainingHours?: number | null; slaOverdu
 
 /** Thứ tự ưu tiên xử lý: Quá hạn, Khẩn, Chú ý, Bình thường, chưa có dự báo; cùng mức thì xác suất cao hơn trước. */
 const ALERT_RANK: Record<AlertCode, number> = { QUA_HAN: 0, KHAN: 1, CHU_Y: 2, BINH_THUONG: 3 };
-export function compareAlerts(a: { riskLevel?: string | null; delayProbability?: number | null }, b: { riskLevel?: string | null; delayProbability?: number | null }): number {
-  const rank = (x: typeof a) => { const alert = alertDisplay(x.riskLevel, x.delayProbability); return alert ? ALERT_RANK[alert.code] : 4; };
+export function compareAlerts(a: { riskLevel?: string | null; delayProbability?: number | null; slaOverdue?: boolean }, b: { riskLevel?: string | null; delayProbability?: number | null; slaOverdue?: boolean }): number {
+  const rank = (x: typeof a) => (x.slaOverdue ? ALERT_RANK.QUA_HAN : (() => { const alert = alertDisplay(x.riskLevel, x.delayProbability, false); return alert ? ALERT_RANK[alert.code] : 4; })());
   return rank(a) - rank(b) || (b.delayProbability ?? -1) - (a.delayProbability ?? -1);
 }

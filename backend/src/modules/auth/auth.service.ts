@@ -38,14 +38,14 @@ export class AuthService {
       throw new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
 
-    if (!user.isActive) {
-      throw new UnauthorizedException('Tài khoản đã bị tạm khóa, vui lòng liên hệ Quản trị viên.');
-    }
-
+    // Kiểm tra mật khẩu trước: chỉ người biết mật khẩu đúng mới được biết tài khoản đang bị khóa.
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       this.loginThrottle.recordFailure(throttleKey, now);
       throw new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không chính xác.');
+    }
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản đã bị tạm khóa, vui lòng liên hệ Quản trị viên.');
     }
     this.loginThrottle.reset(throttleKey);
 

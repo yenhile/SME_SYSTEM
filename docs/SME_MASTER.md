@@ -1019,6 +1019,16 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 * **Giới hạn đã biết:** (1) kết quả đo trên dữ liệu giả lập; (2) số tài liệu bổ sung chờ kiểm tra được xấp xỉ 0/1; (3) chưa kích hoạt PA1 trong DB thì chưa có dự báo (DB local đã kích hoạt ngày 06/11/2026; môi trường khác phải tự kích hoạt); (4) chấm định kỳ chạy trong tiến trình backend ([prediction-scheduler.service.ts](../backend/src/modules/prediction/prediction-scheduler.service.ts)): mỗi ngày làm việc 08:00 giờ Việt Nam chấm lại mọi hồ sơ đang mở (bỏ qua hồ sơ đang chờ doanh nghiệp, cuối tuần và ngày lễ), chấm bù sau khi khởi động cho hồ sơ chưa có dự báo trong 6 giờ; tắt bằng `PREDICTION_SCAN_ENABLED=false`, đổi giờ bằng `PREDICTION_SCAN_HOUR`; mỗi lượt thêm một dòng `delay_predictions` cho mỗi hồ sơ nên bảng tăng theo số hồ sơ mở nhân số ngày; (5) các dự báo cũ của mô hình v1 còn lưu trong DB (nếu có) không được tính lại.
 * **Kiểm chứng:** 392 test backend đạt; kiểm thử đầu-cuối trên DB tạm (backend → ml-service thật → lưu dự báo) cho cả hai công đoạn PA1 và công đoạn cách cũ; test giao diện liên quan đạt. Rollback: khôi phục `ml-service/app` và `prediction*` từ git; mô hình cũ `delay_model.joblib` vẫn nằm trong repo.
 
+**Cập nhật 09/11/2026 — sửa lỗi cảnh báo theo review của PO (mô hình và artifact không đổi):**
+
+* **Cảnh báo chỉ nói về công đoạn hiện tại.** Bảng cảnh báo, ô đếm "Khẩn", danh sách và chi tiết hồ sơ, tải việc của CBTD chỉ dùng dự báo của mô hình v4, đúng công đoạn đang mở và tạo sau lúc hồ sơ vào công đoạn đó (`currentStagePrediction` trong [prediction-status.ts](../backend/src/modules/prediction/prediction-status.ts)). Không có thì hiện "Chưa có dự báo". Câu "đã hoàn tất, không còn công đoạn" chỉ dùng cho hồ sơ đã hoàn tất; hồ sơ đang xử lý mà thiếu lịch sử công đoạn có lý do riêng (`NO_STAGE_HISTORY`).
+* **Số Thẩm quyền** đưa vào mô hình chỉ đếm tài khoản đang mở, vai trò Thẩm quyền, không phải `test_*` và không kiêm CBTD (`appraisersActive`). Khóa hay thêm tài khoản demo không còn đổi mức cảnh báo. Định nghĩa "đang hoạt động" theo ngày có ra quyết định chưa áp dụng; nếu PO muốn thì chốt riêng.
+* **Quá hạn theo thời gian thực:** giao diện hiện "Quá hạn" khi backend báo `slaOverdue`, bảng cảnh báo xếp hồ sơ quá hạn lên đầu, không còn suy ra từ xác suất 100%.
+* **Dải SLA** theo đúng dải đã học (Tiếp nhận 24–128 giờ, Thẩm định 16–80 giờ), bỏ biên nới ±25%. Đã thử trên dịch vụ ML đang chạy: SLA 150 và 23 giờ trả 422, 128 giờ dự báo được.
+* **Log lỗi dự báo** khi trình tờ trình và ở lượt quét theo lịch (trước đây bị nuốt).
+* **Dịch vụ ML:** thêm khóa `ML_API_KEY` (header `X-API-Key`, backend tự gửi; không đặt thì chạy local không xác thực), CORS mặc định tắt (`ML_CORS_ORIGINS` để mở), lỗi 500 không trả chi tiết kỹ thuật, dùng logger thay `print`.
+* **Kiểm chứng:** backend 415/415 test đạt (thêm 2 test cảnh báo cũ/quá hạn và bộ `prediction-current-stage`); test giao diện liên quan đạt. Đã gọi API thật sau khi dựng lại container: 15 hồ sơ đang mở đều chỉ mang dự báo `v4.0` đúng công đoạn. Chưa kiểm thử bằng thao tác trên trình duyệt.
+
 ---
 
 <a id="ban-giao-nguoi-tiep-nhan"></a>
@@ -1027,6 +1037,28 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 ### Tổng kết phạm vi đã hoàn thành và phần còn lại
 * **Đã hoàn thành:** Toàn bộ các chức năng thuộc 7 nhóm chức năng đã được triển khai đầy đủ trên mã nguồn (`backend/` và `frontend/`), đã diễn tập migration an toàn trên DB PostgreSQL local, đã kiểm chứng E2E với 38/38 checks pass trên hệ sinh thái đang chạy, và đã cập nhật tài liệu đầy đủ.
 * **Phần còn lại chưa thực hiện trong đợt này:** Chưa phát hành hệ thống ra internet hoặc môi trường máy chủ từ xa; chưa tích hợp dịch vụ chứng thư số/chữ ký số CA thực tế; chưa thay đổi mô hình ML.
+
+<a id="diem-ban-giao-20261109"></a>
+### Điểm bàn giao ngày 09/11/2026 — tài khoản, cảnh báo, trang chủ doanh nghiệp
+
+**Tài khoản (đã áp dụng trên DB local, có sao lưu trước khi đổi):** chi nhánh nhỏ dùng bộ gọn 1 Admin, **1 Quản lý**, 3 CBTD, 2 Thẩm quyền (2 khớp giá trị điển hình mô hình đã học). Danh sách và vai trò ở [README](../README.md#tai-khoan-noi-bo). Mười tài khoản còn lại (4 `test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) bị **khóa, không xóa** để giữ khóa ngoại với lịch sử; 9 hồ sơ đang mở của họ được giao lại cho 3 CBTD còn dùng. Script: `npm run accounts:tidy` (xem trước; `-- --apply` để thực hiện; `-- --unlock-test` mở lại `test_*` khi cần chạy kiểm thử tự động).
+* `seed.js`: chỉ tạo `test_*` khi chưa có, chạy lại không đặt lại mật khẩu hay mở khóa; không chạy khi `NODE_ENV=production`. Mật khẩu `123456` của `test_*` chỉ phục vụ kiểm thử tự động.
+* `seed-demo.cjs`: tạo 7 tài khoản, mật khẩu lấy từ `DEMO_PASSWORD` hoặc sinh ngẫu nhiên và in một lần (không còn mật khẩu cố định trong mã nguồn), từ chối chạy khi `NODE_ENV=production`. **Trước mỗi buổi demo chạy lại `npm run seed:demo -- --reset`** vì đồng hồ SLA vẫn chạy sau khi dựng; để lâu hồ sơ demo sẽ thành "Quá hạn".
+* Đăng nhập: chỉ báo "tài khoản bị tạm khóa" khi mật khẩu đúng; sai mật khẩu trên tài khoản khóa trả thông báo chung và tính vào giới hạn thử. Tên chi nhánh thống nhất "Chi nhánh TP.HCM".
+
+**Cảnh báo ML:** xem cập nhật 09/11/2026 ở mục 5.
+
+**Trang giới thiệu vay vốn cho doanh nghiệp (theo yêu cầu PO 09/11/2026):** [PortalLanding.tsx](../frontend/src/portal/PortalLanding.tsx) là một lớp đặt **trước** form đăng nhập/đăng ký của cổng doanh nghiệp, dựng theo bố cục trang chủ ngân hàng (thanh liên kết, thanh đầu nổi trên nền toàn khung, 6 ô nhóm khách hàng ở đáy) và tập trung quảng bá vay vốn: banner "Đăng ký vay vốn ngay", mục Doanh nghiệp, hồ sơ cần chuẩn bị (6 nhóm), hỗ trợ. Mọi nút vay vốn mở form đăng nhập/đăng ký của cổng (`/portal#dang-nhap`). Năm ô còn lại chỉ tượng trưng, mờ, không phải liên kết. Liên kết đặt lại mật khẩu và phiên hết hạn đi thẳng vào form, không qua trang giới thiệu; người đã có phiên không thấy trang giới thiệu. **Cổng 5173 gốc `/` giữ nguyên cho cán bộ ngân hàng** (màn đăng nhập nội bộ như cũ, trang giới thiệu không chứa lối vào của cán bộ). Màn sau đăng nhập cổng còn khối việc cần làm, kết quả cuối cùng và hướng dẫn ([PortalHome.tsx](../frontend/src/portal/PortalHome.tsx)). Chưa thử bằng thao tác trên trình duyệt.
+
+**Cổng doanh nghiệp đã mở nộp trên local (PO duyệt 09/11/2026):** đặt `PORTAL_V2_ROLLOUT_ENABLED=true` trong `.env` (tệp cục bộ, không nằm trong git); `form-config` trả `canSubmit=true`, `policyStatus=APPROVED`. DB local thiếu hai sequence mã ngắn nên tạo đề nghị trả lỗi 500; đã áp `prisma/document-codes.sql` (cộng thêm, chạy lại không reset), sau đó luồng chạy thông. Máy khác cần áp tệp này trước khi bật cờ.
+
+**Hồ sơ mẫu đi qua cổng doanh nghiệp (đã chạy):** `npm run seed:portal-flow` (cần `DEMO_PASSWORD`) chỉ dùng API: đăng ký và xác minh doanh nghiệp qua hộp thư nội bộ, tạo đề nghị, tải chứng từ, gửi, Quản lý phân công, CBTD duyệt checklist và tiếp nhận, xác định hạn mức, trình tờ trình, Thẩm quyền quyết định, doanh nghiệp xem kết quả. Một lần chạy tạo 6 đề nghị: 1 phê duyệt (DN-2), 1 từ chối TC02 (DN-3), 1 đang thẩm định (DN-4), 1 đang kiểm tra hồ sơ (DN-5), 1 chờ phân công (DN-6), 1 bản nháp (DN-7). Tên doanh nghiệp có "[MÔ PHỎNG]", mã số thuế bắt đầu 99/98, tách khỏi bộ hồ sơ huấn luyện. Script kiểm tra trạng thái cuối trên cổng (APPROVED/REJECTED) bằng assert.
+
+**Dự báo ngay khi tiếp nhận từ cổng (đã sửa theo ủy quyền của PO, 09/11/2026):** luồng tiếp nhận từ cổng trước đây không gọi dự báo nên hồ sơ mới phải chờ lượt chấm 08:00. Nay `POST /portal-intakes/:id/accept` gọi dự báo ngay sau khi tiếp nhận ([portal.controller.ts](../backend/src/modules/portal/portal.controller.ts)); lỗi ML chỉ ghi log, không làm hỏng việc tiếp nhận. Kiểm chứng trên hệ thống đang chạy: hồ sơ vừa tiếp nhận có dự báo `v4.0-TIEP_NHAN` ngay. Hồ sơ tiếp nhận trước bản sửa vẫn chưa có dự báo cho đến lượt chấm kế tiếp.
+
+**Dữ liệu demo đã dựng lại (09/11/2026):** chạy `npm run seed:demo -- --reset` (194 hồ sơ quá khứ, 15 hồ sơ mở đều có dự báo) để hồ sơ mở không bị quá hạn hàng loạt. Cần chạy lại trước mỗi buổi demo.
+
+**Còn dang dở:** thử giao diện bằng trình duyệt (chưa có công cụ điều khiển trình duyệt trong phiên này); `frontend test:role-recovery` có 2 ca lỗi từ trước (vẫn lỗi khi bỏ các thay đổi của đợt này).
 
 <a id="diem-ban-giao-20261106"></a>
 ### Điểm bàn giao ngày 06/11/2026

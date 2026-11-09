@@ -91,7 +91,7 @@ test('submit notifies active managers transactionally and retry does not duplica
 
 test('officer workload uses active loan statuses and assigned requests only',async()=>{
   const queries=[];
-  const service=new PortalService(withCoordination({user:{findMany:async query=>{queries.push(query);return[{id:'officer',fullName:'Demo',username:'demo',roles:[{role:{code:'CBTD'}}]}];}},loanApplication:{findMany:async query=>{queries.push(query);return Array.from({length:4},(_,id)=>({id,delayPredictions:id===0?[{riskLevel:'CAO'}]:[]}));}},portalRequest:{count:async query=>{queries.push(query);return 2;}}}));
+  const service=new PortalService(withCoordination({user:{findMany:async query=>{queries.push(query);return[{id:'officer',fullName:'Demo',username:'demo',roles:[{role:{code:'CBTD'}}]}];}},loanApplication:{findMany:async query=>{queries.push(query);return Array.from({length:4},(_,id)=>({id,currentStage:'THAM_DINH',stageHistories:[{enteredAt:new Date(0)}],delayPredictions:id===0?[{riskLevel:'CAO',modelVersion:'v4.0-THAM_DINH',predictionTimestamp:new Date()}]:[]}));}},portalRequest:{count:async query=>{queries.push(query);return 2;}}}));
   assert.deepEqual(await service.officers(),[{id:'officer',fullName:'Demo',username:'demo',roles:['CBTD'],activeLoanCount:4,pendingIntakeCount:2,totalAssignedCount:6,highRiskLoanCount:1,workloadStatus:'BẬN RỘN'}]);
   assert.deepEqual(queries[1].select.delayPredictions.orderBy,[{predictionTimestamp:'desc'},{id:'desc'}]);
   assert.deepEqual(queries[0].where,{isActive:true,roles:{some:{role:{code:'CBTD'}}}});

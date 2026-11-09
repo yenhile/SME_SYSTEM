@@ -43,6 +43,7 @@ async function main() {
   }
 
   // 3. Khởi tạo tài khoản người dùng mẫu cho 4 Actor
+  if (process.env.NODE_ENV === 'production') throw new Error('Không seed tài khoản test_* (mật khẩu ngắn, chỉ cho kiểm thử tự động) trên môi trường production.');
   console.log('3. Khởi tạo tài khoản mẫu cho 4 Actor...');
   // Local test accounts requested by PO; passwords remain bcrypt-hashed in the database.
   const usersData = [
@@ -81,21 +82,17 @@ async function main() {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(u.password, salt);
 
+    // Chỉ tạo khi chưa có: chạy lại seed không đặt lại mật khẩu hay mở khóa tài khoản đã được Admin xử lý.
     const user = await prisma.user.upsert({
       where: { username: u.username },
-      update: {
-        fullName: u.fullName,
-        email: u.email,
-        phone: u.phone,
-        passwordHash,
-      },
+      update: {},
       create: {
         username: u.username,
         passwordHash,
         fullName: u.fullName,
         email: u.email,
         phone: u.phone,
-        branchName: 'Chi nhánh TP. Hồ Chí Minh',
+        branchName: 'Chi nhánh TP.HCM',
       },
     });
     users[u.username] = user;

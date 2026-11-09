@@ -1,4 +1,4 @@
-/* Dựng dữ liệu DEMO: 13 tài khoản mô phỏng + 194 hồ sơ trong quá khứ kèm lịch sử SLA (PA1) + dự báo cho hồ sơ đang mở.
+/* Dựng dữ liệu DEMO: 7 tài khoản mô phỏng + 194 hồ sơ trong quá khứ kèm lịch sử SLA (PA1) + dự báo cho hồ sơ đang mở.
  *
  * Chạy sau `npm run prisma:push`, `npm run prisma:seed` (seed bật PA1 và đặt định mức) và `npm run build`:
  *     npm run seed:demo            (thêm dữ liệu demo nếu chưa có)
@@ -7,7 +7,8 @@
  * - Đây là dữ liệu MÔ PHỎNG, không phải dữ liệu thật và không dùng để huấn luyện mô hình.
  * - Giờ xử lý lấy từ backend/prisma/demo-cases.json (hồ sơ giả lập). Thời điểm vào/ra từng công đoạn tính bằng đúng hàm giờ làm việc
  *   của backend (lịch VN-2026), định mức SLA đọc từ bảng workflow_stages nên đổi định mức rồi chạy lại với --reset là khớp.
- * - Mật khẩu 13 tài khoản mô phỏng: biến DEMO_PASSWORD (mặc định Demo@2026, chỉ dùng cho demo local).
+ * - Mật khẩu tài khoản mô phỏng: biến DEMO_PASSWORD; không đặt thì sinh ngẫu nhiên và in ra một lần. Không chạy khi NODE_ENV=production.
+ * - Số giờ đã dùng của hồ sơ mở tính tại lúc chạy; đồng hồ SLA vẫn chạy tiếp nên TRƯỚC MỖI BUỔI DEMO chạy lại `npm run seed:demo -- --reset`.
  * - Công ty demo có taxCode bắt đầu bằng DEMO. Gỡ thủ công:
  *     DELETE FROM loan_applications WHERE company_id IN (SELECT id FROM companies WHERE tax_code LIKE 'DEMO%');
  *     DELETE FROM companies WHERE tax_code LIKE 'DEMO%';
@@ -33,7 +34,10 @@ const cal = calendarByVersion(CAL_VERSION);
 const NOW = new Date();
 const H = 3600000;
 const RESET = process.argv.includes('--reset');
-const PASSWORD = process.env.DEMO_PASSWORD || 'Demo@2026';
+if (process.env.NODE_ENV === 'production') { console.error('seed:demo không chạy trên môi trường production.'); process.exit(1); }
+// Mật khẩu lấy từ DEMO_PASSWORD; không đặt thì sinh ngẫu nhiên và in ra một lần (không ghi cố định trong mã nguồn/tài liệu).
+const GENERATED_PASSWORD = !process.env.DEMO_PASSWORD;
+const PASSWORD = process.env.DEMO_PASSWORD || require('node:crypto').randomBytes(9).toString('base64url') + 'aA1';
 const N_DONE = 179;   // + 15 hồ sơ đang mở = 194
 
 function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -42,15 +46,13 @@ const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
 const between = (a, b) => a + (b - a) * rnd();
 
 const ACCOUNTS = [
-  ['khoa.tran', 'Trần Minh Khoa', ['ADMIN']], ['nhung.nguyen', 'Nguyễn Thị Hồng Nhung', ['QUAN_LY']], ['duc.pham', 'Phạm Văn Đức', ['QUAN_LY']],
-  ['ha.le', 'Lê Thị Thu Hà', ['THAM_QUYEN']], ['huy.vu', 'Vũ Quang Huy', ['THAM_QUYEN']], ['lan.dang', 'Đặng Ngọc Lan', ['THAM_QUYEN']],
+  ['khoa.tran', 'Trần Minh Khoa', ['ADMIN']], ['nhung.nguyen', 'Nguyễn Thị Hồng Nhung', ['QUAN_LY']],
+  ['ha.le', 'Lê Thị Thu Hà', ['THAM_QUYEN']], ['huy.vu', 'Vũ Quang Huy', ['THAM_QUYEN']],
   ['nam.hoang', 'Hoàng Văn Nam', ['CBTD']], ['mai.bui', 'Bùi Thị Mai', ['CBTD']], ['thanh.ngo', 'Ngô Đức Thành', ['CBTD']],
-  ['hanh.do', 'Đỗ Thị Hạnh', ['CBTD']], ['bao.phan', 'Phan Quốc Bảo', ['CBTD']], ['oanh.trinh', 'Trịnh Thị Oanh', ['CBTD']],
-  ['dat.nguyen', 'Nguyễn Hữu Đạt', ['CBTD', 'THAM_QUYEN']],
 ];
-const CBTD = ['nam.hoang', 'mai.bui', 'thanh.ngo', 'hanh.do', 'bao.phan', 'oanh.trinh', 'dat.nguyen'];
-const OPEN_POOL = ['oanh.trinh', 'thanh.ngo', 'hanh.do', 'mai.bui', 'test_cbtd', 'nam.hoang', 'dat.nguyen', 'bao.phan'];   // thứ tự chọn để nam.hoang và test_cbtd (tài khoản hay dùng thử) có hồ sơ ở mức Chú ý/Khẩn   // mỗi CBTD (kể cả tài khoản test cũ) được giao ít nhất một hồ sơ Tiếp nhận đang mở để có việc để làm
-const TQ = ['ha.le', 'huy.vu', 'lan.dang'];
+const CBTD = ['nam.hoang', 'mai.bui', 'thanh.ngo'];
+const OPEN_POOL = ['thanh.ngo', 'mai.bui', 'nam.hoang'];   // mỗi CBTD đang dùng có ít nhất một hồ sơ Tiếp nhận mở
+const TQ = ['ha.le', 'huy.vu'];                              // 2 Thẩm quyền, khớp giá trị điển hình mô hình đã học
 const W1 = ['Hòa Bình', 'Thành Đạt', 'Minh Phát', 'An Khang', 'Tân Phú', 'Đại Việt', 'Phú Gia', 'Hưng Thịnh', 'Bảo Long', 'Á Châu', 'Việt Tiến', 'Nam Sơn', 'Sao Mai', 'Hải Đăng', 'Kim Long', 'Trường An', 'Thiên Phúc', 'Lộc Phát', 'Quang Minh', 'Đông Dương'];
 const W2 = ['Thực phẩm', 'Cơ khí', 'Xây dựng', 'Vận tải', 'Nội thất', 'Dệt may', 'Thương mại', 'Dịch vụ', 'Nông sản', 'Bao bì', 'Điện tử', 'Logistics', 'Vật liệu', 'Thủy sản'];
 const WORDS_BY_INDUSTRY = { 'Sản xuất': ['Cơ khí', 'Bao bì', 'Dệt may', 'Nội thất', 'Vật liệu', 'Điện tử'], 'Chế biến thực phẩm': ['Thực phẩm', 'Thủy sản', 'Nông sản'], 'Cơ khí': ['Cơ khí', 'Vật liệu'], 'Thương mại - Dịch vụ': ['Thương mại', 'Dịch vụ'], 'Nông nghiệp': ['Nông sản', 'Thủy sản'], 'Vận tải kho bãi': ['Vận tải', 'Logistics'], 'Xây dựng': ['Xây dựng', 'Vật liệu'] };
@@ -129,11 +131,10 @@ async function main() {
   let madeUsers = 0;
   for (const [username, fullName, roles] of ACCOUNTS) {
     if (await db.user.findUnique({ where: { username } })) continue;
-    await usersService.create({ username, password: PASSWORD, fullName, email: `${username}@sme-demo.example`, branchName: 'Chi nhánh mô phỏng', roles });
+    await usersService.create({ username, password: PASSWORD, fullName, email: `${username}@sme-demo.example`, branchName: 'Chi nhánh TP.HCM', roles });
     madeUsers++;
   }
   const users = Object.fromEntries((await db.user.findMany({ where: { username: { in: [...OPEN_POOL, ...TQ] } } })).map(u => [u.username, u.id]));
-  if (!users.test_cbtd) throw new Error('Thiếu tài khoản test_cbtd; chạy npm run prisma:seed trước.');
 
   // ----- kế hoạch hồ sơ: định mức mở theo tỷ lệ so với SLA hiện hành -----
   const tn = SLA.TIEP_NHAN, td = SLA.THAM_DINH;
@@ -234,6 +235,7 @@ async function main() {
   for (const id of openIds) {
     try { const r = await prediction.predictForApplication(id); r.unavailable ? skipped++ : predicted++; } catch { skipped++; }
   }
+  if (madeUsers && GENERATED_PASSWORD) console.log(`Mật khẩu ${madeUsers} tài khoản mới (chỉ hiện lần này): ${PASSWORD}`);
   console.log(JSON.stringify({ sla: SLA, accountsCreated: madeUsers, casesCreated: created, openCases: openIds.length, predictions: predicted, predictionsSkipped: skipped,
     note: skipped ? 'Một số hồ sơ chưa có dự báo (ml-service chưa chạy?). Chạy lại dự báo sau từ màn hình hoặc đợi lượt chấm 08:00.' : undefined }, null, 1));
   await app.close();

@@ -306,15 +306,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onSelectLoan, onGo
                         className={`badge ${
                           !item.riskLevel
                             ? 'badge-soft-gray'
-                            : item.riskLevel === 'CAO'
+                            : item.slaOverdue || item.riskLevel === 'CAO'
                             ? 'badge-soft-red'
                             : item.riskLevel === 'TRUNG_BINH'
                             ? 'badge-soft-amber'
                             : 'badge-soft-green'
                         }`}
                       >
-                        {alertDisplay(item.riskLevel, item.delayProbability)?.code === 'KHAN' || alertDisplay(item.riskLevel, item.delayProbability)?.code === 'QUA_HAN' ? '⚠️ ' : ''}
-                        {alertDisplay(item.riskLevel, item.delayProbability)?.label ?? predictionLabel(item.predictionStatus)}
+                        {alertDisplay(item.riskLevel, item.delayProbability, item.slaOverdue)?.code === 'KHAN' || alertDisplay(item.riskLevel, item.delayProbability, item.slaOverdue)?.code === 'QUA_HAN' ? '⚠️ ' : ''}
+                        {alertDisplay(item.riskLevel, item.delayProbability, item.slaOverdue)?.label ?? predictionLabel(item.predictionStatus)}
                       </span>
                       {slaLeftText(item) && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 4 }}>{slaLeftText(item)}</div>}
                     </td>
