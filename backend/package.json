@@ -36,6 +36,7 @@
     "demo:refresh": "node scripts/seed-demo.cjs --reset",
     "demo:status": "node scripts/demo-status.cjs",
     "predictions:prune": "node scripts/predictions-prune.cjs",
+    "cleanup:test": "node scripts/cleanup-test-data.cjs",
     "accounts:tidy": "node scripts/accounts-tidy.cjs",
     "seed:portal-flow": "node scripts/seed-portal-flow.cjs"
   },

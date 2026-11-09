@@ -52,6 +52,7 @@ Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://loca
 - Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **xóa khỏi DB ngày 09/11/2026** (có sao lưu trước khi xóa); hệ thống chỉ còn đúng 7 tài khoản ở bảng trên. Chạy `npm run prisma:seed` sẽ tạo lại 4 tài khoản `test_*` (mật khẩu ngắn, chỉ cho kiểm thử tự động, không chạy trên production); sau khi chạy kiểm thử xong nên xóa lại. `npm run accounts:tidy` dùng khi cần khóa tài khoản thừa mới phát sinh.
 - Trang giới thiệu vay vốn là lớp đầu của cổng doanh nghiệp (http://localhost:5173/portal); cổng 5173 gốc `/` dành riêng cho cán bộ ngân hàng.
 - Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal (xác minh email qua hộp thư nội bộ http://localhost:8025/).
+- Dọn dữ liệu thử sau khi kiểm thử (hồ sơ "[MÔ PHỎNG]", tài khoản cổng `mo.phong.*`): `npm run cleanup:test` trong `backend` (mặc định chỉ xem trước; thêm `-- --apply` để xóa). Không đụng bộ demo, tài khoản cán bộ và các tài khoản cổng khác.
 - Hồ sơ mẫu đi qua cổng doanh nghiệp đến kết quả (cần backend, ML và hộp thư nội bộ đang chạy, `PORTAL_V2_ROLLOUT_ENABLED=true`, đã áp `backend/prisma/document-codes.sql`): `DEMO_PASSWORD=... npm run seed:portal-flow` trong `backend`.
 - Trước mỗi buổi demo chạy `npm run demo:status` trong `backend` (chỉ đọc) để xem hồ sơ demo còn dùng được không; nếu báo cũ thì chạy `npm run demo:refresh` (dựng lại dữ liệu demo bằng `seed:demo --reset`).
 
