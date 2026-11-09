@@ -1,4 +1,4 @@
-import { ArrowRight, Briefcase, Building2, ClipboardCheck, FileText, LogIn, Phone, Search } from 'lucide-react';
+import { ArrowRight, Briefcase, Building2, ClipboardCheck, FileText, LogIn, Phone } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { groups } from '../portal/model';
 import './bank-home.css';
@@ -10,17 +10,22 @@ export const STAFF_LOGIN_HREF = '/?dang-nhap=1';
 export function BankHome() {
   return <div className="bank-home">
     <div className="bank-topbar" role="navigation" aria-label="Liên kết nhanh">
-      <a href="#doanh-nghiep">Doanh nghiệp</a><a href="#ho-so-can-chuan-bi">Hồ sơ cần chuẩn bị</a><a href="#ho-tro">Hỗ trợ</a>
+      <a href="/portal">Vay vốn doanh nghiệp</a><a href="#doanh-nghiep">Doanh nghiệp</a><a href="#ho-so-can-chuan-bi">Hồ sơ cần chuẩn bị</a><a href="#ho-tro">Hỗ trợ</a>
     </div>
     <header className="bank-header">
       <a href="/" aria-label="Trang chủ"><BrandLogo subtitle="Ngân hàng" /></a>
-      <a className="bank-login" href={STAFF_LOGIN_HREF}><LogIn size={18} aria-hidden="true" /> Đăng nhập</a>
+      <div className="bank-header-actions"><a className="bank-header-link" href={PORTAL_PATH}>Vay vốn doanh nghiệp</a><a className="bank-login" href={STAFF_LOGIN_HREF}><LogIn size={18} aria-hidden="true" /> Cán bộ đăng nhập</a></div>
     </header>
     <section className="bank-hero" aria-label="Giới thiệu">
       <div className="bank-hero-copy">
-        <h1>SME hân hạnh phục vụ!</h1>
-        <p>Quý khách đang tìm kiếm?</p>
-        <a className="bank-search" href={PORTAL_PATH}><Search size={20} aria-hidden="true" /> Vay vốn lưu động cho doanh nghiệp…</a>
+        <span className="bank-promo-tag">Dành cho doanh nghiệp nhỏ và vừa</span>
+        <h1>Vay vốn lưu động doanh nghiệp, nộp hồ sơ trực tuyến</h1>
+        <p>Hạn mức đến 10 tỷ đồng. Gửi hồ sơ, bổ sung chứng từ và nhận kết quả ngay trên cổng doanh nghiệp.</p>
+        <div className="bank-promo-actions">
+          <a className="bank-promo-cta" href={PORTAL_PATH}>Đăng ký vay vốn ngay <ArrowRight size={18} aria-hidden="true" /></a>
+          <a className="bank-promo-link" href={PORTAL_PATH}>Đã có hồ sơ? Đăng nhập cổng doanh nghiệp</a>
+        </div>
+        <ul className="bank-promo-points"><li>Nộp hồ sơ 24/7, không cần đến quầy</li><li>Theo dõi tiến độ từng bước</li><li>Nhận kết quả phê duyệt trực tiếp trên cổng</li></ul>
       </div>
       <nav className="bank-tiles" aria-label="Nhóm khách hàng">
         <a className="bank-tile active" href="#doanh-nghiep"><Briefcase size={34} aria-hidden="true" /><span>Doanh nghiệp</span></a>

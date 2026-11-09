@@ -32,3 +32,13 @@
 .bank-cta { display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border-radius:10px; background:#0b4f9c; color:#fff; font-weight:700; text-decoration:none; }
 .bank-footer { padding:24px 40px; background:#0b2f5e; color:#cbd5e1; font-size:13px; text-align:center; }
 @media (max-width:640px) { .bank-topbar, .bank-header { margin-left:12px; margin-right:12px; padding-left:16px; padding-right:16px; } .bank-hero { padding:80px 16px 0; } .bank-section { padding:40px 16px; } .bank-hero-copy { padding-top:90px; } }
+
+.bank-header-actions { display:flex; align-items:center; gap:18px; }
+.bank-header-link { color:#0b4f9c; font-weight:700; }
+.bank-promo-tag { display:inline-block; margin-bottom:14px; padding:6px 14px; border-radius:999px; background:rgba(255,255,255,.18); font-size:13px; font-weight:700; }
+.bank-promo-actions { display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin-bottom:22px; }
+.bank-promo-cta { display:inline-flex; align-items:center; gap:10px; padding:16px 32px; border-radius:12px; background:#fff; color:#0b4f9c; font-size:18px; font-weight:800; text-decoration:none; box-shadow:0 8px 20px rgba(0,0,0,.25); }
+.bank-promo-cta:hover { background:#eaf2fd; }
+.bank-promo-link { color:#fff; font-weight:600; text-decoration:underline; }
+.bank-promo-points { list-style:none; margin:0; padding:0; display:flex; gap:26px; flex-wrap:wrap; font-size:14px; opacity:.95; }
+.bank-promo-points li::before { content:'✓ '; font-weight:800; }

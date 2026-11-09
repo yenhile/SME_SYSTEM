@@ -7,7 +7,7 @@ const app = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
 
 test('the Enterprise lending entries on the bank home lead to the enterprise portal', () => {
   assert.match(home, /PORTAL_PATH = '\/portal'/);
-  assert.ok((home.match(/href=\{PORTAL_PATH\}/g) ?? []).length >= 4, 'vay von, theo doi ho so, o tim kiem, nut bat dau');
+  assert.ok((home.match(/href=\{PORTAL_PATH\}/g) ?? []).length >= 5, 'vay von, theo doi ho so, o tim kiem, nut bat dau');
   assert.match(home, /id="doanh-nghiep"/);
   assert.match(home, /Vay vốn doanh nghiệp/);
 });
