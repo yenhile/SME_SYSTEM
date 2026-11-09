@@ -66,8 +66,9 @@ export function buildPredictPayload(input: FeatureInput & { industry?: string })
 }
 
 /** Mức cảnh báo từ ml-service → RiskLevel đang lưu trong DB (không đổi lược đồ). */
-export function riskLevelOf(alertLevel: string): 'THAP' | 'TRUNG_BINH' | 'CAO' {
+export function riskLevelOf(alertLevel: string, stage?: string): 'THAP' | 'TRUNG_BINH' | 'CAO' {
   if (alertLevel === 'KHAN' || alertLevel === 'QUA_HAN') return 'CAO';
-  if (alertLevel === 'CHU_Y') return 'TRUNG_BINH';
+  // Thẩm định không dùng mức Chú ý (L9/Q4): ở ngưỡng 35% mức này chỉ đúng khoảng 41% và báo nhầm khoảng 30% hồ sơ đúng hạn; chỉ giữ Khẩn (từ 60%) và Quá hạn.
+  if (alertLevel === 'CHU_Y') return stage === 'THAM_DINH' ? 'THAP' : 'TRUNG_BINH';
   return 'THAP';
 }

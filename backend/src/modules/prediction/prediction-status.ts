@@ -24,7 +24,7 @@ export const CURRENT_MODEL_PREFIX = 'v4';
  * Dự báo MỚI NHẤT chỉ được dùng khi nói về hồ sơ hiện tại nếu: do mô hình v4 tạo, đúng công đoạn đang mở (modelVersion kết thúc bằng -<công đoạn>),
  * và được tạo sau lúc hồ sơ vào công đoạn đó. Ngược lại trả null để giao diện ghi "Chưa có dự báo" thay vì hiện cảnh báo cũ.
  */
-export function currentStagePrediction<T extends { modelVersion: string; predictionTimestamp: Date }>(
+export function currentStagePrediction<T extends { modelVersion: string; predictionTimestamp: Date; riskLevel?: string }>(
   predictions: T[] | null | undefined,
   currentStage: string,
   open: { enteredAt: Date } | null | undefined,
@@ -32,7 +32,10 @@ export function currentStagePrediction<T extends { modelVersion: string; predict
   const latest = predictions?.[0];
   if (!latest || !open || typeof latest.modelVersion !== 'string') return null;
   if (!latest.modelVersion.startsWith(CURRENT_MODEL_PREFIX) || !latest.modelVersion.endsWith(`-${currentStage}`)) return null;
-  return latest.predictionTimestamp.getTime() >= open.enteredAt.getTime() ? latest : null;
+  if (latest.predictionTimestamp.getTime() < open.enteredAt.getTime()) return null;
+  // Dòng dự báo Thẩm định lưu trước khi bỏ mức Chú ý (L9) vẫn được hiển thị đúng quy tắc mới mà không cần chấm lại.
+  if (currentStage === 'THAM_DINH' && latest.riskLevel === 'TRUNG_BINH') return { ...latest, riskLevel: 'THAP' };
+  return latest;
 }
 
 export function predictionStatusOf(hasPrediction: boolean): PredictionStatus {

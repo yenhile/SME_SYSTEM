@@ -26,3 +26,18 @@ test('an in-progress loan without stage history is not described as finished',()
   assert.match(PREDICTION_UNAVAILABLE_MESSAGES.NO_STAGE_HISTORY,/đang xử lý/);
   assert.match(PREDICTION_UNAVAILABLE_MESSAGES.NO_ACTIVE_STAGE,/hoàn tất/);
 });
+
+test('L9: the Watch level is not used at appraisal; it is still used at intake', () => {
+  const {riskLevelOf}=require('../dist/modules/prediction/prediction-features');
+  assert.equal(riskLevelOf('CHU_Y','THAM_DINH'),'THAP');
+  assert.equal(riskLevelOf('CHU_Y','TIEP_NHAN'),'TRUNG_BINH');
+  assert.equal(riskLevelOf('CHU_Y'),'TRUNG_BINH', 'no stage given keeps the old mapping');
+  for (const stage of ['THAM_DINH','TIEP_NHAN']) { assert.equal(riskLevelOf('KHAN',stage),'CAO'); assert.equal(riskLevelOf('QUA_HAN',stage),'CAO'); assert.equal(riskLevelOf('BINH_THUONG',stage),'THAP'); }
+});
+test('L9: an appraisal prediction stored as Watch before the change is shown as Normal, an intake one is not touched', () => {
+  const stored = (modelVersion) => [{ modelVersion, predictionTimestamp: new Date('2026-11-05T03:00:00Z'), riskLevel: 'TRUNG_BINH' }];
+  assert.equal(currentStagePrediction(stored('v4.0-THAM_DINH'), 'THAM_DINH', open).riskLevel, 'THAP');
+  assert.equal(currentStagePrediction(stored('v4.0-TIEP_NHAN'), 'TIEP_NHAN', open).riskLevel, 'TRUNG_BINH');
+  const urgent = [{ modelVersion: 'v4.0-THAM_DINH', predictionTimestamp: new Date('2026-11-05T03:00:00Z'), riskLevel: 'CAO' }];
+  assert.equal(currentStagePrediction(urgent, 'THAM_DINH', open).riskLevel, 'CAO');
+});
