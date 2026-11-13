@@ -98,7 +98,6 @@ export const AppraisalQueue: React.FC<AppraisalQueueProps> = ({ refreshKey, onSe
       <div className="page-heading loan-page-heading">
         <div>
           <h2>Thẩm định &amp; phê duyệt</h2>
-          <p>Hồ sơ đang ở công đoạn Thẩm định; quá hạn và sắp đến hạn xếp trước</p>
         </div>
       </div>
       <div className="lt-queue-tabs" role="tablist" aria-label="Nhóm hồ sơ">

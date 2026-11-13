@@ -26,8 +26,8 @@ export class UsersController {
 
   @Post()
   @Roles(RoleCode.ADMIN)
-  create(@Body() body: CreateUserDto) {
-    return this.usersService.create(body);
+  create(@Body() body: CreateUserDto, @CurrentUser('id') actorId: string) {
+    return this.usersService.create(body, actorId);
   }
 
   @Put(':id')

@@ -71,6 +71,24 @@ export interface LoanFilterValues {
 }
 export const EMPTY_LOAN_FILTERS: LoanFilterValues = { code: '', company: '', stage: '', status: '', loanType: '', officer: '', overdueOnly: false };
 
+export interface StatusGroup { stage: string; label: string; statuses: ReadonlyArray<readonly [string, string]> }
+
+/** Công đoạn chứa trạng thái; rỗng khi trạng thái không thuộc nhóm nào. */
+export function stageOfStatus(groups: ReadonlyArray<StatusGroup>, status: string): string {
+  return groups.find(group => group.statuses.some(([value]) => value === status))?.stage ?? '';
+}
+
+/** Đổi công đoạn: bỏ trạng thái không thuộc công đoạn mới; hồ sơ Hoàn tất không còn tính quá hạn SLA nên bỏ điều kiện đó. */
+export function withStageChoice(values: LoanFilterValues, groups: ReadonlyArray<StatusGroup>, stage: string): LoanFilterValues {
+  const keepStatus = !stage || stageOfStatus(groups, values.status) === stage;
+  return { ...values, stage, status: keepStatus ? values.status : '', overdueOnly: stage === 'HOAN_TAT' ? false : values.overdueOnly };
+}
+
+/** Chọn trạng thái thì công đoạn tự theo trạng thái đó. */
+export function withStatusChoice(values: LoanFilterValues, groups: ReadonlyArray<StatusGroup>, status: string): LoanFilterValues {
+  return status ? withStageChoice({ ...values, status }, groups, stageOfStatus(groups, status)) : { ...values, status: '' };
+}
+
 export function hasActiveFilters(filters: LoanFilterValues): boolean {
   return Object.values(filters).some(value => value === true || (typeof value === 'string' && value.trim() !== ''));
 }

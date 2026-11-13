@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { changedReportSections, clarificationAnswered, debtToEquityText, evidenceState, moneyText, REPORT_CONDITIONS_LABEL, REPORT_PROPOSAL_LABEL, REPORT_SECTIONS, type AppraisalReportView } from '../appraisalWorkspace';
+import { changedReportSections, clarificationAnswered, debtToEquityText, evidenceState, moneyText, parseRateText, rateText, REPORT_CONDITIONS_LABEL, REPORT_PROPOSAL_LABEL, REPORT_RATE_KEY, REPORT_SECTIONS, type AppraisalReportView } from '../appraisalWorkspace';
 import type { LoanApplication } from '../types';
 
 const REPORT_STATUS: Record<string, string> = { SUBMITTED: 'Chờ quyết định', CLARIFICATION_REQUIRED: 'CBTD đang làm rõ', DECIDED: 'Đã có quyết định', DRAFT: 'Đang lập' };
@@ -15,6 +15,7 @@ export function AppraisalReportCard({ loan, report, finished }: { loan: LoanAppl
   const emptyHint = loan.businessPolicyVersion ? 'Chưa có tờ trình' : 'Hồ sơ theo quy trình cũ, không có tờ trình';
 
   const changed = shown ? changedReportSections(versions, shown) : new Set<string>();
+  const proposedRate = shown ? parseRateText(shown.content[REPORT_RATE_KEY] ?? '') : null;
   const answered = shown ? clarificationAnswered(report?.events, versions, shown) : null;
   const evidence = report && shown ? evidenceState(report, shown, finished) : null;
   const isOlder = Boolean(shown) && shown !== versions[0];
@@ -55,6 +56,7 @@ export function AppraisalReportCard({ loan, report, finished }: { loan: LoanAppl
           <div><dt>Số tiền đề xuất</dt><dd>{moneyText(loan.proposedAmount)}</dd></div>
           <div><dt>Hạn mức chính thức</dt><dd>{moneyText(loan.officialAmount)}</dd></div>
           <div><dt>Thời hạn</dt><dd>{loan.loanTermMonths} tháng</dd></div>
+          <div><dt>Lãi suất đề xuất</dt><dd>{proposedRate === null ? 'Chưa có (tờ trình lập trước khi có trường này)' : rateText(proposedRate)}{changed.has(REPORT_RATE_KEY) && <> <span className="aw-tag aw-tag-blue">Đã sửa</span></>}</dd></div>
           <div><dt>Đề xuất / vốn điều lệ</dt><dd>{debtToEquityText(loan)}</dd></div>
         </dl>
         <div className="aw-proposal-conditions">

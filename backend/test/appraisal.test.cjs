@@ -42,6 +42,7 @@ function mockAppraisalFixture(initialReport = null) {
     predictions: 0,
     notifications: [],
     locks: [],
+    band: { id: 'band-1', loanType: 'VON_LUU_DONG', minRate: '7', maxRate: '12', effectiveFrom: new Date('2026-01-01T00:00:00+07:00'), basis: 'Khung thử nghiệm' },
   };
 
   const tx = {
@@ -114,6 +115,9 @@ function mockAppraisalFixture(initialReport = null) {
       findFirst: async () => null,
       findMany: async () => [],
     },
+    interestRateBand: {
+      findFirst: async () => state.band,
+    },
   };
 
   const prisma = {
@@ -152,6 +156,7 @@ function fullAnalysisContent(overrides = {}) {
     collateralAssessment: 'Không áp dụng theo chính sách cấp tín dụng tín chấp SME.',
     risks: 'Rủi ro biến động giá nguyên vật liệu được kiểm soát qua hợp đồng kỳ hạn.',
     recommendation: 'Đề xuất phê duyệt hạn mức 5.000.000.000 VNĐ.',
+    proposedInterestRate: '8.5',
     proposedConditions: 'Duy trì số dư tài khoản tiền gửi tại chi nhánh.',
     ...overrides,
   };
@@ -195,6 +200,7 @@ test('2. D5-02 & D5-05: Draft saving (DRAFT_SAVED) validates revision and stores
     collateralAssessment: '',
     risks: '',
     recommendation: '',
+    proposedInterestRate: '',
     proposedConditions: '',
   });
 
@@ -352,6 +358,7 @@ test('6. D5-05: Clarification cycle: THAM_QUYEN requests clarification -> CLARIF
   assert.equal(clarified.status, 'CLARIFICATION_REQUIRED');
   assert.equal(clarified.clarification.message, 'Cần làm rõ thêm nguồn trả nợ từ hợp đồng thứ hai.');
   assert.ok(state.notifications.some(n => n.title === 'Tờ trình cần làm rõ'));
+  assert.ok(state.notifications.some(n => n.title === 'Tờ trình cần làm rõ' && n.message.startsWith('Hồ sơ HS-2026-001: ')));
 
   // 3. CBTD updates draft with clarification and submits version 2
   const revisedContent = { ...content, repaymentSource: 'Dòng tiền bổ sung hợp đồng HĐ-2026-B.' };
@@ -509,4 +516,19 @@ test('10. ML: each submit and each clarification request refreshes the predictio
   await service.mutate('loan-1', 'DRAFT_SAVED', { expectedRevision: 3, clientRequestId: validUUID(), content: { ...content, repaymentSource: 'Bổ sung.' } }, cbtd);
   await service.mutate('loan-1', 'SUBMITTED', { expectedRevision: 4, clientRequestId: validUUID() }, cbtd);
   assert.equal(state.predictions, 3, 're-submit after clarification');
+});
+
+test('DEC-13 LS-2: trình tờ trình cần khung lãi suất hiệu lực và mức đề xuất nằm trong khung', async () => {
+  const ready = async (rate, band) => {
+    const fx = mockAppraisalFixture(null);
+    if (band !== undefined) fx.state.band = band;
+    const saved = await fx.service.mutate('loan-1', 'DRAFT_SAVED', { expectedRevision: 0, clientRequestId: validUUID(), content: fullAnalysisContent({ proposedInterestRate: rate }) }, { id: 'cbtd-1', activeRole: 'CBTD' });
+    await fx.service.mutate('loan-1', 'SUBMITTED', { expectedRevision: saved.revision, clientRequestId: validUUID() }, { id: 'cbtd-1', activeRole: 'CBTD' });
+    return fx.state;
+  };
+  await assert.rejects(ready('12.5'), e => e.getStatus() === 400 && /trong khung 7–12%\/năm/.test(e.message));
+  await assert.rejects(ready('6.99'), e => e.getStatus() === 400);
+  await assert.rejects(ready('8', null), e => e.getStatus() === 400 && /Chưa có khung lãi suất hiệu lực/.test(e.message));
+  const state = await ready('12');
+  assert.equal(state.transitions.length, 1);
 });

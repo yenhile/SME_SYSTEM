@@ -29,7 +29,7 @@ function json(relative) { return JSON.parse(read(relative)); }
 function sha256(relative) { return createHash('sha256').update(fs.readFileSync(resolveInside(relative))).digest('hex'); }
 
 const required = [
-  'AGENTS.md', 'GEMINI.md', 'Project.md',
+  'AGENTS.md', 'Project.md',
   '.agents/AGENTS.md', '.agents/AI-SETUP.md', '.agents/skills.json',
   '.agents/workflow/preflight.md', '.agents/workflow/quick-ref.md', '.agents/workflow/impact-analysis.md',
   '.agents/rules/ai-rules.md', '.agents/rules/ai-delivery-workflow.md',
@@ -43,18 +43,16 @@ const required = [
 for (const file of required) check(read(file).trim().length > 0, `Nonempty file: ${file}`);
 
 const entry = read('AGENTS.md');
-const gemini = read('GEMINI.md');
 const core = read('.agents/AGENTS.md');
 check(entry.includes('.agents/AGENTS.md') && entry.includes('Project.md'), 'Codex entry references policy and context');
-check(gemini.includes('AGENTS.md') && gemini.includes('.agents/AGENTS.md'), 'Gemini entry references the same policy');
-check([entry, gemini, core].every(text => !text.startsWith('---')), 'AGENTS and GEMINI have no rule frontmatter');
-check(Buffer.byteLength(entry + gemini + core) < 24000, 'Combined entry and core text below local 24 KB budget');
+check([entry, core].every(text => !text.startsWith('---')), 'AGENTS entries have no rule frontmatter');
+check(Buffer.byteLength(entry + core) < 24000, 'Combined entry and core text below local 24 KB budget');
 const ids = Array.from({ length: 12 }, (_, i) => `SME-AI-${String(i + 1).padStart(3, '0')}`);
 for (const id of ids) {
   const section = core.split(new RegExp(`^## ${id}[^\\n]*\\n`, 'm'))[1]?.split(/^## /m)[0];
   check(Boolean(section?.trim().length >= 120), `Core defines ${id}`);
 }
-for (const file of ['AGENTS.md', 'GEMINI.md', '.agents/rules/ai-rules.md',
+for (const file of ['AGENTS.md', '.agents/rules/ai-rules.md',
   '.agents/workflow/preflight.md', '.agents/workflow/quick-ref.md', '.agents/rules/ai-delivery-workflow.md']) {
   const text = read(file);
   check(['SME-AI-011', 'SME-AI-012', 'impact-analysis.md'].every(part => text.includes(part)),

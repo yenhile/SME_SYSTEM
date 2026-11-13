@@ -7,6 +7,7 @@ const { JwtStrategy } = require('../dist/modules/auth/jwt.strategy');
 const { UsersService } = require('../dist/modules/users/users.service');
 const { WorkflowService } = require('../dist/modules/workflow/workflow.service');
 const { AdminController } = require('../dist/admin.controller');
+const { AdminService } = require('../dist/admin.service');
 const { assertIndependent } = require('../dist/modules/appraisal/appraisal.logic');
 const { withCoordination } = require('./helpers/coordination-fixture.cjs');
 
@@ -109,6 +110,7 @@ test('D7-01 & D7-02: UsersService enforces admin self-protection and refuses CBT
         deleteMany: async () => { writes.push({ op: 'deleteRoles' }); },
         createMany: async () => { writes.push({ op: 'createRoles' }); },
       },
+      adminAuditLog: { createMany: async ({ data }) => ({ count: data.length }) },
     };
     const service = new UsersService(withCoordination({
       $transaction: async fn => fn(tx),
@@ -252,17 +254,21 @@ test('D7-05: Admin SLA configuration update applies only to new entries; preserv
     applicationStageHistory: {
       findMany: async () => stageHistories,
     },
+    user: { findUnique: async () => ({ username: 'admin', fullName: 'Admin' }) },
+    adminAuditLog: { createMany: async ({ data }) => ({ count: data.length }) },
   };
+  prismaMock.workflowStage.findUnique = async ({ where }) => ({ ...stages.find(s => s.stageCode === where.stageCode) });
+  prismaMock.$transaction = async fn => fn(prismaMock);
 
-  const adminController = new AdminController(prismaMock);
+  const adminController = new AdminController(new AdminService(prismaMock));
 
-  // 1. Admin cập nhật standardSlaHours của Thẩm định từ 48h lên 72h
+  // 1. Admin cập nhật standardSlaHours của Thẩm định từ 48h lên 72h; tên công đoạn chỉ xem nên giữ nguyên
   const updatedStage = await adminController.updateStage('THAM_DINH', {
     stageName: 'Thẩm định chi tiết',
     standardSlaHours: 72,
-  });
+  }, 'admin-1');
   assert.equal(updatedStage.standardSlaHours, 72);
-  assert.equal(updatedStage.stageName, 'Thẩm định chi tiết');
+  assert.equal(updatedStage.stageName, 'Thẩm định');
 
   // 2. Bản ghi lịch sử đã tạo trước đó (hist-1) vẫn giữ nguyên snapshot 48h, không bị thay đổi
   assert.equal(stageHistories[0].slaStandardHours, 48);
@@ -275,3 +281,45 @@ test('D7-05: Admin SLA configuration update applies only to new entries; preserv
   assert.equal(dto.standardSlaHours, 10);
 });
 
+
+test('AD-01: Admin không tự đổi vai trò của chính mình, vẫn cấp vai trò cho người khác', async () => {
+  const fixture = currentRoles => {
+    const writes = [];
+    const tx = {
+      $queryRaw: async () => [],
+      portalRequest: { count: async () => 0 },
+      loanApplication: { count: async () => 0 },
+      role: { findMany: async ({ where }) => where.code.in.map(code => ({ id: code, code })) },
+      user: {
+        update: async ({ data }) => { writes.push({ op: 'updateUser', data }); return data; },
+        findUnique: async ({ where }) => ({ id: where.id, username: 'demo', roles: currentRoles.map(code => ({ role: { code } })) }),
+      },
+      userRole: {
+        deleteMany: async () => { writes.push({ op: 'deleteRoles' }); },
+        createMany: async () => { writes.push({ op: 'createRoles' }); },
+      },
+      adminAuditLog: { createMany: async ({ data }) => ({ count: data.length }) },
+    };
+    return { service: new UsersService(withCoordination({ $transaction: async fn => fn(tx), user: tx.user })), writes };
+  };
+
+  const self = fixture(['ADMIN']);
+  await assert.rejects(
+    self.service.update('admin-1', { roles: ['ADMIN', 'THAM_QUYEN'] }, 'admin-1'),
+    e => e.getStatus() === 400 && /không thể tự thay đổi vai trò của chính mình/i.test(e.message)
+  );
+  assert.equal(self.writes.length, 0);
+
+  const sameRoles = fixture(['ADMIN']);
+  await sameRoles.service.update('admin-1', { fullName: 'Tên mới', roles: ['ADMIN'] }, 'admin-1');
+  assert.ok(sameRoles.writes.some(w => w.op === 'updateUser'));
+  assert.ok(!sameRoles.writes.some(w => w.op === 'deleteRoles'));
+
+  const profileOnly = fixture(['ADMIN']);
+  await profileOnly.service.update('admin-1', { phone: '0900000000' }, 'admin-1');
+  assert.deepEqual(profileOnly.writes, [{ op: 'updateUser', data: { phone: '0900000000' } }]);
+
+  const other = fixture(['CBTD']);
+  await other.service.update('officer-1', { roles: ['CBTD', 'THAM_QUYEN'] }, 'admin-1');
+  assert.ok(other.writes.some(w => w.op === 'createRoles'));
+});

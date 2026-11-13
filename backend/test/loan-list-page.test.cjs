@@ -121,3 +121,16 @@ test('compareLoanQueue keeps equal deadlines stable by the newest loan first',()
   const row=(createdAt)=>({currentStage:'THAM_DINH',completedAt:null,createdAt:new Date(createdAt),sla:{isOverdue:false,dueAt:new Date('2026-12-01T03:00:00Z'),waitingEnterprise:false}});
   assert.ok(compareLoanQueue(row('2026-11-02'),row('2026-11-01'))<0);
 });
+
+test('the officer list can be split into loans still in progress and loans already finished',async()=>{
+  const officer={id:'cbtd',roles:['CBTD'],activeRole:'CBTD'};
+  const {calls,service}=harness(rows);
+  await service.findAll(officer,{lifecycle:'active'});
+  assert.deepEqual(calls.at(-1).where.AND,[{completedAt:null,currentStage:{not:'HOAN_TAT'}}]);
+  assert.equal(calls.at(-1).where.assignedTo,'cbtd');
+  await service.findAll(officer,{lifecycle:'finished'});
+  assert.deepEqual(calls.at(-1).where.AND,[{OR:[{completedAt:{not:null}},{currentStage:'HOAN_TAT'}]}]);
+  await service.findAll(officer,{});
+  assert.equal(calls.at(-1).where.AND,undefined);
+  await assert.rejects(service.findAll(officer,{lifecycle:'all'}),error=>error.getStatus()===400);
+});

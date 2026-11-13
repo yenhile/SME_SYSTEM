@@ -95,3 +95,26 @@ test('runtime malformed nested data reports structural errors', () => {
 test('unknown fields and non-plain structures are rejected instead of silently posted', () => {
   for (const data of [{ unexpected: 'x' }, { capitalPlan: { bankAmount: 100 } }, { capitalPlan: { costs: [{ unexpected: 'x' }] } }, { collateral: { unexpected: true } }, { collateral: new Date() }]) assert.ok(validateV2(data).some(issue => issue.severity === 'error'));
 });
+
+test('a draft is only created on the server once the enterprise has named itself',()=>{
+  assert.equal(draftRules.canCreateDraft({}),false);
+  assert.equal(draftRules.canCreateDraft({contactName:'A',contactEmail:'a@x.test'}),false);
+  assert.equal(draftRules.canCreateDraft({companyName:'  '}),false);
+  assert.equal(draftRules.canCreateDraft({companyName:'Công ty A'}),true);
+  assert.equal(draftRules.canCreateDraft({taxCode:'0101234567'}),true);
+});
+
+test('a new form starts clean, filled with the account contact and the latest company details',()=>{
+  const previous={companyName:'Công ty A',taxCode:'0101234567',industry:'Dệt may',address:'Hà Nội',annualRevenue:5e9,revenuePeriod:'2025',loanPurpose:'Mua vải',proposedAmount:1e9};
+  const defaults={...draftRules.companyPrefill(previous),contactName:'Lan',contactEmail:'lan@x.test'};
+  assert.deepEqual(defaults,{companyName:'Công ty A',taxCode:'0101234567',industry:'Dệt may',address:'Hà Nội',contactName:'Lan',contactEmail:'lan@x.test'});
+  const state=draftRules.initialDraftState(null,null,true,defaults);
+  assert.equal(state.dirty,false);
+  assert.deepEqual(state.data,defaults);
+  assert.deepEqual(draftRules.companyPrefill(undefined),{});
+});
+
+test('fields the bank checks before submission are marked as required',()=>{
+  for(const key of ['companyName','taxCode','industry','establishedYear','annualRevenue','revenuePeriod','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths']) assert.ok(draftRules.REQUIRED_FOR_SUBMIT.has(key),key);
+  assert.equal(draftRules.REQUIRED_FOR_SUBMIT.has('contactPosition'),false);
+});

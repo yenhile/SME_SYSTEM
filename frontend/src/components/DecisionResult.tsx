@@ -1,4 +1,4 @@
-import { REJECTION_REASONS } from '../appraisalWorkspace';
+import { bandText, rateText as formatRate, REJECTION_REASONS } from '../appraisalWorkspace';
 import type { LoanApplication } from '../types';
 
 const OUTCOME_TITLES: Record<string, string> = {
@@ -28,6 +28,9 @@ export function DecisionResult({ loan }: { loan: LoanApplication }) {
       {loan.currentStatus === 'APPROVED' ? <>
         <Row label="Số tiền phê duyệt" value={moneyText(loan.approvedAmount)} />
         <Row label="Lãi suất phê duyệt" value={rateText(loan.interestRate)} />
+        {loan.rateDecision?.proposedInterestRate != null && <Row label="Lãi suất CBTD đề xuất" value={formatRate(loan.rateDecision.proposedInterestRate)} />}
+        {loan.rateDecision?.interestRateReason && <Row label="Lý do khác mức đề xuất" value={loan.rateDecision.interestRateReason} />}
+        {loan.rateDecision?.band && <Row label="Khung áp dụng" value={`${bandText(loan.rateDecision.band)} (${loan.rateDecision.band.basis})`} />}
       </> : <>
         <Row label="Mã lý do" value={reasonText(loan.rejectionReasonCode)} />
         <Row label="Giải trình" value={loan.rejectionNote || NOT_RECORDED} />

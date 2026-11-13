@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { appraisalActions, debtToEquityText, isLoanUuid, loanTypeLabel, moneyText, type AppraisalReportView } from '../appraisalWorkspace';
+import { appraisalActions, debtToEquityText, isLoanUuid, loanTypeLabel, moneyText, proposedRateBasis, type AppraisalReportView } from '../appraisalWorkspace';
 import { predictionLabel, slaDeadlineCell, slaStateLabel, predictionHeadline } from '../slaDisplay';
 import type { PortalFormConfig } from '../portal/model';
 import type { LoanApplication } from '../types';
@@ -12,6 +12,7 @@ import { AppraisalReportCard } from './AppraisalReportCard';
 import { JumpToDecision } from './JumpToDecision';
 import { DecisionResult } from './DecisionResult';
 import { PortalIntakeDetails } from './PortalIntakeDetails';
+import { SuccessToast } from './SuccessToast';
 import './appraisal-workspace.css';
 
 interface AppraisalWorkspaceProps {
@@ -106,9 +107,11 @@ export function AppraisalWorkspace({ reference, onBack, onChanged, onResolved, l
 
   const actions = appraisalActions(loan, report, activeRole);
   const limit = Number(loan.officialAmount || loan.proposedAmount);
+  const rateBasis = proposedRateBasis(report);
   const finished = Boolean(loan.completedAt) || loan.currentStage === 'HOAN_TAT';
   const writeBlocked = Boolean(loan.coordinationRestrictions?.writeBlocked);
   const canEdit = !lookup && activeRole === 'THAM_QUYEN' && loan.currentStage === 'THAM_DINH' && !finished && !writeBlocked;
+  const canPredict = !finished && !lookup && ['THAM_QUYEN', 'QUAN_LY'].includes(activeRole ?? '');
   const deadline = slaDeadlineCell(finished ? null : loan.slaSummary);
   const prediction = loan.delayPredictions?.[0];
   const hasPrediction = Boolean(prediction) && loan.predictionStatus !== 'INCOMPATIBLE_PA1';
@@ -126,7 +129,7 @@ export function AppraisalWorkspace({ reference, onBack, onChanged, onResolved, l
       } else if (decision.action === 'approve') {
         await api.post(`/workflow/${loan.id}/transition`, {
           targetStage: 'HOAN_TAT', targetStatus: 'APPROVED', reportVersionId: actions.versionId,
-          approvedAmount: decision.approvedAmount, interestRate: decision.interestRate,
+          approvedAmount: decision.approvedAmount, interestRate: decision.interestRate, interestRateReason: decision.interestRateReason,
           notes: `Phê duyệt cấp tín dụng: ${decision.approvedAmount.toLocaleString('vi-VN')} VNĐ, Lãi suất: ${decision.interestRate}%/năm`,
         });
       } else {
@@ -176,7 +179,7 @@ export function AppraisalWorkspace({ reference, onBack, onChanged, onResolved, l
       <button type="button" className="btn btn-secondary aw-refresh" disabled={busy} onClick={() => void load()} aria-label="Tải lại hồ sơ"><RefreshCw size={16} aria-hidden="true" /></button>
     </header>
 
-    {notice && <p role="status" className="aw-alert aw-alert-success">{notice}</p>}
+    <SuccessToast message={notice} onClose={() => setNotice('')} />
 
     <div className="aw-layout">
       <div className="aw-main">
@@ -206,7 +209,7 @@ export function AppraisalWorkspace({ reference, onBack, onChanged, onResolved, l
           <div className="aw-risk">
             <div className="aw-risk-heading">
               <span className="aw-label">Nguy cơ trễ SLA</span>
-              {!finished && !lookup && <button type="button" className="aw-link" disabled={busy} onClick={() => void rePredict()}>Chạy lại</button>}
+              {canPredict && <button type="button" className="aw-link" disabled={busy} onClick={() => void rePredict()}>Chạy lại</button>}
             </div>
             <strong>{hasPrediction && prediction ? predictionHeadline(prediction) : predictionLabel(loan.predictionStatus)}</strong>
             {reasons.length > 0 && <ul>{reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}
@@ -222,7 +225,7 @@ export function AppraisalWorkspace({ reference, onBack, onChanged, onResolved, l
               <p className="aw-hint">Bạn đang tra cứu từ Danh sách hồ sơ nên không có thao tác trên hồ sơ này.</p>
               <button type="button" className="btn btn-secondary aw-submit" onClick={() => onOpenForReview?.(reference)}>Mở tại Thẩm định &amp; phê duyệt</button>
             </section>
-            : <AppraisalDecisionPanel key={`${loan.id}:${actions.versionId ?? ''}:${report?.status ?? ''}`} actions={actions} limit={limit} busy={busy} error={actionError} clarifyBlockReason={report?.makerChecker?.clarifyBlockReason} onSubmit={decision => void submitDecision(decision)} />}
+            : <AppraisalDecisionPanel key={`${loan.id}:${actions.versionId ?? ''}:${report?.status ?? ''}`} actions={actions} limit={limit} busy={busy} error={actionError} clarifyBlockReason={report?.makerChecker?.clarifyBlockReason} proposedRate={rateBasis.rate} proposedRateNote={rateBasis.note} proposalMissing={rateBasis.blocksApproval} band={loan.rateBand} onSubmit={decision => void submitDecision(decision)} />}
         </div>
       </aside>
     </div>

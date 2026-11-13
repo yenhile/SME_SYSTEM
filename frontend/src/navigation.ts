@@ -1,6 +1,6 @@
 import type { RoleCode } from './types';
 
-export type Tab = 'dashboard' | 'users' | 'companies' | 'loans' | 'appraisal' | 'issues' | 'assignments' | 'activity' | 'settings';
+export type Tab = 'dashboard' | 'users' | 'companies' | 'loans' | 'appraisal' | 'assignments' | 'activity' | 'settings' | 'rates';
 type GroupId = 'overview' | 'operations' | 'loans' | 'system';
 interface NavItem {
   tab: Tab;
@@ -18,19 +18,20 @@ export const NAV_GROUPS: { id: GroupId; label: string }[] = [
   { id: 'system', label: 'Hệ thống' },
 ];
 
-const LOAN_ROLES: readonly RoleCode[] = ['CBTD', 'QUAN_LY', 'THAM_QUYEN'];
+/** Admin mở được mọi trang nghiệp vụ ở chế độ chỉ xem; backend chặn mọi thao tác ghi của Admin. */
+const LOAN_ROLES: readonly RoleCode[] = ['CBTD', 'QUAN_LY', 'THAM_QUYEN', 'ADMIN'];
 
 export const NAV_ITEMS: NavItem[] = [
-  { tab: 'dashboard', group: 'overview', label: 'Dashboard tổng quan', roles: ['QUAN_LY', 'THAM_QUYEN'] },
+  { tab: 'dashboard', group: 'overview', label: 'Dashboard tổng quan', roles: ['CBTD', 'QUAN_LY', 'THAM_QUYEN', 'ADMIN'] },
   { tab: 'users', group: 'operations', label: 'Liên hệ cá nhân', roles: ['ADMIN'] },
   { tab: 'companies', group: 'operations', label: 'Liên hệ doanh nghiệp', roles: LOAN_ROLES },
   { tab: 'settings', group: 'operations', label: 'Cấu hình SLA', roles: ['ADMIN'] },
+  { tab: 'rates', group: 'operations', label: 'Khung lãi suất', roles: ['ADMIN'] },
   { tab: 'loans', group: 'loans', label: 'Danh sách hồ sơ', roles: LOAN_ROLES },
   // Khu làm việc của Thẩm quyền: CBTD không vào; Quản lý vào để theo dõi, không thao tác.
-  { tab: 'appraisal', group: 'loans', label: 'Thẩm định & phê duyệt', roles: ['QUAN_LY', 'THAM_QUYEN'] },
-  { tab: 'issues', group: 'loans', label: 'Quản lý vấn đề hồ sơ', roles: LOAN_ROLES, unavailable: true },
-  { tab: 'assignments', group: 'loans', label: 'Điều chuyển & phân công', roles: ['QUAN_LY'] },
-  { tab: 'activity', group: 'system', label: 'Lịch sử hoạt động', roles: ['ADMIN', 'QUAN_LY'], unavailable: true },
+  { tab: 'appraisal', group: 'loans', label: 'Thẩm định & phê duyệt', roles: ['QUAN_LY', 'THAM_QUYEN', 'ADMIN'] },
+  { tab: 'assignments', group: 'loans', label: 'Điều chuyển & phân công', roles: ['QUAN_LY', 'ADMIN'] },
+  { tab: 'activity', group: 'system', label: 'Lịch sử hoạt động', roles: ['ADMIN'] },
 ];
 
 type RoleInput = RoleCode | null | undefined;
@@ -54,8 +55,7 @@ export function canOpenTab(tab: Tab, role: RoleInput): boolean {
 
 /** Trang đầu theo vai trò: luôn là trang vai trò đó được phép (không đưa CBTD hay Admin vào trang bị từ chối). */
 export function getDefaultTab(role: RoleInput): Tab {
-  if (role === 'ADMIN') return 'users';
-  if (role === 'CBTD') return 'loans';
+  if (role === 'CBTD') return 'dashboard';
   if (role === 'THAM_QUYEN') return 'appraisal';
   return 'dashboard';
 }

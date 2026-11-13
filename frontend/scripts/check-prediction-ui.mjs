@@ -13,17 +13,18 @@ test('CBTD sees a warnings panel fed only by the owner-scoped endpoint, and only
 });
 
 test('every place that shows a prediction uses the shared alert wording instead of raw risk codes', async () => {
-  for (const file of ['components/DashboardView.tsx', 'components/LoanTable.tsx', 'components/LoanDetailModal.tsx', 'components/AppraisalWorkspace.tsx', 'components/OfficerCaseWorkspace.tsx']) {
+  for (const file of ['components/dashboard/DashboardKit.tsx', 'components/LoanTable.tsx', 'components/LoanDetailModal.tsx', 'components/AppraisalWorkspace.tsx', 'components/OfficerCaseWorkspace.tsx']) {
     const source = await read(file);
     assert.doesNotMatch(source, /riskLabel/, `${file} still uses the old risk label`);
-    assert.match(source, /alertDisplay|predictionHeadline/, `${file} does not use the shared alert helpers`);
+    assert.match(source, /alertDisplay|predictionHeadline|mlCellView/, `${file} does not use the shared alert helpers`);
   }
 });
 
 test('dashboard row shows the SLA time left and sorts by alert severity, without model explanations on the page', async () => {
-  const dashboard = await read('components/DashboardView.tsx');
-  assert.match(dashboard, /slaLeftText\(item\)/);
-  assert.match(dashboard, /sort\(compareAlerts\)/);
+  const dashboard = (await read('components/dashboard/DashboardKit.tsx')) + (await read('components/dashboard/ManagerDashboard.tsx'));
+  // Thứ tự ưu tiên được xếp ở máy chủ (comparePriority) trước khi phân trang; dòng hiện số giờ làm việc còn lại.
+  assert.match(dashboard, /còn \$\{workingDurationText\(row\.slaRemainingHours\)\}/);
+  assert.match(dashboard, /operationsQuery\(filters, page\)/);
   assert.doesNotMatch(dashboard, /Mô hình dự báo trễ SLA/);
   const panel = await read('components/MyWarningsPanel.tsx');
   assert.match(panel, /sort\(compareAlerts\)/);
@@ -45,7 +46,7 @@ test('display fixes from the full UI audit stay fixed', async () => {
   const assignments = await read('components/AssignmentsView.tsx');
   assert.doesNotMatch(assignments, /0901234567/, 'a fabricated phone number must not be shown for officers without one');
   assert.match(assignments, /officer\.phone \|\| '—'/);
-  const dashboard = await read('components/DashboardView.tsx');
-  assert.match(dashboard, /totalCompletedStagesPa1 > 0 \? `\$\{stats\.slaOnTimeRatePa1\}%`/, 'the headline on-time rate uses working hours (PA1) when it has data');
+  const dashboard = await read('components/dashboard/DashboardKit.tsx');
+  assert.match(dashboard, /onTimeSummary\(bottlenecks\)/, 'the on-time rate is shown with the cumulative figures');
   assert.match(dashboard, /const v = pa1 \?\? st;/, 'the bottleneck table shows PA1 figures first');
 });

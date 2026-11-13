@@ -12,7 +12,7 @@ import { PortalSupplementsService } from './portal-supplements.service';
 import { supplementDownload } from './portal-supplements.controller';
 
 @UseGuards(JwtAuthGuard, RolesGuard, LoanAccessGuard)
-@Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN, RoleCode.QUAN_LY)
+@Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN, RoleCode.QUAN_LY, RoleCode.ADMIN)
 @Controller('supplements')
 export class SupplementsController {
   constructor(private readonly supplementsService: SupplementsService, private readonly portalSupplements:PortalSupplementsService) {}

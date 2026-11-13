@@ -485,3 +485,24 @@ test('6. Progress bar has exactly three steps for every loan', () => {
     assert.doesNotMatch(html, /Hội đồng|Cấp trên/);
   }
 });
+
+test('DEC-13. Approved result shows the officer proposal and the reason for a different rate', () => {
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  const html = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'APPROVED', approvedAmount: '4000000000', interestRate: '9', completedAt: '2026-11-05T03:00:00Z', stageHistories: [doneHistory], rateDecision: { proposedInterestRate: 8.25, interestRateReason: 'Tài sản bảo đảm thấp hơn đề xuất' } });
+  assert.match(html, /Lãi suất CBTD đề xuất/);
+  assert.match(html, /8,25%\/năm/);
+  assert.match(html, /Lý do khác mức đề xuất/);
+  assert.match(html, /Tài sản bảo đảm thấp hơn đề xuất/);
+  const same = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'APPROVED', approvedAmount: '4000000000', interestRate: '8.25', completedAt: '2026-11-05T03:00:00Z', stageHistories: [doneHistory], rateDecision: { proposedInterestRate: 8.25, interestRateReason: null } });
+  assert.match(same, /Lãi suất CBTD đề xuất/);
+  assert.doesNotMatch(same, /Lý do khác mức đề xuất/);
+  const old = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'APPROVED', approvedAmount: '4000000000', interestRate: '8.5', completedAt: '2026-11-05T03:00:00Z', stageHistories: [doneHistory] });
+  assert.doesNotMatch(old, /Lãi suất CBTD đề xuất/);
+});
+
+test('DEC-13 LS-2. Approved result shows the band that applied', () => {
+  currentAuth = { activeRole: 'THAM_QUYEN', user: { id: 'tq-1' } };
+  const html = renderLoan({ currentStage: 'HOAN_TAT', currentStatus: 'APPROVED', approvedAmount: '4000000000', interestRate: '9', completedAt: '2026-11-05T03:00:00Z', stageHistories: [doneHistory], rateDecision: { proposedInterestRate: 9, interestRateReason: null, band: { id: 'b', minRate: 7, maxRate: 12.5, effectiveFrom: '2026-11-01T00:00:00.000Z', basis: 'Số liệu mô phỏng' } } });
+  assert.match(html, /Khung áp dụng/);
+  assert.match(html, /7–12,5%\/năm \(Số liệu mô phỏng\)/);
+});

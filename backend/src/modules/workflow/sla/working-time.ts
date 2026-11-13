@@ -48,6 +48,17 @@ export const OPERATING_CALENDAR_2026: SlaCalendar = {
   ],
 };
 
+/**
+ * Lịch vận hành 2026 kéo dài đến 31/01/2027 để hạn SLA của hồ sơ mở cuối năm 2026 vẫn tính được.
+ * Ngày nghỉ năm 2026 giữ nguyên như bản v1; tháng 01/2027 chỉ nghỉ Tết Dương lịch 01/01.
+ */
+export const OPERATING_CALENDAR_2026_EXT: SlaCalendar = {
+  version: 'VN-20260101-20270131-v2',
+  coverageFrom: '2026-01-01',
+  coverageTo: '2027-01-31',
+  holidays: [...OPERATING_CALENDAR_2026.holidays, '2027-01-01'],
+};
+
 /** Khoảng tạm dừng; `end = null` là khoảng còn mở và được tính đến thời điểm `until` của lần gọi. */
 export interface PauseInterval {
   start: Date;

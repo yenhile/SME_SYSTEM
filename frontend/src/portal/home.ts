@@ -36,3 +36,23 @@ export function summarizeHome(requests: HomeRequest[], supplementCounts: Record<
   }
   return { counts, actions: [...returned, ...supplements, ...drafts], results };
 }
+
+export type ListFilter = 'ALL' | 'ACTION' | 'DRAFT' | 'WAITING' | 'PROCESSING' | 'DECIDED';
+export const LIST_FILTERS: ReadonlyArray<readonly [ListFilter, string]> = [
+  ['ALL', 'Tất cả'], ['ACTION', 'Cần doanh nghiệp xử lý'], ['DRAFT', 'Bản nháp'], ['WAITING', 'Chờ ngân hàng tiếp nhận'], ['PROCESSING', 'Đang thẩm định'], ['DECIDED', 'Đã có kết quả'],
+];
+
+/** Nhóm của một đề nghị trên danh sách: việc doanh nghiệp phải làm được tách khỏi việc đang chờ ngân hàng. */
+export function listGroup(item: HomeRequest, supplementCounts: Record<string, number>, outcomes: Record<string, HomeOutcome | undefined>): Exclude<ListFilter, 'ALL'> {
+  if (item.status === 'DRAFT') return 'DRAFT';
+  if (item.status === 'RETURNED') return 'ACTION';
+  if (item.status === 'SUBMITTED' || item.status === 'ASSIGNED') return 'WAITING';
+  if (isFinal(outcomes[item.id]?.status.code)) return 'DECIDED';
+  return (supplementCounts[item.id] ?? 0) > 0 ? 'ACTION' : 'PROCESSING';
+}
+
+export function listCounts(requests: HomeRequest[], supplementCounts: Record<string, number>, outcomes: Record<string, HomeOutcome | undefined>): Record<ListFilter, number> {
+  const counts: Record<ListFilter, number> = { ALL: requests.length, ACTION: 0, DRAFT: 0, WAITING: 0, PROCESSING: 0, DECIDED: 0 };
+  for (const item of requests) counts[listGroup(item, supplementCounts, outcomes)]++;
+  return counts;
+}

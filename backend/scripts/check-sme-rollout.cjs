@@ -35,7 +35,7 @@ async function runRolloutChecks(h){
   expect(await call(`/loan-applications/${id}/set-amount`,officer,{officialAmount:100000000},'PUT'),200,'set official amount');
   expect(await call(`/loan-applications/${id}/check-documents`,officer,{isComplete:true},'PUT'),200,'confirm documents');
   const {REPORT_FIELDS}=require('../dist/modules/appraisal/appraisal.logic');
-  const content=Object.fromEntries(REPORT_FIELDS.map(k=>[k,`Synthetic evidence and assessment: ${k}`]));
+  const content=Object.fromEntries(REPORT_FIELDS.map(k=>[k,k==='proposedInterestRate'?'8':`Synthetic evidence and assessment: ${k}`]));
   const mutate=(r,extra={})=>({expectedRevision:r?.revision??0,clientRequestId:randomUUID(),...extra});
   expect(await call(`${path}/draft`,other,mutate(null,{content}),'PUT'),403,'foreign officer report blocked');
   let report=expect(await call(`${path}/draft`,officer,mutate(null,{content}),'PUT'),200,'save draft');

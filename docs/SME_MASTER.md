@@ -1,6 +1,8 @@
 # SME MASTER — Tài liệu Nghiệp vụ và Vận hành Hệ thống SME Loan Workflow
 
-Cập nhật ngày 02/11/2026. Đây là **tài liệu nghiệp vụ duy nhất và toàn diện của hệ thống SME Loan Workflow**, phục vụ Product Owner (PO) và người tiếp nhận dự án nắm bắt đầy đủ luồng quy trình thực tế, trách nhiệm của 5 actor, chi tiết 7 nhóm chức năng, trạng thái triển khai kiểm chứng, và các hạng mục bàn giao tiếp theo.
+> **Người tiếp nhận đọc trước:** [Điểm bàn giao ngày 13/11/2026](#ban-giao-nguoi-tiep-nhan) (tình trạng hiện tại, việc đã làm, việc chờ chốt). Các vấn đề chờ chốt chỉ Yến Nhi được chốt và sửa.
+
+Cập nhật ngày 13/11/2026. Đây là **tài liệu nghiệp vụ duy nhất và toàn diện của hệ thống SME Loan Workflow**, phục vụ Product Owner (PO) và người tiếp nhận dự án nắm bắt đầy đủ luồng quy trình thực tế, trách nhiệm của 5 actor, chi tiết 7 nhóm chức năng, trạng thái triển khai kiểm chứng, và các hạng mục bàn giao tiếp theo.
 
 Cấu trúc code, cơ sở dữ liệu, quy trình CodeGraph và hướng dẫn vận hành kỹ thuật được lưu trữ tại [SME_KY_THUAT.md](SME_KY_THUAT.md). Quyết định trực tiếp của PO trong hội thoại có hiệu lực cao nhất.
 
@@ -22,9 +24,8 @@ Cấu trúc code, cơ sở dữ liệu, quy trình CodeGraph và hướng dẫn 
   - [Lịch sử các đợt review và thay thế các quyết định hoãn](#lich-su-review)
   - [Kết quả kiểm chứng thực nghiệm E2E trên hệ thống local đang chạy](#kiem-chung-local-e2e)
 - [5. Trạng thái mô hình Machine Learning](#trang-thai-mo-hinh)
-- [6. Kế hoạch bàn giao cho người tiếp nhận dự án](#ban-giao-nguoi-tiep-nhan)
-  - [A. Điều chỉnh mô hình ML áp dụng vào hệ thống SME](#ke-hoach-dieu-chinh-mo-hinh)
-  - [B. Kế hoạch gỡ chức năng "Quản lý vấn đề hồ sơ"](#ke-hoach-go-quan-ly-van-de)
+- [6. Bàn giao cho người tiếp nhận dự án (điểm bàn giao 13/11/2026)](#ban-giao-nguoi-tiep-nhan)
+  - [B. Kế hoạch gỡ khối "Vướng mắc nội bộ" ở tiếp nhận Portal (chờ Yến Nhi chốt)](#ke-hoach-go-quan-ly-van-de)
 - [7. Quyết định PO và các ranh giới bất biến phải giữ](#quyet-dinh-po-va-ranh-gioi)
 
 ---
@@ -188,6 +189,7 @@ classDiagram
 * **Thời điểm được sửa / chỉ xem / bị chặn:**
   * *Được sửa:* Khi được phân công phụ trách hồ sơ (`assignedTo === user.id`) tại công đoạn `TIEP_NHAN` và khi Tờ trình thẩm định đang ở trạng thái `DRAFT` hoặc `CLARIFICATION_REQUIRED`.
   * *Chỉ xem:* Khi hồ sơ chuyển sang công đoạn `THAM_DINH` (chờ Thẩm quyền xử lý).
+  * *Danh sách và ưu tiên (từ 11/11/2026, [DEC-07](#quyet-dinh-po-va-ranh-gioi)):* CBTD xem mọi hồ sơ mình phụ trách ở mọi công đoạn, chia tab **Đang xử lý** (mặc định) và **Đã kết thúc** (chỉ xem); lọc theo **Trạng thái hồ sơ**, không có ô Công đoạn. Khối "Cần xử lý ngay" chỉ gồm hồ sơ đang chờ chính CBTD (Tiếp nhận ở Mới tiếp nhận/Đã đủ hồ sơ; Thẩm định khi chờ làm rõ, chưa có hoặc phải lập lại tờ trình, căn cứ đổi sau khi trình, xung đột lợi ích), không gồm hồ sơ chờ Thẩm quyền hoặc chờ doanh nghiệp bổ sung.
   * *Bị chặn:* Bị chặn mọi thao tác ghi khi hồ sơ đang có đề nghị COI chờ giải quyết (`writeBlocked: true`), hoặc khi hồ sơ đã kết thúc (`HOAN_TAT`).
 * **Giới hạn quyền quan trọng:** Không có quyền phê duyệt hoặc từ chối khoản vay; không có quyền tự ý đóng hồ sơ quá hạn; không tự ý chuyển giao hồ sơ cho người khác; tuyệt đối không được phê duyệt hoặc yêu cầu làm rõ đối với hồ sơ do chính mình tiếp nhận hoặc soạn thảo (ràng buộc Maker-Checker D5-04).
 
@@ -195,6 +197,7 @@ classDiagram
 * **Kênh truy cập:** Không gian làm việc Cán bộ Ngân hàng tại địa chỉ `http://localhost:5173/` với vai trò hoạt động `activeRole === 'THAM_QUYEN'`.
 * **Chức năng thực hiện:** Xem xét, thẩm tra hồ sơ vay và Tờ trình thẩm định tại công đoạn `THAM_DINH`; phát hành yêu cầu làm rõ Tờ trình gửi CBTD (`CLARIFICATION_REQUIRED`); thực hiện Phê duyệt khoản vay (`APPROVED`) kèm số tiền phê duyệt (`approvedAmount ≤ officialAmount`) và lãi suất; thực hiện Từ chối khoản vay (`REJECTED`) theo danh mục lý do chuẩn (TC01–TC05) kèm ghi chú giải trình chi tiết.
 * **Quan hệ công việc:** Tiếp nhận hồ sơ đã trình Tờ trình từ CBTD; phát hành yêu cầu làm rõ cho CBTD; đưa ra quyết định tín dụng cuối cùng để kết thúc hồ sơ.
+* **Nhận việc ([DEC-10](#quyet-dinh-po-va-ranh-gioi)):** Không được phân công; hồ sơ ở Thẩm định nằm trong hàng việc chung, mọi Thẩm quyền độc lập đều được thông báo và xử lý được, người thao tác hợp lệ trước là người quyết.
 * **Thời điểm được sửa / chỉ xem / bị chặn:**
   * *Được thao tác:* Thực hiện yêu cầu làm rõ hoặc phê duyệt/từ chối khi Tờ trình ở trạng thái `SUBMITTED`, không còn yêu cầu bổ sung PENDING, và bản thân là cán bộ độc lập.
   * *Chỉ xem:* Toàn bộ các ô nhập liệu phân tích thẩm định của CBTD hiển thị ở chế độ chỉ đọc (`readOnly`), không sửa thay phần phân tích của CBTD.
@@ -278,6 +281,8 @@ g. Trạng thái triển khai và bằng chứng kiểm chứng thực tế.
 **Phạm vi:** PO yêu cầu review và đề xuất, chưa sửa giao diện, code, dữ liệu hoặc quy tắc bắt buộc. Khảo sát 7 view Portal, tập trung wizard gửi đề nghị và bước 5; dùng ảnh PO gửi, ảnh xác thực đã chụp trong phiên và source/CodeGraph hiện hành. Chưa thực hiện lại thao tác gửi trên hồ sơ PO cung cấp.
 
 **Hiện trạng theo source:** nút Gửi chỉ được render ở bước 5 nhưng việc đi qua đủ 5 bước không phải điều kiện gửi phía server. `navigate` lưu nháp theo validation cấu trúc, không kiểm đủ trường/tài liệu bắt buộc của từng bước; dấu ✓ dựa vào vị trí bước hiện tại (`step > index + 1`), không phải trạng thái đủ dữ liệu. Bước 5 ghép checklist, issues, formErrors và gợi ý nên có thể lặp lỗi; `formErrors` từ evaluatePolicy chứa tên trường kỹ thuật và được render trực tiếp. Trạng thái `dirty` cũng khóa gửi nên tick cam kết có thể làm người dùng phải lưu nháp rồi đợi đánh giá lại. Source hiện giữ đầy đủ ràng buộc cấu hình, quyền sửa, revision, file đang tải và readiness; không được bỏ các ràng buộc này để làm UI đơn giản hơn.
+
+**Cập nhật 11/11/2026:** chuyển bước, "Tiếp tục" và quay lại không còn tạo bản nháp khi chưa có tên doanh nghiệp hoặc mã số thuế; biểu mẫu mới điền sẵn thông tin doanh nghiệp từ đề nghị gần nhất và người liên hệ từ tài khoản; ô bắt buộc có dấu `*` theo danh sách kiểm tra sẵn sàng của máy chủ. Xem [đợt 11/11/2026](#dot-uiux-20261111), mục 7. Các đề xuất chặn nút Tiếp tục theo trường bắt buộc ở dưới vẫn CHƯA DUYỆT.
 
 **Đề xuất PO, CHƯA DUYỆT:** chặn nút Tiếp tục theo trường bắt buộc áp dụng tại bước hiện tại, vẫn cho lưu nháp/quay lại/xem yêu cầu tài liệu; không chặn bằng dữ liệu chỉ có ở bước sau, trường tùy chọn, mục LATER hoặc kiểm tra nghiệp vụ của CBTD. Bước 5 kiểm toàn bộ theo policy/revision mới nhất. Dấu hoàn thiện dựa trên readiness thay vì vị trí; thay đổi ngành/phạm vi/đại diện/dư nợ/bảo đảm/tài liệu phải đánh giá lại các phần phụ thuộc. Không tự nâng cảnh báo cân đối vốn hoặc tài liệu cung cấp sau thành điều kiện chặn mới.
 
@@ -363,12 +368,12 @@ Gói này cập nhật dữ liệu, không đổi source backend đang chạy ho
     -> *Kết quả:* Quản lý được yêu cầu tải lại trang để thấy dữ liệu phân công mới nhất.
   * *Tình huống 2: CBTD quá tải hoặc không thể tiếp tục phụ trách.*
     -> *Actor xử lý:* CBTD & QLCN.
-    -> *Cách xử lý:* CBTD tạo đề nghị điều phối (`AssignmentChangeRequest`) nêu rõ lý do; QLCN xem xét chấp thuận (chọn CBTD mới) hoặc từ chối có lý do.
+    -> *Cách xử lý:* CBTD tạo đề nghị điều phối (`AssignmentChangeRequest`) nêu rõ lý do; QLCN xem xét chấp thuận (chọn CBTD mới) hoặc từ chối có lý do. Từ 11/11/2026 ([DEC-06](#quyet-dinh-po-va-ranh-gioi)): khi hồ sơ đang Thẩm định và **chờ Thẩm quyền quyết định** (tờ trình đã trình còn nguyên căn cứ, hoặc hồ sơ quy trình cũ) thì các lý do Quá tải, Vắng mặt, Phân công không phù hợp, Khác bị từ chối (409) vì CBTD không còn việc để bàn giao; Tiếp nhận (kể cả Chờ bổ sung) và Thẩm định đang chờ CBTD hoặc chờ doanh nghiệp vẫn dùng đủ lý do. Đề nghị đang chờ trước đó giữ nguyên.
     -> *Kết quả:* Nếu chấp thuận, hồ sơ được chuyển sang CBTD mới trong cùng một transaction; CBTD cũ mất quyền ghi.
   * *Tình huống 3: Cán bộ phát hiện Xung đột lợi ích (COI).*
     -> *Actor xử lý:* CBTD & QLCN.
     -> *Cách xử lý:* CBTD gửi đề nghị báo COI; hệ thống lập tức khóa quyền ghi nghiệp vụ của cán bộ (`writeBlocked: true`) và chặn chốt quyết định tín dụng (`decisionBlocked: true`). QLCN bắt buộc phải vào điều chuyển hồ sơ sang cán bộ khác hoặc đưa ra kết luận có căn cứ rằng không có xung đột.
-    -> *Kết quả:* Bảo vệ tối đa tính khách quan của việc thẩm định tín dụng; ngăn chặn cán bộ tự rút đề nghị COI để lách luật.
+    -> *Kết quả:* Bảo vệ tối đa tính khách quan của việc thẩm định tín dụng; ngăn chặn cán bộ tự rút đề nghị COI để lách luật. Báo COI luôn được phép khi hồ sơ chưa kết thúc, kể cả lúc chờ Thẩm quyền quyết định.
   * *Tình huống 4: Cán bộ được phân công bị khóa tài khoản hoặc tước quyền đột xuất.*
     -> *Actor xử lý:* Quản lý chi nhánh.
     -> *Cách xử lý:* QLCN thực hiện quyền điều chuyển trực tiếp mà không cần chờ đề nghị từ cán bộ bị khóa.
@@ -381,6 +386,19 @@ Gói này cập nhật dữ liệu, không đổi source backend đang chạy ho
 * **g. Trạng thái triển khai và bằng chứng kiểm chứng:**
   * *Trạng thái:* **ĐÃ TRIỂN KHAI CODE & ĐÃ KIỂM CHỨNG TOÀN DIỆN**.
   * *Bằng chứng:* 155 checks kiểm soát điều phối API/DB, 62 checks an toàn phân công, bộ ảnh giao diện `round2-01` đến `round2-09`; 100% pass trên hệ thống local đang chạy ([PASS 11]).
+
+<a id="sua-loi-dieu-chuyen-20261112"></a>
+#### Sửa lỗi hiển thị màn Điều chuyển & phân công (QLCN) — 12/11/2026, chưa commit
+
+| Mã | Tình huống | Kết luận (bằng chứng) | Xử lý |
+|---|---|---|---|
+| N2-UI-01 | Lọc "Đã chấp thuận điều phối" ra "0 đề nghị", bảng trống | Số liệu đúng: DB local chưa có bản ghi `assignment_change_requests` nào (đọc DB). Lỗi là bảng không có dòng trạng thái rỗng và không phân biệt đang tải | Thêm dòng "Không có đề nghị điều phối ở trạng thái này."; hiện "Đang tải…" khi chưa có kết quả; ẩn dòng đếm khi lỗi |
+| N2-UI-02 | Dòng "Xung đột lợi ích đang chờ được ưu tiên trước…" hiện ở mọi bộ lọc | Máy chủ chỉ đưa COI **đang chờ** lên đầu (`list` trong `assignment-change-requests.service.ts`) | Bỏ câu giải thích (mỗi dòng xung đột lợi ích đã ghi "· Ưu tiên xung đột lợi ích"); chỉ giữ số đếm "N đề nghị" (0 hiện "Không đề nghị") chữ 13px màu phụ, cách ô lọc và bảng (PO yêu cầu chỉnh vì xấu) |
+| N2-UI-03 | Tiêu đề bảng tải lẫn tiếng Anh | Chuỗi cứng trong `AssignmentsView.tsx` | Đổi thành "Bảng giám sát tải công việc CBTD" |
+| N2-DATA-01 | Cột Số điện thoại hiện "—" | Không phải lỗi code: cả 8 tài khoản CBTD có `phone = null`; API trả `phone` đúng | Admin bổ sung SĐT tại Tài khoản & vai trò (không sửa dữ liệu trong đợt này) |
+| N2-DATA-02 | "4 công việc · 4 hồ sơ vay · 0 đề nghị Portal" | Đúng: `mai.bui` có 4 hồ sơ mở (2 Đã kiểm tra, 1 Chờ bổ sung, 1 Chờ thẩm định), 0 đề nghị Portal | Giữ nguyên |
+
+Kiểm chứng: `frontend/scripts/check-coordination-ui.mjs` thêm 3 test (đỏ trước khi sửa, xanh sau sửa); các gói điều phối/phân công/điều hướng 22/22; `npm run build` frontend đạt; `npm test` backend 473/473 (không đổi backend). Trình duyệt (QLCN `nhung.nguyen`): lọc "Chờ quản lý xử lý" và "Đã chấp thuận điều phối" đều hiện dòng rỗng; dòng đếm gọn "Không đề nghị"; tiêu đề bảng tải đã thuần Việt. Không đổi quy trình, quyền, SLA, ML.
 
 ---
 
@@ -534,6 +552,7 @@ Gói này cập nhật dữ liệu, không đổi source backend đang chạy ho
     -> *Actor xử lý:* Thẩm quyền & Hệ thống.
     -> *Cách xử lý:* Form phê duyệt client-side kiểm tra giá trị: nếu `approvedAmount > officialAmount` hoặc `approvedAmount ≤ 0`, hoặc lãi suất ngoài khoảng 0–100%, nút "Xác nhận Phê duyệt" bị khóa (`disabled`) và hiển thị dòng chữ cảnh báo đỏ trực quan. Backend kiểm tra độc lập và ném HTTP 400 nếu nhận dữ liệu sai.
     -> *Kết quả:* Ngăn chặn sai sót số liệu phê duyệt tín dụng.
+    -> *Vấn đề mở (12/11/2026):* khoảng 0–100% không phải căn cứ lãi suất; Thẩm quyền chưa có mức đề xuất hay khung theo loại vay. Hiện trạng, vấn đề LS-01..LS-05, phương án A–D và câu hỏi Q1–Q10 ở [review lãi suất](#review-lai-suat-tham-quyen), chờ PO chốt.
   * *Tình huống 3: Hai Thẩm quyền cùng bấm duyệt đồng thời hoặc gửi lặp request (Quy tắc D6-03 & D6-05).*
     -> *Actor xử lý:* Hệ thống Backend.
     -> *Cách xử lý:* Transaction thực thi khóa bi quan `SELECT id FROM loan_applications WHERE id = ... FOR UPDATE`. Giao dịch đầu tiên hoàn tất đóng hồ sơ sang `HOAN_TAT`. Giao dịch thứ hai phát hiện `loan.completedAt || loan.currentStage === 'HOAN_TAT'`, lập tức từ chối với thông báo rõ ràng: *"Hồ sơ đã kết thúc, không thể chuyển trạng thái."*.
@@ -594,6 +613,168 @@ Gói này cập nhật dữ liệu, không đổi source backend đang chạy ho
   * *Trạng thái:* **ĐÃ TRIỂN KHAI CODE & ĐÃ KIỂM CHỨNG TOÀN DIỆN**.
   * *Bằng chứng:* 7/7 tests trì hoãn trong `check-delayed-session-recovery.mjs`, 5/5 tests trong `test:role-governance`, 4/4 tests backend `role-governance.test.cjs`, ảnh chụp Chrome CDP `r6-01a`, `r6-01b`, `r6-02`, `r6-03`; 100% pass trên hệ thống local đang chạy ([PASS 33, 34]).
 
+<a id="nhom-7-admin-review"></a>
+#### Review cấu hình lại vai trò Admin — ngày 11/11/2026 (đã triển khai một phần, xem kết quả cuối mục)
+
+**PO giao:** review vai trò Quản trị hệ thống, đề xuất phương án tối ưu, xác định chức năng Admin chỉ được xem, không được xóa, sửa hay thao tác. Chỉ review và đề xuất; chưa sửa code hoặc dữ liệu.
+
+**Hiện trạng đã xác minh từ source:** Admin có đúng 6 endpoint quản trị: `GET/POST/PUT /users`, `GET /users/:id`, `GET/PUT /admin/workflow-stages`. Cả `AdminController` và `UsersController` chỉ cho ADMIN; mọi controller nghiệp vụ vay không có ADMIN (khóa bởi `role-routes.test.cjs`). `RolesGuard` không cho Admin quyền vượt cấp; `JwtStrategy` chỉ đưa vai trò đang dùng (`roles: [activeRole]`) vào kiểm tra quyền. Không có API xóa tài khoản, tạo hay xóa vai trò, đặt lại mật khẩu cho người khác. Menu Admin mở được "Liên hệ cá nhân" và "Cấu hình SLA"; "Lịch sử hoạt động" chưa triển khai.
+
+**Nguyên tắc đề xuất:** Admin quản trị tài khoản và cấu hình, không xem dữ liệu tín dụng. Phần "chỉ xem" của Admin là thông tin quản trị và cấu hình, không mở hồ sơ khách hàng.
+
+| Vùng | Chức năng | Hiện trạng → đề xuất |
+|---|---|---|
+| Được sửa | Tạo tài khoản; sửa họ tên, điện thoại, chi nhánh; khóa/mở; cấp vai trò cho người khác | Giữ, siết theo AD-01, AD-02 |
+| Được sửa | Định mức SLA (giờ) của Tiếp nhận, Thẩm định | Giữ, thêm xác nhận (AD-05) |
+| Chỉ xem | V1. Tên công đoạn | Hiện sửa được qua `stageName` → chỉ xem (AD-03) |
+| Chỉ xem | V2. Danh mục vai trò và ma trận quyền từng vai trò | Mới; không tạo/xóa vai trò |
+| Chỉ xem | V3. Giờ làm việc, ngày nghỉ, phiên bản lịch, chính sách SLA đang áp dụng (`SlaPolicyActivation`) | Mới; lịch nằm trong code |
+| Chỉ xem | V4. Tên đăng nhập, email sau khi tạo | Backend đã khóa; UI đang ẩn → hiện dạng khóa |
+| Chỉ xem | V5. Số hồ sơ đang phụ trách của từng cán bộ | Đã có `workloadActiveLoans`, UI chưa hiện; chỉ hiện con số, không hiện mã hồ sơ hay tên doanh nghiệp |
+| Chỉ xem | V6. Lịch sử hoạt động quản trị: ai đổi vai trò, khóa tài khoản, sửa SLA, lúc nào, trước và sau | Chưa có bảng lưu (AD-04) |
+| Chỉ xem | V7. Tình trạng hệ thống (DB, ML service) | Có `/health`; chưa xác minh nội dung trả về |
+| Không thấy | Hồ sơ vay, doanh nghiệp, tài liệu, tờ trình, dự báo theo hồ sơ, dashboard, phân công, tiếp nhận Portal, tài khoản doanh nghiệp Portal | Giữ chặn như hiện nay |
+
+| Mã | Tình huống | Hiện trạng/mong đợi | Rủi ro | Bằng chứng | Phương án | Phạm vi ảnh hưởng | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|---|---|
+| **AD-01** (phải sửa) | Admin tự thêm vai trò Thẩm quyền/CBTD cho chính mình, đổi vai trò rồi xử lý hoặc phê duyệt hồ sơ | Chỉ chặn tự khóa và tự bỏ ADMIN / mong đợi: Admin không tự đổi vai trò của mình | Cao: Admin can thiệp quy trình tín dụng, trái giới hạn quyền Admin đã chốt | `users.service.ts:135`; suy từ source, chưa tái hiện qua API | Chặn mọi thay đổi `roles` khi `actorId === id` (400). Mức chặt hơn: cấm ADMIN đi kèm vai trò nghiệp vụ, cần kiểm DB trước | `UsersService.update`, `AdminView` (ẩn ô vai trò khi sửa chính mình), `role-governance` | Test đỏ trước: Admin tự thêm THAM_QUYEN bị 400, DB không đổi; Admin vẫn cấp vai trò cho người khác; các ca D7-01/D7-02 cũ vẫn đạt |
+| AD-02 (chờ PO chốt) | Khóa/bỏ vai trò của Quản lý hoặc Thẩm quyền cuối cùng còn hoạt động | Chỉ kiểm tra CBTD còn hồ sơ / mong đợi: luôn còn người phân công và phê duyệt | Vừa: không còn ai phân công, phê duyệt; mô hình ML đếm số Thẩm quyền | `users.service.ts:138` | Chặn khi vai trò còn dưới ngưỡng tối thiểu PO chốt | `UsersService.update` | Khóa người cuối cùng bị 400; khóa khi còn đủ người vẫn đạt |
+| AD-03 (phải sửa) | Admin đổi tên công đoạn | Sửa tự do / mong đợi: chỉ sửa định mức | Vừa: tên nghiệp vụ đổi trên mọi màn hình | `admin.controller.ts:14`, `:26` | API chỉ nhận `standardSlaHours`; UI hiện tên dạng chỉ đọc | `AdminController`, `AdminView`, `check-admin-sla-ui` | `PUT` có `stageName` không đổi tên; SLA vẫn lưu đúng bội số 4 giờ; Hoàn tất vẫn 400 |
+| AD-04 (cải tiến) | Không có dấu vết đổi quyền, khóa tài khoản, sửa SLA | Không lưu / mong đợi: nhật ký chỉ xem cho Admin | Vừa: không truy được trách nhiệm | Schema không có bảng nhật ký quản trị | Thêm bảng nhật ký bằng migration mới, ghi trong cùng transaction; màn "Lịch sử hoạt động" chỉ đọc | Schema, `UsersService`, `AdminService`, navigation | Mỗi thao tác ghi đúng 1 dòng trước/sau; không có API sửa/xóa nhật ký |
+| AD-05 (cải tiến) | Bấm Lưu SLA ghi ngay | Không xác nhận / mong đợi: xác nhận cũ → mới | Thấp: sửa nhầm định mức | `AdminView` gọi `PUT` trực tiếp | Hộp xác nhận "cũ → mới, áp dụng cho lượt vào công đoạn mới" | `AdminView` | Hủy không gửi request; xác nhận mới lưu |
+| AD-06 (cải tiến nhãn) | Menu "Liên hệ cá nhân" thực chất quản lý tài khoản | Nhãn dễ hiểu nhầm | Thấp | `navigation.ts:25` | Đổi thành "Tài khoản & vai trò" | `navigation.ts`, `AdminView`, `test:navigation` | Menu và tiêu đề trang dùng nhãn mới |
+| AD-07 (kỹ thuật, đi kèm) | Controller gọi Prisma và kiểm tra dữ liệu | Sai tầng | Thấp | `admin.controller.ts:22-27` | Tách `AdminService` khi làm AD-03, AD-04 | `AdminController` | Hành vi API giữ nguyên, test cũ đạt |
+
+**Thứ tự xử lý đề xuất:** (1) AD-01; (2) AD-03 + AD-07; (3) V2, V3, V4, V5, AD-05, AD-06, không đổi schema; (4) AD-04/V6, cần migration mới, làm nếu PO đồng ý trước buổi bảo vệ 23/12; (5) AD-02 sau khi PO chốt ngưỡng. Các màn chỉ xem mới đặt dưới `/admin/*` để giữ quy tắc "route quản trị chỉ ADMIN". Hồi quy bắt buộc: `role-routes`, `role-governance` (backend và frontend), `test:navigation`, `test:admin-sla`.
+
+**Quyết định cần PO chốt:** (1) AD-01 chỉ chặn tự đổi vai trò (đề xuất) hay cấm ADMIN đi kèm vai trò nghiệp vụ; (2) có làm nhật ký quản trị (migration mới) trước 23/12 không; (3) ngưỡng tối thiểu người còn hoạt động cho Quản lý, Thẩm quyền; (4) Admin có xem danh sách tài khoản doanh nghiệp Portal không (đề xuất: không, vì có dữ liệu cá nhân khách hàng).
+
+**Kiểm chứng:** CodeGraph `graph:check` hợp lệ (229 file, 4.990 node, 9.896 edge). Nhận định dựa trên đọc source, schema và test; chưa chạy test, chưa gọi API, chưa xem giao diện trong lượt review này.
+
+**Kết quả triển khai ngày 11/11/2026 (PO yêu cầu "fix trên hệ thống luôn" sau khi ghi phương án):** làm các mục không còn quyết định mở, theo phương án đề xuất; AD-01 chọn mức "chặn tự đổi vai trò".
+
+| Mã | Kết quả | Thay đổi chính |
+|---|---|---|
+| AD-01 | ĐÃ SỬA | `UsersService.update`: Admin sửa chính mình mà gửi tập vai trò khác hiện tại → 400 "Không thể tự thay đổi vai trò của chính mình…"; gửi đúng tập cũ thì chỉ lưu hồ sơ, không ghi lại vai trò. `AdminView` khóa ô vai trò và ô trạng thái khi sửa chính mình, không gửi `roles`/`isActive`. |
+| AD-03, V1 | ĐÃ SỬA | `UpdateSlaDto` chỉ còn `standardSlaHours`; `stageName` gửi kèm bị bỏ qua (whitelist). UI hiện tên công đoạn dạng chỉ đọc. |
+| AD-05 | ĐÃ SỬA | Định mức không đổi → báo "không thay đổi", không gửi request; định mức đổi → hộp xác nhận cũ → mới, "không đổi hồ sơ đang xử lý". |
+| AD-06 | PO ĐỔI LẠI 12/11/2026 | Ngày 11/11 đổi menu và tiêu đề thành "Tài khoản & vai trò"; ngày 12/11 PO quyết định quay về "Liên hệ cá nhân" (xem mục "Màn Liên hệ cá nhân của Admin" bên dưới). Nút "Tạo tài khoản" giữ. |
+| AD-07 | ĐÃ SỬA | Thêm `AdminService`; `AdminController` chỉ gọi service. |
+| V2 | ĐÃ LÀM | `GET /admin/roles` (ADMIN): mã, tên, mô tả, số tài khoản hoạt động/tổng; bảng "Danh mục vai trò (chỉ xem)" dùng chung mô tả phạm vi việc ở `frontend/src/roleGuide.ts` (tách từ `AccountDialogs`, bổ sung giới hạn của Admin). |
+| V3 | ĐÃ LÀM | `GET /admin/sla-calendar` (ADMIN): giờ làm việc, chính sách và phiên bản lịch theo mốc kích hoạt đang hiệu lực, phạm vi lịch, ngày nghỉ. Chỉ đọc `working-time.ts`/`sla-policy.ts`, không đổi cách tính SLA. |
+| V4, V5, V7 | ĐÃ LÀM | Tên đăng nhập, email chỉ xem trong form sửa; cột "Hồ sơ đang phụ trách"; khối "Tình trạng hệ thống" đọc `/health`. |
+| AD-02 | CHƯA LÀM | Chờ PO chốt ngưỡng tối thiểu người hoạt động cho Quản lý, Thẩm quyền. |
+| AD-04, V6 | ĐÃ LÀM 12/11/2026, ĐÃ ÁP DB LOCAL | Theo [DEC-11](#quyet-dinh-po-va-ranh-gioi); kết quả ở mục "Nhật ký quản trị và gỡ menu Quản lý vấn đề hồ sơ" ngay dưới. |
+
+<a id="nhat-ky-quan-tri-20261112"></a>
+**Nhật ký quản trị và gỡ menu Quản lý vấn đề hồ sơ — triển khai ngày 12/11/2026 (PO duyệt DEC-11):**
+
+| Lớp | Thay đổi |
+|---|---|
+| Dữ liệu | Bảng `admin_audit_logs` (model `AdminAuditLog`) qua SQL cộng thêm `backend/prisma/admin-audit-log.sql`: lưu người làm (id, tên đăng nhập, họ tên tại thời điểm ghi, không khóa ngoại để vẫn đọc được khi tài khoản bị xóa), loại thao tác, đối tượng, giá trị trước/sau (JSONB), thời điểm; CHECK 6 mã thao tác; 3 index theo thời gian, người làm, loại; trigger từ chối UPDATE, DELETE, TRUNCATE. |
+| Ghi | `admin-audit.ts`: `accountChangeEntries` tách mỗi loại thay đổi một dòng, bỏ trường gửi lên nhưng không đổi; `recordAdminActions` ghi trong cùng transaction. `UsersService.create` (bọc transaction), `UsersService.update`, `AdminService.updateStageSla` (bọc transaction, đọc giá trị cũ) ghi khi thành công; lưu không đổi hoặc bị từ chối thì không có dòng. Không lưu mật khẩu. Script gọi `create` không kèm người làm (`seed-demo.cjs`) không ghi. |
+| Đọc | `GET /admin/audit-logs` (chỉ ADMIN, chỉ đọc): lọc `actorId`, `action`, `from`/`to` theo ngày giờ Việt Nam (lấy trọn ngày kết thúc), `page`, `pageSize` (mặc định 20, tối đa 100); mới nhất trước. Sai đầu vào trả 400. |
+| Giao diện | Menu bỏ "Quản lý vấn đề hồ sơ"; "Lịch sử hoạt động" mở cho Admin, không còn mục "Chưa triển khai". Màn `AdminActivityLog.tsx`: bộ lọc Người thực hiện (tài khoản Admin), Loại thao tác, Từ ngày, Đến ngày; bảng Thời điểm · Người thực hiện · Thao tác · Đối tượng · Thay đổi (trước → sau bằng chữ nghiệp vụ, SLA theo ngày làm việc); trạng thái đang tải, trống ("Chưa có thao tác nào được ghi"), lỗi có Thử lại; phân trang. Định dạng ở `adminActivity.ts`. |
+| Không đổi | Khối "Vướng mắc nội bộ" ở tiếp nhận Portal (kế hoạch B), quy trình vay, quyền nghiệp vụ, SLA, ML. |
+
+**Kiểm chứng:** viết test đỏ trước. Backend `admin-audit-log.test.cjs` 9 ca (tạo không lộ mật khẩu, script không ghi, chỉ trường đổi, khóa/mở/đổi vai trò mỗi loại một dòng, không đổi hoặc bị từ chối thì không ghi, SLA trước/sau, lọc ngày giờ VN và phân trang, đầu vào sai 400, route chỉ ADMIN và chỉ GET); ma trận `role-routes` thêm `auditLogs` chỉ Admin; cập nhật fixture `admin-stage-config`, `maker-checker`, `role-governance` cho transaction và nhật ký; `npm test` 454/454. Frontend `test:admin-activity` 5/5 (mới), `test:navigation` 17/17, 22 gói còn lại đạt; `tsc -b` và build đạt. SQL thử trên schema tạm `audit_check_*` của DB local rồi xóa: chạy lặp 2 lần an toàn, ghi và lọc được, UPDATE/DELETE/TRUNCATE bị chặn, mã thao tác lạ bị chặn, đủ 3 index. CodeGraph làm mới.
+
+**Áp lên hệ thống local ngày 12/11/2026 (PO duyệt):**
+- Sao lưu schema `public`: `.codex_tmp/backups/public-before-admin-audit-20261112.dump`. Khôi phục thử vào DB tạm `sme_restore_check_20261112`: 25 bảng, số dòng users 17, loan_applications 195, companies 198, portal_requests 18, application_stage_history 559, internal_notifications 0 khớp DB thật; DB tạm đã xóa.
+- Áp `admin-audit-log.sql` lên `public` bằng `prisma db execute`: số dòng các bảng trên giữ nguyên, số bảng 25 → 26, `admin_audit_logs` 0 dòng, đủ 2 trigger và 4 index.
+- Dừng backend cũ (PID 3720), khởi động bản mới `node --env-file=.env dist/main.js` trong tab terminal "backend 3000" của phiên AI. `/api/health` 200; `/api/admin/audit-logs` không token trả 401 (route có, đã chặn); frontend 5173 trả 200.
+
+**Kiểm trên trình duyệt (PO đăng nhập Admin, chỉ xem):** menu không còn "Quản lý vấn đề hồ sơ" và không còn mục "Chưa triển khai"; mở "Lịch sử hoạt động" thấy bộ lọc đủ 6 loại thao tác, trạng thái trống "Chưa có thao tác nào được ghi."; `GET /api/admin/audit-logs?page=1&pageSize=20` và `GET /api/users?role=ADMIN` trả 200; không có lỗi console.
+
+**Thử thao tác thật (PO yêu cầu, 12/11/2026):** Admin `khoa.tran` sửa SĐT của chính mình từ trống sang `0900000000` rồi xóa về trống qua màn Tài khoản & vai trò; cả hai lần `PUT /api/users/:id` trả 200. Bảng `admin_audit_logs` có đúng 2 dòng `USER_PROFILE_UPDATED`, mỗi dòng chỉ chứa trường `phone` (null → 0900000000; 0900000000 → ""), họ tên và chi nhánh gửi kèm không đổi nên không ghi. Màn Lịch sử hoạt động hiện "2 thao tác", mới nhất trước, cột Thay đổi ghi "Số điện thoại: 0900000000 → (trống)"; lọc "Khóa tài khoản" gọi `action=USER_LOCKED`, hiện "Không có thao tác nào khớp bộ lọc."; Xóa lọc trở lại 2 dòng. Hai dòng thử này nằm vĩnh viễn trong nhật ký. SĐT của `khoa.tran` giờ là chuỗi rỗng thay vì null, hiển thị như nhau.
+
+**Chưa kiểm chứng:** phân trang trên giao diện (chưa đủ 20 dòng); các loại thao tác khác ngoài sửa thông tin mới kiểm bằng test tự động. 
+
+**Sửa giao diện (PO duyệt, 12/11/2026):** hai nút Áp dụng/Xóa lọc nằm một hàng riêng dưới các ô lọc thay vì xếp chồng trong một ô; bảng nhật ký (`admin-activity-table`) giảm đệm ô còn 12px, cho tiêu đề và ô xuống dòng, canh trên, cột Thay đổi rộng 40% (tối thiểu 200px) nên số điện thoại không còn bị ngắt giữa chừng. Chỉ đổi CSS và một class, không đổi dữ liệu hay hành vi. Kiểm trên trình duyệt: khổ ~900px và 1440px bảng vừa khung, không cuộn ngang; khổ 375px trang không tràn ngang, bảng cuộn ngang trong khung như các bảng khác của hệ thống. `test:admin-activity` 5/5, `test:navigation` 17/17, build đạt, CodeGraph làm mới. Chưa chạy các script tích hợp có ghi DB (`check-assignment-safety.cjs` …). Khi dựng schema mới bằng `prisma db push` thì bảng có nhưng không có trigger và CHECK; phải áp thêm `admin-audit-log.sql`.
+
+**Test đã sửa kỳ vọng theo quyết định mới:** `maker-checker` (Admin tự thêm QUAN_LY nay bị 400, thêm ca tự cấp vai trò nghiệp vụ), `role-governance` D7-05 (tên công đoạn giữ nguyên), `sla-working-days` (gọi qua `AdminService`), `role-routes` (ma trận thêm `roles`, `slaCalendar` chỉ ADMIN), `check-navigation` (nhãn menu), `check-admin-sla-ui` (bộ dữ liệu mới).
+
+**Kiểm chứng:** test đỏ trước cho AD-01, AD-03, V2, V3. Backend `npm test` 441/441. Frontend: `test:admin-sla` 6/6, `test:navigation` 14/14, `test:role-governance` 5/5, `test:role-recovery` 7/7, `test:auth-sync` 1/1, `test:password` 3/3, `test:prediction-ui` 5/5, `test:preferences` 3/3, `test:sla-display` 12/12; `tsc` đạt; Vite build đạt (xuất ra thư mục tạm). CodeGraph làm mới: 231 file, 5.022 node, 9.964 edge. Backend bản mới chạy tạm ở cổng 3011 trên DB local (chỉ đọc): 4 route `/admin/*` có guard (401 khi chưa đăng nhập); Admin `khoa.tran` đọc được vai trò (1/2, 3/8, 2/5, 1/3) và lịch `VN-20260101-20270131-v2`; Admin gọi `/loan-applications` vẫn 403. Trình duyệt (Vite tạm cổng 5183 trỏ backend 3011): trang Tài khoản & vai trò, form sửa chính mình (vai trò và trạng thái bị khóa, có ghi chú), trang Cấu hình SLA (tên chỉ đọc, lịch, tình trạng hệ thống), bấm Lưu khi không đổi không gửi request; 1024px và 375px không tràn ngang, không lỗi console. Không lưu tài khoản, không đổi SLA, không ghi DB.
+
+**Áp dụng lên hệ thống local:** PO dừng backend cũ (PID 3348); backend bản mới khởi động trong tab terminal "backend 3000" (`node --env-file=.env dist/main.js` trong `backend`). Kiểm tra chỉ đọc trên cổng 3000/5173 bằng `khoa.tran`: `/admin/roles`, `/admin/sla-calendar`, `/admin/workflow-stages`, `/users` trả 200; `/loan-applications` trả 403; menu "Tài khoản & vai trò", bảng danh mục vai trò 4 dòng, cột hồ sơ đang phụ trách; Cấu hình SLA có tên công đoạn chỉ đọc, lịch `VN-20260101-20270131-v2` và tình trạng hệ thống; không lỗi console, không tràn ngang.
+
+**Điều chỉnh theo PO ngày 11/11/2026 — Admin xem toàn bộ nghiệp vụ ở chế độ chỉ xem:** PO làm rõ Admin phải "full quyền nhưng chỉ xem": mở được mọi tính năng như CBTD, Thẩm quyền, Quản lý chi nhánh, bấm vào xem chi tiết nhưng không thao tác. Quyết định này **thay** dòng "Không thấy" trong bảng ma trận phía trên và thay kiểm thử cũ "loan routes never include Admin". Giới hạn "không can thiệp quy trình cấp tín dụng" vẫn giữ: Admin không có bất kỳ quyền ghi nào trên hồ sơ.
+
+| Lớp | Thay đổi |
+|---|---|
+| Quyền route (backend) | Thêm ADMIN vào quyền cấp controller của workflow, appraisal, companies, dashboard, assignment-change-requests, assignments, loan-applications, portal-intakes, supplements, documents; thêm vào `GET dashboard/report`, `GET dashboard/overdue-supplements`, `GET portal-intakes/officers`, `GET portal-intakes/form-config`. Route ghi giữ `@Roles` riêng nên Admin vẫn bị 403; `getMyWarnings` (cảnh báo cá nhân CBTD) và `POST prediction/predict` không mở. |
+| Service | `appraisal-queue`: Admin xem hàng việc thẩm định như Quản lý. `assignment-change-requests`: Admin xem mọi đề nghị (hằng `BRANCH_WIDE`), `canResolve`/`canCancel` luôn false; gửi, quyết định, rút vẫn 403. `LoanAccessGuard` không đổi (Admin đọc mọi công đoạn, chặn non-GET sẵn có). |
+| Frontend | Menu mở Dashboard, Liên hệ doanh nghiệp, Danh sách hồ sơ, Thẩm định & phê duyệt, Điều chuyển & phân công cho Admin; trang đầu của Admin là Dashboard; `isViewOnlyRole` và dải "Chế độ chỉ xem" trên các trang nghiệp vụ. Ẩn nút "Điều chuyển" (hiện "Chỉ xem"), nút "Chạy lại" dự báo ở màn thẩm định; khung đề nghị điều phối hiện cho Admin ở dạng xem; Dashboard hiện danh sách quá hạn bổ sung và báo cáo kỳ cho Admin. Mô tả phạm vi việc của Admin trong `roleGuide.ts` cập nhật theo quy tắc mới. |
+
+**Kiểm thử:** test đỏ trước (`admin-read-only.test.cjs` 4 ca, ma trận `role-routes` kiểm Admin có mặt ở mọi route GET nghiệp vụ và vắng ở mọi route ghi, `check-navigation` thêm ca chỉ xem). Sửa kỳ vọng cũ "Admin bị chặn đọc" ở `loan-access`, `overdue-supplements`, `portal-assignment`, `check-period-report`, `check-admin-sla-ui`. Backend `npm test` 445/445; frontend toàn bộ 26 script `test:*` không lỗi; `tsc` đạt; Vite build đạt; CodeGraph 231 file, 5.026 node, 9.966 edge. Hệ thống local cổng 3000 (backend khởi động lại trong tab terminal "backend 3000"): `khoa.tran` đọc 200 ở dashboard (tổng quan, cảnh báo, quá hạn bổ sung, báo cáo kỳ), danh sách và hàng việc thẩm định, doanh nghiệp, tải cán bộ, điều phối, tiếp nhận Portal, chi tiết hồ sơ, tờ trình, chứng từ, bổ sung, lịch sử; gửi chuyển công đoạn, điều chuyển, sửa hạn mức, chạy dự báo đều 403 (không ghi DB). Trình duyệt cổng 5173: Admin vào Dashboard đầu tiên, menu không còn mục khóa; chi tiết hồ sơ chỉ còn nút chuyển tab, tải lại, Đóng; Thẩm định chỉ có nút "Xem"; Điều chuyển hiện 15 nhãn "Chỉ xem", 0 nút điều chuyển; Liên hệ doanh nghiệp 198 dòng, không tràn ngang.
+
+**Bỏ khối lịch làm việc (PO ngày 11/11/2026):** khối "Lịch làm việc tính SLA (chỉ xem)" ở Cấu hình SLA không giúp Admin theo dõi công việc nên được bỏ khỏi giao diện; API `GET /admin/sla-calendar` và test của nó được gỡ vì không còn nơi dùng (mục V3 ở bảng trên không còn hiệu lực). Lịch và cách tính SLA không đổi. Kiểm chứng: backend 444/444, `test:admin-sla` 6/6, `test:navigation` 15/15, `test:role-governance` 5/5, `tsc` và Vite build đạt; backend cổng 3000 khởi động lại, `/admin/sla-calendar` trả 404, các route Admin khác 200; trình duyệt: Cấu hình SLA còn 2 dòng định mức và khối Tình trạng hệ thống, không lỗi.
+
+**Cấu hình SLA gói v1 (PO duyệt ngày 11/11/2026 sau khai thác yêu cầu và soát Spec):** màn Cấu hình SLA giúp Admin đặt định mức có căn cứ thay vì chỉ nhập số. Quyết định kèm theo: Q1 = màn dùng để **đánh giá** định mức; Q6 = **bỏ** khối Tình trạng hệ thống (máy chủ và DB luôn hiện "Sẵn sàng" khi trang tải được nên không mang thông tin); Q4 = hạn bổ sung và ngưỡng cảnh báo **chỉ xem**; Q9 = khi đổi định mức chỉ **cảnh báo** ảnh hưởng tới dự báo, không chặn. Để lại sau: lịch sử thay đổi định mức (AC-03, gắn AD-04, cần migration), thống nhất cách đếm ngày bổ sung (Q3, ngày lịch so với ngày làm việc), Quản lý xem màn này (Q7), duyệt đổi định mức (Q8).
+
+| AC | Kết quả |
+|---|---|
+| AC-01 | Mỗi dòng định mức hiện "Thực tế trung bình · Tỷ lệ trễ (số hồ sơ đã xử lý)" lấy cùng API và cùng hàm `stageActualFigures` với bảng Điểm nghẽn ở Dashboard. Live: Tiếp nhận 4 ngày 3,4 giờ · 1.1% (186); Thẩm định 3 ngày 3,5 giờ · 17.3% (179), trùng Dashboard. |
+| AC-02 | `GET /admin/sla-overview` (chỉ ADMIN) đếm hồ sơ chưa kết thúc theo công đoạn; live 8 Tiếp nhận + 7 Thẩm định = 15, khớp ô "Hồ sơ đang xử lý" ở Dashboard. Mỗi dòng ghi "N hồ sơ đang mở giữ định mức cũ khi sửa". |
+| AC-04 | Khối "Mốc liên quan (chỉ xem)": nhắc bổ sung sau 5, quá hạn sau 10 ngày lịch (hằng số `supplement-deadlines.ts`); ngưỡng Chú ý 35%, Khẩn 60% đọc từ `/metadata` của dịch vụ ML, không chép cứng. Không có ô nhập, không có API ghi. |
+| AC-05 | Bỏ khối Tình trạng hệ thống (khối lịch đã bỏ trước đó). |
+| AC-06 | Bội số 4 giờ, từ chối sửa Hoàn tất, xác nhận cũ → mới giữ nguyên; route `slaOverview` có trong ma trận `role-routes` chỉ ADMIN. |
+| Cảnh báo ML | Phát hiện khi khảo sát: mô hình v4.0 chỉ dự báo khi định mức nằm trong dải đã học (`sla_grid_hours`: Tiếp nhận 24–128 giờ = 3–16 ngày, Thẩm định 16–80 giờ = 2–10 ngày), ngoài dải ML trả 422 và hồ sơ không có dự báo. Mỗi dòng hiện "Mô hình dự báo hỗ trợ a–b ngày làm việc"; hộp xác nhận nêu số hồ sơ giữ định mức cũ và cảnh báo ngoài dải. Không đọc được metadata thì hiện "Chưa đọc được…" và ghi log cảnh báo. |
+
+**Kiểm chứng:** test đỏ trước (backend `slaOverview`, ma trận route; frontend hiển thị, `stageActualFigures`, câu xác nhận trong và ngoài dải, thiếu metadata). Backend 445/445; frontend 26 script `test:*` không lỗi; `tsc`, Vite build đạt; CodeGraph 231 file, 5.035 node, 9.982 edge. Backend cổng 3000 khởi động lại. Trình duyệt: số liệu khớp Dashboard, không còn Tình trạng hệ thống, không tràn ngang, không lỗi; thử nhập Thẩm định 12 ngày với hộp xác nhận bị thay bằng "Hủy": câu cảnh báo ngoài dải 2–10 ngày hiện đúng, 0 request ghi, DB không đổi. **Hạn chế:** đếm hồ sơ mở theo `currentStage` chưa có index riêng; bảng nhỏ nên chưa thêm migration.
+
+**Bỏ khối "Mốc liên quan (chỉ xem)" (PO ngày 11/11/2026):** PO không muốn màn Cấu hình SLA có khối chỉ xem. AC-04 không còn hiệu lực: bỏ khối hạn bổ sung và ngưỡng cảnh báo; `GET /admin/sla-overview` chỉ còn `openLoans` và `prediction.slaRangeHours` (dùng cho dòng thông tin dưới mỗi định mức và hộp xác nhận). Màn còn 2 dòng định mức, mỗi dòng kèm thực tế, số hồ sơ đang mở và dải mô hình. Kiểm chứng: backend 445/445, `test:admin-sla` 6/6, `tsc`, Vite build đạt; backend cổng 3000 khởi động lại; trình duyệt không còn khối nào ngoài 2 dòng định mức, không lỗi.
+
+**Bộ lọc Lịch sử hoạt động và bỏ chú thích "chỉ xem" (PO ngày 12/11/2026):** bộ lọc để khoảng trắng lớn bên phải vì lưới `auto-fit` tạo nhiều cột rỗng không thu lại được khi hàng nút kéo hết các cột. Đổi sang 4 ô lọc chia đều hàng, nút Áp dụng/Xóa lọc ở cuối cùng hàng; dưới 1100px còn 2 cột (nút xuống hàng riêng), dưới 560px còn 1 cột. PO không muốn chú thích chế độ chỉ xem: bỏ dải "Chế độ chỉ xem" trên các trang nghiệp vụ (và hàm `isViewOnlyRole`), nhãn "Chỉ xem" ở cột thao tác màn Điều chuyển, chữ "(chỉ xem)… Không sửa hay xóa được" ở tiêu đề Lịch sử hoạt động. Quyền không đổi: Admin vẫn không có nút thao tác, server vẫn chặn ghi. Kiểm chứng: 26 script `test:*` frontend không lỗi (`check-navigation` kiểm không còn dải và nhãn), `tsc`, Vite build đạt; CodeGraph 236 file, 5.280 node, 10.385 edge; trình duyệt (Admin `khoa.tran`): 1440px 4 ô rộng 208px, nút cuối hàng, mép phải còn 21px đệm; 900px 2 cột; 375px 1 cột; không tràn ngang, không còn dải thông báo.
+
+**Bỏ dòng chú thích dưới tiêu đề màn (PO ngày 12/11/2026):** PO không muốn câu chú thích dưới tiêu đề của từng tính năng. Đã bỏ ở Dashboard vận hành (gồm phạm vi theo vai trò và "Tồn đọng tại …", bỏ hằng `ROLE_SCOPE`), Danh sách hồ sơ / Hồ sơ của tôi (bỏ `OFFICER_SUBTITLES`, `subtitle`), Thẩm định & phê duyệt, Điều chuyển & phân công, Liên hệ doanh nghiệp, Tài khoản & vai trò, Cấu hình SLA, Lịch sử hoạt động, khung Đề nghị từ cổng doanh nghiệp. Test `check-navigation` thêm ca "tiêu đề không có dòng chú thích" cho 8 component; `check-operations-dashboard` thay kỳ vọng "Tồn đọng tại" bằng kiểm không còn chú thích (nhãn "Lũy kế và theo kỳ", "Sắp hết hạn" vẫn tách số liệu). Kiểm chứng: 26 script `test:*` không lỗi, `tsc`, Vite build đạt; trình duyệt (Admin) 8 màn không còn chú thích, không lỗi.
+
+<a id="lien-he-ca-nhan-20261112"></a>
+**Màn "Liên hệ cá nhân" của Admin — đổi lại nhãn và review giao diện (PO giao 12/11/2026):**
+
+- **PO đổi lại AD-06:** menu và tiêu đề trang quay về "Liên hệ cá nhân" (thay "Tài khoản & vai trò" đặt ngày 11/11). Nút "Tạo tài khoản" và payload `accountUpdatePayload` giữ nguyên. Thẻ lối tắt ở `dashboard/AdminDashboard.tsx` (file của phiên Nâng cấp Dashboard, chưa commit) còn ghi "Tài khoản & vai trò", chưa sửa vì ngoài file được giao.
+- **Review UI (skill ui-ux-pro-max, đo tương phản WCAG):**
+
+| Mã | Vấn đề | Đề xuất | Loại | Kết quả |
+|---|---|---|---|---|
+| UA-01 | Cột Trạng thái là chữ trơn, tài khoản khóa và hoạt động khó phân biệt khi lướt | Nhãn `badge-soft-green` "Hoạt động" (7,29:1), `badge-soft-gray` "Đã khóa" (6,15:1); luôn kèm chữ. Không dùng đỏ vì theo DEC-05 đỏ là Từ chối/Quá hạn/Rủi ro | Giao diện | ĐÃ LÀM |
+| UA-02 | Nút "Tạo tài khoản" đứng riêng một hàng, thông báo "Đã lưu…" là chữ trơn chen giữa tiêu đề và nút | Nút tạo nằm cạnh "Làm mới" trong `page-actions`; thông báo thành khung `info-message` (navy nhạt, 7,51:1) dưới tiêu đề, tự xóa khi mở form tạo/sửa | Giao diện | ĐÃ LÀM |
+| UA-03 | Mọi nút "Sửa / Cấp quyền" cùng tên với trình đọc màn hình | `aria-label` kèm tên đăng nhập; chữ hiển thị giữ nguyên | Truy cập | ĐÃ LÀM |
+| UA-04 | Hộp tạo/sửa không khai báo hộp thoại, Esc không đóng (khác hộp Đổi mật khẩu) | `role="dialog"`, `aria-modal`, `aria-labelledby`; Esc đóng khi không đang lưu | Truy cập | ĐÃ LÀM |
+| UA-05 | Ô Điện thoại là ô chữ thường | `type="tel"` để điện thoại mở bàn phím số; không thêm kiểm tra định dạng | Giao diện | ĐÃ LÀM |
+| UA-06 | Tài khoản khóa nằm trên tài khoản hoạt động | Sắp xếp hoạt động trước, rồi theo tên đăng nhập | Đổi thứ tự hiển thị | CHỜ PO |
+| UA-07 | 17 tài khoản chưa cần tìm kiếm; khi tăng sẽ khó tìm | Ô tìm theo tên đăng nhập/họ tên và lọc trạng thái, lọc phía máy khách | Tính năng mới | CHỜ PO (khuyến nghị: chưa làm) |
+
+- **Khối "Danh mục vai trò (chỉ xem)" (câu hỏi PO, trả lời với vai trò Lead PO):** khối được thêm ngày 11/11 (V2) để Admin biết mỗi vai trò làm gì và còn bao nhiêu người hoạt động trước khi cấp hay thu hồi. Thông tin có ích nhưng đặt sai chỗ: nằm cuối trang, xa ô chọn vai trò trong form, và trái quy tắc PO "màn cấu hình chỉ chứa thứ cấu hình được". **Khuyến nghị thu gọn:** gỡ khối cuối trang, chuyển một dòng phạm vi việc ngắn và số "x/y hoạt động" vào cạnh từng ô vai trò trong form tạo/sửa, nơi Admin ra quyết định. Phương án gỡ hẳn cũng chấp nhận được vì `roleGuide.ts` vẫn dùng ở hộp Tài khoản của người dùng. **PO chốt "thu gọn vào form" (12/11/2026), đã làm:** gỡ khối cuối trang (và CSS `admin-readonly`, `admin-role-scope`); thêm `RoleChoice` trong `AdminView.tsx`: mỗi ô vai trò hiện tên vai trò, "x/y tài khoản hoạt động" (từ `GET /admin/roles`, vẫn gọi như cũ; chưa đọc được thì không hiện số) và câu phạm vi việc đầu tiên của `ROLE_GUIDE` (không viết câu mới), gắn với ô bằng `aria-describedby`. Test đỏ trước (`check-admin-sla-ui` 8/8: trang không còn khối danh mục; ô vai trò có đúng một dòng phạm vi và số đếm). `test:navigation` 18/18, `test:role-governance` 5/5, `tsc -b`, Vite build đạt. Trình duyệt: trang không còn "Danh mục vai trò"; form Tạo tài khoản 1440px hiện 4 vai trò (1/2, 3/8, 2/5, 1/3), không cuộn; 375px không tràn ngang trong hộp; Esc đóng; chỉ có GET, không lỗi console. Không lưu tài khoản.
+- **Kiểm chứng:** test đỏ trước cho nhãn (`check-navigation`, `check-admin-sla-ui`) và cho nhãn trạng thái, `aria-label`, vị trí nút tạo (ca mới trong `check-admin-sla-ui`, bộ dữ liệu thêm một tài khoản đã khóa). 25 script `test:*` frontend đạt (admin-sla 7/7, navigation 18/18, role-governance 5/5); `tsc -b` đạt; Vite build đạt (xuất ra thư mục tạm). CodeGraph làm mới. Không đổi backend, quyền, dữ liệu.
+- **Kiểm trên trình duyệt (PO đăng nhập Admin `khoa.tran`, cổng 5173, chỉ xem):** 1440px: menu và tiêu đề "Liên hệ cá nhân", 17 dòng có nhãn (7 Hoạt động xanh lá, 10 Đã khóa xám), màu tính toán khớp token, nút Tạo tài khoản cạnh Làm mới, bảng vừa khung. Mở "Sửa / Cấp quyền" thấy hộp thoại "Cập nhật tài khoản" có `role="dialog"`, ô điện thoại `type="tel"`; Esc đóng hộp; chỉ có `GET /api/users`, không request ghi. 900px: trước khi sửa bảng cuộn ngang 224px, khuất cột Trạng thái và Thao tác (có từ trước) → thêm CSS `admin-account-table` dưới 1200px (đệm ô 12px, tiêu đề xuống dòng, tên đăng nhập không ngắt), sau sửa đủ 6 cột, cuộn 0. 375px: trang không tràn ngang, bảng cuộn trong khung như các bảng khác, hai nút chia đều hàng; không lỗi console. Build lại đạt, `test:admin-sla` 7/7. Nút cao 40px (chuẩn `.btn` chung, dưới khuyến nghị 44px cho cảm ứng), không đổi trong đợt này.
+
+**Soát lại tính năng Liên hệ cá nhân — trạng thái và nhiều vai trò (PO hỏi 12/11/2026, chỉ review, chưa sửa):** chưa có Spec riêng cho tính năng; đối chiếu bằng source, test và trình duyệt.
+
+| Mã | Tình huống | Hiện trạng/mong đợi | Rủi ro | Bằng chứng | Phương án | Loại |
+|---|---|---|---|---|---|---|
+| LH-01 | Sửa tài khoản không thấy chỗ khóa | Có ô tích "Tài khoản hoạt động" nhưng nằm cuối form, dưới vùng nhìn thấy (đo ở 1440px: phải cuộn); tên ô không nói "khóa" | Vừa: Admin tưởng không khóa được | `AdminView.tsx` ô `isActive` sau fieldset vai trò; trình duyệt mở `dat.nguyen`, `thanh.ngo` | Thay bằng mục "Trạng thái" hai lựa chọn Hoạt động / Đã khóa, đặt ngay sau Họ tên; tự sửa mình thì khóa kèm ghi chú như hiện nay | Phải sửa (giao diện) |
+| LH-02 | Khóa CBTD còn hồ sơ | Chỉ biết bị từ chối sau khi bấm Lưu (400). Số "Hồ sơ đang phụ trách" đếm 4 trạng thái, còn điều kiện chặn đếm mọi hồ sơ chưa hoàn tất và đề nghị Portal → con số có thể lệch | Vừa | `users.service.ts` `findAll` (`currentStatus in …`) và `update` (`completedAt: null`, `portalRequest`) | Thống nhất một cách đếm ở service; form báo lý do ngay tại lựa chọn Đã khóa khi còn việc; backend vẫn chặn | Phải sửa (cần xem cách đếm) |
+| LH-03 | Tạo mới không chọn trạng thái | Thiết kế hiện tại: tạo mới luôn Hoạt động (`CreateUserDto` không có `isActive`, DB mặc định `true`); form vẫn gửi `isActive: true` và bị bỏ qua | Thấp | `dto/user.dto.ts`, `schema.prisma` `isActive @default(true)` | Khuyến nghị giữ: tài khoản tạo ra để dùng ngay, chưa dùng thì khóa sau; bỏ `isActive` khỏi dữ liệu gửi khi tạo | Chờ PO |
+| LH-04 | Tài khoản 2 vai trò đăng nhập | Vào vai trò đã dùng lần trước trên trình duyệt, nếu không có thì vai trò đầu danh sách, mà thứ tự không được sắp (không `orderBy`); không báo tài khoản có nhiều vai trò; bộ chuyển nằm trong menu tài khoản, tiêu đề lộ mã nội bộ "Vai trò làm việc (R6)" | Vừa: CBTD + Thẩm quyền có thể vào nhầm khu làm việc | `AuthContext.acceptUser`, `auth.service.ts` login, `Navbar.tsx` | Sắp vai trò theo thứ tự cố định; sau đăng nhập nếu có >1 vai trò thì hỏi chọn vai trò làm việc (hoặc báo đang dùng vai trò nào và chỗ đổi); bỏ "(R6)" | Chờ PO chọn cách |
+| LH-05 | Cấp CBTD + Thẩm quyền cho một người | Hệ thống cho phép; chặn từng hồ sơ bằng Maker-Checker (không tự quyết hồ sơ mình lập) | Vừa: một người vừa lập vừa duyệt hồ sơ của đồng nghiệp trong cùng nhóm | `appraisal.logic.ts:58`; hiện có 1 tài khoản (`dat.nguyen`, đang khóa) | Quyết định nghiệp vụ: cấm kết hợp hai vai trò (chặn ở API và form) hay giữ Maker-Checker từng hồ sơ | Chờ PO |
+| LH-06 | Tên đăng nhập khác hoa/thường | Tạo được `Dat.Nguyen` bên cạnh `dat.nguyen`; đăng nhập so khớp chính xác | Thấp | `create` dùng `findFirst` bằng nhau; `login` `findUnique({ username })` | Chuẩn hóa chữ thường khi tạo và đăng nhập | Cải tiến; chưa chạy thử |
+| LH-07 | Bỏ trống Chi nhánh | Tự thành "Chi nhánh TP.HCM" không báo | Thấp | `create`, `schema.prisma` | Bắt buộc chọn chi nhánh hoặc hiện giá trị mặc định trong ô | Cải tiến |
+| LH-08 | Khóa Quản lý/Thẩm quyền cuối cùng | Vẫn chưa chặn (AD-02) | Vừa | `users.service.ts` `update` | Như AD-02, chờ ngưỡng | Chờ PO |
+
+**Kiểm chứng đã làm:** backend `role-governance`, `maker-checker`, `admin-audit-log` 23/23; trình duyệt Admin (chỉ mở form, không lưu): `dat.nguyen` và `thanh.ngo` có ô trạng thái bật được nhưng nằm dưới vùng nhìn thấy; `khoa.tran` (chính mình) bị khóa ô vai trò và trạng thái, có ghi chú. **Chưa làm:** thử tạo tài khoản, khóa CBTD còn hồ sơ, đăng nhập tài khoản 2 vai trò trên DB local, vì tạo dòng nhật ký vĩnh viễn và tài khoản không xóa được qua API; cần PO cho phép và đăng nhập tài khoản thử.
+
+**Triển khai LH-01, LH-02 (PO duyệt 12/11/2026):**
+
+| Mã | Kết quả | Thay đổi |
+|---|---|---|
+| LH-01 | ĐÃ SỬA | Form sửa tài khoản bỏ ô tích "Tài khoản hoạt động" ở cuối; thêm nhóm "Trạng thái" hai lựa chọn Hoạt động / Đã khóa (`AccountStatusField`) ngay sau Họ tên. Tự sửa chính mình: cả nhóm bị khóa, ghi chú cũ giữ nguyên. Form tạo mới không có trạng thái (LH-03 chưa chốt; tài khoản mới vẫn Hoạt động). Payload `accountUpdatePayload` không đổi. |
+| LH-02 | ĐÃ SỬA | `UsersService` dùng chung hai điều kiện `OPEN_LOAN_WHERE` (hồ sơ `completedAt` trống) và `PENDING_PORTAL_WHERE` (đề nghị Portal `ASSIGNED`/`RETURNED`) cho cột "Hồ sơ đang phụ trách" và cho điều kiện chặn khóa/bỏ CBTD; `GET /users` trả thêm `pendingPortalRequests`. Form: tài khoản đang hoạt động còn việc thì lựa chọn "Đã khóa" bị khóa, lý do hiện ngay dưới (`lockBlockReason`, ví dụ "Đang phụ trách 6 hồ sơ chưa hoàn tất. Hãy điều chuyển trước khi khóa."); máy chủ vẫn chặn như cũ. Số liệu local trước khi đổi: hai cách đếm trùng nhau ở cả 3 CBTD có hồ sơ (6, 4, 4), 0 đề nghị Portal đang chờ, nên cột không đổi giá trị. |
+
+**Kiểm chứng:** test đỏ trước: backend `account-workload.test.cjs` (danh sách và điều kiện chặn đếm cùng điều kiện, trả `pendingPortalRequests`); frontend `check-admin-sla-ui` thêm 2 ca (vị trí và hai lựa chọn trạng thái; khóa lựa chọn kèm lý do, tự sửa mình khóa cả nhóm). Backend `npm test` 486/486; frontend 25 script `test:*` đạt (admin-sla 10/10); `tsc -b`, Vite build đạt; CodeGraph làm mới. Backend cổng 3000: dừng PID 6584, chạy bản mới trong tab terminal "backend 3000" của phiên này; `GET /api/users` trả `pendingPortalRequests`. Trình duyệt (Admin, chỉ mở form, không lưu, không có `PUT`): `thanh.ngo` có Trạng thái ngay sau Họ tên, "Đã khóa" bị khóa kèm lý do 6 hồ sơ; `dat.nguyen` (đã khóa, 0 hồ sơ) chọn được cả hai; `khoa.tran` khóa cả nhóm; 375px không tràn ngang, Esc đóng. Console có lỗi Vite `REPORT_RATE_KEY is not defined` ở `appraisalWorkspace.ts`, file của phiên khác đang sửa, không thuộc gói này. **Thử lưu thật (PO cho phép, 12/11/2026, DB local):** Admin `khoa.tran` khóa `huy.vu` (Thẩm quyền, 0 hồ sơ) qua form mới → thông báo "Đã lưu…", nhãn đổi "Đã khóa"; mở lại → "Hoạt động". Nhật ký thêm đúng 2 dòng `USER_LOCKED` (15:39:14 UTC) và `USER_UNLOCKED` (15:39:34 UTC), mỗi dòng chỉ trường `isActive`; tổng nhật ký 4 dòng. Gửi thẳng `PUT /api/users/:id {isActive:false}` cho `thanh.ngo` (vượt giao diện) → 400 "Người này đang phụ trách 6 hồ sơ chưa hoàn tất…", tài khoản vẫn hoạt động, không thêm dòng nhật ký. Trạng thái cuối: `huy.vu` hoạt động như trước. **Backlog (ngoài phạm vi):** 4 tài khoản `test_*` có chi nhánh lỗi mã hóa "Chi nh?nh TP. H? Ch? Minh" trong DB.
+
+**Chưa xong:** chưa thử gửi thật một lần đổi định mức SLA hoặc tự đổi vai trò qua API trên DB (chỉ có unit test). `check-ai-rules` báo 3 lỗi về `GEMINI.md` không tồn tại, có từ trước, không liên quan đợt sửa này.
+
 ---
 
 ### Danh sách hồ sơ theo bố cục TMS và menu khóa — ngày 05/11/2026
@@ -632,6 +813,7 @@ Gói này cập nhật dữ liệu, không đổi source backend đang chạy ho
 
 ---
 
+<a id="review-vai-tro-tham-quyen"></a>
 ### Review vai trò Cán bộ Thẩm quyền — ngày 05/11/2026
 
 **Phạm vi PO giao:** Thẩm định hồ sơ vay (xem xét tờ trình, yêu cầu làm rõ tờ trình) và Quyết định tín dụng (phê duyệt, từ chối). PO duyệt sửa 3 lỗi phát hiện khi thử; không đổi quyền vai trò.
@@ -707,7 +889,123 @@ Quy tắc xếp tab, mỗi hồ sơ đúng một tab và số đếm theo bộ l
 
 **Bỏ mục lục (PO duyệt ngày 05/11/2026):** dòng mục lục đầu phần phân tích không thêm thông tin vì tờ trình chỉ có 6 mục cố định và làm rối giao diện nên đã gỡ.
 
-**Chờ PO quyết định về lãi suất:** hiện Thẩm quyền nhập tự do 0–100%, hệ thống không có biểu lãi suất. Phương án: biểu theo loại vay có sàn và trần do Admin cấu hình (đề xuất), mức cố định theo loại vay, hoặc giữ nguyên. Hai phương án đầu là tính năng mới, cần migrate và mức lãi suất do PO cung cấp.
+<a id="review-lai-suat-tham-quyen"></a>
+**Chờ PO quyết định về lãi suất — review ngày 12/11/2026 (chỉ review, chưa sửa code hay dữ liệu):** PO hỏi Thẩm quyền dựa vào đâu để điền lãi suất khi phê duyệt.
+
+*Hiện trạng (đọc code và DB chính, chỉ đọc; CodeGraph `fn-impact` trên `WorkflowService.transitionStage`, `AppraisalDecisionPanel`):*
+
+- **Loại vay:** enum `LoanType` có 3 loại `VAY_VON_LUU_DONG`, `VAY_DAU_TU_TSCD`, `THAU_CHI`. Tạo tại quầy (`CreateLoanModal`) chọn được cả 3. Portal chỉ nhận vốn lưu động (`portal.approved-policy.ts` báo `OUTSIDE_SCOPE` với loại khác), chia 3 phạm vi hoạt động Sản xuất, Thương mại, Dịch vụ; phạm vi chỉ đổi danh mục chứng từ, không gắn với lãi suất. Thời hạn vay: Portal 1–120 tháng; DB chính hiện có 169 hồ sơ vốn lưu động (3–12 tháng), 26 hồ sơ đầu tư TSCĐ (12 tháng), chưa có hồ sơ thấu chi.
+- **Lưu trữ:** chỉ một cột `loan_applications.interest_rate` `Decimal(5,2)`, ghi khi phê duyệt. Không có bảng biểu lãi suất, không có cấu hình Admin, không lưu căn cứ hay khung áp dụng. `AdminAuditLog` hiện chưa có thao tác nào về lãi suất.
+- **Tờ trình CBTD:** 8 trường văn bản tự do (`REPORT_FIELDS` trong `appraisal.logic.ts`), không có trường lãi suất đề xuất; CBTD chỉ có thể viết lãi suất trong "Đề xuất của CBTD" (`recommendation`) dạng chữ, hệ thống không đọc được. Bộ căn cứ `reportEvidence` không có lãi suất.
+- **Form quyết định:** `AppraisalDecisionPanel.tsx` có ô "Lãi suất phê duyệt (%/năm)" để trống, `step 0.1`, chặn ngoài 0–100. Backend `workflow.service.ts` chỉ kiểm `0 ≤ interestRate ≤ 100`; DTO nhận số bất kỳ, DB làm tròn 2 chữ số. Form không hiện mức tham chiếu nào.
+- **Hiển thị:** `DecisionResult.tsx`, cột trạng thái danh sách (`loanListDisplay.ts`), thông báo cho CBTD và ghi chú lịch sử công đoạn đều ghi "x%/năm". Portal doanh nghiệp không hiện lãi suất, chỉ "Đã được phê duyệt. Ngân hàng sẽ liên hệ về các bước tiếp theo". Dashboard, báo cáo kỳ và ML không dùng lãi suất.
+- **Dữ liệu hiện có:** 135 hồ sơ đã duyệt có lãi suất 7,58–11,49%. Đây là số sinh ngẫu nhiên trong `seed-demo.cjs` (7,5–11,5), không phải biểu của ngân hàng, không được dùng làm căn cứ khung.
+
+*Đối chiếu nghiệp vụ (mức khái niệm):* ngân hàng thường định lãi suất cho vay bằng lãi suất cơ sở cộng biên độ; biên độ theo sản phẩm, thời hạn, tài sản bảo đảm và mức rủi ro khách hàng; ngân hàng ban hành khung sàn–trần theo thời kỳ, đề xuất ngoài khung phải lên cấp cao hơn; lãi suất có thể cố định hoặc điều chỉnh theo kỳ. Hệ thống SME không chấm điểm tín dụng, ML chỉ dự báo trễ SLA (DEC-04), một chi nhánh không có cấp trên (DEC-01). Vì vậy phần biên độ theo rủi ro chỉ có thể là nhận định của CBTD và Thẩm quyền, ghi bằng lời trong tờ trình; hệ thống chỉ quản lý được khung và mức đề xuất, không tự tính lãi suất.
+
+*Vấn đề (Lead PO đặt, Lead Fullstack xác minh bằng source):*
+
+| Mã | Tình huống | Hiện trạng / mong đợi | Rủi ro | Bằng chứng | Phương án | Phạm vi ảnh hưởng | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|---|---|
+| LS-01 (gap nghiệp vụ) | Thẩm quyền mở form phê duyệt | Chỉ có ô trống, không có mức tham chiếu nào / cần thấy mức CBTD đề xuất và khung được phép | Mỗi người điền một kiểu, khó giải thích khi bảo vệ | `AppraisalDecisionPanel.tsx`, `REPORT_FIELDS` | A hoặc B bên dưới | Tờ trình, form quyết định | Form hiện căn cứ trước ô nhập |
+| LS-02 (gap nghiệp vụ) | Nhập nhầm 85 thay vì 8,5, hoặc 0% | 0–100 đều hợp lệ / chỉ nhận trong khung của loại vay | Ghi sai điều kiện tín dụng, hồ sơ đã kết thúc không sửa được | `workflow.service.ts` kiểm 0–100 | B hoặc C | API phê duyệt, form | API trả 400 khi ngoài khung; form khóa nút |
+| LS-03 (gap kiểm toán) | Tra lại vì sao hồ sơ được 9% | Chỉ có con số / cần lưu khung và phiên bản biểu tại lúc quyết định | Không truy được căn cứ, khung đổi thì không biết hồ sơ cũ theo khung nào | Schema chỉ có `interest_rate` | B: lưu ảnh chụp khung vào hồ sơ | Schema, migration | Kết quả quyết định hiện khung đã áp dụng |
+| LS-04 (lỗi nhỏ) | Nhập 8,25% | Form `step 0.1` báo không hợp lệ, API nhận mọi số rồi DB làm tròn 2 số lẻ / thống nhất một độ chính xác | Lệch giữa form và API | `AppraisalDecisionPanel.tsx`, `Decimal(5,2)` | Thống nhất bước 0,01 (chờ Q7) ở form và API | Form, API | 8,25 nhận được ở cả hai; 8,255 bị từ chối |
+| LS-05 (dữ liệu) | Dùng số đang có trong DB làm khung | Số ngẫu nhiên do seed sinh / số liệu phải do PO cung cấp | Trình bày số bịa như chính sách ngân hàng | `seed-demo.cjs` dòng 203 | Không dùng; ghi nguồn số liệu khi PO cung cấp | Tài liệu, seed | Khung trong hệ thống khớp số PO chốt |
+
+*Phương án để PO chốt (chưa tự chọn):*
+
+| Phương án | Cách làm | Phạm vi ảnh hưởng | Rủi ro | Công sức ước tính | Kịp 23/12 |
+|---|---|---|---|---|---|
+| **A. Giữ nhập tự do, thêm căn cứ** | Tờ trình thêm trường có cấu trúc "Lãi suất đề xuất (%/năm)" bắt buộc khi trình; form quyết định hiện mức này cạnh ô nhập; Thẩm quyền khác mức đề xuất thì phải ghi lý do | `appraisal.logic.ts` (`REPORT_FIELDS`, `validateReport`), form lập tờ trình, `AppraisalReportCard`, `AppraisalDecisionPanel`, DTO và `workflow.service.ts`; tờ trình lưu JSON nên không cần migrate, trừ khi lưu lý do lệch vào cột riêng | Vẫn không có khung, LS-02 còn | 1–1,5 ngày | Có |
+| **B. Khung sàn–trần theo loại vay do Admin cấu hình (khuyến nghị, kèm A)** | Bảng biểu lãi suất có phiên bản và ngày hiệu lực theo loại vay (có thể thêm nhóm thời hạn); Admin thêm phiên bản mới, không sửa phiên bản cũ, ghi nhật ký quản trị; CBTD đề xuất và Thẩm quyền quyết trong khung; hồ sơ lưu ảnh chụp khung đã áp dụng | Schema mới + migration, API Admin và màn cấu hình trong `AdminView`, `AdminAuditLog` thêm 1 thao tác (ảnh hưởng danh sách 5 thao tác của DEC-11), kiểm tra ở `workflow.service.ts`, form tờ trình và form quyết định, `DecisionResult`; seed demo cần khung để chạy | Thêm việc khi DEC-11 phải xong code trước 30/11; chưa có số liệu thì không chạy được | 3–4 ngày (B + A khoảng 4–5 ngày) | Có nếu PO chốt và đưa số liệu trước khoảng 20/11 |
+| **C. Mức cố định theo loại vay** | Hệ thống tự điền một mức theo loại vay, Thẩm quyền không sửa | Như B nhưng bỏ sàn–trần | Không phản ánh khác biệt thời hạn, bảo đảm, rủi ro; ô lãi suất mất ý nghĩa quyết định | 2–2,5 ngày | Có |
+| **D. Giữ nguyên** | Chỉ ghi trong tài liệu bảo vệ rằng lãi suất do Thẩm quyền tự định ngoài hệ thống | Không đổi code | LS-01..LS-03 còn nguyên; khó trả lời câu hỏi hội đồng | 0 | Có |
+
+Khuyến nghị của Lead PO: **B kèm A**, chặn cứng ngoài khung (không có cấp trên để duyệt ngoại lệ), sửa luôn LS-04. Nếu không đủ thời gian trước 23/12 thì làm A trước, B sau buổi bảo vệ. Mọi phương án giữ ML ngoài lãi suất và không thêm chấm điểm tín dụng.
+
+*Câu hỏi PO cần chốt (Q) và giả định đang dùng (D):*
+
+| Mã | Câu hỏi | Vì sao cần | Mặc định đề xuất | Chặn triển khai |
+|---|---|---|---|---|
+| Q1 | Chọn phương án A, B, C, D hay kết hợp? | Quyết định phạm vi | B kèm A | Có |
+| Q2 | Khung theo loại vay hay loại vay × nhóm thời hạn (ví dụ đến 12 tháng, trên 12 tháng)? | Vốn lưu động và TSCĐ khác kỳ hạn | Theo loại vay; nhóm thời hạn để sau | Có với B, C |
+| Q3 | Sàn và trần (hoặc mức cố định) cho từng loại vay là bao nhiêu, nguồn ở đâu? | Không được tự đặt số | PO cung cấp; ghi rõ là số mô phỏng của khóa luận | Có với B, C |
+| Q4 | Ngoài khung: chặn cứng hay cho phép kèm giải trình? | Một chi nhánh, không có cấp trên | Chặn cứng | Có với B |
+| Q5 | Lãi suất đề xuất có bắt buộc trong tờ trình không? Thẩm quyền chọn khác đề xuất có phải ghi lý do không? | Căn cứ kiểm toán | Bắt buộc; khác đề xuất thì ghi lý do | Có với A |
+| Q6 | Admin đổi khung khi hồ sơ đang ở Thẩm định thì áp khung nào? | Tranh chấp phiên bản | Khung hiệu lực lúc Thẩm quyền quyết định; tờ trình ngoài khung mới phải làm rõ | Có với B |
+| Q7 | Độ chính xác lãi suất: 0,01 hay 0,1 điểm %? | LS-04 | 0,01, khớp DB | Không |
+| Q8 | Doanh nghiệp có thấy lãi suất trên Portal không? | Hiện không hiện | Giữ không hiện | Không |
+| Q9 | Lãi suất cố định cả kỳ hay điều chỉnh theo kỳ? | Hệ thống chỉ lưu một số | Chỉ lưu lãi suất áp dụng lúc phê duyệt; điều chỉnh kỳ sau ngoài phạm vi | Không |
+| Q10 | Thấu chi (chỉ tạo tại quầy, DB chưa có hồ sơ) có cần khung không? | Đủ 3 loại vay | Có, cùng màn cấu hình | Có với B, C |
+| D1 | ML chỉ dự báo trễ SLA, không dùng cho lãi suất (DEC-04) | | | |
+| D2 | Hệ thống không chấm điểm tín dụng; biên độ theo rủi ro là nhận định của cán bộ, ghi bằng lời | | | |
+| D3 | Một chi nhánh, không có cấp phê duyệt trên (DEC-01) | | | |
+| D4 | Form phê duyệt để trống lãi suất (PO duyệt 05/11) giữ nguyên ở mọi phương án | | | |
+| D5 | 135 hồ sơ đã duyệt giữ nguyên lãi suất cũ, không áp khung ngược | | | |
+
+**Chưa xác minh:** chưa thử form trên trình duyệt trong lần review này; chưa đo ảnh hưởng tới `check-sme-rollout-browser.mjs` và các script demo nếu tờ trình thêm trường.
+
+**PO duyệt ngày 12/11/2026 (DEC-13):** chấp thuận đề xuất của PO Lead cho Q1–Q10:
+
+| Q | Đã chốt |
+|---|---|
+| Q1 | Làm A cùng LS-04 trước (gói LS-1), sau đó B (gói LS-2) khi có số liệu; không chọn C, D |
+| Q2 | Khung theo loại vay; bảng có sẵn cột kỳ hạn từ–đến nhưng mỗi loại vay chỉ một nhóm |
+| Q3 | PO cung cấp sàn, trần, ngày hiệu lực, nguồn tham khảo; mỗi phiên bản ghi "Căn cứ ban hành", dữ liệu khóa luận ghi "Số liệu mô phỏng – không phải biểu lãi suất của ngân hàng"; hệ thống kiểm 0 < sàn ≤ trần ≤ 100. Khoản vay ngắn hạn thuộc lĩnh vực ưu tiên (có doanh nghiệp nhỏ và vừa) áp trần NHNN; xác định đủ điều kiện nằm ngoài hệ thống, ghi trong tài liệu bảo vệ |
+| Q4 | Ngoài khung chặn cứng ở form và API; Admin chỉ thêm phiên bản mới, không sửa phiên bản cũ, không hiệu lực lùi, ghi nhật ký quản trị (mở rộng danh sách thao tác của DEC-11); kết quả quyết định hiện phiên bản khung đã áp dụng |
+| Q5 | Lãi suất đề xuất là trường số bắt buộc khi trình tờ trình, nằm trong khung; Thẩm quyền chọn khác đề xuất (cả hai chiều) phải ghi lý do, lưu và hiện ở kết quả. **PO đổi ngày 13/11/2026:** tờ trình chưa có lãi suất đề xuất thì Thẩm quyền không phê duyệt được (vẫn từ chối hoặc yêu cầu làm rõ được); phải yêu cầu CBTD làm rõ và trình lại với lãi suất đề xuất. Hồ sơ quy trình cũ không có tờ trình giữ quy tắc cũ (hiện không còn hồ sơ nào đang mở) |
+| Q6 | CBTD kiểm theo khung lúc trình; Thẩm quyền kiểm theo khung lúc quyết định (quyết định cuối), kiểm lại trong transaction có khóa hồ sơ; khung đổi làm đề xuất ra ngoài khung thì giao diện báo, Thẩm quyền chọn mức trong khung mới kèm lý do hoặc yêu cầu làm rõ; hồ sơ lưu phiên bản, sàn, trần đã áp dụng |
+| Q7 | Bước 0,01 ở form và API; API từ chối số quá 2 chữ số thập phân |
+| Q8 | Portal không hiện lãi suất |
+| Q9 | Một trường "Lãi suất phê duyệt (%/năm)" là mức áp dụng tại thời điểm phê duyệt; cố định hay thả nổi và kỳ điều chỉnh do hợp đồng tín dụng quy định, ngoài phạm vi |
+| Q10 | Thấu chi có khung; loại vay chưa có khung hiệu lực thì không trình tờ trình và không phê duyệt được, báo "Chưa có khung lãi suất hiệu lực cho loại vay X"; dữ liệu demo phải có khung đủ 3 loại |
+
+**Số liệu Q3 PO duyệt có điều kiện ngày 13/11/2026** (thử nghiệp vụ trong môi trường khóa luận, chưa áp đại trà cho khoản vay thuộc diện ưu tiên): Vốn lưu động 6,50–10,50%/năm; Đầu tư tài sản cố định 7,50–12,00%/năm; Thấu chi 8,00–13,00%/năm; hiệu lực 13/11/2026. Căn cứ ban hành: "Biểu lãi suất mô phỏng phục vụ nghiên cứu, không phải biểu lãi suất chính thức của ngân hàng. Tham khảo chương trình tín dụng SME của Vietcombank, Agribank, BIDV và thông tin lãi suất NHNN; tra cứu ngày 13/11/2026. Áp dụng cho khoản vay VND thông thường, không thuộc diện khống chế trần lãi suất ưu tiên." Khung thấu chi là giả định mô phỏng của PO, chưa có biểu thấu chi doanh nghiệp được xác minh.
+
+**Chưa chốt:**
+- Khoản vay thuộc diện ưu tiên: trần NHNN cho vay ngắn hạn VND với nhu cầu vốn ưu tiên đủ điều kiện là 4,00%/năm; hệ thống chưa phân biệt khoản vay thông thường và khoản vay ưu tiên, nên chưa được coi là hoàn chỉnh cho mọi hồ sơ. Hướng PO nêu: thêm khung ưu tiên riêng (ví dụ 3,50–4,00%/năm, mô phỏng) kèm cách xác định hồ sơ thuộc diện ưu tiên; cần PO chốt quy tắc áp dụng (ai xác định, theo tiêu chí nào, ở bước nào) trước khi làm — là tính năng mới.
+- Có sinh lại lãi suất trong dữ liệu demo hay không (thao tác ghi DB, cần quyền riêng); thấu chi có nên nằm trong quy trình tạo hồ sơ tại quầy (backlog riêng).
+- Đã đáp ứng sẵn: đổi khung không làm thay đổi hồ sơ đã quyết định, vì lãi suất và phiên bản khung đã áp dụng lưu cùng quyết định.
+
+**Kế hoạch triển khai:**
+
+- **Gói LS-1 — đã code ngày 12/11/2026, chưa commit:**
+  - *Tờ trình:* `REPORT_FIELDS` thêm `proposedInterestRate` (chuỗi số 0–100, tối đa 2 chữ số thập phân), bắt buộc khi trình, được để trống khi lưu nháp. Form lập tờ trình (`OfficerReportEditor`, popup `AppraisalPanel`) có ô số "Lãi suất đề xuất (%/năm)"; nhập sai thì khóa Lưu nháp và Trình. `AppraisalReportCard` hiện mức đề xuất trong khối đề xuất, có nhãn "Đã sửa" khi đổi so với phiên bản trước; tờ trình cũ ghi "Chưa có (tờ trình lập trước khi có trường này)".
+  - *Phê duyệt:* `AppraisalDecisionPanel` hiện "CBTD đề xuất: x%/năm" hoặc ghi chú chuyển tiếp ("Tờ trình lập trước khi có trường lãi suất đề xuất", "Hồ sơ quy trình cũ, không có tờ trình"), bước 0,01, nhận dấu phẩy; chọn khác mức đề xuất thì hiện ô "Lý do khác mức đề xuất" bắt buộc. Form vẫn để trống lãi suất.
+  - *API:* `workflow.service.ts` từ chối lãi suất quá 2 chữ số thập phân (LS-04) và từ chối khi khác mức đề xuất mà không có `interestRateReason` (tối đa 2000 ký tự). Phê duyệt có tờ trình ghi sự kiện `RATE_DECIDED` vào `appraisal_report_events` gồm lãi suất phê duyệt, mức đề xuất, lý do (chỉ lưu khi khác đề xuất), trong cùng transaction; không migrate. `GET /loan-applications/:id` trả `rateDecision` cho hồ sơ đã duyệt; `DecisionResult` hiện "Lãi suất CBTD đề xuất" và "Lý do khác mức đề xuất".
+  - *Không đổi:* quy trình, quyền, SLA, ML, Portal (không hiện lãi suất), dữ liệu đã có. Popup `LoanDetailModal` (nhánh phê duyệt không còn ai mở) chỉ đổi bước nhập sang 0,01, không có ô lý do; API vẫn chặn nếu thiếu lý do.
+  - *Script tích hợp đã thêm lãi suất đề xuất vào nội dung tờ trình:* `check-sme-rollout.cjs`, `check-pa1-evidence.cjs`, `verify-local-running-system.cjs`, `seed-portal-flow.cjs`, `check-sme-rollout-browser.mjs`. `seed-demo.cjs` ghi thẳng DB nên chưa thêm: hồ sơ demo chờ quyết định sẽ hiện ghi chú chuyển tiếp.
+  - *Kiểm chứng:* viết test trước và thấy đỏ. Backend `npm test` 486/486 (mới: `interest-rate.test.cjs` 5 ca, 6 ca DEC-13 trong `workflow-decision.test.cjs`; `appraisal.test.cjs` bổ sung trường mới). Frontend `test:appraisal` 41/41, `test:loan-detail` 16/16, cả 25 gói `test:*` đạt; build đạt; CodeGraph làm mới (5.559 node). `check-sme-rollout.cjs` trên schema riêng dừng ở bước tạo đề nghị Portal vì schema thiếu `portal_request_reference_seq` (lỗi dựng schema có từ trước), schema đã tự xóa; chưa tới phần tờ trình.
+  - *Thử trên hệ thống chính (PO cho phép, 12/11/2026, ghi dữ liệu thật, khổ 1024 và 375):*
+    - CBTD `nam.hoang`, hồ sơ `SME-20261105-8001`: nhập lãi suất đề xuất 8,255 thì form báo lỗi, khóa Lưu nháp và Trình; sửa thành 8,5 thì lưu nháp và trình được, hồ sơ sang Thẩm định, tờ trình hiện "Lãi suất đề xuất 8,5%/năm".
+    - Thẩm quyền `ha.le`, cùng hồ sơ: form để trống lãi suất, hiện "CBTD đề xuất: 8,5%/năm", bước 0,01, nút xác nhận khóa. Nhập 9,1 thì hiện ô lý do và nút vẫn khóa; ghi lý do thì xác nhận được. Kết quả hiện lãi suất phê duyệt 9,1%, mức CBTD đề xuất 8,5% và lý do.
+    - DB (đọc lại): hồ sơ `HOAN_TAT/APPROVED`, `interest_rate` 9.1, tờ trình `DECIDED`, có sự kiện `RATE_DECIDED` đúng 3 giá trị.
+    - Hồ sơ `SME-20261021-8001` (tờ trình cũ, chỉ chọn Phê duyệt, không gửi): form hiện "Tờ trình lập trước khi có trường lãi suất đề xuất", khối đề xuất hiện "Chưa có (tờ trình lập trước khi có trường này)".
+    - Khổ 375: form phê duyệt và khối kết quả không tràn ngang.
+    - Hồ sơ `SME-20261105-8001` giờ đã kết thúc với nội dung "Kiểm thử LS-1"; dọn hay giữ do PO quyết định.
+  - *Thử bổ sung ngày 13/11/2026 trên hệ thống chính (hồ sơ `SME-20261023-8001`):* gọi thẳng API: lưu nháp với lãi suất "9,5" bị từ chối; sau khi CBTD `mai.bui` trình 9%, phê duyệt 9,5% không lý do hoặc lý do trống, 9,255% và 101% đều bị trả 400. Thẩm quyền `huy.vu` khổ 768: nhập đúng 9% thì không có ô lý do, nút xác nhận mở; phê duyệt xong kết quả hiện 9% và mức đề xuất 9%, không có dòng lý do; không tràn ngang. Quản lý mở popup hồ sơ: ô "Lãi suất đề xuất (%/năm)" hiện 9, chỉ đọc. Hồ sơ này cũng đã kết thúc với nội dung "Kiểm thử LS-1".
+  - *Vận hành:* PO cho phép, backend chính (`node --env-file=.env dist/main.js`, cổng 3000) khởi động lại lúc 22:44 ngày 12/11/2026 với bản build có LS-1, không seed hay migrate; health 200, log khởi động không lỗi.
+- **Gói LS-2 — đã code ngày 13/11/2026, chưa áp DB, chưa commit:**
+  - *Dữ liệu:* bảng mới `interest_rate_bands` (loại vay, kỳ hạn từ–đến để trống là áp mọi kỳ hạn, sàn, trần, hiệu lực từ, căn cứ ban hành, người tạo). File `backend/prisma/interest-rate-bands.sql` tạo bảng, ràng buộc 0 < sàn ≤ trần ≤ 100 và căn cứ 1–500 ký tự, trigger chặn sửa, xóa, truncate, và mở ràng buộc `admin_audit_logs` cho thao tác `INTEREST_RATE_BAND_CREATED`. Không đổi bảng hồ sơ: khung đã áp dụng lưu trong sự kiện `RATE_DECIDED`.
+  - *Quy tắc:* khung hiệu lực là phiên bản có ngày hiệu lực gần nhất đã tới, đúng loại vay và kỳ hạn. CBTD trình tờ trình phải có khung hiệu lực và lãi suất đề xuất trong khung; Thẩm quyền phê duyệt phải có khung hiệu lực lúc quyết định và lãi suất trong khung (kiểm trong transaction có khóa hồ sơ). Chưa có khung thì báo "Chưa có khung lãi suất hiệu lực cho loại vay X. Liên hệ Admin cấu hình khung." Từ chối không cần khung.
+  - *Admin:* menu "Khung lãi suất" (chỉ Admin): bảng khung đang áp dụng của 3 loại vay, form thêm phiên bản (sàn, trần, hiệu lực từ không trước hôm nay, căn cứ ban hành), hộp xác nhận nêu khung cũ và khung mới, danh sách mọi phiên bản. Chọn hôm nay thì hiệu lực ngay lúc lưu, chọn ngày sau thì từ 0 giờ ngày đó. API `GET/POST /admin/interest-rate-bands`; mỗi lần thêm ghi một dòng nhật ký quản trị ("Thêm khung lãi suất", trước → sau).
+  - *Giao diện nghiệp vụ:* form tờ trình hiện "Khung lãi suất: a–b%/năm" và chặn trình khi ngoài khung hoặc chưa có khung; form phê duyệt hiện khung cạnh mức đề xuất, chặn ngoài khung, cảnh báo khi mức đề xuất nằm ngoài khung hiện hành; kết quả quyết định có dòng "Khung áp dụng". Khi backend chưa trả thông tin khung (bản cũ), giao diện không tự chặn, backend vẫn chặn.
+  - *Kiểm chứng:* viết test trước và thấy đỏ. Backend `npm test` 497/497 (mới `interest-rate-band.test.cjs` 6 ca, 4 ca LS-2 trong `workflow-decision.test.cjs`, 1 ca trong `appraisal.test.cjs`; fixture dùng chung có khung 0–100%). Frontend 26 gói `test:*` đạt (mới `test:rate-bands` 6 ca), build đạt, CodeGraph làm mới (5.697 node). File SQL chạy trên schema tạm rồi xóa: chạy lại an toàn, chặn sàn > trần, sàn 0, căn cứ trống, sửa và xóa khung, nhật ký nhận thao tác mới, Prisma đọc được bảng.
+  - *Vận hành (PO cho phép, 13/11/2026):* sao lưu toàn bộ DB `sme_loan` bằng `pg_dump` vào `evidence/private-backups/sme_loan_pre_rate_bands_20261113_095012.dump` (đọc lại được, 45 bảng dữ liệu). Áp `interest-rate-bands.sql` vào schema `public` của container `sme-loan-workflow-db-1` lúc 09:50: bảng rỗng, 2 trigger chặn sửa và xóa, nhật ký nhận `INTEREST_RATE_BAND_CREATED`. Backend chính khởi động lại lúc 09:50 với bản LS-2, không seed; health 200. Trước đó `prisma generate` không thay được file engine vì backend đang chạy (cùng phiên bản, không ảnh hưởng).
+  - *Kiểm trên hệ thống chính sau khi áp (không tạo khung):* Admin xem danh sách khung trống, 3 loại vay "Chưa có khung"; Thẩm quyền gọi API khung bị 403. Admin thêm khung sàn > trần hoặc ngày đã qua bị 400, không ghi gì. Thẩm quyền phê duyệt `SME-20261021-8001` ở 9% bị 400 "Chưa có khung lãi suất hiệu lực cho loại vay Vốn lưu động", hồ sơ giữ nguyên ở Thẩm định. Hồ sơ đã duyệt hôm qua vẫn đọc được mức đề xuất và lý do (không có khung vì duyệt trước LS-2). Trình duyệt: màn "Khung lãi suất" hiện đúng, form báo "Sàn phải không lớn hơn trần" và khóa nút, ngày hiệu lực nhỏ nhất là hôm nay, không tràn ngang; form phê duyệt hiện "Chưa có khung…" và khóa nút xác nhận.
+  - *Chặn phê duyệt khi tờ trình chưa có lãi suất đề xuất (PO đổi Q5 ngày 13/11/2026):* `workflow.service.ts` trả 400 "Tờ trình chưa có lãi suất đề xuất. Yêu cầu CBTD làm rõ và trình lại…"; form phê duyệt hiện câu này dạng cảnh báo và khóa nút; từ chối và làm rõ vẫn làm được. Test đỏ trước; backend 498/498, frontend 26 gói, build đạt, CodeGraph làm mới. Backend chính khởi động lại lúc 10:00.
+  - *Nhập khung trên hệ thống chính (10:01, tài khoản Admin `khoa.tran`, qua màn "Khung lãi suất"):* 3 khung theo số liệu PO duyệt, hiệu lực ngay; hộp xác nhận nêu đúng loại vay, khung, "hiệu lực ngay khi lưu"; bảng khung đang áp dụng và danh sách phiên bản có 3 dòng; nhật ký quản trị có 3 dòng "Thêm khung lãi suất".
+  - *Thử trọn luồng trên `SME-20261021-8001` (Vốn lưu động, tờ trình cũ chưa có lãi suất đề xuất):* Thẩm quyền `huy.vu` phê duyệt bị 400 vì chưa có đề xuất → yêu cầu làm rõ. CBTD `nam.hoang`: form hiện "Khung lãi suất: 6,5–10,5%/năm", nhập 11 bị chặn trình, nhập 9,5 lưu nháp và trình lại thành phiên bản 2 (nhãn "Đã sửa"). Thẩm quyền: API phê duyệt 11% và 6,4% bị 400 "phải trong khung 6,5–10,5%/năm của loại vay Vốn lưu động"; giao diện báo lỗi và khóa nút với 11, chọn 10 thì đòi lý do, ghi lý do thì phê duyệt được. Kết quả hiện lãi suất 10%, đề xuất 9,5%, lý do và "Khung áp dụng 6,5–10,5%/năm (căn cứ…)"; DB lưu khung đã áp dụng trong `RATE_DECIDED`. Sửa khi thử: nhãn "Đã sửa" dính sát mức lãi suất, đã thêm khoảng cách.
+  - *Hiện trạng:* 3 loại vay đã có khung, hồ sơ trình và phê duyệt lại được. Các hồ sơ đang ở Thẩm định có tờ trình cũ (`SME-20261012-8003`, `SME-20261015-8001`, `SME-20261030-8002`, `SME-20261105-8002` và `SME-20261103-8001` đang làm rõ) cần CBTD trình lại với lãi suất đề xuất trước khi phê duyệt. Hồ sơ `SME-20261021-8001` đã kết thúc với nội dung "Kiểm thử LS-2".
+  - *Chưa làm:* khung và cách xác định khoản vay ưu tiên (chờ PO chốt quy tắc); xem màn Khung lãi suất ở khổ 375 và 768. Script tích hợp phê duyệt (`check-sme-rollout.cjs`, `seed-portal-flow.cjs`, `verify-local-running-system.cjs`) cần thêm bước tạo khung trước khi chạy lại; `seed-demo.cjs` chưa có khung.
+
+**Thông báo thao tác và bảng thông báo (PO yêu cầu 13/11/2026, chưa commit):**
+- Thông báo thành công ở trang hồ sơ của CBTD (`OfficerCaseWorkspace`) và trang Thẩm định (`AppraisalWorkspace`) đổi từ dải ngang kéo hết trang sang ô nhỏ ở góc phải trên (`SuccessToast`): biểu tượng xác nhận, chữ đậm, tự ẩn sau 10 giây kể từ lúc hiện, vẫn có nút đóng sớm; có `role="status"`, tắt hiệu ứng khi người dùng chọn giảm chuyển động. Thông báo lỗi giữ nguyên chỗ cũ, không tự ẩn để không bỏ sót lỗi.
+- Bảng thông báo (chuông) neo sát mép phải màn hình, rộng 400px, hiện đủ nội dung từng thông báo.
+- Thông báo "Tờ trình cần làm rõ" gửi CBTD ghi kèm mã hồ sơ ("Hồ sơ SME-…: nội dung làm rõ"); thông báo đã gửi trước đây giữ nguyên chữ cũ.
+- Kiểm chứng: test đỏ trước (`test:officer-case`, `appraisal.test.cjs`); backend 498/498, frontend 26 gói `test:*`, build đạt, CodeGraph làm mới; backend chính khởi động lại 10:13. Trên hệ thống chính bằng CBTD `nam.hoang`: lưu nháp ở `SME-20261022-8001` thì ô "Đã lưu bản nháp tờ trình." hiện ở góc phải (cách mép 22px, rộng 380px), không còn dải xanh, tự ẩn khi kiểm lại sau hơn 10 giây; bảng chuông sát mép phải, 3 thông báo hiện đủ chữ. Hồ sơ `SME-20261022-8001` có thêm bản nháp tờ trình một mục pháp lý do lần thử này. Chưa đo chính xác mốc 10 giây bằng đồng hồ (chỉ kiểm sau hơn 10 giây) và chưa xem ô thông báo ở khổ 375.
+- **Kiểm chứng mỗi gói:** test đỏ trước; backend `npm test`; frontend `test:appraisal`, `test:loan-detail` và các gói hồi quy; build; CodeGraph; thử trên schema riêng rồi xóa; xem trình duyệt khổ 1440 và 375.
 
 **Kiểm chứng:** viết test trước và thấy đỏ; backend 369/369 test; frontend `test:appraisal` 28/28 và 13 gói hồi quy đạt; build đạt. Trên schema riêng đã xóa, 11 hồ sơ đủ các tình huống: 9 hồ sơ ở Thẩm định nằm đúng một tab, tổng số đếm khớp; hồ sơ Tiếp nhận không hiện; mở cả 9 hồ sơ thì chỉ 3 hồ sơ của tab "Chờ quyết định" có nút quyết định. Phê duyệt `SME-101` thì rời hàng việc, số đếm giảm, Danh sách hiện kết quả, người quyết định, thời điểm. Yêu cầu làm rõ `SME-102` thì chuyển sang "Chờ CBTD". Lọc theo mã, số đếm đổi theo và ẩn tab trống; xóa lọc trở lại. Quản lý có nút Xem, popup không có nút quyết định. Khổ 1280 không cuộn ngang; khổ 375 không tràn ngang, tab cao 44px, nút Xem 40px. Phát hiện và sửa lỗi bấm lại tab đang mở làm trống bảng, kiểm chứng trên trình duyệt. Trên hệ thống chính, chỉ đọc: Thẩm quyền thấy `SME-4`, `SME-2` ở "Chờ quyết định"; Danh sách có thêm `SME-1`.
 
@@ -723,7 +1021,9 @@ Quy tắc xếp tab, mỗi hồ sơ đúng một tab và số đếm theo bộ l
 - Form phê duyệt chưa có ô điều kiện phê duyệt hoặc ghi chú; nếu nghiệp vụ cần thì là tính năng mới.
 - Thông báo cho CBTD khi Quản lý đóng hồ sơ quá hạn bổ sung chưa có, ngoài phạm vi lần này.
 
-**Chi tiết nhỏ chưa sửa:** nút "Điều phối cán bộ" ở Dashboard không có tác dụng với Thẩm quyền; Dashboard đếm cả hồ sơ ở Tiếp nhận; Thẩm quyền chọn được TC05; ô "Chỉ hồ sơ của tôi" có thể luôn rỗng với Thẩm quyền (theo code, chưa bấm thử).
+**Chi tiết nhỏ chưa sửa:** Dashboard đếm cả hồ sơ ở Tiếp nhận; Thẩm quyền chọn được TC05. Giao diện không còn ô "Chỉ hồ sơ của tôi"; tham số `myOnly` chỉ còn ở API, frontend không dùng.
+
+**Đã sửa ngày 12/11/2026:** nút "Điều phối cán bộ" ở Dashboard chỉ hiện với vai trò mở được trang Điều chuyển & phân công (QLCN, Admin); trước đó Thẩm quyền thấy nút và bấm thì bị đưa về trang Thẩm định. Code: `App.tsx` truyền `onGoToAssignments` theo `canOpenTab('assignments', activeRole)`. Kiểm chứng: viết test đỏ trước trong `check-navigation.mjs`; `test:navigation` 16/16, 5 gói hồi quy đọc `App.tsx` 41/41, build đạt, CodeGraph làm mới. Chưa xem trên trình duyệt bằng tài khoản Thẩm quyền.
 
 ---
 
@@ -820,6 +1120,7 @@ Quy tắc xếp tab, mỗi hồ sơ đúng một tab và số đếm theo bộ l
 
 ---
 
+<a id="cau-hinh-sla"></a>
 ### Cấu hình SLA theo ngày làm việc — triển khai ngày 05/11/2026
 
 **Quyết định PO (chốt và duyệt triển khai ngày 05/11/2026):** dùng PA1, lưu theo giờ, nhập và hiển thị theo ngày làm việc, 1 ngày = 8 giờ.
@@ -921,6 +1222,103 @@ Quy tắc xếp tab, mỗi hồ sơ đúng một tab và số đếm theo bộ l
 
 **Điều chỉnh logo tiếp theo cùng ngày:** PO yêu cầu bỏ dòng “Ngân hàng” dưới chữ SME. Đã bỏ ở Navbar của cả 4 vai trò và trang đăng nhập nội bộ; BrandLogo hỗ trợ không có phụ đề và dùng nhãn truy cập “SME”. Portal vẫn giữ phụ đề riêng. TypeScript/bundle đạt; Chrome kiểm tra logo ở 1440px/375px đạt 75/75 kiểm tra có phạm vi, 16 ảnh, không có ngoại lệ JavaScript. Bằng chứng: [logo-only/branding.json](../evidence/reviews/branding-20261105/logo-only/branding.json), [sidebar chỉ còn SME](../evidence/reviews/branding-20261105/logo-only/04-admin-users-1440.png), [login mobile](../evidence/reviews/branding-20261105/logo-only/03-staff-login-375.png).
 
+<a id="dot-uiux-20261111"></a>
+### Đợt UI/UX và quy tắc xử lý — 11/11/2026
+
+**Phạm vi PO giao trong ngày:** thiết kế lại giao diện CBTD (thử trước một vai trò), rồi đồng nhất màu cho mọi vai trò và cổng doanh nghiệp; hai quy tắc xử lý theo đề xuất Lead PO; thiết kế lại trang chủ và luồng tạo đề nghị của cổng doanh nghiệp. **Toàn bộ chưa commit.**
+
+**Trạng thái hiện hành (đọc bảng này trước; phần nhật ký bên dưới giữ diễn tiến):**
+
+| # | Thay đổi còn hiệu lực | Vai trò | File chính | Kiểm chứng |
+|---|---|---|---|---|
+| 1 | Màu navy là chuẩn chung (`--primary #1d4e89`, hover `#163d6d`, nền nhạt `#edf3fa`, `--sla-danger #c62828`, `--sla-warning #d97706`); trình bày chung cho menu, tab gạch chân, bảng, thẻ, logo | Mọi vai trò nội bộ, trang đăng nhập, cổng DN | `theme.css` (`:root`), `workspace-theme.css`, `brand.css`, `portal.css`, `portal/review.css`, `portal/portal-landing.css` | Quét DOM 4 vai trò + cổng DN: 0 phần tử màu tím cũ, không tràn ngang 1440px |
+| 2 | Khối **"Cần xử lý ngay"**: icon đồng hồ, dạng hàng, chỉ gồm hồ sơ đang chờ chính CBTD (Tiếp nhận ở Mới tiếp nhận/Đã đủ hồ sơ; Thẩm định khi hàng việc xếp nhóm "Chờ CBTD") | CBTD | `MyWarningsPanel.tsx`, `my-warnings.css`, `dashboard.service.ts` (`officerTurnOnly`), `loan-applications/officer-turn.ts` | Test backend; trình duyệt: SME-20261021-8001 (chờ quyết định) không còn trong khối |
+| 3 | Danh sách CBTD: đầu trang "Hồ sơ của tôi" → tab **Đang xử lý · Đã kết thúc · Chờ tiếp nhận** → khối Cần xử lý ngay (chỉ tab Đang xử lý) → Bộ lọc → bảng cột cũ (Mã · Doanh nghiệp · Tiến trình · Tổng quan · Trạng thái), dòng có vạch đỏ/vàng theo SLA | CBTD | `LoanList.tsx`, `LoanTable.tsx` (`rowAttention`), API `GET /loan-applications?lifecycle=active\|finished` | 4 + 59 = 63 hồ sơ như trước |
+| 4 | Thẻ **Bộ lọc** nhãn nổi trên viền, ô chọn có tìm kiếm (`FilterSelect`), lọc khi bấm Áp dụng/Enter. CBTD: chỉ ô Trạng thái theo tab (không có Công đoạn). Thẩm quyền (màn Danh sách hồ sơ): Công đoạn + Tình trạng phụ thuộc nhau, có CBTD phụ trách | CBTD, Thẩm quyền | `LoanFilters.tsx` (`panel`, `statusGroups`), `FilterSelect.tsx`, `loanListDisplay.ts` (`withStageChoice`, `withStatusChoice`), `loan-table.css` | Trình duyệt hai vai trò; QLCN giữ bộ lọc cũ |
+| 5 | **Điều phối theo lượt xử lý:** hồ sơ Thẩm định đang chờ Thẩm quyền quyết định chỉ được gửi lý do Xung đột lợi ích | CBTD gửi, QLCN xử lý | `assignments/coordination-scope.ts`, `assignment-change-requests.service.ts`, `AssignmentChangeRequestPanel.tsx`; `GET /assignment-change-requests/capabilities?subjectType=LOAN&subjectId=` | Test service không ghi dữ liệu; trình duyệt chỉ hiện lựa chọn COI |
+| 6 | **Cổng DN – trang chủ sau đăng nhập:** "Xin chào" + Tạo đề nghị vay → Việc cần làm (chỉnh sửa/bổ sung dạng thẻ, bản nháp gom một dòng) → Kết quả (chỉ khi có) → danh sách có tab lọc kèm số đếm → hướng dẫn giấy tờ thu gọn; chưa có đề nghị thì thấy 3 bước bắt đầu | Doanh nghiệp | `portal/PortalHome.tsx`, `portal/home.ts` (`listGroup`, `listCounts`), `PortalApp.tsx` | Trình duyệt tài khoản thử 1440px/375px |
+| 7 | **Cổng DN – luồng tạo đề nghị:** chỉ tạo bản nháp khi có tên DN hoặc MST; điền sẵn thông tin DN từ đề nghị gần nhất và người liên hệ từ tài khoản; bỏ cảnh báo "chưa lưu" khi chưa sửa; dấu `*` cho ô bắt buộc; bước 1 chia nhóm Doanh nghiệp / Người liên hệ | Doanh nghiệp | `portal/PortalWizard.tsx`, `portal/wizard.ts` (`canCreateDraft`, `companyPrefill`, `REQUIRED_FOR_SUBMIT`) | Quay lại không sửa hoặc thiếu tên/MST: không tạo bản nháp (vẫn 18 đề nghị) |
+
+**Đã thay hoặc gỡ trong ngày (không còn trong code):** `officer-theme.css` và `data-role="CBTD"` làm phạm vi màu (thay bằng mục 1); khối ưu tiên dạng thẻ và icon bộ não (thay bằng mục 2); bảng CBTD 6 cột có cột Hạn SLA, tiêu đề dính, phân trang trên, `officerLoanColumns.tsx`, `slaDueView` (PO thấy xấu hơn trên màn rộng, trả về cột cũ); thanh lọc chip và `searchFilterFields` (thay bằng mục 4).
+
+**Kiểm chứng tổng (lần chạy cuối):** backend `npm test` 436/436; frontend loan-list 12, prediction-ui 5, appraisal 37, navigation 14, intake 8, officer-case 15, role-governance 5, loan-detail 15, api 7, portal 42, portal-review 11, supplements 9, tracking 4, admin-sla 3, period-report 4 đều đạt; build đạt; CodeGraph hợp lệ. Các thay đổi quy tắc đều viết test đỏ trước khi sửa. Backend local được khởi động lại theo yêu cầu PO (`node --env-file=.env dist/main.js`, chạy dưới phiên làm việc AI).
+
+**Nhật ký diễn tiến trong ngày:**
+- *Giao diện CBTD thử nghiệm:* PO chọn "chỉ CBTD thử trước"; ban đầu màu navy đặt trong `officer-theme.css` theo `data-role`. Lúc này `theme.css` vẫn là tím `#5146e5`, khác ghi nhận đồng bộ navy ngày 05/11 ở trên.
+- *Khối ưu tiên:* review UI → đổi icon, tiêu đề "Cần xử lý ngay", dạng hàng, bỏ chữ "Đã quá hạn SLA" trùng badge. Không hiện được "vượt X giờ" vì API trả `slaRemainingHours` tối thiểu 0.
+- *Bước 1 danh sách CBTD:* sửa tương phản chữ "Chưa triển khai" (`#5f6e82` 12px, từ 3.0:1 lên khoảng 5:1); bảng tab Chờ tiếp nhận có cột thao tác dính phải; sắp lại đầu trang; thử bảng 6 cột rồi gỡ theo PO.
+- *Bộ lọc:* chip lọc ngay → PO gửi mẫu → thẻ Bộ lọc nhãn nổi; Lead PO phân tích Công đoạn và Trạng thái trùng nghĩa (trừ "Chờ bổ sung" xảy ra ở cả Tiếp nhận và Thẩm định) → bộ lọc theo vai trò.
+- *Quy tắc xử lý:* "Cần xử lý ngay" chỉ việc CBTD (bỏ "Chờ bổ sung" vì đang chờ doanh nghiệp); điều phối theo lượt xử lý; tách Đang xử lý / Đã kết thúc. Q1–Q4 dùng phương án mặc định: không cho "Phân công không phù hợp" khi chờ quyết định; "Chờ bổ sung" ở Tiếp nhận vẫn điều phối được; đề nghị đang chờ từ trước giữ nguyên; tab Đã kết thúc không giới hạn thời gian.
+- *Đồng nhất màu:* đưa token navy vào `:root`, đổi `officer-theme.css` thành `workspace-theme.css` áp cho mọi `.app-container`; cổng DN đổi nút tím và dải nền xanh–tím–hồng sang navy. Chuẩn UI của bộ skill `my-design` cập nhật lên 0.1.2 (ngoài repo).
+- *Cổng DN:* trang chủ trước đó dài khoảng 3.460px, liệt kê từng bản nháp, khối kết quả trống chiếm nửa trang. Review luồng tạo đề nghị phát hiện chuyển bước/quay lại luôn lưu kể cả biểu mẫu trống → nguyên nhân các bản nháp "Chưa nhập tên doanh nghiệp"; đã sửa (mục 7).
+
+**Chưa kiểm hoặc còn mở:** cổng DN sau đăng nhập với dữ liệu có Cần chỉnh sửa/Cần bổ sung/Kết quả; bấm Tiếp tục/Lưu nháp thật và bước 2–5 trên giao diện; các modal/màn chi tiết của từng vai trò sau khi đổi màu; màn "Thẩm định & phê duyệt" của Thẩm quyền vẫn dùng bộ lọc kiểu cũ; QLCN chưa đăng nhập lại sau các thay đổi bộ lọc; tab Chờ tiếp nhận chưa kiểm với dữ liệu thật; gửi thật một đề nghị điều phối bị chặn qua giao diện. Danh sách ô bắt buộc (`REQUIRED_FOR_SUBMIT`) là bản sao của `portal.readiness.ts` — đổi quy tắc tiếp nhận phải sửa cả hai.
+
+<a id="dashboard-van-hanh-20261112"></a>
+### Dashboard vận hành — 12/11/2026
+
+**Phạm vi giao:** nâng màn "Dashboard tổng quan" thành dashboard vận hành theo master prompt của PO (ảnh mẫu chỉ tham khảo bố cục). Vai trò vào màn giữ nguyên: Quản lý chi nhánh, Thẩm quyền, Admin (chỉ xem); CBTD vẫn dùng khối "Cần xử lý ngay" ở danh sách hồ sơ. **Chưa commit.** Không đổi schema, không seed/migrate.
+
+**Khảo sát trước khi sửa:**
+
+| Hạng mục | Hiện trạng | Áp dụng |
+|---|---|---|
+| Màn và API | 4 KPI cũ (đang xử lý, tỷ lệ đúng hạn, Khẩn, đã duyệt), bảng điểm nghẽn, bảng cảnh báo sớm AI; `overview`, `stage-distribution` không lọc theo vai trò (Thẩm quyền thấy cả Tiếp nhận), `stage-distribution` đếm cả hồ sơ Hoàn tất | API mới `GET /dashboard/operations`, cùng quyền `@Roles(QUAN_LY, THAM_QUYEN, ADMIN)` |
+| Phạm vi | Thẩm quyền chỉ thấy từ Thẩm định (`listWhere`); JWT `roles=[activeRole]` | Service kiểm `activeRole` (403 nếu ngoài 3 vai trò), Thẩm quyền chỉ Thẩm định; lọc công đoạn ngoài phạm vi trả 400 |
+| Chờ tôi xử lý | Thẩm quyền: nhóm Chờ quyết định của `classifyQueueRow`; QLCN: không có quy tắc gộp | Thẩm quyền gọi lại `LoanApplicationsService.findAll({queue:'DECIDE'})`; QLCN "—" (chờ PO); Admin "Không áp dụng" |
+| SLA | `stageSlaSummary` (PA1, tạm dừng khi chờ doanh nghiệp); **không có ngưỡng "sắp hết hạn"** (chỉ script `demo-status` dùng 25%) | Trong hạn / Quá hạn / Tạm dừng / Chưa xác định; "Sắp hết hạn" ghi chờ PO |
+| ML | `currentStagePrediction` (v4, đúng công đoạn, sau lúc vào công đoạn); mức đã lưu, Thẩm định không có Chú ý | Đếm theo mức đã lưu; thiếu dự báo là "Chưa có dự báo"; hồ sơ quá hạn hiện "Quá hạn", không hiện xác suất 100% |
+| Biểu đồ | Không có thư viện chart | Thanh CSS, không thêm dependency |
+
+**Kết quả:** đầu trang ghi phạm vi và thời điểm "Tồn đọng tại"; bộ lọc Công đoạn (theo phạm vi vai trò) và CBTD phụ trách (lấy từ hồ sơ trong phạm vi); 4 KPI (đang xử lý, chờ tôi xử lý — không theo bộ lọc, quá hạn SLA, ML cảnh báo = Khẩn + Chú ý trên hồ sơ chưa quá hạn); 3 khối: hồ sơ theo công đoạn (chờ bổ sung là trạng thái trong công đoạn), giám sát SLA, phân bố dự báo; bảng "Hồ sơ cần ưu tiên xử lý" (mã, doanh nghiệp, công đoạn, CBTD, hạn SLA, tình trạng SLA, cảnh báo ML kèm lý do đầu, nút Xem) xếp quá hạn → Khẩn → Chú ý → Bình thường → chưa có dự báo, cùng mức thì còn ít giờ hơn trước, phân trang 10 dòng ở máy chủ, có trạng thái tải/rỗng/lỗi, không có nút thao tác nghiệp vụ; khu "Lũy kế và theo kỳ" gồm bảng điểm nghẽn kèm tỷ lệ đúng hạn (thay KPI tỷ lệ đúng hạn cũ) và báo cáo theo kỳ (QLCN/Admin). Bảng cảnh báo sớm cũ và KPI "Hồ sơ đã phê duyệt" được gỡ khỏi màn (số phê duyệt có trong báo cáo theo kỳ của QLCN/Admin; Thẩm quyền không còn thấy số này trên dashboard). Endpoint `overview`, `early-warnings`, `stage-distribution` giữ nguyên (my-warnings của CBTD vẫn dùng chung hàm cảnh báo).
+
+**File:** `backend/src/modules/dashboard/dashboard-operations.ts` (mới), `dashboard.service.ts` (`getOperations`, `myTurn`), `dashboard.controller.ts`, `dashboard.module.ts` (import `LoanApplicationsModule`); `frontend/src/operationsDashboard.ts` (mới), `components/DashboardView.tsx`, `components/operations-dashboard.css` (mới), `package.json` (`test:operations-dashboard`). Test: `backend/test/dashboard-operations.test.cjs` (mới, 9 ca, viết đỏ trước), `role-routes.test.cjs` (thêm `getOperations:[Q,T,A]`), `frontend/scripts/check-operations-dashboard.mjs` (mới, 9 ca), `check-prediction-ui.mjs` (cập nhật mẫu mã nguồn theo cấu trúc mới, giữ ý nghĩa: nhãn cảnh báo dùng chung, hiện giờ còn lại, PA1 trước).
+
+**Kiểm chứng:** PASS backend `npm test` 463/463; PASS frontend 25 bộ `test:*` (gồm operations-dashboard 9, prediction-ui 5, period-report 4), `npm run build`; PASS CodeGraph build/check. PASS API thật sau khi khởi động lại backend: QLCN/Admin 15 hồ sơ (Tiếp nhận 8, trong đó 2 chờ bổ sung; Thẩm định 7), quá hạn 6, Khẩn 1; Thẩm quyền 7 hồ sơ, chờ tôi 6 (khớp `GET /loan-applications?queue=DECIDE`); CBTD 403; Thẩm quyền lọc Tiếp nhận 400; `pageSize=500` 400; số quá hạn khớp danh sách `overdueOnly` (6/15). PASS trình duyệt 1440px (Admin, Thẩm quyền, QLCN): KPI, biểu đồ, phân trang trang 2, lọc CBTD (7 → 2), nút Xem mở chi tiết; 375px không tràn ngang, bảng chuyển dạng thẻ. NOT RUN trạng thái lỗi trên trình duyệt (không tắt backend để thử); NOT RUN khổ tablet 768px. `check-ai-rules` 452/455: 3 lỗi do `GEMINI.md` rỗng, có từ trước, không thuộc gói.
+
+**PENDING PO DECISION:**
+1. Ngưỡng "sắp hết hạn SLA" (đề xuất: còn dưới 25% định mức như `demo-status`, hoặc số giờ làm việc cố định) — chưa có thì dashboard chỉ ghi chờ chốt.
+2. Định nghĩa "Chờ tôi xử lý" của QLCN (đề xuất: đề nghị Portal chờ phân công + đề nghị điều phối/xung đột lợi ích chờ xử lý + đối soát Company chờ xử lý).
+3. Có mở dashboard cho CBTD không (hiện không; mở là quyết định quyền mới).
+4. Xác nhận việc gỡ KPI "Hồ sơ đã phê duyệt" và bảng cảnh báo sớm cũ khỏi dashboard của Thẩm quyền.
+
+<a id="dashboard-theo-actor-20261112"></a>
+### Dashboard theo 4 actor — 12/11/2026 (thay bố cục mục trên, chưa commit)
+
+**Mapping:** Admin (`ADMIN`) → `GET /admin/dashboard` [A]: tài khoản theo trạng thái/vai trò, nhật ký quản trị 30 ngày; không đọc hồ sơ, không có Điều phối/hàng chờ. Quản lý chi nhánh (`QUAN_LY`) → `GET /dashboard/operations` [Q,T,A] mở rộng `slaByStage`, `officerLoad`, `unassigned` (đề nghị Portal `SUBMITTED` + hồ sơ chưa có CBTD), tab Vận hành / Báo cáo theo kỳ (`/dashboard/report`, `/dashboard/sla-bottlenecks`, `PeriodReport`); nút Điều phối chỉ khi vai trò là QUAN_LY. CBTD (`CBTD`) → `GET /dashboard/officer` [C]: chỉ `assignedTo = người đăng nhập`, việc cần làm từ `officerTask` (cùng quy tắc `isOfficerTurn`/`classifyQueueRow`); menu Dashboard mở cho CBTD và là trang đầu. Thẩm quyền (`THAM_QUYEN`) → `GET /dashboard/approver` [T] (đọc hết nhóm DECIDE qua `LoanApplicationsService.findAll`, quyết định = công đoạn Thẩm định đóng sang APPROVED/REJECTED, 6 tháng) + bảng `GET /loan-applications?queue=DECIDE`.
+
+**ML/SLA:** hồ sơ quá hạn không xếp mức dự báo (`overdueExcluded` + `predictedScope` = tổng; Khẩn + Chú ý + Bình thường + Chưa có dự báo = `predictedScope`); ô ML của dòng quá hạn ghi "Không xếp mức · Đã quá hạn thực tế". Không đổi SLA, ngưỡng, mô hình.
+
+**Biểu đồ:** SVG tự dựng (`components/dashboard/Charts.tsx`: cột, cột chồng, thanh ngang, đường, donut), có tooltip, chú giải, trục, bảng số liệu, trạng thái tải/rỗng; không thêm dependency. Bảng màu phân loại qua bộ kiểm màu (#2a78d6, #eb6834, #1baf7a, #6250d6). Đầu trang không có dòng chú thích (theo chỉnh sửa test của PO).
+
+**Kiểm chứng:** PASS backend `npm test` 471/471 (mới: `dashboard-actors.test.cjs` 7 ca, `dashboard-operations` +2, `role-routes` thêm 3 route); PASS 26 bộ test frontend, build, CodeGraph. PASS API thật: ma trận quyền 4 route × 4 vai trò; số liệu khớp `/users` (17/7), danh sách CBTD (4) và Cần xử lý ngay (3), hàng DECIDE (5). PASS trình duyệt 1440px: Admin, QLCN (bấm cột lọc công đoạn, tab báo cáo), CBTD (mở hồ sơ từ bảng), Thẩm quyền (bảng). NOT RUN: biểu đồ của Thẩm quyền chưa chụp được (khung trình duyệt lỗi vẽ khi cuộn), khổ 375/768px của bố cục mới.
+
+**PENDING PO:** (1) ngưỡng "sắp hết hạn"; (2) Admin vẫn có quyền GET các route vận hành theo chính sách 11/11 — dashboard Admin không dùng, có thu hẹp RBAC không; (3) dashboard cá nhân `officer`/`approver` loại Admin như ngoại lệ `getMyWarnings`; (4) không có quy tắc "cấp trên" cho hồ sơ trên 10 tỷ (bị chặn), cột Cấp phê duyệt ghi Thẩm quyền chi nhánh; (5) KPI "đã quyết định" tính toàn hàng việc, kèm phần của người đăng nhập; (6) CBTD vào thẳng Dashboard thay cho Hồ sơ của tôi.
+
+<a id="dashboard-admin-bao-cao-20261112"></a>
+### Dashboard Admin hai tab và báo cáo theo kỳ dùng chung — 12/11/2026 (thay phần Admin ở mục trên, chưa commit)
+
+**Quyền đã xác minh (không sửa RBAC):** Admin đọc được `GET /dashboard/report` [Q,A], `/dashboard/operations` [Q,T,A], `/dashboard/sla-bottlenecks` [Q,T,A] theo chính sách 11/11 (Admin xem mọi route đọc nghiệp vụ). Hệ thống một chi nhánh (DEC-01), hồ sơ không có trường chi nhánh nên phạm vi của QLCN và Admin trùng nhau; so sánh giữa chi nhánh không áp dụng. Thẩm quyền và CBTD vẫn bị 403 với báo cáo theo kỳ.
+
+**Admin:** tab "Tổng quan nghiệp vụ" gồm tồn đọng hiện tại (hồ sơ đang xử lý, quá SLA, đang chờ doanh nghiệp, ML cảnh báo; biểu đồ theo công đoạn và SLA theo công đoạn, đọc `/dashboard/operations?page=1&pageSize=1` và chỉ dùng phần tổng hợp) và thống kê theo kỳ (không có bảng theo cán bộ); không bảng hồ sơ, không điều phối hay thao tác. Tab "Quản trị hệ thống" giữ nguyên KPI và 3 biểu đồ tài khoản/nhật ký.
+
+**Báo cáo theo kỳ dùng chung (`components/PeriodReport.tsx`):** chọn 7 ngày, 30 ngày, tháng này, quý này, năm nay hoặc khoảng tùy chọn; KPI hồ sơ tạo mới, hoàn tất (phê duyệt/từ chối/đóng quá hạn), tỷ lệ đúng hạn tính trên **lượt công đoạn** kết thúc trong kỳ, tiền phê duyệt thực tế; biểu đồ đường tạo mới/hoàn tất, donut kết quả, cột chồng phê duyệt/từ chối theo thời gian, cột chồng đúng hạn/trễ theo công đoạn (đơn vị lượt); bảng chi tiết thu gọn; tải CSV. API `GET /dashboard/report` thêm `trend` (theo ngày khi kỳ ≤ 62 ngày, theo tháng khi dài hơn) và `onTime`. QLCN dùng cùng component kèm bảng theo cán bộ, tab Vận hành giữ chờ phân công, khối lượng theo CBTD, hồ sơ cần giám sát và nút Điều phối (chỉ QUAN_LY).
+
+**Kiểm chứng:** PASS backend 473/473 (+2 ca `dashboard-report`), PASS 25 bộ test frontend, build, CodeGraph. PASS API thật: tổng các mốc ngày bằng KPI (15/11/8/3), đúng hạn 21/24 lượt, kỳ năm nay chia 11 tháng, Admin và QLCN cùng số liệu. PASS trình duyệt 1440px (Admin 2 tab, đổi kỳ sang Năm nay; QLCN tab báo cáo) và 375px không tràn ngang.
+
+**Triển khai DEC-12 mục 3 (12/11/2026, chưa commit):** trạng thái `DUE_SOON` trong `dashboard-operations.ts` (`DUE_SOON_WORKING_HOURS = 8`, chỉ công đoạn PA1, sau khi đã loại quá hạn và tạm dừng) và bản sao cùng ngưỡng ở `frontend/src/operationsDashboard.ts` (`slaStateOfSummary`) cho bảng của Thẩm quyền — đổi ngưỡng phải sửa cả hai. Năm trạng thái Quá hạn / Sắp hết hạn / Trong hạn / Tạm dừng / Chưa xác định loại trừ nhau; KPI "Chờ duyệt sắp quá SLA" của Thẩm quyền, chú thích KPI Quá hạn của QLCN, cột "Sắp hết hạn" trong mọi biểu đồ SLA, nhãn cam và vạch cam ở bảng. Thứ tự ưu tiên của bảng không đổi. Kiểm chứng: backend 474/474 (thêm ca biên 8 giờ / 9 giờ, cách cũ, tạm dừng), frontend 25 bộ, build đạt; API thật 14 hồ sơ = 5 trong hạn + 1 sắp hết hạn (SME-20261103-8001 còn 2,3 giờ) + 6 quá hạn + 2 tạm dừng; trình duyệt CBTD hiện đúng nhãn. Các màn ngoài dashboard (danh sách hồ sơ, chi tiết) chưa dùng nhãn này.
+
+**Đã chốt (DEC-12, 12/11/2026):** giữ quyền xem của Admin như 11/11; một chi nhánh, không so sánh chi nhánh; "sắp hết hạn" = còn không quá 8 giờ làm việc. **Còn mở:** quy tắc tài khoản (Admin không kiêm vai trò nghiệp vụ, không kiêm CBTD + Thẩm quyền, tối thiểu 2 Thẩm quyền) — chưa duyệt, chưa sửa code.
+
+<a id="dashboard-qlcn-theo-cbtd-20261112"></a>
+### Dashboard QLCN xem theo cán bộ — 12/11/2026 (PO chọn phương án A, chưa commit)
+
+**Lý do:** PO cần thấy ngay CBTD nào đang giữ hồ sơ nào và kết quả ra sao; trước đó biểu đồ theo CBTD nằm dưới hai biểu đồ công đoạn, kết quả theo cán bộ nằm trong bảng thu gọn. Đây là thay đổi bố cục, không phải lỗi.
+
+**Đã làm:** tab Vận hành hiện tại — biểu đồ "Hồ sơ đang phụ trách theo CBTD" (thanh ngang chồng theo tình trạng SLA, bấm tên để lọc bảng ở backend) đứng đầu, rộng hết khung; bỏ biểu đồ "Hồ sơ đang xử lý theo công đoạn" ở dashboard QLCN (số theo công đoạn vẫn ở KPI; Admin vẫn giữ biểu đồ này); giữ "Tình trạng SLA theo công đoạn" và donut dự báo. Tab Báo cáo theo kỳ — biểu đồ "Kết quả theo CBTD" (phê duyệt / từ chối / đóng quá hạn trên hồ sơ CBTD phụ trách đã hoàn tất trong kỳ) đứng đầu, bảng chi tiết theo cán bộ mở sẵn; cán bộ xếp theo tên, không xếp hạng theo số lượng. Không đổi API, quyền, SLA, ML. File: `ManagerDashboard.tsx`, `BacklogCharts.tsx` (`showStageChart`), `PeriodReport.tsx`, `dashboardCharts.ts` (`officerResults`), test `check-operations-dashboard.mjs` (+2 ca, viết đỏ trước).
+
+**Kiểm chứng:** PASS 25 bộ test frontend, build; PASS trình duyệt 1440px với QLCN: biểu đồ CBTD ngay dưới KPI, tab báo cáo hiện "Kết quả theo CBTD" đầu tiên, bảng mở sẵn, thứ tự Bùi Thị Mai → Hoàng Văn Nam → Ngô Đức Thành; số liệu khớp `GET /dashboard/report` (11 hồ sơ hoàn tất).
+
 <a id="chuan-hoa-trang-thai"></a>
 ## 4. Chuẩn hóa trạng thái và Lịch sử các đợt review
 
@@ -942,7 +1340,11 @@ Toàn bộ 7 nhóm chức năng đã được rà soát, đồng bộ và hoàn 
 > [!IMPORTANT]
 > **Ranh giới nghiệm thu:** Trạng thái "ĐẠT (Local)" xác nhận toàn bộ chức năng đã được triển khai, kiểm thử tự động và thực nghiệm thành công trên hệ thống đang chạy tại máy local (`localhost:3000`, `localhost:5173`, `localhost:8000`, `localhost:8025`). Hệ thống **CHƯA phát hành ra internet hoặc máy chủ từ xa**; không quy đổi số lượng bài kiểm thử thành tỷ lệ phần trăm hoàn thiện toàn diện.
 >
-> **Mốc của bảng:** bảng này và số E2E 38/38 là kết quả mốc 02/11/2026. Các thay đổi ngày 04–06/11/2026 có kiểm chứng riêng trong từng mục ở phần 3 và tại [điểm bàn giao](#diem-ban-giao-20261106); toàn bộ E2E chưa chạy lại sau các thay đổi đó.
+> **Mốc của bảng:** bảng này là kết quả mốc 02/11/2026. **E2E chạy lại ngày 10/11/2026: 38/38 PASS** trên hệ thống local khởi động bằng `start-use.ps1`, sau các thay đổi 04–10/11 (SLA PA1, mô hình v4 và các điểm chấm mới, khóa tài khoản thừa, lịch SLA v2). Cách chạy: sao lưu DB (`.codex_tmp/backups/public-before-e2e-20261110.dump`), mở tạm 4 tài khoản `test_*` (`accounts:tidy -- --unlock-test`, kịch bản đăng nhập bằng các tài khoản này), chạy `verify-local-running-system.cjs`, khóa lại bằng `accounts:tidy -- --apply`. Sau khi chạy: số bản ghi gốc giữ nguyên (17 users, 200 companies, 200 loans, 4 portal accounts), không sót công ty, tài khoản cổng hay thông báo thử nghiệm, 7 tài khoản mở, 15 hồ sơ demo đang mở. Báo cáo: `evidence/reviews/integration/local-system-verification.json`.
+>
+> **Kiểm giao diện bằng trình duyệt ngày 10/11/2026** (khung trình duyệt của ứng dụng, chỉ xem, không thao tác ghi; đăng nhập bằng tài khoản demo): cổng doanh nghiệp `/portal` hiện trang giới thiệu đúng; **Quản lý** (`nhung.nguyen`): dashboard, hồ sơ quá hạn bổ sung, bảng cảnh báo sớm xếp hồ sơ Quá hạn lên đầu, có dòng "Dự báo lúc …", 19 hồ sơ đang xử lý; **CBTD** (`nam.hoang`): khối "Hồ sơ của tôi cần ưu tiên" chỉ có hồ sơ của mình, danh sách hiện ngày hạn cụ thể; **Thẩm quyền** (`ha.le`): danh sách Thẩm định có hạn SLA, màn xem xét hiện hạn đỏ khi quá hạn, dòng nguy cơ trễ SLA kèm câu "không phải đánh giá tín dụng"; **Admin** (`khoa.tran`): 7 tài khoản hoạt động, 10 tài khoản "Đã khóa", cấu hình SLA 14 và 5 ngày làm việc. Không có lỗi console ở mọi màn. Ghi nhận (chưa sửa): (1) dữ liệu thử nghiệm cũ hiện trong danh sách (`QA-CBTD-20261105` ở SME-4/SME-5, "CONG TY TNHH QC TEST PORTAL (DU LIEU GIA LAP)" ở SME-6); SME-2, SME-3 thuộc quy trình cũ nên "Chưa có dữ liệu SLA"/"Chưa dự báo"; (2) menu còn hai mục ghi "chưa triển khai" (Quản lý vấn đề hồ sơ, Lịch sử hoạt động); (3) ô "Cảnh báo Khẩn" đếm cả hồ sơ Quá hạn; (4) ở Thẩm định, xác suất 55,6% hiển thị "Bình thường" theo quyết định bỏ mức Chú ý (Q4), dễ gây thắc mắc; (5) nhãn "Chờ bổ sung" vẫn hiện khi doanh nghiệp đã gửi đủ và SLA đã chạy lại (đúng quy tắc, chỉ là nhãn); (6) dự báo hiện tại tính với 3 Thẩm quyền (chấm trước lúc khóa tài khoản), sẽ cập nhật ở lượt 08:00 kế tiếp.
+>
+> **Dọn dữ liệu thử trên máy PO (PO duyệt "xem trước rồi dọn" ngày 10/11/2026):** xóa SME-4, SME-5 (công ty `QA-CBTD-20261105`, MST 9000329110) và SME-6 (công ty "CONG TY TNHH QC TEST PORTAL (DU LIEU GIA LAP)", MST 9990000209) cùng 2 tài khoản cổng thử gắn với chúng (`qa.cbtd.20261105.329110@example.test`, `qc.dn20261109@sme-demo.test`). Cách làm: script tạm ngoài repo dùng lại hàm xóa theo sơ đồ khóa ngoại của `cleanup-test-data.cjs`; xem trước trong transaction rồi hoàn tác, sao lưu `.codex_tmp/backups/public-before-qa-cleanup-20261110.dump`, sau đó áp dụng. Đã xóa: 3 hồ sơ, 2 công ty, 2 tài khoản và 2 đề nghị cổng, 6 dòng lịch sử công đoạn, 4 dự báo, 10 chứng từ, 2 yêu cầu bổ sung, 2 tờ trình, 20 thông báo nội bộ; không đụng tài khoản cán bộ và bộ demo. Giữ: SME-1, SME-2, SME-3 và 4 công ty mẫu của `prisma:seed`, tài khoản cổng `doanhnghiep.test@example.test` (16 đề nghị, không gắn hồ sơ vay) và `yenjj2022@gmail.com`. Sau khi dọn: dashboard Quản lý còn 17 hồ sơ đang xử lý, 197 hồ sơ tích lũy, không còn dòng `QA-CBTD`; `/api/health` sẵn sàng; `demo:status` còn dùng được. 10 tệp chứng từ trên đĩa của các hồ sơ đã xóa chưa xóa (danh sách ở `.codex_tmp/backups/qa-cleanup-document-paths-20261110.txt`). Tiếp theo PO duyệt dọn luôn **SME-2 và SME-3** (hồ sơ mẫu quy trình cũ, không có dữ liệu SLA, SME-3 đứng đầu khối "quá hạn bổ sung 38 ngày"): xem trước rồi áp dụng sau khi sao lưu `.codex_tmp/backups/public-before-legacy-cleanup-20261110.dump`; xóa 2 hồ sơ, 12 dự báo cũ, 1 yêu cầu bổ sung, 12 thông báo nội bộ; giữ công ty mẫu của chúng và SME-1 (đã phê duyệt). Sau khi dọn: dashboard Quản lý còn 15 hồ sơ đang xử lý (đều là hồ sơ demo), 195 hồ sơ tích lũy, không còn khối quá hạn bổ sung và không còn dòng "Chưa dự báo". Lưu ý: chạy lại `prisma:seed` có thể tạo lại hồ sơ mẫu.
 
 ---
 
@@ -1050,158 +1452,68 @@ Kịch bản kiểm chứng tự động `backend/scripts/verify-local-running-s
 ---
 
 <a id="ban-giao-nguoi-tiep-nhan"></a>
-## 6. Kế hoạch bàn giao cho người tiếp nhận dự án
+## 6. Bàn giao cho người tiếp nhận dự án
 
-### Tổng kết phạm vi đã hoàn thành và phần còn lại
-* **Đã hoàn thành:** Toàn bộ các chức năng thuộc 7 nhóm chức năng đã được triển khai đầy đủ trên mã nguồn (`backend/` và `frontend/`), đã diễn tập migration an toàn trên DB PostgreSQL local, đã kiểm chứng E2E với 38/38 checks pass trên hệ sinh thái đang chạy, và đã cập nhật tài liệu đầy đủ.
-* **Phần còn lại chưa thực hiện trong đợt này:** Chưa phát hành hệ thống ra internet hoặc môi trường máy chủ từ xa; chưa tích hợp dịch vụ chứng thư số/chữ ký số CA thực tế; mô hình ML đã được thay bằng v4 ngày 06/11/2026 (xem mục 5).
+### Điểm bàn giao ngày 13/11/2026 cho Yến Trang (bản hiện hành, đọc mục này trước)
 
-<a id="diem-ban-giao-20261109"></a>
-### Điểm bàn giao ngày 09/11/2026 — tài khoản, cảnh báo, trang chủ doanh nghiệp
+> [!IMPORTANT]
+> **Quyền chốt và sửa:** mọi vấn đề trong bảng "Việc còn chờ chốt" dưới đây **chỉ Yến Nhi được phép chốt và sửa lại hệ thống**. Người tiếp nhận đọc để nắm tình trạng, không tự quyết, không tự sửa code hay dữ liệu cho các vấn đề này; phát hiện thêm thì ghi vào bảng và báo Yến Nhi.
 
-**Tài khoản (đã áp dụng trên DB local, có sao lưu trước khi đổi):** chi nhánh nhỏ dùng bộ gọn 1 Admin, **1 Quản lý**, 3 CBTD, 2 Thẩm quyền (mô hình học với 2 hoặc 3 Thẩm quyền; 2 nằm trong khoảng đó). Danh sách và vai trò ở [README](../README.md#tai-khoan-noi-bo). Mười tài khoản còn lại (4 `test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) ban đầu bị khóa (9 hồ sơ đang mở của họ được giao lại cho 3 CBTD còn dùng) và sau đó **đã xóa hẳn** (xem quyết định bên dưới). Script: `npm run accounts:tidy` (xem trước; `-- --apply` để thực hiện; `-- --unlock-test` (chỉ còn tác dụng nếu `prisma:seed` đã tạo lại `test_*`) mở lại `test_*` khi cần chạy kiểm thử tự động).
-* `seed.js`: chỉ tạo `test_*` khi chưa có, chạy lại không đặt lại mật khẩu hay mở khóa; không chạy khi `NODE_ENV=production`. Mật khẩu `123456` của `test_*` chỉ phục vụ kiểm thử tự động.
-* `seed-demo.cjs`: tạo 7 tài khoản, mật khẩu lấy từ `DEMO_PASSWORD` hoặc sinh ngẫu nhiên và in một lần (không còn mật khẩu cố định trong mã nguồn), từ chối chạy khi `NODE_ENV=production`. **Trước mỗi buổi demo chạy lại `npm run seed:demo -- --reset`** vì đồng hồ SLA vẫn chạy sau khi dựng; để lâu hồ sơ demo sẽ thành "Quá hạn".
-* Đăng nhập: chỉ báo "tài khoản bị tạm khóa" khi mật khẩu đúng; sai mật khẩu trên tài khoản khóa trả thông báo chung và tính vào giới hạn thử. Tên chi nhánh thống nhất "Chi nhánh TP.HCM".
+**Dự án đang ở đâu:** đủ luồng 3 công đoạn Tiếp nhận → Thẩm định → Hoàn tất cho 5 actor, chạy trên máy local (backend 3000, frontend 5173, ML 8000, PostgreSQL trong Docker). Đợt 12–13/11/2026 đã làm xong: dashboard theo từng vai trò, nhật ký quản trị, khung lãi suất khi phê duyệt, làm lại màn quản trị tài khoản và sửa một số lỗi giao diện. Hệ thống dùng được cho buổi bảo vệ 23/12/2026; các điểm còn mở là quyết định nghiệp vụ, không phải lỗi chặn luồng.
 
-**Cảnh báo ML:** xem cập nhật 09/11/2026 ở mục 5.
+**Trạng thái source:** nhánh `LeThiYenNhi`, **toàn bộ thay đổi từ 04/11 đến 13/11/2026 chưa commit** (khoảng 150 file). Lần commit/push do Yến Nhi quyết định. Không đưa vào commit: `.codex_tmp/`, `evidence/private-backups/`, `build`, `preview-build`, `*.tsbuildinfo`, `output/`, `prototypes/`.
 
-**Trang giới thiệu vay vốn cho doanh nghiệp (theo yêu cầu PO 09/11/2026):** [PortalLanding.tsx](../frontend/src/portal/PortalLanding.tsx) là một lớp đặt **trước** form đăng nhập/đăng ký của cổng doanh nghiệp, dựng theo bố cục trang chủ ngân hàng (thanh liên kết, thanh đầu nổi trên nền toàn khung, 6 ô nhóm khách hàng ở đáy) và tập trung quảng bá vay vốn: banner "Đăng ký vay vốn ngay", mục Doanh nghiệp, hồ sơ cần chuẩn bị (6 nhóm), hỗ trợ. Mọi nút vay vốn mở form đăng nhập/đăng ký của cổng (`/portal#dang-nhap`). Năm ô còn lại chỉ tượng trưng, mờ, không phải liên kết. Liên kết đặt lại mật khẩu và phiên hết hạn đi thẳng vào form, không qua trang giới thiệu; người đã có phiên không thấy trang giới thiệu. **Cổng 5173 gốc `/` giữ nguyên cho cán bộ ngân hàng** (màn đăng nhập nội bộ như cũ, trang giới thiệu không chứa lối vào của cán bộ). Màn sau đăng nhập cổng còn khối việc cần làm, kết quả cuối cùng và hướng dẫn ([PortalHome.tsx](../frontend/src/portal/PortalHome.tsx)). Chưa thử bằng thao tác trên trình duyệt.
+**Kiểm chứng gần nhất (13/11/2026):** backend `npm test` 498/498; frontend 26 gói `npm run test:*` đạt; `tsc -b` và build đạt; CodeGraph hợp lệ. Mỗi hạng mục đều đã thử trên hệ thống local đang chạy bằng trình duyệt hoặc API (chi tiết ở mục tương ứng).
 
-**Cổng doanh nghiệp đã mở nộp trên local (PO duyệt 09/11/2026):** đặt `PORTAL_V2_ROLLOUT_ENABLED=true` trong `.env` (tệp cục bộ, không nằm trong git); `form-config` trả `canSubmit=true`, `policyStatus=APPROVED`. DB local thiếu hai sequence mã ngắn nên tạo đề nghị trả lỗi 500; đã áp `prisma/document-codes.sql` (cộng thêm, chạy lại không reset), sau đó luồng chạy thông. Máy khác cần áp tệp này trước khi bật cờ.
+#### Đã làm và điều chỉnh trong đợt 12–13/11/2026
 
-**Hồ sơ mẫu đi qua cổng doanh nghiệp (đã chạy):** `npm run seed:portal-flow` (cần `DEMO_PASSWORD`) chỉ dùng API: đăng ký và xác minh doanh nghiệp qua hộp thư nội bộ, tạo đề nghị, tải chứng từ, gửi, Quản lý phân công, CBTD duyệt checklist và tiếp nhận, xác định hạn mức, trình tờ trình, Thẩm quyền quyết định, doanh nghiệp xem kết quả. Một lần chạy tạo 6 đề nghị: 1 phê duyệt (DN-2), 1 từ chối TC02 (DN-3), 1 đang thẩm định (DN-4), 1 đang kiểm tra hồ sơ (DN-5), 1 chờ phân công (DN-6), 1 bản nháp (DN-7). Tên doanh nghiệp có "[MÔ PHỎNG]", mã số thuế bắt đầu 99/98, tách khỏi bộ hồ sơ huấn luyện. Script kiểm tra trạng thái cuối trên cổng (APPROVED/REJECTED) bằng assert.
+| Hạng mục | Kết quả hiện hành | Quyết định | Chi tiết |
+|---|---|---|---|
+| Phân việc Thẩm quyền/QLCN | Giữ hàng việc chung, chỉ áp quy tắc chặn Maker-Checker; nút "Điều phối cán bộ" ở Dashboard chỉ hiện với QLCN, Admin | DEC-10 | [Nhóm 2](#nhom-2), [mục 7](#quyet-dinh-po-va-ranh-gioi) |
+| Dashboard | Tách theo 4 vai trò, mỗi vai trò một API do backend giới hạn phạm vi; KPI, biểu đồ SVG, bảng hồ sơ ưu tiên, báo cáo theo kỳ; QLCN mở đầu bằng biểu đồ theo CBTD; "Sắp hết hạn SLA" = còn ≤ 8 giờ làm việc | DEC-12 | [Dashboard theo 4 actor](#dashboard-theo-actor-20261112), [Admin](#dashboard-admin-bao-cao-20261112), [QLCN](#dashboard-qlcn-theo-cbtd-20261112) |
+| Menu | Bỏ "Quản lý vấn đề hồ sơ"; không còn mục "Chưa triển khai" | DEC-11 | [Nhóm 7](#nhom-7) |
+| Lịch sử hoạt động (Admin) | Nhật ký quản trị chỉ thêm (`admin_audit_logs`, trigger chặn sửa/xóa): tạo tài khoản, sửa thông tin, khóa/mở khóa, đổi vai trò, sửa SLA, thêm khung lãi suất; màn xem có lọc, phân trang | DEC-11 | [Nhật ký quản trị](#nhat-ky-quan-tri-20261112) |
+| Liên hệ cá nhân (Admin) | Đổi lại tên từ "Tài khoản & vai trò"; nhãn màu Hoạt động/Đã khóa; chọn trạng thái ngay sau Họ tên; không cho khóa cán bộ còn hồ sơ và báo lý do tại chỗ; số hồ sơ phụ trách và điều kiện chặn đếm cùng quy tắc | AD-06 đổi lại, LH-01, LH-02 | [Liên hệ cá nhân](#lien-he-ca-nhan-20261112) |
+| Lãi suất | CBTD bắt buộc đề xuất lãi suất trong tờ trình; Thẩm quyền quyết trong khung sàn–trần theo loại vay, khác đề xuất phải ghi lý do; tờ trình chưa có đề xuất thì không phê duyệt được; Admin có menu "Khung lãi suất" (phiên bản, không sửa); đã nhập khung mô phỏng VLĐ 6,5–10,5%, TSCĐ 7,5–12%, Thấu chi 8–13% | DEC-13 | [Review lãi suất](#review-lai-suat-tham-quyen) |
+| Điều chuyển & phân công | Bảng trống có dòng thông báo; bỏ câu giải thích gây hiểu nhầm; tiêu đề thuần Việt | — | [Sửa lỗi màn điều chuyển](#sua-loi-dieu-chuyen-20261112) |
+| Giao diện chung | Bỏ dòng chú thích dưới tiêu đề các màn; thông báo thành công là ô nhỏ góc phải tự ẩn 10 giây; bảng chuông sát mép phải | — | [Nhóm 7](#nhom-7), [review lãi suất](#review-lai-suat-tham-quyen) |
 
-**Dự báo ngay khi tiếp nhận từ cổng (đã sửa theo ủy quyền của PO, 09/11/2026):** luồng tiếp nhận từ cổng trước đây không gọi dự báo nên hồ sơ mới phải chờ lượt chấm 08:00. Nay `POST /portal-intakes/:id/accept` gọi dự báo ngay sau khi tiếp nhận ([portal.controller.ts](../backend/src/modules/portal/portal.controller.ts)); lỗi ML chỉ ghi log, không làm hỏng việc tiếp nhận. Kiểm chứng trên hệ thống đang chạy: hồ sơ vừa tiếp nhận có dự báo `v4.0-TIEP_NHAN` ngay. Hồ sơ tiếp nhận trước bản sửa vẫn chưa có dự báo cho đến lượt chấm kế tiếp.
+#### Việc còn chờ chốt — chỉ Yến Nhi được chốt và sửa
 
-**Dữ liệu demo đã dựng lại (09/11/2026):** chạy `npm run seed:demo -- --reset` (194 hồ sơ quá khứ, 15 hồ sơ mở đều có dự báo) để hồ sơ mở không bị quá hạn hàng loạt. Cần chạy lại trước mỗi buổi demo.
+| # | Vấn đề | Hiện trạng | Khuyến nghị đã ghi | Chi tiết |
+|---|---|---|---|---|
+| C1 | Khoản vay thuộc diện ưu tiên (trần NHNN 4%/năm) | Hệ thống chưa phân biệt khoản vay ưu tiên; khung hiện chỉ đúng cho khoản vay VND thông thường | Thêm khung ưu tiên riêng kèm quy tắc ai/khi nào/tiêu chí xác định hồ sơ ưu tiên (tính năng mới) | [Review lãi suất](#review-lai-suat-tham-quyen) |
+| C2 | Hồ sơ đang ở Thẩm định có tờ trình cũ chưa có lãi suất đề xuất | `SME-20261012-8003`, `SME-20261015-8001`, `SME-20261030-8002`, `SME-20261105-8002`, `SME-20261103-8001` không phê duyệt được cho tới khi CBTD trình lại | Thẩm quyền yêu cầu làm rõ, CBTD trình lại kèm lãi suất; hoặc dựng lại dữ liệu demo | Như trên |
+| C3 | Script và dữ liệu demo chưa có khung lãi suất | `seed-demo.cjs`, `check-sme-rollout.cjs`, `seed-portal-flow.cjs`, `verify-local-running-system.cjs` cần bước tạo khung trước khi phê duyệt | Thêm bước tạo khung vào script trước lần dựng demo kế tiếp | Như trên |
+| C4 | Quy tắc tài khoản | Admin kiêm vai trò nghiệp vụ, một người kiêm CBTD + Thẩm quyền, khóa Thẩm quyền/QLCN cuối cùng (AD-02, LH-05, LH-08) đều chưa chặn | Chặn kiêm nhiệm; tối thiểu 2 Thẩm quyền | [Liên hệ cá nhân](#lien-he-ca-nhan-20261112), DEC-12 |
+| C5 | Màn Liên hệ cá nhân | Khối "Danh mục vai trò (chỉ xem)"; UA-06 (sắp Hoạt động lên trước), UA-07 (tìm kiếm); LH-03, LH-04, LH-06, LH-07 | Thu gọn khối vai trò vào form; chưa làm tìm kiếm | Như trên |
+| C6 | Dashboard | Định nghĩa "Chờ tôi xử lý" của QLCN; Admin còn quyền GET route vận hành; ngoại lệ Admin ở dashboard cá nhân | Xem PENDING PO trong mục Dashboard | [Dashboard theo 4 actor](#dashboard-theo-actor-20261112) |
+| C7 | Khối "Vướng mắc nội bộ" ở tiếp nhận Portal | Vẫn còn và vẫn chặn Tiếp nhận khi có vướng mắc mở; không thuộc DEC-11 | Quyết định gỡ hay giữ theo [kế hoạch B](#ke-hoach-go-quan-ly-van-de) | Kế hoạch B |
+| C8 | Dữ liệu thử để lại trên DB local | 2 hồ sơ "Kiểm thử LS-1/LS-2" đã Hoàn tất; dòng nhật ký thử (không xóa được); SĐT `khoa.tran` là chuỗi rỗng | Giữ hay dựng lại dữ liệu demo | Các mục trên |
+| C9 | Backlog nhỏ còn từ 06/11 | Thẩm quyền còn yêu cầu bổ sung/xác nhận đủ/chạy lại dự báo ngoài danh sách chức năng; form phê duyệt chưa có ô điều kiện; CBTD chưa được báo khi QLCN đóng quá hạn; `LoanDetailModal` còn nhánh không dùng; chữ menu 3,63:1; menu khổ điện thoại dài | Xử lý sau buổi bảo vệ nếu không ảnh hưởng demo | [Review Thẩm quyền](#review-vai-tro-tham-quyen) |
+| C10 | Lịch SLA | Lịch v2 phủ tới 31/01/2027; hồ sơ vào Tiếp nhận sau 12/01/2027 không có hạn, từ 01/02/2027 hệ thống dừng | Đủ cho bảo vệ 23/12; không làm lịch 2027 | [Cấu hình SLA](#cau-hinh-sla) |
+| C11 | Kiểm thử toàn luồng chưa chạy lại | E2E 38/38 chạy lần cuối 10/11/2026; sau đó chưa chạy lại `verify-local-running-system.cjs`, `check-sme-rollout-browser.mjs`, `round2-coordination-checks.mjs`, `round3-intake-checks.mjs`; cổng doanh nghiệp chưa thử với hồ sơ có yêu cầu chỉnh sửa/bổ sung/kết quả; màn "Thẩm định & phê duyệt" còn bộ lọc kiểu cũ | Chạy lại E2E (sau C3) trước buổi bảo vệ; ghi kết quả vào [mục 4](#kiem-chung-local-e2e) | Mục 4 |
+| C12 | Ghi nhớ bảo trì | Danh sách ô bắt buộc của cổng nằm ở hai nơi: `portal.readiness.ts` (backend) và `REQUIRED_FOR_SUBMIT` (`frontend/src/portal/wizard.ts`); ngưỡng "sắp hết hạn" 8 giờ nằm ở `dashboard-operations.ts` và `operationsDashboard.ts` | Đổi quy tắc thì sửa cả hai nơi | — |
 
-**Kiểm chứng bổ sung trên hệ thống thật (09/11/2026, sau đợt sửa):**
-* **Giao diện:** chụp bằng Chrome không giao diện: trang giới thiệu cổng doanh nghiệp (máy tính 1440 px và điện thoại 520 px) và form đăng nhập cổng hiển thị đúng. Phát hiện và sửa một lỗi mà test không bắt được: tiêu đề banner bị chữ đen trên nền xanh (kế thừa màu tiêu đề toàn cục). Bộ `ui_audit.cjs` chạy cho Quản lý, CBTD, Thẩm quyền: không có lỗi console hay API lỗi. Chưa nhìn thấy bằng mắt dòng "Dự báo lúc …" trong bảng cảnh báo (nằm dưới màn hình chụp được).
-* **Điểm chấm mới (API thật):** tạo hồ sơ tại quầy có ngay `v4.0-TIEP_NHAN`; yêu cầu làm rõ cập nhật dự báo; chạy lại cho hồ sơ chưa có dự báo (SME-9) thành công. Lần thử này bắt được một lỗi mà test đơn vị bỏ sót: `LoanApplicationsService.create` trả `{ message, loan }` nên code đọc nhầm `id` và hồ sơ tạo tại quầy chưa được chấm; đã sửa code và sửa test dùng đúng dạng dữ liệu trả về.
-* **Đếm Thẩm quyền:** có test riêng (`prediction-appraisers`): 5 tài khoản Thẩm quyền trong DB cho 2 người làm việc thật; thêm tài khoản test hoặc kiêm vai không đổi số đếm; khóa một người thật thì giảm, tối thiểu 1. Phép thử dịch vụ ML cùng một hồ sơ Thẩm định (30/40 giờ, đang làm rõ): 2 Thẩm quyền ra Khẩn 73%, 5 Thẩm quyền ra Khẩn 67%, nghĩa là xác suất giảm khi số Thẩm quyền tăng (mức Khẩn/Chú ý đổi hay không tùy đầu vào, ví dụ 63% so với 45% ở phép thử gốc).
-* **Test lỗi từ trước:** `frontend test:role-recovery` lỗi do bài test dựng "bản cũ" bằng thay chuỗi xuống dòng LF trong khi file nguồn trên Windows là CRLF (không phải lỗi sản phẩm); đã chuẩn hóa xuống dòng khi đọc nguồn, nay 7/7. `check-ai-rules` báo 88 mục lỗi vì hai thư viện skill `.agents/skills/mattpocock` và `superpowers` là mục gitlink không có ánh xạ trong `.gitmodules` (không có mã nguồn trong bản clone này), thiếu `GEMINI.md` và `archive/docs-before-consolidation-2026-11-02.zip`; không liên quan ứng dụng, chưa sửa vì cần quyết định về thư viện skill của dự án.
-* **Tài khoản test:** vẫn chỉ bị khóa, chưa xóa khỏi DB vì xóa không hoàn tác và vướng khóa ngoại lịch sử.
-* Backend 424/424 test đạt; mọi bộ test frontend đạt; build đạt.
+#### Vận hành và dữ liệu local (để chạy lại máy)
 
-**Kiểm chứng bổ sung lần 2 (09/11/2026), các việc trước đó ghi là "chưa kiểm chứng":**
-* **Khóa `ML_API_KEY` (đã thử ở cả hai phía):** phát hiện `docker-compose.yml` không truyền biến này cho cả hai dịch vụ nên tính năng không bật được khi chạy Docker; đã thêm vào compose (cùng `PREDICTION_SCAN_HOURS`, `PREDICTION_SCAN_INTERVAL_MS`). Kết quả: gọi thẳng ML không khóa hoặc sai khóa trả 401; backend cùng khóa dự báo bình thường; backend lệch khóa thì dự báo trả 503 an toàn, các màn khác vẫn 200. Mặc định để trống (không xác thực, chỉ dùng local); đã trả `.env` về không khóa.
-* **Lượt chấm định kỳ chạy thật:** chạy ở chu kỳ 1 phút thấy log "Chấm dự báo định kỳ: scanned 21, predicted 21". Phép tính giờ chấm 08:00 và 13:00 tách thành hàm `nextScanAt` có test (trước 08:00, đúng 08:00, giữa trưa, đúng 13:00, buổi tối). Chưa chờ tới đúng 13:00 thật, nhưng phần tính giờ đã được test.
-* **Tắt ML thật rồi bật lại:** tạo hồ sơ khi ML tắt vẫn thành công (201), hồ sơ tạm "chưa có dự báo"; lượt quét lỗi 3 hồ sơ liên tiếp thì dừng sớm và có log; bật ML lại thì lượt kế tiếp chấm đủ 22/22 hồ sơ, hồ sơ tạo lúc ML tắt có dự báo `v4.0-TIEP_NHAN`.
-* **Phép thử số Thẩm quyền:** tái hiện đúng ví dụ của review: đã dùng 16/40 giờ, hàng chờ 6, không làm rõ: 2 Thẩm quyền ra Khẩn 63%, 5 Thẩm quyền ra Chú ý 45%. Quét 104 tổ hợp: 18 tổ hợp đổi từ Khẩn xuống Chú ý; chênh lệch xác suất trung bình 8,9 điểm phần trăm. Với 3 Thẩm quyền (còn trong khoảng huấn luyện 2–3) kết quả gần như không đổi so với 2 (73% so với 72% ở ca 30/40 giờ), nghĩa là độ nhạy chủ yếu đến từ giá trị 5 nằm ngoài khoảng đã học; xác nhận cách đếm chỉ tính Thẩm quyền chuyên trách là đúng hướng.
-* **Dữ liệu demo cũ dần:** thêm `npm run demo:status` (chỉ đọc): đếm hồ sơ demo mở theo mức SLA và cảnh báo khi quá nửa đã quá hạn, kèm gợi ý `npm run demo:refresh`. Lúc kiểm: 15 hồ sơ mở, 1 quá hạn, dữ liệu còn dùng được. Đây là cách phát hiện sớm, không tự dựng lại dữ liệu ngầm.
-
-**Dọn dữ liệu thử nghiệm để hệ thống sạch và dễ kiểm thử (PO yêu cầu 09/11/2026):** đã sao lưu DB rồi xóa phần do các lần thử của phiên này tạo ra: 13 công ty và hồ sơ "[MÔ PHỎNG]", 14 tài khoản cổng thử nghiệm (`mo.phong.*`, `dn.e2e.*`) cùng đề nghị, tài liệu, dự báo, lịch sử gắn với chúng (xóa theo sơ đồ khóa ngoại thật của DB), 40 tệp tải lên mồ côi và toàn bộ thư trong hộp thư nội bộ. **Giữ nguyên:** bộ demo (194 hồ sơ, mã số thuế `DEMO*`), 4 công ty mẫu của `prisma:seed` cùng hồ sơ cũ `SME-20260901-0001`, 7 tài khoản cán bộ, và 2 tài khoản cổng có sẵn từ trước (`congty@ncc.asia`, `doanhnghiep.test@example.test`). Trạng thái sạch hiện tại: 195 hồ sơ vay, 198 công ty, 2 tài khoản cổng, 2 đề nghị cổng, 2 tệp tải lên. Kiểm tra sau dọn: 4 vai trò đăng nhập được, bảng cảnh báo và dashboard chạy, `/health` báo sẵn sàng. Lệnh dọn lại mỗi khi chạy `seed:portal-flow` hoặc thử tay: `npm run cleanup:test` (mặc định chỉ xem trước và hoàn tác; `-- --apply` để xóa); thư trong hộp thư nội bộ xóa bằng `DELETE http://localhost:8025/api/v1/messages`.
-
-**Việc mô hình bổ sung (09/11/2026, người phụ trách mô hình giao làm):**
-* **Tái lập pipeline:** chạy lại `simulate_v4.py` và `train_v4.py` trong container trên bản sao (không đụng file trong repo): ba CSV giống hệt từng byte (sau khi bỏ khác biệt xuống dòng) và 395/395 giá trị trong `metrics_v4.json` trùng khớp. Số liệu trong `ml-service/README.md` vì vậy đã được đối chiếu.
-* **Kiểm tra chất lượng dữ liệu v4 tự động:** thêm `ml-service/experiments/v3/check_quality_v4.py` (31 mục: không trùng mã, không rò rỉ train/valid/test, miền giá trị, đủ ảnh chụp lúc vào công đoạn, giờ tăng dần, không rò nhãn vào đặc trưng, tỷ lệ trễ hợp lý). Kết quả 31/31 đạt, ghi ở `results/quality_report_v4.json`. Lần chạy đầu có 2 mục FAIL do làm tròn (25 dòng có giờ đã dùng bằng tổng giờ), đã sửa điều kiện cho đúng bản chất.
-* **Ghim phiên bản:** `ml-service/requirements.txt` ghim `scikit-learn==1.9.1` và `pandas==3.1.1` (mô hình tải sạch, không cảnh báo lệch phiên bản dưới 1.9.1) để dựng lại image không bị lệch.
-* **Ghi nhận, chưa đổi:** lược đồ DB vẫn có giá trị mặc định cũ `model_version = "v1.0-rf"` của `delay_predictions`; mã luôn ghi phiên bản v4 nên không ảnh hưởng, nhưng đổi mặc định là thay đổi lược đồ nên để người có quyền duyệt migration quyết.
-
-**Còn dang dở:** xem bảng **Lộ trình xử lý các việc còn lại** ngay bên dưới.
-
-<a id="lo-trinh-con-lai-20261109"></a>
-#### Lộ trình xử lý các việc còn lại (đề xuất ngày 09/11/2026, chờ PO duyệt thứ tự)
-
-**Quyết định đã chốt:** các tài khoản `test_*` và tài khoản demo thừa (10 tài khoản) ban đầu chỉ khóa, sau đó **PO yêu cầu bỏ bớt nên đã xóa hẳn khỏi DB ngày 09/11/2026**. Trước khi xóa đã kiểm tra mọi cột lưu mã người dùng (kể cả cột không có khóa ngoại) và sao lưu DB: chỉ có bảng vai trò (xóa theo) và 1 hồ sơ đã phê duyệt (`SME-20260901-0001`) đang ghi người phụ trách là `test_cbtd`, nay hiển thị "chưa phân công"; không mất dữ liệu nào khác. Hệ thống còn đúng 7 tài khoản (1 Admin, 1 Quản lý, 3 CBTD, 2 Thẩm quyền). Cần chạy kiểm thử tự động thì `npm run prisma:seed` tạo lại `test_*`, xong nên xóa lại. 12 commit cũ trên `main` có dòng đồng tác giả Claude được **để nguyên** (PO 09/11/2026).
-
-| Bước | Việc | Đề xuất cách làm | Công sức | Cần PO quyết? | Nghiệm thu |
-|---|---|---|---|---|---|
-| 1 | **Lịch làm việc 2027** (hạn cứng) | Lịch hiện hành kết thúc 31/12/2026; sau ngày đó SLA PA1 và dự báo trả "ngoài lịch làm việc" cho mọi hồ sơ. Nạp lịch 2027 (ngày nghỉ lễ, Tết) bằng đúng cơ chế đã dùng cho lịch 2026 và kích hoạt trước **15/12/2026**. | Vừa | Có: PO cung cấp hoặc duyệt danh sách ngày nghỉ 2027 | Hồ sơ vào công đoạn ngày 04/01/2027 vẫn có hạn SLA và dự báo; test lịch 2027 |
-| 2 | **Dữ liệu demo cũ dần** (lỗi 9) | Thêm lệnh `npm run demo:refresh` (dựng lại có `--reset`) và để `start-use.ps1` cảnh báo khi hồ sơ demo mở đã quá hạn quá nửa. Không tự xóa dữ liệu ngầm. | Nhỏ | Không | Chạy một lệnh là có lại đủ mức Bình thường, Chú ý, Khẩn; tài liệu ghi bước này trước mỗi buổi demo |
-| 3 | **Nhìn bằng mắt hai màn còn lại** | Chụp bảng cảnh báo của Quản lý có dòng "Dự báo lúc …" (cần cửa sổ cao hơn) và trang chủ cổng doanh nghiệp sau đăng nhập; sửa lỗi hiển thị nếu có. | Nhỏ | Không | Ảnh chụp đính kèm bằng chứng, không lỗi chữ/màu |
-| 4 | **`check-ai-rules` báo 88 mục lỗi** | Hai mục `.agents/skills/mattpocock` và `superpowers` là gitlink không có `.gitmodules`. Đề xuất: PO chọn một trong hai: (A) đưa thư viện skill vào repo đúng cách (khai báo submodule hoặc commit nội dung), hoặc (B) gỡ hai mục khỏi index và bỏ khỏi danh sách kiểm tra, kèm tạo `GEMINI.md` và bỏ tham chiếu file zip lưu trữ nếu không còn dùng. Khuyến nghị (B) nếu không dùng các thư viện này khi làm việc. | Nhỏ | Có: chọn A hay B (không tự tải công cụ) | `node scripts/check-ai-rules.mjs` không còn FAIL |
-| 5 | **Cách đếm "Thẩm quyền đang hoạt động"** (L2/Q3) | Giữ cách đếm hiện tại (tài khoản mở, chuyên trách, không phải `test_*`) làm mặc định. Nếu PO muốn tiêu chí theo hoạt động: dùng `max(số người có thao tác Thẩm định trong 30 ngày, số Thẩm quyền chuyên trách đang mở)` để tài khoản mới chưa có thao tác không làm số đếm tụt. | Nhỏ đến vừa | Có: giữ hay đổi tiêu chí | Test `prediction-appraisers` mở rộng; thêm hoặc khóa tài khoản không làm đổi mức cảnh báo |
-| 6 | **Ngưỡng "Chú ý" ở Thẩm định** (L9/Q4) | Không đổi mô hình. Phương án khuyến nghị: ở Thẩm định chỉ hiện mức Khẩn (từ 60%) và Quá hạn, ẩn Chú ý; thay thế là nâng ngưỡng Chú ý riêng cho Thẩm định (ví dụ 45%). Làm ở lớp hiển thị và đếm của backend/giao diện, đo lại tỷ lệ báo nhầm trước và sau. | Vừa | Có: đây là điều chỉnh ý nghĩa cảnh báo | Tỷ lệ báo nhầm ở Thẩm định giảm, không mất cảnh báo Khẩn; ghi rõ trong mục 5 |
-| 7 | **Dọn bảng `delay_predictions`** | Đặt chính sách giữ: mỗi hồ sơ giữ dự báo mới nhất theo từng công đoạn và mọi dòng trong 90 ngày gần nhất; dọn bằng lệnh có xem trước, chỉ chạy khi PO duyệt. Không đổi lược đồ DB. | Vừa | Có: duyệt thời gian giữ và việc xóa dữ liệu | Lệnh xem trước nêu số dòng sẽ xóa; sau khi chạy dashboard và danh sách không đổi |
-
-**Cập nhật trạng thái sau rà soát (09/11/2026):** PO cho biết phần **SLA/lịch làm việc do người phụ trách khác đảm nhiệm** nên không thuộc phạm vi người sửa lỗi cảnh báo; việc nào làm được thì đã làm, việc còn lại ghi để chuyển tiếp.
-
-| Bước | Trạng thái | Ghi chú |
-|---|---|---|
-| 1 Lịch làm việc 2027 | **Chuyển người phụ trách SLA** | Lịch hiện hành hết 31/12/2026; cần nạp lịch 2027 trước 15/12/2026 (xem mô tả ở bảng trên). Không tự làm vì thuộc phần SLA của người khác và cần danh sách ngày nghỉ 2027 từ PO. |
-| 2 Dữ liệu demo cũ dần | **Đã làm** | Thêm `npm run demo:refresh` (dựng lại dữ liệu demo bằng `--reset`); README ghi chạy trước mỗi buổi demo. Chưa làm phần tự cảnh báo trong `start-use.ps1` (cần truy vấn DB từ PowerShell, thấy không đáng so với việc nhớ chạy một lệnh). |
-| 3 Nhìn bằng mắt | **Đã làm** | Chụp bằng Chrome không giao diện: bảng cảnh báo Quản lý (hồ sơ Quá hạn lên đầu, có dòng "Dự báo lúc …") và trang chủ cổng sau đăng nhập; không lỗi console/API. Phát hiện và sửa: dấu "·" rơi xuống dòng riêng trong khối "Kết quả hồ sơ". Cũng sửa: đăng xuất khỏi cổng quay về trang giới thiệu. |
-| 4 `check-ai-rules` | **Chưa làm, chuyển người giữ cấu hình AI** | Lỗi nằm ở cấu hình công cụ AI (hai thư viện skill là gitlink không có `.gitmodules`, thiếu `GEMINI.md` và file zip trong `archive/`), không phải ứng dụng. Cần người nắm thư viện skill chọn A (khai báo đúng submodule hoặc commit nội dung) hoặc B (gỡ khỏi kiểm tra); không tự tải hay cài công cụ theo quy định dự án. |
-| 5 Đếm Thẩm quyền hoạt động | **Đã chốt: giữ theo hệ thống** | Cách đếm hiện tại (tài khoản mở, chuyên trách, không phải `test_*`) đã hết lỗi gốc: thêm hoặc khóa tài khoản demo không còn đổi mức cảnh báo (có test). Đổi sang "có thao tác trong 30 ngày" chỉ thêm độ phức tạp và dễ làm số đếm tụt khi tài khoản mới chưa có thao tác. **Đã chốt (người phụ trách mô hình, 09/11/2026): giữ theo hệ thống.** |
-| 6 Ngưỡng "Chú ý" ở Thẩm định | **Đã làm (09/11/2026)** | Người phụ trách mô hình chốt phương án khuyến nghị: ở Thẩm định chỉ giữ Khẩn và Quá hạn. Số liệu `model_metadata.json` (SLA 112/40): mức Chú ý ở Thẩm định đúng 41% và báo nhầm 29,7% hồ sơ đúng hạn; mức Khẩn đúng 57,7%, bắt 86,5% ca trễ, báo nhầm 13,7%. Đánh đổi: bỏ Chú ý làm giảm khả năng bắt ca trễ ở Thẩm định từ khoảng 96,8% xuống 86,5% để giảm báo nhầm từ khoảng 30% xuống khoảng 14%. Cài đặt: `riskLevelOf(alert, stage)` quy Chú ý thành Bình thường khi lưu dự báo Thẩm định; `currentStagePrediction` áp cùng quy tắc cho dòng đã lưu trước đó nên không cần chấm lại. Test: `prediction-current-stage` (2 ca L9). Kiểm chứng trên hệ thống chạy: không còn hồ sơ Thẩm định nào mang mức Chú ý; Tiếp nhận vẫn giữ Chú ý. Không huấn luyện lại, không đổi ngưỡng 35%/60%. Muốn quay lại: bỏ nhánh `THAM_DINH` trong hai hàm trên. |
-| 7 Dọn `delay_predictions` | **Đã làm công cụ (09/11/2026)** | `npm run predictions:prune` (mặc định chỉ xem trước; `--apply` để xóa; `--days N`, mặc định 90). Chính sách: luôn giữ dự báo mới nhất của mỗi hồ sơ theo công đoạn và mọi dòng trong N ngày gần nhất; chỉ xóa dòng cũ hơn N ngày và không phải dòng mới nhất. Kiểm chứng logic trong một transaction rồi hoàn tác: lùi 97 dòng 200 ngày thì xóa 66, còn 31 dòng (đúng 1 dòng mới nhất cho mỗi cặp hồ sơ, công đoạn); dữ liệu thật còn nguyên 97 dòng. Hiện chưa có dòng nào cũ hơn 90 ngày nên chưa cần chạy `--apply`; chạy định kỳ khi bảng lớn. |
-
-**Người phụ trách mô hình (xác nhận 09/11/2026):** mô hình dự báo và phần hệ thống gọi mô hình do người phụ trách mô hình sửa và quyết định. Vì vậy các bước 5, 6, 7 ở trên và các quyết định Q1–Q6 ở mục 5 là việc của người này; các quyết định Q1–Q6 ở mục 5 **đã được người phụ trách mô hình chốt ngày 09/11/2026** (Q3 chốt theo hệ thống) và các bước 5, 6, 7 đã xử lý. Các thay đổi mã liên quan mô hình đã làm trong phiên 09/11/2026 (cần được xem lại): `ml-service/app/predictor.py` (bỏ biên SLA ±25%, dùng logger), `ml-service/app/main.py` (khóa `ML_API_KEY`, tắt CORS mặc định, lỗi 500 không lộ chi tiết), `backend/src/modules/prediction/*` (`currentStagePrediction`, đếm Thẩm quyền, lý do không dự báo, chấm 08:00 và 13:00), các điểm gọi dự báo khi tiếp nhận từ cổng, tạo tại quầy, làm rõ và trình tờ trình. Không có thay đổi nào ở artifact `.joblib`, dữ liệu huấn luyện hay ngưỡng cảnh báo (35% và 60%). Muốn hoàn tác: khôi phục các tệp trên từ commit `9b3909a`.
-
-**Việc chuyển tiếp cho người khác:** (a) người phụ trách SLA: bước 1, lịch 2027 và ngày nghỉ lễ; (b) người giữ cấu hình AI: bước 4; (c) phần mô hình không còn việc chờ quyết định. Tài khoản `test_*` và tài khoản demo thừa vẫn khóa, không xóa.
-
-**Thứ tự đề nghị:** 1 (có hạn) → 2 và 3 (không cần quyết định, làm ngay) → 4 → 5 và 6 (sau khi PO chốt) → 7 (khi dữ liệu đủ lớn). Mọi bước đều giữ nguyên quy trình vay, quyền vai trò, ngưỡng tiền, định mức SLA và ranh giới "ML chỉ cảnh báo trễ SLA"; mỗi bước làm xong cập nhật mục này và README nếu đổi tài khoản.
-
-<a id="diem-ban-giao-20261106"></a>
-### Điểm bàn giao ngày 06/11/2026
-
-**Git:** code ở commit `6481598`, nhánh `LeThiYenNhi`, đã push. Chưa có PR đang mở cho nhánh này; nhánh thiếu một commit gộp của PR #9 từ `main`, gộp thử không xung đột. Lần cập nhật mục này chưa commit. Không đưa vào commit: thư mục `build`, `preview-build` trong `evidence`, các tệp `tsbuildinfo`, `frontend/portal.css` (rỗng), `output/`, `prototypes/`.
-
-**Kiểm chứng gần nhất, ngày 06/11/2026:** backend 380/380; 17 gói test frontend đạt; build đạt. Sau khi xóa 71 tệp sinh nhầm chỉ chạy lại build và 4 gói liên quan. Chi tiết tại mục [Kiểm thử vai trò Cán bộ tín dụng](#kiem-thu-vai-tro-can-bo-tin-dung).
-
-**Chờ PO quyết định:**
-
-- Phương án lãi suất của Thẩm quyền: biểu theo loại vay có sàn và trần (đề xuất), cố định theo loại vay, hay giữ nhập tự do 0–100%.
-- Thẩm quyền còn yêu cầu bổ sung, xác nhận đã nhận đủ, chạy lại dự báo ngoài danh sách chức năng.
-- Form phê duyệt chưa có ô điều kiện phê duyệt hoặc ghi chú.
-- CBTD chưa được báo khi Quản lý đóng hồ sơ quá hạn bổ sung.
-- Seed còn công đoạn và hồ sơ mẫu Cấp trên; `.agents/AGENTS.md` còn cụm "ngưỡng cấp trên".
-
-**Chưa kiểm chứng:**
-
-- Toàn bộ E2E sau thay đổi 04–06/11. Các script chưa chạy lại: `check-workflow.cjs`, `round2-coordination-checks.mjs`, `round3-intake-checks.mjs`, `check-sme-rollout-browser.mjs`. Hai script `round2-coordination-checks.mjs`, `check-sme-rollout-browser.mjs` có thao tác CBTD, có thể phải đổi vì không còn popup.
-- Trang chi tiết CBTD: hồ sơ thật; chọn tệp bằng tay; yêu cầu bổ sung Portal có danh mục; đề nghị điều phối lý do thường; Quản lý xử lý xung đột lợi ích rồi CBTD được mở lại; mở từ thông báo và từ đề nghị Portal vừa tiếp nhận; giao diện sau khi xóa 71 tệp sinh nhầm.
-- Nhãn "Quá hạn" trên giao diện với dữ liệu thật; demo cần hồ sơ thật vào Thẩm định trước 23/11, việc tạo hồ sơ chờ PO cho phép.
-- Phía Portal: nhập sai MST và tệp sai trên giao diện.
-- Lọc và phân trang với dữ liệu lớn; chưa có index cho cột lọc mới.
-
-**Vận hành:**
-
-- Không dùng `start-use.ps1` để chỉ khởi động lại vì script có thể seed hoặc đẩy schema. Backend: `node --env-file=.env dist/main.js` trong `backend`. Frontend: `npm run dev` trong `frontend`.
-- Tại thời điểm ghi, dịch vụ dự báo cổng 8000 đang tắt; backend và frontend chạy ẩn nên khởi động lại máy là phải bật lại.
-- Lịch SLA chỉ có kỳ 01/01–31/12/2026, cần thêm lịch 2027.
-- SQL cần áp dụng đúng môi trường, PR không tự chạy: `document-codes.sql` (bộ đếm mã hồ sơ), `remove-cap-tren.sql` (xóa hồ sơ mẫu và công đoạn Cấp trên, tạo lại enum; `public` local đã áp dụng ngày 05/11/2026). Sao lưu trước khi chạy tệp sau.
-- Schema kiểm thử cũ `portal_v2_it_505abdfdfb5a4eb59f3b122d3b0e8bd0` còn lại, chưa dọn.
-- `check-ai-rules` còn 3 lỗi do thiếu `GEMINI.md`.
-
-**Backlog:**
-
-- Trang chi tiết CBTD: chưa cảnh báo khi rời trang với nội dung đang gõ ở form bổ sung và đề nghị điều phối.
-- Popup Quản lý: tải lỗi không mở lại được; yêu cầu hết hạn hiện "Đang chờ bổ sung". `LoanDetailModal` còn nhánh CBTD và Thẩm quyền không còn được dùng tới.
-- Trang Thẩm quyền: tải lại lỗi mất cả trang; tệp bổ sung hiện mã thay vì tên; giải trình rất dài có thể tràn ngang.
-- Khổ điện thoại: menu chiếm khoảng 590px đầu trang.
-- Giao diện: chữ menu mờ 3,63:1 chưa đạt, chờ duyệt đổi `#64748b`; vùng bấm 44px và bộ lọc rút gọn ở màn danh sách; CSS `.kanban-*` còn lại.
-
-Hai đầu việc quan trọng tiếp theo được giao cho người tiếp nhận dự án (CHƯA thực hiện trong lượt cập nhật tài liệu này):
-
----
-
-<a id="ke-hoach-dieu-chinh-mo-hinh"></a>
-### A. Điều chỉnh mô hình để áp dụng vào hệ thống SME
-
-1. **Mục tiêu:** Khảo sát, tinh chỉnh và nâng cấp mô hình Machine Learning để phản ánh chính xác các thuộc tính vận hành thực tế của quy trình SME Loan Workflow, phục vụ cảnh báo sớm nguy cơ vi phạm SLA.
-2. **Nội dung công việc cần làm:**
-   - Khảo sát mã nguồn dịch vụ `ml-service/`, các tệp dữ liệu huấn luyện hiện có (`data/`) và pipeline trích xuất đặc trưng (feature engineering).
-   - Đề xuất phương án điều chỉnh mô hình (thuật toán, siêu tham số, bộ trọng số đặc trưng) phù hợp với quy trình 3 công đoạn thực tế (`TIEP_NHAN`, `THAM_DINH`, `HOAN_TAT`) và chính sách giờ làm việc ngân hàng PA1.
-   - Xây dựng bộ tiêu chí đánh giá mô hình khách quan (ROC-AUC, Precision, Recall, F1-Score trên nhãn cảnh báo nguy cơ trễ SLA).
-   - Tích hợp và kiểm chứng mô hình mới trên môi trường local trước khi đề xuất áp dụng.
-3. **Các ràng buộc bất biến bắt buộc tuân thủ:**
-   - **Tuyệt đối không thay đổi chức năng và quy trình SME:** Mọi điều chỉnh mô hình không được phép làm thay đổi luồng nghiệp vụ, phân quyền 5 actor hay logic xử lý của 7 nhóm chức năng đã được duyệt và nghiệm thu (ngoại trừ việc gỡ module chỉ định tại Mục B).
-   - **Giữ nguyên ý nghĩa nghiệp vụ của ML:** Mô hình CHỈ dự báo nguy cơ trễ hạn SLA của công đoạn. Tuyệt đối **không biến mô hình thành công cụ tự động ra quyết định cấp tín dụng, chấm điểm rủi ro tài chính hay thay thế con người**.
-   - **Giữ nguyên hợp đồng tích hợp:** Duy trì giao thức REST API giữa Backend NestJS và ML Service (`/predict`), giữ nguyên định dạng dữ liệu đầu vào/đầu ra và các chính sách SLA PA1.
-   - **Phân biệt dữ liệu:** Phân định rạch ròi giữa dữ liệu giả lập/tổng hợp (synthetic data) dùng cho kiểm thử và dữ liệu hoạt động thực tế; không dùng dữ liệu nhạy cảm của khách hàng ngoài phạm vi cho phép.
-   - **Khả năng chịu lỗi (Fault-Tolerance):** Dịch vụ ML gặp lỗi hoặc phản hồi chậm tuyệt đối không được làm sai lệch, gián đoạn hay rollback các giao dịch nghiệp vụ cốt lõi của ngân hàng (tiếp nhận, chuyển bước, phê duyệt).
-   - **Bàn giao hoàn chỉnh:** Khi hoàn thành, phải bàn giao rõ ràng phiên bản mô hình, lệnh/hướng dẫn chạy, báo cáo kết quả đánh giá thực nghiệm, giới hạn của mô hình và quy trình rollback về phiên bản trước.
+- **Khởi động:** backend `node --env-file=.env dist/main.js` trong `backend` (đang chạy ở tab terminal "backend 3000" của phiên AI; dừng tiến trình cũ trước khi chạy lại); frontend `npm run dev` trong `frontend`. Không dùng `start-use.ps1` chỉ để khởi động lại vì script có thể seed hoặc đẩy schema.
+- **SQL đã áp lên `public` local** (máy khác phải áp đúng thứ tự, sao lưu trước): `document-codes.sql`, `remove-cap-tren.sql`, `sla-pa1.sql`, `admin-audit-log.sql` (12/11), `interest-rate-bands.sql` (13/11). Danh sách đầy đủ ở [SME_KY_THUAT mục 4](SME_KY_THUAT.md).
+- **Sao lưu gần nhất:** `.codex_tmp/backups/public-before-admin-audit-20261112.dump`, `evidence/private-backups/sme_loan_pre_rate_bands_20261113_095012.dump` (không đưa vào git).
+- **Tài khoản:** 7 tài khoản mở (`khoa.tran` Admin, `nhung.nguyen` Quản lý, `mai.bui`/`nam.hoang`/`thanh.ngo` CBTD, `ha.le`/`huy.vu` Thẩm quyền), 10 tài khoản khóa; mật khẩu demo ghi ở [README](../README.md#tai-khoan-noi-bo) (ngoại lệ PO duyệt 10/11, chỉ dùng máy cá nhân).
+- **Dữ liệu demo:** chạy `npm run demo:refresh` (hoặc `seed:demo -- --reset`) trước mỗi buổi demo vì đồng hồ SLA vẫn chạy; `npm run demo:status` kiểm nhanh. Lưu ý C3: script chưa tạo khung lãi suất.
+- **Dọn dữ liệu thử:** `npm run cleanup:test` (mặc định xem trước; `-- --apply` để xóa). Dọn dự báo cũ: `npm run predictions:prune`.
+- **Cổng doanh nghiệp:** `PORTAL_V2_ROLLOUT_ENABLED=true` trong `.env` local; cần `document-codes.sql` trước khi bật.
+- **Mô hình ML:** v4, chỉ dự báo nguy cơ trễ SLA; người phụ trách mô hình đã chốt Q1–Q6 ngày 09/11 (xem [mục 5](#trang-thai-mo-hinh)). Không huấn luyện lại, không đổi ngưỡng 35%/60%.
+- **Cấu hình AI:** `node scripts/check-ai-rules.mjs` 450/0 (PO bỏ yêu cầu `GEMINI.md` ngày 12/11).
 
 ---
 
 <a id="ke-hoach-go-quan-ly-van-de"></a>
-### B. Kế hoạch gỡ chức năng “Quản lý vấn đề hồ sơ”
+### B. Kế hoạch gỡ khối "Vướng mắc nội bộ" ở tiếp nhận Portal
 
 > [!WARNING]
-> **Ngoại lệ duy nhất đối với yêu cầu giữ nguyên chức năng:** Đây là hạng mục công việc tiếp theo được yêu cầu chuẩn bị, **CHƯA gỡ khỏi ứng dụng trong lượt cập nhật tài liệu này**.
+> **Chưa thực hiện, chỉ Yến Nhi được chốt và sửa (mục C7).** Menu "Quản lý vấn đề hồ sơ" đã bỏ theo DEC-11 ngày 12/11/2026; kế hoạch dưới đây là phần khác: khối vướng mắc nội bộ của QLCN trong luồng tiếp nhận Portal, hiện vẫn còn và vẫn chặn Tiếp nhận.
 
 1. **Xác định chính xác vị trí mã nguồn và module cần gỡ (dựa trên CodeGraph & Source Audit):**
    - *Giao diện người dùng (Frontend):*
@@ -1247,3 +1559,12 @@ Toàn bộ quá trình phát triển và vận hành hệ thống SME Loan Workf
 | **S1 – S4 (SLA PA1)** | Chính sách tính giờ làm việc ngân hàng PA1: 08:00–12:00 và 13:00–17:00 từ Thứ Hai đến Thứ Sáu (giờ VN); tạm dừng khi chờ doanh nghiệp bổ sung; tiếp tục chạy khi ngân hàng ghi nhận đã nhận đủ (Portal: doanh nghiệp bấm gửi đủ; quầy: CBTD xác nhận); định mức 14/5 ngày làm việc, lịch 2026; snapshot lịch sử công đoạn cố định lúc mở. | Làm rõ nội bộ giữa Thẩm quyền và CBTD KHÔNG tạm dừng SLA; cập nhật định mức SLA của Admin KHÔNG hồi tố lịch sử công đoạn đã qua. |
 | **Hạn mức 10 tỷ** | Hạn mức cấp tín dụng chi nhánh tối đa đúng 10 tỷ VNĐ (bao gồm đúng 10 tỷ). | Hồ sơ mới vượt 10 tỷ bị chặn ngay tại UI và API; hệ thống không có công đoạn Cấp trên. |
 | **D4-04 & D5-04** | Thắt chặt Maker-Checker khi đóng quá hạn (D4-04) và hiển thị minh bạch lý do khóa quyền Maker-Checker trên giao diện Tờ trình & Quyết định (D5-04). | Duy trì kiểm tra độc lập 3 tầng theo định danh bất biến `user.id`; giao diện vô hiệu hóa nút bấm và hiển thị lý do giải thích minh bạch, không đoán quyền và không để người dùng nhận lỗi 403 bất ngờ. |
+| **DEC-05** (11/11/2026) | Màu navy là chuẩn chung cho mọi vai trò nội bộ, trang đăng nhập và cổng doanh nghiệp (`--primary #1d4e89`); token đặt tại `:root` của `theme.css`. | Màu trạng thái nghiệp vụ (badge xanh/tím/vàng/đỏ/xanh lá, vạch SLA đỏ/vàng) giữ ý nghĩa riêng, không dùng màu chính thay cho trạng thái. |
+| **DEC-06** (11/11/2026) | Điều phối theo lượt xử lý: hồ sơ Thẩm định đang chờ Thẩm quyền quyết định chỉ được gửi đề nghị Xung đột lợi ích; các trường hợp còn lại giữ đủ lý do; đề nghị đang chờ trước đó giữ nguyên. | Báo xung đột lợi ích luôn mở khi hồ sơ chưa kết thúc; chặn ở backend trong giao dịch tạo đề nghị, không chỉ ẩn trên giao diện. |
+| **DEC-07** (11/11/2026) | CBTD xem mọi hồ sơ mình phụ trách ở mọi công đoạn, chia tab Đang xử lý / Đã kết thúc (không giới hạn thời gian); khối "Cần xử lý ngay" chỉ gồm hồ sơ đang chờ chính CBTD. | Không mở cho CBTD hồ sơ của cán bộ khác; hồ sơ đã kết thúc chỉ xem; "việc của CBTD" dùng chung một quy tắc với hàng việc thẩm định (`classifyQueueRow`). |
+| **DEC-08** (11/11/2026) | Bộ lọc theo vai trò: CBTD lọc theo Trạng thái hồ sơ (không có Công đoạn); Thẩm quyền lọc Công đoạn và Tình trạng phụ thuộc nhau; QLCN giữ bộ lọc hiện có. | Chỉ đổi cách lọc trên giao diện; dữ liệu vẫn tách công đoạn và trạng thái; API vẫn lọc một trạng thái mỗi lần. |
+| **DEC-09** (11/11/2026) | Cổng doanh nghiệp chỉ tạo bản nháp khi có tên doanh nghiệp hoặc mã số thuế; đề nghị mới điền sẵn thông tin doanh nghiệp ít đổi từ đề nghị gần nhất và người liên hệ từ tài khoản. | Không chép doanh thu theo kỳ và nhu cầu vay sang đề nghị mới; danh sách ô bắt buộc phải khớp kiểm tra sẵn sàng của máy chủ. |
+| **DEC-10** (12/11/2026) | Thẩm quyền và QLCN dùng hàng việc chung, không có quy tắc phân việc: mọi Thẩm quyền độc lập thấy và xử lý được hồ sơ ở Thẩm định, người thao tác hợp lệ trước là người quyết; Thẩm quyền khác được quyết bản tờ trình sau làm rõ. Đề nghị điều phối, xung đột lợi ích, đối soát Company, đề nghị Portal mới do bất kỳ QLCN nào không phải người lập xử lý. Chỉ áp dụng quy tắc chặn Maker-Checker (D4-04, D5-04). Phân việc theo người ("Nhận xử lý" với `reviewerId`, QLCN chuyển người nhận) để backlog, làm khi có từ 3 Thẩm quyền trở lên hoặc thường trùng việc, có phân cấp thẩm quyền theo số tiền hay nhiều chi nhánh, cần KPI/trách nhiệm trễ SLA theo từng Thẩm quyền, hoặc kiểm toán yêu cầu người phê duyệt được chỉ định trước. | Hai thao tác đồng thời trên một hồ sơ phải được khóa dòng và từ chối thao tác sau, không sinh quyết định trùng; không nới quy tắc chặn Maker-Checker; đặc trưng ML `appraisalQueueLen`, `appraisersActive` giữ giả định hàng chung. |
+| **DEC-11** (12/11/2026) | Bỏ mục menu "Quản lý vấn đề hồ sơ" (các loại vấn đề đã có luồng riêng: trả sửa, bổ sung, làm rõ, điều phối/xung đột lợi ích, đối soát Company). Làm "Lịch sử hoạt động" dạng nhật ký quản trị (AD-04/V6), chốt code trước 30/11/2026; chỉ Admin xem; ghi đúng 5 thao tác thành công qua giao diện quản trị: tạo tài khoản cán bộ, sửa họ tên/SĐT/chi nhánh, khóa/mở khóa, đổi vai trò, sửa định mức SLA công đoạn; mỗi dòng gồm người làm, thời điểm, loại thao tác, đối tượng, giá trị trước → sau; lọc theo người làm, loại, khoảng thời gian, có phân trang; nhật ký bắt đầu trống từ ngày triển khai. Không ghi đăng nhập, thao tác nghiệp vụ hồ sơ, tài khoản cổng doanh nghiệp, script vận hành ghi thẳng DB (`seed:demo`, `accounts:tidy`, `cleanup:test`, kích hoạt lịch SLA). Khối "Vướng mắc nội bộ" ở tiếp nhận Portal (kế hoạch B) không thuộc gói này. | Nhật ký chỉ thêm, ghi trong cùng transaction với thao tác; không có API sửa/xóa; không chứa mật khẩu, token, dữ liệu khách hàng; QLCN không xem; không đổi quy trình vay, quyền nghiệp vụ, SLA, ML. |
+| **DEC-12** (12/11/2026) | Dashboard theo actor: (1) giữ chính sách 11/11, Admin xem mọi màn nghiệp vụ ở chế độ chỉ xem, dashboard Admin mặc định chỉ hiện số tổng hợp, xem chi tiết qua các màn nghiệp vụ; (2) hệ thống một chi nhánh, không làm dữ liệu và biểu đồ so sánh nhiều chi nhánh; (3) "Sắp hết hạn SLA" là công đoạn đang mở tính theo giờ làm việc (PA1), chưa quá hạn, không chờ doanh nghiệp và còn không quá 8 giờ làm việc (1 ngày làm việc); hằng số trong code, Admin không chỉnh. Quy tắc tài khoản (Admin không kiêm vai trò nghiệp vụ, không kiêm CBTD + Thẩm quyền, tối thiểu 2 Thẩm quyền) chưa duyệt. | Ngưỡng chỉ là nhãn hiển thị và số đếm trên dashboard: không đổi cách tính giờ, tạm dừng, định mức SLA, mô hình hay ngưỡng ML 35%/60%; Sắp hết hạn, Trong hạn, Quá hạn, Tạm dừng loại trừ nhau; không đổi RBAC. |
+| **DEC-13** (12/11/2026) | Lãi suất phê duyệt: CBTD đề xuất lãi suất bắt buộc trong tờ trình; Thẩm quyền quyết trong khung sàn–trần theo loại vay do Admin nhập theo phiên bản (ngày hiệu lực, căn cứ ban hành), khác đề xuất phải ghi lý do; tờ trình chưa có lãi suất đề xuất thì không phê duyệt được (bổ sung 13/11/2026); bước 0,01; Portal không hiện lãi suất. Khung mô phỏng duyệt có điều kiện 13/11/2026: Vốn lưu động 6,50–10,50%, Đầu tư TSCĐ 7,50–12,00%, Thấu chi 8,00–13,00%, chỉ cho khoản vay VND thông thường. Chi tiết Q1–Q10 tại [review lãi suất](#review-lai-suat-tham-quyen). | Không dùng ML hay chấm điểm tín dụng cho lãi suất; ngoài khung chặn cứng, không có đường ngoại lệ; phiên bản khung không sửa, không hiệu lực lùi; không áp khung ngược cho hồ sơ đã quyết định; số liệu khung do PO cung cấp. |

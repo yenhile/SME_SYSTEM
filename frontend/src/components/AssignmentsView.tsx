@@ -4,8 +4,11 @@ import { OfficerWorkload, LoanApplication } from '../types';
 import { Users, ArrowRightLeft, RefreshCw } from 'lucide-react';
 import { predictionLabel } from '../slaDisplay';
 import {AssignmentChangeRequestsView} from './AssignmentChangeRequestsView';
+import { useAuth } from '../context/AuthContext';
 
 export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTAL';id:string})=>void}> = ({onOpenCase}) => {
+  const { activeRole } = useAuth();
+  const canReassign = activeRole === 'QUAN_LY';
   const [workloads, setWorkloads] = useState<OfficerWorkload[]>([]);
   const [activeLoans, setActiveLoans] = useState<LoanApplication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -110,9 +113,6 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
           <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
             Điều chuyển & phân công
           </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Theo dõi khối lượng hồ sơ của từng cán bộ và điều chuyển linh hoạt nhằm giảm thiểu nguy cơ tắc nghẽn SLA
-          </p>
         </div>
 
         <button onClick={fetchData} disabled={loading||submitting} className="btn btn-secondary">
@@ -120,7 +120,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
         </button>
       </div>
 
-      {/* Khối 1: Bảng Tải công việc Cán bộ Trắng Sáng */}
+      {/* Khối 1: Bảng tải công việc CBTD */}
       <div className="card" style={{ marginBottom: 24, background: '#ffffff' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <div
@@ -139,7 +139,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
           </div>
           <div>
             <h3 style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
-              Bảng Giám sát Tải Công việc (CBTD Workload Monitoring)
+              Bảng giám sát tải công việc CBTD
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               Ưu tiên điều chuyển sang cán bộ đang ở trạng thái Khả dụng (hàng đầu tiên)
@@ -221,7 +221,7 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
               Danh sách Hồ sơ Đang xử lý (Sẵn sàng Điều chuyển)
             </h3>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Nhấp nút "Điều chuyển" để chuyển giao hồ sơ sang cán bộ có tải thấp hơn
+              {canReassign ? 'Nhấp nút "Điều chuyển" để chuyển giao hồ sơ sang cán bộ có tải thấp hơn' : 'Hồ sơ đang xử lý và cán bộ phụ trách'}
             </p>
           </div>
         </div>
@@ -274,14 +274,14 @@ export const AssignmentsView: React.FC<{onOpenCase?:(subject:{type:'LOAN'|'PORTA
                       )}
                     </td>
                     <td>
-                      <button
+                      {canReassign ? <button
                         disabled={loading || submitting}
                         onClick={() => handleOpenReassignModal(loan)}
                         className="btn btn-secondary"
                         style={{ padding: '6px 12px', fontSize: '12px' }}
                       >
                         <ArrowRightLeft size={13} /> Điều chuyển
-                      </button>
+                      </button> : null}
                     </td>
                   </tr>
                 );

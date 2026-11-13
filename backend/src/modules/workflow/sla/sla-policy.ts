@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { CalendarCoverageError, OPERATING_CALENDAR_2026, PauseInterval, SIMULATED_CALENDAR_V1, SlaCalendar, workingDeadline, workingHoursBetween, workingMillisBetween } from './working-time';
+import { CalendarCoverageError, OPERATING_CALENDAR_2026, OPERATING_CALENDAR_2026_EXT, PauseInterval, SIMULATED_CALENDAR_V1, SlaCalendar, workingDeadline, workingHoursBetween, workingMillisBetween } from './working-time';
 
 export const SLA_POLICY_PA1 = 'PA1';
 
@@ -7,6 +7,7 @@ export const SLA_POLICY_PA1 = 'PA1';
 const CALENDARS: Record<string, SlaCalendar> = {
   [SIMULATED_CALENDAR_V1.version]: SIMULATED_CALENDAR_V1,
   [OPERATING_CALENDAR_2026.version]: OPERATING_CALENDAR_2026,
+  [OPERATING_CALENDAR_2026_EXT.version]: OPERATING_CALENDAR_2026_EXT,
 };
 
 export function calendarByVersion(version: string): SlaCalendar {

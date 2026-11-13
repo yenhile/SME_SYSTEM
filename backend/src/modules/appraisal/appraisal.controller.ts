@@ -10,7 +10,7 @@ import { LoanActor } from '../workflow/loan-policy';
 import { AppraisalService } from './appraisal.service';
 @Controller('appraisals')
 @UseGuards(JwtAuthGuard,RolesGuard,LoanAccessGuard)
-@Roles(RoleCode.CBTD,RoleCode.THAM_QUYEN,RoleCode.QUAN_LY)
+@Roles(RoleCode.CBTD,RoleCode.THAM_QUYEN,RoleCode.QUAN_LY,RoleCode.ADMIN)
 export class AppraisalController {
   constructor(private service:AppraisalService) {}
   @Get(':applicationId')

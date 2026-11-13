@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-02T13:11:17.617Z",
+  "timestamp": "2026-11-10T07:49:29.396Z",
   "system": {
     "backendUrl": "http://localhost:3000/api",
     "frontendStaffUrl": "http://localhost:5173/",
@@ -16,20 +16,20 @@
   },
   "baselinePreservation": {
     "users": {
-      "before": 4,
-      "after": 4
+      "before": 17,
+      "after": 17
     },
     "companies": {
-      "before": 4,
-      "after": 4
+      "before": 200,
+      "after": 200
     },
     "loans": {
-      "before": 4,
-      "after": 4
+      "before": 200,
+      "after": 200
     },
     "portalAccounts": {
-      "before": 1,
-      "after": 1
+      "before": 4,
+      "after": 4
     }
   }
 }

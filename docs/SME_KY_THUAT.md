@@ -102,6 +102,7 @@ Không dùng startup khác một cách máy móc: `start-local.ps1`/`run-local-d
 | [portal-account-recovery.sql](../backend/prisma/portal-account-recovery.sql) | Phục hồi Portal và authVersion |
 | [round2-assignment-safety.sql](../backend/prisma/round2-assignment-safety.sql) | Version và idempotency phân công |
 | [round2-assignment-coordination.sql](../backend/prisma/round2-assignment-coordination.sql) | Đề nghị điều phối, liên kết history/notices, FK/index/CHECK |
+| [admin-audit-log.sql](../backend/prisma/admin-audit-log.sql) | Nhật ký thao tác quản trị chỉ thêm: bảng, CHECK mã thao tác, 3 index, trigger chặn UPDATE/DELETE/TRUNCATE; chạy lại an toàn. Áp trước khi chạy backend có nhật ký |
 | [document-codes.sql](../backend/prisma/document-codes.sql) | Hai PostgreSQL sequence sinh `DN-1`/`SME-1`; giữ mã cũ, tiếp nối số ngắn đã có, chạy lại không reset |
 | [renumber-document-codes.sql](../backend/prisma/renumber-document-codes.sql) | Chuyển mã cũ sang định dạng ngắn theo quyền riêng của PO; chỉ đổi hai cột mã, giữ mã ngắn đã cấp và trả bảng đối chiếu |
 
@@ -201,6 +202,8 @@ Baseline trước gộp: **380 PASS / 6 FAIL**. Lỗi sẵn có gồm thiếu `G
 Sau gộp 02/11: **415 PASS / 3 FAIL** trên checkout. Ba lỗi còn lại đều do file `GEMINI.md` đã thiếu từ trước: nonempty, tham chiếu policy và wiring SME-AI-011/012. Không tạo host entry ngoài phạm vi hoặc bỏ kiểm tra để báo đạt. Kiểm tra 56 vendor skill hashes vẫn đạt.
 
 `node scripts/check-ai-rules.test.mjs` đạt **18/18** ca. Fixture tạm dùng GEMINI giả lập hợp lệ để kiểm thử chính validator và các trường hợp cấu hình sai; không tạo GEMINI ở checkout và không chứng minh host Gemini đã được cấu hình. Kiểm tra syntax hai script đạt; CodeGraph đã làm mới, 174 file / 3.493 node / 6.951 edge. Kiểm tra riêng 180 link/anchor tại 14 Markdown hiện hành đạt, sáu JSON và 15 tệp bằng chứng giữ nguyên SHA-256. Đây là nghiệm thu hợp nhất tài liệu, không phải nghiệm thu lại ứng dụng.
+
+**Bỏ yêu cầu `GEMINI.md` (PO duyệt 12/11/2026):** file chưa từng có trong git, và Antigravity đã nạp cùng chính sách qua `AGENTS.md` cùng rule `always_on` `.agents/rules/ai-rules.md`. Vì vậy validator thôi bắt buộc `GEMINI.md`; test thay ca kiểm Gemini bằng ca kiểm rule bootstrap của Antigravity khi thiếu SME-AI-012. Kết quả: `check-ai-rules` **450 PASS / 0 FAIL** trên checkout. `check-ai-rules.test.mjs` trên checkout dừng ngay khi chép fixture vì `ml-service/scripts` không còn; danh sách nguồn của fixture cũng thiếu `output/`, `ml-service/README.md`, `ml-service/experiments/v3`, `backend/scripts` mà tài liệu đang liên kết. Chạy bản sao bỏ qua nguồn thiếu và thêm 4 nguồn đó thì đạt **18/18** ca. Danh sách nguồn của fixture chưa sửa. Chưa smoke test Antigravity ở phiên mới.
 
 <a id="sao-luu-tai-lieu"></a>
 ## 11. Sao lưu, nguồn gốc và khôi phục tài liệu

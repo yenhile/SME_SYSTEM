@@ -24,11 +24,11 @@ test('overdue supplement list shows unassigned loans and is ordered oldest overd
   assert.equal(list[0].assignedOfficer,'Chưa phân công');
   assert.deepEqual(args.orderBy,{overdueAt:'asc'});
 });
-test('overdue supplement endpoint is limited to QUAN_LY',()=>{
+test('overdue supplement list is for QUAN_LY, with Admin read-only',()=>{
   const guard=new RolesGuard(new Reflector());
   const ctx=roles=>({getHandler:()=>DashboardController.prototype.getOverdueSupplements,getClass:()=>DashboardController,switchToHttp:()=>({getRequest:()=>({user:{roles}})})});
-  assert.equal(guard.canActivate(ctx(['QUAN_LY'])),true);
-  for(const role of ['THAM_QUYEN','CBTD','ADMIN']) assert.throws(()=>guard.canActivate(ctx([role])),e=>e.getStatus()===403);
+  for(const role of ['QUAN_LY','ADMIN']) assert.equal(guard.canActivate(ctx([role])),true,role);
+  for(const role of ['THAM_QUYEN','CBTD']) assert.throws(()=>guard.canActivate(ctx([role])),e=>e.getStatus()===403);
 });
 
 test('days overdue count from the real due time, not from when the scan marked it',async()=>{

@@ -1,6 +1,7 @@
 import { AppraisalModule } from './modules/appraisal/appraisal.module';
 import { Module } from '@nestjs/common';
 import { AdminController } from './admin.controller';
+import { AdminService } from './admin.service';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
 import { PrismaService } from './prisma.service';
@@ -35,6 +36,6 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     NotificationsModule,
   ],
   controllers: [HealthController, AdminController],
-  providers: [HealthService, PrismaService],
+  providers: [HealthService, PrismaService, AdminService],
 })
 export class AppModule {}

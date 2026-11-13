@@ -155,3 +155,17 @@ test('an expired supplement never reads as still waiting', async () => {
   const tabs = await read('../src/components/AppraisalEvidenceTabs.tsx');
   assert.match(tabs, /'Đã hết hạn'/);
 });
+
+test('thông báo thành công hiện ở góc phải và tự ẩn sau 10 giây', async () => {
+  const toast = await read('../src/components/SuccessToast.tsx');
+  assert.match(toast, /TOAST_MS = 10_000/);
+  assert.match(toast, /setTimeout\(onClose, TOAST_MS\)/);
+  assert.match(toast, /role="status"/);
+  const css = await read('../src/components/appraisal-workspace.css');
+  assert.match(css, /\.app-toast \{[^}]*position: fixed;[^}]*right: 16px;/);
+  for (const file of ['../src/components/OfficerCaseWorkspace.tsx', '../src/components/AppraisalWorkspace.tsx']) {
+    const source = await read(file);
+    assert.match(source, /<SuccessToast message=\{notice\} onClose=/, file);
+    assert.doesNotMatch(source, /aw-alert-success/, file);
+  }
+});

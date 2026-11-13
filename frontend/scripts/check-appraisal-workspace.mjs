@@ -70,7 +70,9 @@ test('the form and the reader share one list of names', () => {
   for (const [key, label] of workspace.REPORT_SECTIONS) assert.ok(form[key].startsWith(label), key);
   assert.equal(form.recommendation, workspace.REPORT_PROPOSAL_LABEL);
   assert.equal(form.proposedConditions, `${workspace.REPORT_CONDITIONS_LABEL} (nếu có)`);
-  assert.equal(workspace.REPORT_FORM_FIELDS.length, 8);
+  assert.equal(form.proposedInterestRate, 'Lãi suất đề xuất (%/năm)');
+  assert.deepEqual(workspace.REPORT_FORM_FIELDS.map(([key]) => key).slice(6), ['recommendation', 'proposedInterestRate', 'proposedConditions']);
+  assert.equal(workspace.REPORT_FORM_FIELDS.length, 9);
 });
 
 test('only sections whose wording changed since the previous version are marked', () => {
@@ -204,4 +206,61 @@ test('the deadline cell states the deadline, the pause or the missing data', () 
   assert.deepEqual(display.slaDeadlineCell({ policy: 'PA1', dueAt: null, remainingHours: 12, waitingEnterprise: true }), { text: 'Tạm dừng', detail: 'còn 1 ngày 4 giờ', tone: 'muted' });
   assert.deepEqual(display.slaDeadlineCell(null), { text: 'Chưa có dữ liệu', detail: '', tone: 'muted' });
   assert.deepEqual(display.slaDeadlineCell({ policy: 'PA1', dueAt: null, remainingHours: 8 }), { text: 'Ngoài kỳ lịch SLA', detail: 'còn 1 ngày', tone: 'muted' });
+});
+
+test('lãi suất nhập theo %/năm từ 0 đến 100, tối đa 2 chữ số thập phân, nhận dấu phẩy', () => {
+  for (const [text, value] of [['8.25', 8.25], ['8,25', 8.25], [' 9 ', 9], ['0', 0], ['100', 100]]) assert.equal(workspace.parseRateText(text), value, text);
+  for (const text of ['8.255', '101', '100.01', '', '  ', 'abc', '-1', '1e1']) assert.equal(workspace.parseRateText(text), null, text);
+  assert.equal(workspace.normalizeRateText(' 8,25 '), '8.25');
+  assert.equal(workspace.rateText(8.25), '8,25%/năm');
+});
+
+test('form phê duyệt so lãi suất với mức CBTD đề xuất', () => {
+  const check = (rate, proposed, reason = '') => workspace.approvalRateCheck({ rate, proposed, reason });
+  assert.deepEqual(check('', 8.25), { rate: null, deviates: false, ready: false, error: null });
+  assert.equal(check('8.255', 8.25).error, 'Lãi suất phải từ 0 đến 100%/năm, tối đa 2 chữ số thập phân.');
+  assert.equal(check('8.255', 8.25).ready, false);
+  assert.deepEqual(check('8,25', 8.25), { rate: 8.25, deviates: false, ready: true, error: null });
+  assert.deepEqual(check('9', 8.25), { rate: 9, deviates: true, ready: false, error: null });
+  assert.equal(check('9', 8.25, '   ').ready, false);
+  assert.equal(check('9', 8.25, 'Tài sản bảo đảm thấp').ready, true);
+  assert.deepEqual(check('9', null), { rate: 9, deviates: false, ready: true, error: null });
+});
+
+test('căn cứ lãi suất lấy từ phiên bản tờ trình mới nhất', async () => {
+  assert.deepEqual(workspace.proposedRateBasis(null), { rate: null, note: 'Hồ sơ quy trình cũ, không có tờ trình.', blocksApproval: false });
+  const report = content => ({ status: 'SUBMITTED', versions: [reportVersion(2, content, '2026-11-12T03:00:00Z'), reportVersion(1, { proposedInterestRate: '7' }, '2026-11-11T03:00:00Z')] });
+  assert.deepEqual(workspace.proposedRateBasis(report({ proposedInterestRate: '8.25' })), { rate: 8.25, note: null, blocksApproval: false });
+  assert.deepEqual(workspace.proposedRateBasis(report({ recommendation: 'x' })), { rate: null, note: 'Tờ trình chưa có lãi suất đề xuất. Yêu cầu CBTD làm rõ và trình lại với lãi suất đề xuất trước khi phê duyệt.', blocksApproval: true });
+  const panel = await readFile(new URL('../src/components/AppraisalDecisionPanel.tsx', import.meta.url), 'utf8');
+  assert.match(panel, /proposalMissing/);
+});
+
+test('form phê duyệt, form lập tờ trình gửi và hiện lãi suất đề xuất', async () => {
+  const panel = await readFile(new URL('../src/components/AppraisalDecisionPanel.tsx', import.meta.url), 'utf8');
+  assert.match(panel, /step="0\.01"/);
+  assert.match(panel, /interestRateReason/);
+  assert.match(panel, /approvalRateCheck/);
+  const page = await readFile(new URL('../src/components/AppraisalWorkspace.tsx', import.meta.url), 'utf8');
+  assert.match(page, /interestRateReason: decision\.interestRateReason/);
+  assert.match(page, /proposedRateBasis\(report\)/);
+  const editor = await readFile(new URL('../src/components/OfficerReportEditor.tsx', import.meta.url), 'utf8');
+  assert.match(editor, /REPORT_RATE_KEY/);
+  assert.match(editor, /type="number"/);
+  const card = await readFile(new URL('../src/components/AppraisalReportCard.tsx', import.meta.url), 'utf8');
+  assert.match(card, /REPORT_RATE_KEY/);
+});
+
+test('LS-2: lãi suất phê duyệt phải trong khung đang hiệu lực', () => {
+  const band = { id: 'b', minRate: 7, maxRate: 12.5, effectiveFrom: '2026-11-01T00:00:00.000Z', basis: 'x' };
+  const check = (rate, proposed, reason = '', b = band) => workspace.approvalRateCheck({ rate, proposed, reason, band: b });
+  assert.deepEqual(check('12.5', 12.5), { rate: 12.5, deviates: false, ready: true, error: null });
+  assert.equal(check('12.6', 12.5, 'lý do').error, 'Lãi suất phải trong khung 7–12,5%/năm.');
+  assert.equal(check('12.6', 12.5, 'lý do').ready, false);
+  assert.equal(check('6.9', null).ready, false);
+  assert.equal(check('8', 8, '', null).error, 'Chưa có khung lãi suất hiệu lực cho loại vay này. Liên hệ Admin cấu hình khung.');
+  assert.equal(check('8', 8, '', null).ready, false);
+  assert.equal(workspace.bandText(band), '7–12,5%/năm');
+  assert.equal(workspace.rateInBand(13, band), false);
+  assert.equal(workspace.rateInBand(7, band), true);
 });

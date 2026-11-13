@@ -112,8 +112,10 @@ test('assignment controller limits officer list and assign to active QUAN_LY rol
   const {PortalIntakesController}=require('../dist/modules/portal/portal.controller');
   const guard=new RolesGuard(new Reflector());
   const context=(method,roles)=>({getHandler:()=>PortalIntakesController.prototype[method],getClass:()=>PortalIntakesController,switchToHttp:()=>({getRequest:()=>({user:{roles}})})});
+  assert.equal(guard.canActivate(context('officers',['ADMIN'])),true,'Admin chỉ xem danh sách cán bộ');
+  assert.throws(()=>guard.canActivate(context('assign',['ADMIN'])),e=>e.getStatus()===403);
   for(const method of ['officers','assign']) {
     assert.equal(guard.canActivate(context(method,['QUAN_LY'])),true);
-    for(const role of ['CBTD','THAM_QUYEN','ADMIN']) assert.throws(()=>guard.canActivate(context(method,[role])),e=>e.getStatus()===403);
+    for(const role of ['CBTD','THAM_QUYEN']) assert.throws(()=>guard.canActivate(context(method,[role])),e=>e.getStatus()===403);
   }
 });

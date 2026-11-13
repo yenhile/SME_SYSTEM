@@ -19,6 +19,7 @@ import { OfficerDocumentToolbar } from './OfficerDocumentToolbar';
 import { OfficerReportEditor } from './OfficerReportEditor';
 import { OfficerTaskPanel } from './OfficerTaskPanel';
 import { PortalIntakeDetails } from './PortalIntakeDetails';
+import { SuccessToast } from './SuccessToast';
 import './appraisal-workspace.css';
 
 interface OfficerCaseWorkspaceProps {
@@ -187,8 +188,8 @@ export function OfficerCaseWorkspace({ reference, refreshKey, onBack, onResolved
       <button type="button" className={`btn btn-secondary aw-refresh${refreshing ? ' oc-refreshing' : ''}`} disabled={busy || refreshing} aria-busy={refreshing} onClick={() => void load()} aria-label={refreshing ? 'Đang tải lại hồ sơ' : 'Tải lại hồ sơ'}><RefreshCw size={16} aria-hidden="true" /></button>
     </header>
 
-    {(notice || actionError || refreshError) && <div className="oc-feedback">
-      {notice && <p role="status" className="aw-alert aw-alert-success"><span>{notice}</span><button type="button" className="oc-dismiss" aria-label="Đóng thông báo" onClick={() => setNotice('')}><X size={16} aria-hidden="true" /></button></p>}
+    <SuccessToast message={notice} onClose={() => setNotice('')} />
+    {(actionError || refreshError) && <div className="oc-feedback">
       {actionError && <p role="alert" className="aw-alert aw-alert-danger"><span>{actionError}</span><button type="button" className="oc-dismiss" aria-label="Đóng thông báo lỗi" onClick={() => setActionError('')}><X size={16} aria-hidden="true" /></button></p>}
       {refreshError && <p role="alert" className="aw-alert aw-alert-warning"><span>{refreshError}</span><button type="button" className="btn btn-secondary" disabled={refreshing} onClick={() => void load()}>Thử lại</button></p>}
     </div>}

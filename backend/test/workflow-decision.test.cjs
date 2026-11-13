@@ -64,7 +64,7 @@ function createFixture(overrides = {}) {
           id: versionId,
           reportId,
           sequence: 1,
-          content: { recommendation: 'Đủ điều kiện cấp tín dụng' },
+          content: { recommendation: 'Đủ điều kiện cấp tín dụng', ...(overrides.versionContent || {}) },
           evidence,
           evidenceHash,
           submittedBy: 'cbtd-1',
@@ -114,6 +114,11 @@ function createFixture(overrides = {}) {
           if (where.kind?.in && !where.kind.in.includes(e.kind)) return false;
           return true;
         }) || null;
+      },
+      create: async ({ data }) => {
+        const item = { id: `ev-${state.events.length + 1}`, createdAt: new Date(), ...data };
+        state.events.push(item);
+        return item;
       },
     },
     workflowStage: {
@@ -273,7 +278,7 @@ test('D6-01: Rejection requires valid code from TC01-TC05 catalog; invalid codes
 // TIÊU CHÍ 2: Ràng buộc số tiền và lãi suất phê duyệt (D6-02)
 // -------------------------------------------------------------
 test('D6-02: Approval validates amount <= limit and interest rate between 0-100%', async () => {
-  const { workflow, versionId } = createFixture();
+  const { workflow, versionId } = createFixture({ versionContent: { proposedInterestRate: '8.5' } });
   const approver = { id: 'tham-quyen-1', activeRole: 'THAM_QUYEN' };
 
   // 1. Số tiền <= 0
@@ -354,6 +359,7 @@ test('D6-02: Legacy loans without officialAmount check limit against proposedAmo
 test('D6-05: Maker-Checker strictly blocks intake officer, assigned officer, and draft author', async () => {
   const { workflow, versionId } = createFixture({
     events: [{ actorId: 'tq-drafter', kind: 'DRAFT_SAVED' }],
+    versionContent: { proposedInterestRate: '8' },
   });
 
   // Tầng 1: CBTD tiếp nhận hồ sơ không được duyệt
@@ -389,6 +395,7 @@ test('D6-05: Maker-Checker strictly blocks intake officer, assigned officer, and
   // Người yêu cầu làm rõ (CLARIFICATION_REQUESTED) KHÔNG bị chặn quyền quyết định bản mới
   const { workflow: wfClarify, versionId: vId2 } = createFixture({
     events: [{ actorId: 'tq-clarifier', kind: 'CLARIFICATION_REQUESTED' }],
+    versionContent: { proposedInterestRate: '8' },
   });
   const approved = await wfClarify.transitionStage(
     'loan-1',
@@ -402,7 +409,7 @@ test('D6-05: Maker-Checker strictly blocks intake officer, assigned officer, and
 // TIÊU CHÍ 5: Tính nhất quán kết thúc & Khóa hồ sơ bất biến (D6-03 & D6-05)
 // -------------------------------------------------------------
 test('D6-03 & D6-05: Terminal state is atomic, obsoletes coordination, and permanently blocks writes', async () => {
-  const { state, workflow, versionId } = createFixture();
+  const { state, workflow, versionId } = createFixture({ versionContent: { proposedInterestRate: '8' } });
   const approver = { id: 'tham-quyen-1', activeRole: 'THAM_QUYEN' };
 
   // Phê duyệt chuyển hồ sơ sang HOAN_TAT
@@ -577,3 +584,91 @@ test('Handover check: Tampered evidence or pending supplement blocks decision wi
   );
 });
 
+
+// -------------------------------------------------------------
+// DEC-13 gói LS-1: lãi suất đề xuất trong tờ trình và lý do khi khác đề xuất
+// -------------------------------------------------------------
+const approveWith = (versionId, interestRate, extra = {}) => ({ targetStage: 'HOAN_TAT', targetStatus: 'APPROVED', reportVersionId: versionId, approvedAmount: 4000000000, interestRate, ...extra });
+const approverLs = { id: 'tham-quyen-1', activeRole: 'THAM_QUYEN' };
+
+test('DEC-13: lãi suất phê duyệt quá 2 chữ số thập phân bị từ chối', async () => {
+  const { workflow, versionId, state } = createFixture({ versionContent: { proposedInterestRate: '8.25' } });
+  await assert.rejects(workflow.transitionStage('loan-1', approveWith(versionId, 8.255), approverLs), status(400));
+  assert.equal(state.loan.currentStage, 'THAM_DINH');
+});
+
+test('DEC-13: khác lãi suất CBTD đề xuất mà không ghi lý do thì bị từ chối', async () => {
+  const { workflow, versionId, state } = createFixture({ versionContent: { proposedInterestRate: '8.25' } });
+  await assert.rejects(workflow.transitionStage('loan-1', approveWith(versionId, 9), approverLs), status(400));
+  await assert.rejects(workflow.transitionStage('loan-1', approveWith(versionId, 9, { interestRateReason: '   ' }), approverLs), status(400));
+  assert.equal(state.loan.currentStage, 'THAM_DINH');
+});
+
+test('DEC-13: khác đề xuất có lý do thì phê duyệt và lưu đề xuất, lý do', async () => {
+  const { workflow, versionId, state } = createFixture({ versionContent: { proposedInterestRate: '8.25' } });
+  const approved = await workflow.transitionStage('loan-1', approveWith(versionId, 9.1, { interestRateReason: '  Tài sản bảo đảm thấp hơn đề xuất ' }), approverLs);
+  assert.equal(approved.interestRate, 9.1);
+  const event = state.events.find(e => e.kind === 'RATE_DECIDED');
+  assert.ok(event);
+  assert.equal(event.actorId, 'tham-quyen-1');
+  assert.deepEqual(event.payload, { approvedInterestRate: 9.1, proposedInterestRate: 8.25, interestRateReason: 'Tài sản bảo đảm thấp hơn đề xuất', band: { id: 'band-open', minRate: 0, maxRate: 100, effectiveFrom: '2025-12-31T17:00:00.000Z', basis: 'Khung thử nghiệm' } });
+});
+
+test('DEC-13: bằng đề xuất thì không cần lý do và không lưu lý do', async () => {
+  const { workflow, versionId, state } = createFixture({ versionContent: { proposedInterestRate: '8.25' } });
+  await workflow.transitionStage('loan-1', approveWith(versionId, 8.25, { interestRateReason: 'thừa' }), approverLs);
+  const event = state.events.find(e => e.kind === 'RATE_DECIDED');
+  assert.deepEqual(event.payload, { approvedInterestRate: 8.25, proposedInterestRate: 8.25, interestRateReason: null, band: { id: 'band-open', minRate: 0, maxRate: 100, effectiveFrom: '2025-12-31T17:00:00.000Z', basis: 'Khung thử nghiệm' } });
+});
+
+test('DEC-13: tờ trình chưa có lãi suất đề xuất thì không phê duyệt được, phải yêu cầu CBTD làm rõ', async () => {
+  const { workflow, versionId, state } = createFixture();
+  await assert.rejects(workflow.transitionStage('loan-1', approveWith(versionId, 9.75, { interestRateReason: 'Thẩm quyền tự chọn' }), approverLs),
+    e => e.getStatus() === 400 && /chưa có lãi suất đề xuất/.test(e.message));
+  assert.equal(state.loan.currentStage, 'THAM_DINH');
+  assert.equal(state.events.some(e => e.kind === 'RATE_DECIDED'), false);
+});
+
+test('DEC-13: tờ trình chưa có lãi suất đề xuất vẫn từ chối được', async () => {
+  const { workflow, versionId, state } = createFixture();
+  await workflow.transitionStage('loan-1', { targetStage: 'HOAN_TAT', targetStatus: 'REJECTED', reportVersionId: versionId, rejectionReasonCode: 'TC02', rejectionNote: 'Tài chính yếu' }, approverLs);
+  assert.equal(state.loan.currentStatus, 'REJECTED');
+});
+
+test('DEC-13: từ chối không ghi sự kiện lãi suất', async () => {
+  const { workflow, versionId, state } = createFixture({ versionContent: { proposedInterestRate: '8.25' } });
+  await workflow.transitionStage('loan-1', { targetStage: 'HOAN_TAT', targetStatus: 'REJECTED', reportVersionId: versionId, rejectionReasonCode: 'TC02', rejectionNote: 'Tài chính yếu' }, approverLs);
+  assert.equal(state.events.some(e => e.kind === 'RATE_DECIDED'), false);
+});
+
+// -------------------------------------------------------------
+// DEC-13 gói LS-2: khung sàn–trần theo loại vay
+// -------------------------------------------------------------
+const BAND = { id: 'band-7', loanType: 'VON_LUU_DONG', minRate: '7', maxRate: '12', effectiveFrom: new Date('2026-11-01T00:00:00+07:00'), basis: 'Số liệu mô phỏng' };
+const withBand = (fixture, band) => { fixture.tx.interestRateBand = { findFirst: async () => band }; return fixture; };
+
+test('DEC-13 LS-2: phê duyệt ngoài khung bị từ chối, hồ sơ giữ nguyên', async () => {
+  const { workflow, versionId, state } = withBand(createFixture({ versionContent: { proposedInterestRate: '8' } }), BAND);
+  await assert.rejects(workflow.transitionStage('loan-1', approveWith(versionId, 12.5, { interestRateReason: 'x' }), approverLs), e => e.getStatus() === 400 && /trong khung 7–12%\/năm/.test(e.message));
+  await assert.rejects(workflow.transitionStage('loan-1', approveWith(versionId, 6.5, { interestRateReason: 'x' }), approverLs), status(400));
+  assert.equal(state.loan.currentStage, 'THAM_DINH');
+});
+
+test('DEC-13 LS-2: loại vay chưa có khung hiệu lực thì không phê duyệt được', async () => {
+  const { workflow, versionId, state } = withBand(createFixture({ versionContent: { proposedInterestRate: '8' } }), null);
+  await assert.rejects(workflow.transitionStage('loan-1', approveWith(versionId, 8), approverLs), e => e.getStatus() === 400 && /Chưa có khung lãi suất hiệu lực/.test(e.message));
+  assert.equal(state.loan.currentStage, 'THAM_DINH');
+});
+
+test('DEC-13 LS-2: từ chối không cần khung lãi suất', async () => {
+  const { workflow, versionId, state } = withBand(createFixture({ versionContent: { proposedInterestRate: '8' } }), null);
+  await workflow.transitionStage('loan-1', { targetStage: 'HOAN_TAT', targetStatus: 'REJECTED', reportVersionId: versionId, rejectionReasonCode: 'TC02', rejectionNote: 'Tài chính yếu' }, approverLs);
+  assert.equal(state.loan.currentStatus, 'REJECTED');
+});
+
+test('DEC-13 LS-2: phê duyệt trong khung lưu lại khung đã áp dụng', async () => {
+  const { workflow, versionId, state } = withBand(createFixture({ versionContent: { proposedInterestRate: '8' } }), BAND);
+  await workflow.transitionStage('loan-1', approveWith(versionId, 12, { interestRateReason: 'Không có tài sản bảo đảm' }), approverLs);
+  const event = state.events.find(e => e.kind === 'RATE_DECIDED');
+  assert.deepEqual(event.payload.band, { id: 'band-7', minRate: 7, maxRate: 12, effectiveFrom: '2026-10-31T17:00:00.000Z', basis: 'Số liệu mô phỏng' });
+});

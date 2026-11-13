@@ -9,21 +9,23 @@ const {ROLES_KEY}=require('../dist/common/decorators/roles.decorator');
 // null = chỉ cần đăng nhập (không giới hạn vai trò). Quyền lọc theo hồ sơ (CBTD chỉ hồ sơ của mình, Thẩm quyền từ Thẩm định trở đi)
 // do LoanAccessGuard xử lý và được kiểm tra riêng trong loan-access.test.cjs.
 const C='CBTD',T='THAM_QUYEN',Q='QUAN_LY',A='ADMIN';
+// 11/11/2026 (PO): Admin xem được mọi route đọc nghiệp vụ (GET) nhưng không có quyền ghi; riêng getMyWarnings là cảnh báo cá nhân của CBTD.
+// 12/11/2026: getOfficerDashboard (CBTD) và getApproverDashboard (Thẩm quyền) là dashboard cá nhân theo yêu cầu PO; Admin có dashboard quản trị riêng (AdminController.dashboard).
 // 06/11/2026: getMyWarnings (CBTD chỉ xem cảnh báo dự báo trễ SLA của hồ sơ mình phụ trách, chỉ đọc) theo yêu cầu của người phụ trách; PO cần xác nhận khi duyệt gói.
 const EXPECTED={
-  AssignmentChangeRequestsController:{capabilities:[C,Q],list:[C,Q],detail:[C,Q],create:[C],approve:[Q],reject:[Q],cancel:[C]},
-  AppraisalController:{view:[C,T,Q],save:[C],submit:[C],clarify:[T]},
-  AdminController:{stages:[A],updateStage:[A]},
-  AssignmentsController:{getOfficerWorkloads:[Q],getAssignmentHistory:[Q],reassign:[Q]},
-  CompaniesController:{checkTaxCode:[C,T,Q],findAll:[C,T,Q],upsert:[C]},
-  DashboardController:{getOverviewStats:[Q,T],getSlaBottleneckAnalysis:[Q,T],getEarlyWarningList:[Q,T],getMyWarnings:[C],getPeriodReport:[Q],getOverdueSupplements:[Q],getStageDistribution:[Q,T]},
-  DocumentsController:{findByApplication:[C,T,Q],create:[C],delete:[C],download:[C,T,Q]},
-  LoanApplicationsController:{create:[C],findAll:[C,T,Q],findOne:[C,T,Q],checkDocuments:[C],setAmount:[C]},
+  AssignmentChangeRequestsController:{capabilities:[C,Q,A],list:[C,Q,A],detail:[C,Q,A],create:[C],approve:[Q],reject:[Q],cancel:[C]},
+  AppraisalController:{view:[C,T,Q,A],save:[C],submit:[C],clarify:[T]},
+  AdminController:{dashboard:[A],stages:[A],updateStage:[A],roles:[A],slaOverview:[A],auditLogs:[A],rateBands:[A],createRateBand:[A]},
+  AssignmentsController:{getOfficerWorkloads:[Q,A],getAssignmentHistory:[Q,A],reassign:[Q]},
+  CompaniesController:{checkTaxCode:[C,T,Q,A],findAll:[C,T,Q,A],upsert:[C]},
+  DashboardController:{getOverviewStats:[Q,T,A],getSlaBottleneckAnalysis:[Q,T,A],getEarlyWarningList:[Q,T,A],getMyWarnings:[C],getPeriodReport:[Q,A],getOverdueSupplements:[Q,A],getStageDistribution:[Q,T,A],getOperations:[Q,T,A],getOfficerDashboard:[C],getApproverDashboard:[T]},
+  DocumentsController:{findByApplication:[C,T,Q,A],create:[C],delete:[C],download:[C,T,Q,A]},
+  LoanApplicationsController:{create:[C],findAll:[C,T,Q,A],findOne:[C,T,Q,A],checkDocuments:[C],setAmount:[C]},
   PredictionController:{predict:[T,Q]},
-  SupplementsController:{portalDetails:[C,T,Q],review:[C,T],returnCorrections:[C,T],download:[C,T,Q],getSupplements:[C,T,Q],createRequest:[C,T],resolveRequest:[C,T]},
+  SupplementsController:{portalDetails:[C,T,Q,A],review:[C,T],returnCorrections:[C,T],download:[C,T,Q,A],getSupplements:[C,T,Q,A],createRequest:[C,T],resolveRequest:[C,T]},
   UsersController:{findAll:[A],findOne:[A],create:[A],update:[A]},
-  WorkflowController:{getWorkflowStages:[C,T,Q],getWorkflowHistory:[C,T,Q],transitionStage:[C,T],closeOverdueSupplement:[Q]},
-  PortalIntakesController:{list:[C,Q],officers:[Q],config:[C,Q,T],assign:[Q],history:[C,Q],one:[C,Q],match:[C,Q],cycle:[C,Q],review:[C],returnCorrection:[C],correctionDecision:[C],reconciliation:[C],resolveReconciliation:[Q],issue:[Q],download:[C,Q],accept:[C]},
+  WorkflowController:{getWorkflowStages:[C,T,Q,A],getWorkflowHistory:[C,T,Q,A],transitionStage:[C,T],closeOverdueSupplement:[Q]},
+  PortalIntakesController:{list:[C,Q,A],officers:[Q,A],config:[C,Q,T,A],assign:[Q],history:[C,Q,A],one:[C,Q,A],match:[C,Q,A],cycle:[C,Q,A],review:[C],returnCorrection:[C],correctionDecision:[C],reconciliation:[C],resolveReconciliation:[Q],issue:[Q],download:[C,Q,A],accept:[C]},
   AuthController:{login:null,getProfile:null,changePassword:null},
   NotificationsController:{list:null,read:null},
 };
@@ -62,12 +64,19 @@ test('each route allows exactly the roles of the approved matrix',()=>{
       assert.deepEqual(effectiveRoles(controllers[name],method),expected?[...expected].sort():null,`${name}.${method}`);
 });
 
-test('administration routes are Admin-only and loan routes never include Admin',()=>{
+test('administration routes are Admin-only; Admin reads every business route but never writes',()=>{
   const controllers=loadControllers();
+  const GET=0;
   for(const name of ['AdminController','UsersController'])
     for(const method of methodsOf(controllers[name])) assert.deepEqual(effectiveRoles(controllers[name],method),['ADMIN'],`${name}.${method}`);
-  for(const name of ['LoanApplicationsController','DocumentsController','SupplementsController','WorkflowController','PredictionController','AssignmentsController','DashboardController','PortalIntakesController'])
-    for(const method of methodsOf(controllers[name])) assert.ok(!effectiveRoles(controllers[name],method)?.includes('ADMIN'),`${name}.${method}`);
+  for(const name of Object.keys(EXPECTED).filter(n=>!['AdminController','UsersController','AuthController','NotificationsController'].includes(n)))
+    for(const method of methodsOf(controllers[name])) {
+      const isGet=Reflect.getMetadata('method',controllers[name].prototype[method])===GET;
+      const adminAllowed=!!effectiveRoles(controllers[name],method)?.includes('ADMIN');
+      if(!isGet) assert.ok(!adminAllowed,`${name}.${method} là thao tác ghi, Admin không được phép`);
+      // Dashboard cá nhân ("của tôi") lấy phạm vi từ chính người đăng nhập nên không có nghĩa với Admin; Admin xem dữ liệu nghiệp vụ qua các route còn lại.
+      else if(!(name==='DashboardController'&&['getMyWarnings','getOfficerDashboard','getApproverDashboard'].includes(method))) assert.ok(adminAllowed,`${name}.${method} là route đọc, Admin phải xem được`);
+    }
 });
 
 test('only CBTD may create or confirm loans, and only Quản lý may assign or close overdue loans',()=>{

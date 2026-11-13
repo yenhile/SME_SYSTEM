@@ -201,10 +201,10 @@ async function main() {
   // Hồ sơ mẫu có lịch sử công đoạn và dự báo được dựng bởi `npm run seed:demo` (scripts/seed-demo.cjs), không tạo ở đây.
 
   // Định mức 112/40 giờ chỉ đúng khi tính theo giờ làm việc, nên PA1 được bật cùng lúc với định mức.
-  const calendarVersion = 'VN-20260101-20261231-v1';
+  const calendarVersion = 'VN-20260101-20270131-v2';
   const activation = await prisma.slaPolicyActivation.findFirst({ where: { policyCode: 'PA1', calendarVersion } });
   if (!activation) {
-    await prisma.slaPolicyActivation.create({ data: { policyCode: 'PA1', calendarVersion, activatedAt: new Date(), note: 'Lịch vận hành năm 2026' } });
+    await prisma.slaPolicyActivation.create({ data: { policyCode: 'PA1', calendarVersion, activatedAt: new Date(), note: 'Lịch vận hành 2026, kéo dài đến 31/01/2027' } });
   }
 
   console.log('--- SEED DỮ LIỆU THÀNH CÔNG VÀ HOÀN TẤT ---');

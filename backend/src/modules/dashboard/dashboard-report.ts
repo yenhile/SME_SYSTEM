@@ -50,6 +50,15 @@ function monthKeys(range: ReportRange): string[] {
   return keys;
 }
 
+/** Kỳ ngắn (tối đa 62 ngày) chia theo ngày, kỳ dài chia theo tháng; đủ mọi mốc kể cả mốc không có dữ liệu. */
+const DAILY_MAX_DAYS = 62;
+function trendKeys(range: ReportRange): { granularity: 'day' | 'month'; keys: string[] } {
+  if (range.days > DAILY_MAX_DAYS) return { granularity: 'month', keys: monthKeys(range) };
+  const keys: string[] = [];
+  for (let i = 0; i < range.days; i++) keys.push(vnDateKey(new Date(range.start.getTime() + i * DAY_MS)));
+  return { granularity: 'day', keys };
+}
+
 export function buildPeriodReport(input: { range: ReportRange; created: ReportLoan[]; completed: ReportLoan[]; stages: ReportStage[]; officerNames: Record<string, string> }) {
   const { range, created, completed, stages, officerNames } = input;
   const approved = completed.filter(l => l.currentStatus === 'APPROVED');
@@ -98,6 +107,23 @@ export function buildPeriodReport(input: { range: ReportRange; created: ReportLo
     completed: completed.filter(l => l.completedAt && bucket(l.completedAt) === month).length,
   }));
 
+  const shape = trendKeys(range);
+  const keyOf = (date: Date) => (shape.granularity === 'day' ? vnDateKey(date) : vnDateKey(date).slice(0, 7));
+  const trend = {
+    granularity: shape.granularity,
+    buckets: shape.keys.map(key => {
+      const done = completed.filter(l => l.completedAt && keyOf(l.completedAt) === key);
+      return {
+        key,
+        created: created.filter(l => keyOf(l.createdAt) === key).length,
+        completed: done.length,
+        approved: done.filter(l => l.currentStatus === 'APPROVED').length,
+        rejected: done.filter(l => l.currentStatus === 'REJECTED').length,
+      };
+    }),
+  };
+  const onTimePasses = stages.filter(s => !s.isDelayed).length;
+
   return {
     range: { from: range.from, to: range.to, days: range.days },
     totals: {
@@ -109,6 +135,9 @@ export function buildPeriodReport(input: { range: ReportRange; created: ReportLo
     byOfficer,
     byLoanType,
     monthly,
+    trend,
+    // Đơn vị là lượt công đoạn kết thúc trong kỳ (một hồ sơ có thể có nhiều lượt), không phải số hồ sơ.
+    onTime: { unit: 'stagePass' as const, handled: stages.length, onTime: onTimePasses, rate: rate(onTimePasses, stages.length) },
     basis: 'Công đoạn tính theo giờ làm việc (PA1), chỉ các công đoạn kết thúc trong kỳ; hồ sơ tính theo ngày tạo và ngày hoàn tất (giờ Việt Nam).',
   };
 }

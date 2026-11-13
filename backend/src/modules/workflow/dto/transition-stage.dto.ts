@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsNumber, MaxLength } from 'class-validator';
 import { StageCode, LoanStatus } from '@prisma/client';
 
 export class TransitionStageDto {
@@ -29,6 +29,11 @@ export class TransitionStageDto {
   @IsOptional()
   @IsNumber()
   interestRate?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  interestRateReason?: string;
 
   @IsOptional()
   @IsString()

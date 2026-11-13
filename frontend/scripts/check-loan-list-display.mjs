@@ -103,3 +103,40 @@ test('the filter form has no created-date filter', async () => {
   assert.doesNotMatch(form, /type="date"|Ngày tạo|createdFrom|createdTo/);
   assert.deepEqual(Object.keys(display.EMPTY_LOAN_FILTERS).filter(key => key.startsWith('created')), []);
 });
+
+test('the officer list puts the heading before the tabs and shows the priority panel only on the managed tab', async () => {
+  const list = await readFile(new URL('../src/components/LoanList.tsx', import.meta.url), 'utf8');
+  assert.ok(list.indexOf('Hồ sơ của tôi') < list.indexOf('portal-tabs'));
+  assert.ok(list.indexOf('&& priority}') > list.indexOf('<PortalIntakeQueue'));
+  assert.match(list, /panel=\{isOfficer \|\| isAuthority\}/);
+  assert.match(list, /stageOptions=\{isOfficer \? \[\] : stageOptions\}/);
+});
+
+
+test('the authority status filter follows the chosen stage and the stage follows the chosen status', () => {
+  const groups = [
+    { stage: 'THAM_DINH', label: 'Thẩm định', statuses: [['PENDING_APPRAISAL', 'Đang thẩm định'], ['SUPPLEMENT_REQUIRED', 'Chờ bổ sung']] },
+    { stage: 'HOAN_TAT', label: 'Hoàn tất', statuses: [['APPROVED', 'Đã phê duyệt'], ['REJECTED', 'Bị từ chối']] },
+  ];
+  const empty = display.EMPTY_LOAN_FILTERS;
+  assert.deepEqual(display.withStatusChoice(empty, groups, 'REJECTED'), { ...empty, stage: 'HOAN_TAT', status: 'REJECTED' });
+  assert.deepEqual(display.withStageChoice({ ...empty, stage: 'HOAN_TAT', status: 'REJECTED' }, groups, 'THAM_DINH'), { ...empty, stage: 'THAM_DINH', status: '' });
+  assert.deepEqual(display.withStageChoice({ ...empty, stage: 'THAM_DINH', status: 'SUPPLEMENT_REQUIRED' }, groups, ''), { ...empty, stage: '', status: 'SUPPLEMENT_REQUIRED' });
+  assert.equal(display.withStageChoice({ ...empty, overdueOnly: true }, groups, 'HOAN_TAT').overdueOnly, false);
+  assert.equal(display.withStatusChoice({ ...empty, stage: 'HOAN_TAT', status: 'APPROVED' }, groups, '').stage, 'HOAN_TAT');
+});
+
+test('the officer list separates loans in progress from finished loans and shows the priority panel only for loans in progress', async () => {
+  const list = await readFile(new URL('../src/components/LoanList.tsx', import.meta.url), 'utf8');
+  assert.match(list, /isOfficer \? \{ lifecycle: officerView \}/);
+  assert.match(list, /'Đang xử lý' : 'Đã kết thúc'/);
+  assert.match(list, /\(!isOfficer \|\| officerView === 'active'\) && priority/);
+  assert.match(list, /OFFICER_STATUSES\[officerView\]/);
+});
+
+test('the coordination form asks the server which reasons the loan allows and shows why some are hidden', async () => {
+  const panel = await readFile(new URL('../src/components/AssignmentChangeRequestPanel.tsx', import.meta.url), 'utf8');
+  assert.match(panel, /capabilities\?subjectType=LOAN&subjectId=/);
+  assert.match(panel, /cap\.reasonCodes\.includes\(code\)/);
+  assert.match(panel, /cap\.restriction/);
+});

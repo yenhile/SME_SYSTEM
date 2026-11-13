@@ -32,15 +32,16 @@ test('a manager cannot assign a loan to themselves',async()=>{
   await assert.rejects(service.reassign('l1',{newOfficerId:'m1',reason:'Synthetic',expectedAssignmentVersion:0,clientRequestId:require('node:crypto').randomUUID()},'m1'),status(400));
 });
 
-function users({openLoans=0,pendingPortal=0}={}) {
+function users({openLoans=0,pendingPortal=0,currentRoles=[]}={}) {
   const writes=[];
   const tx={
     $queryRaw:async()=>[],
     portalRequest:{count:async()=>pendingPortal},
     role:{findMany:async({where})=>where.code.in.map(code=>({id:code,code}))},
     loanApplication:{count:async()=>openLoans},
-    user:{update:async()=>{writes.push('user');},findUnique:async()=>({id:'x',roles:[]})},
+    user:{update:async()=>{writes.push('user');},findUnique:async()=>({id:'x',roles:currentRoles.map(code=>({role:{code}}))})},
     userRole:{deleteMany:async()=>{writes.push('roles');},createMany:async()=>{}},
+    adminAuditLog:{createMany:async({data})=>({count:data.length})},
   };
   return {writes,service:new UsersService(withCoordination({$transaction:async fn=>fn(tx),user:tx.user}))};
 }
@@ -52,8 +53,14 @@ test('an admin cannot lock themselves or drop their own admin role',async()=>{
   }
 });
 test('an admin may still edit their own profile and keep the admin role',async()=>{
-  const {service}=users();
-  await service.update('a1',{fullName:'A',roles:['ADMIN','QUAN_LY']},'a1');
+  const {service,writes}=users({currentRoles:['ADMIN']});
+  await service.update('a1',{fullName:'A',roles:['ADMIN']},'a1');
+  assert.deepEqual(writes,['user']);
+});
+test('an admin cannot grant themselves a business role',async()=>{
+  const {service,writes}=users({currentRoles:['ADMIN']});
+  await assert.rejects(service.update('a1',{fullName:'A',roles:['ADMIN','QUAN_LY']},'a1'),status(400));
+  assert.deepEqual(writes,[]);
 });
 test('locking or removing the CBTD role is refused while the officer holds open loans',async()=>{
   for(const body of [{isActive:false},{roles:['QUAN_LY']}]) {
