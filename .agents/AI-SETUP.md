@@ -6,8 +6,7 @@ Phiên bản `sme-loan-ai-v1.2`, 18/10/2026. **PO đã duyệt phương án vớ
 
 | Thành phần | Vai trò |
 |---|---|
-| [AGENTS.md root](../AGENTS.md) | Entrypoint Codex và hướng dẫn chung cho toàn cây dự án |
-| `GEMINI.md` (entrypoint chưa có trong checkout; xem [kiểm chứng AI](../docs/SME_KY_THUAT.md#kiem-chung-ai)) | Entrypoint Gemini/Antigravity, yêu cầu dùng cùng policy |
+| [AGENTS.md root](../AGENTS.md) | Entrypoint Codex, Antigravity và hướng dẫn chung cho toàn cây dự án; dự án không dùng `GEMINI.md` riêng (PO duyệt 12/11/2026) |
 | [.agents/AGENTS.md](AGENTS.md) | Chính sách chung SME-AI-001…012, nguồn quyết định workflow AI |
 | [ai-rules](rules/ai-rules.md), [data-security](rules/data-security.md) | Rule `always_on` cho Antigravity; bootstrap và bảo vệ dữ liệu |
 | [ai-delivery-workflow](rules/ai-delivery-workflow.md), [karpathy-guidelines](rules/karpathy-guidelines.md) | Rule `model_decision` cho triển khai/thiết kế; core vẫn yêu cầu thực hiện đúng nhiệm vụ |

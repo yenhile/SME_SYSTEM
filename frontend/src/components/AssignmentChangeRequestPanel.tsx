@@ -10,11 +10,13 @@ export interface CoordinationReceipt{
   currentOwnerId:string|null;currentAssignmentVersion:number;currentCaseLinkAllowed:boolean;canResolve:boolean;canCancel:boolean;
   prediction?:{status:string;message:string};replayed?:boolean;
 }
+/** Admin chỉ xem biên nhận; nút gửi, rút, quyết định do server trả về theo vai trò. */
+const COORDINATION_VIEWERS=['CBTD','QUAN_LY','ADMIN'];
 const reasons:Record<string,string>={WORKLOAD:'Quá tải công việc',UNAVAILABLE:'Không thể tiếp tục xử lý',ASSIGNMENT_MISMATCH:'Phân công chưa phù hợp',CONFLICT_OF_INTEREST:'Xung đột lợi ích',OTHER:'Lý do khác'};
 export const coordinationStatus:Record<string,string>={PENDING:'Chờ quản lý xử lý',APPROVED:'Đã chấp thuận điều phối',REJECTED:'Không chấp thuận điều phối',CANCELLED:'CBTD đã rút',OBSOLETE:'Hết hiệu lực'};
 export function AssignmentChangeRequestPanel({subject,requestId,onChanged,onOpenCase}:{subject?:CoordinationSubject;requestId?:string;onChanged?:()=>void|Promise<void>;onOpenCase?:(subject:{type:'LOAN'|'PORTAL';id:string})=>void}){
   const {user,activeRole}=useAuth();
-  const [rows,setRows]=useState<CoordinationReceipt[]>([]),[cap,setCap]=useState<{enabled:boolean;conflictOfInterestEnabled:boolean}|null>(null);
+  const [rows,setRows]=useState<CoordinationReceipt[]>([]),[cap,setCap]=useState<{enabled:boolean;conflictOfInterestEnabled:boolean;reasonCodes?:string[];restriction?:string|null}|null>(null);
   const [officers,setOfficers]=useState<{id:string;fullName:string;username:string;totalAssignedCount:number}[]>([]);
   const [reasonCode,setReasonCode]=useState('WORKLOAD'),[reason,setReason]=useState(''),[target,setTarget]=useState(''),[decision,setDecision]=useState('');
   const [confirm,setConfirm]=useState(false),[noConflict,setNoConflict]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[conflict,setConflict]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -26,12 +28,12 @@ export function AssignmentChangeRequestPanel({subject,requestId,onChanged,onOpen
     const started=scope;setLoading(true);
     try{
       const path=requestId?`/assignment-change-requests/${requestId}`:`/assignment-change-requests?subjectType=${subject!.type}&subjectId=${encodeURIComponent(subject!.id)}`;
-      const [capability,data,users]=await Promise.all([api.get<typeof cap>('/assignment-change-requests/capabilities'),api.get<CoordinationReceipt|CoordinationReceipt[]>(path),activeRole==='QUAN_LY'?api.get<typeof officers>('/assignments/officer-workloads'):Promise.resolve([])]);
-      if(alive.current&&current.current===started){setCap(capability);setRows(Array.isArray(data)?data:[data]);setOfficers(users);setError('');}
+      const [capability,data,users]=await Promise.all([api.get<typeof cap>(subject?.type==='LOAN'?`/assignment-change-requests/capabilities?subjectType=LOAN&subjectId=${encodeURIComponent(subject.id)}`:'/assignment-change-requests/capabilities'),api.get<CoordinationReceipt|CoordinationReceipt[]>(path),activeRole==='QUAN_LY'?api.get<typeof officers>('/assignments/officer-workloads'):Promise.resolve([])]);
+      if(alive.current&&current.current===started){setCap(capability);if(capability?.reasonCodes?.length&&!capability.reasonCodes.includes(reasonCode))setReasonCode(capability.reasonCodes[0]);setRows(Array.isArray(data)?data:[data]);setOfficers(users);setError('');}
     }catch(e){if(alive.current&&current.current===started)setError((e as Error).message);}
     finally{if(alive.current&&current.current===started)setLoading(false);}
   }
-  useEffect(()=>{setRows([]);setCap(null);setConflict(false);setReason('');setTarget('');setDecision('');setNotice('');operation.current=null;if(['CBTD','QUAN_LY'].includes(activeRole??''))void load();else setLoading(false);},[scope]);
+  useEffect(()=>{setRows([]);setCap(null);setConflict(false);setReason('');setTarget('');setDecision('');setNotice('');operation.current=null;if(COORDINATION_VIEWERS.includes(activeRole??''))void load();else setLoading(false);},[scope]);
   const pending=rows.some(r=>r.status==='PENDING');
   const canCreate=!!subject&&activeRole==='CBTD'&&subject.ownerId===user?.id&&!subject.closed&&!pending&&Number.isSafeInteger(subject.assignmentVersion)&&(!rows.length||rows.every(r=>r.currentOwnerId===user?.id));
   async function execute(kind:'create'|'approve'|'reject'|'cancel',row?:CoordinationReceipt){
@@ -52,14 +54,15 @@ export function AssignmentChangeRequestPanel({subject,requestId,onChanged,onOpen
     }catch(e){if(alive.current&&current.current===started){if(e instanceof ApiError&&e.status===409)setConflict(true);setError((e as Error).message);}}
     finally{lock.current=false;if(alive.current&&current.current===started)setBusy(false);}
   }
-  if(!['CBTD','QUAN_LY'].includes(activeRole??''))return null;
+  if(!COORDINATION_VIEWERS.includes(activeRole??''))return null;
   return <section className="coordination-panel portal-card" aria-label="Đề nghị điều phối">
     <div className="portal-section-heading"><h3>Đề nghị điều phối</h3><button type="button" className="btn btn-secondary" disabled={busy||loading} onClick={async()=>{operation.current=null;setConflict(false);await onChanged?.();await load();}}>Tải lại điều phối</button></div>
     <p>Đề nghị chuyển người xử lý nội bộ do quản lý quyết định. Gửi đề nghị không đổi người phụ trách hoặc cách tính SLA.</p>
     {loading&&<p role="status">Đang tải đề nghị điều phối…</p>}{error&&<p role="alert" className="error-message">{error}</p>}{notice&&<p role="status" className="portal-notice">{notice}</p>}
     {conflict&&<p role="alert">Thông tin đã thay đổi. Tải lại điều phối và đối chiếu trước khi xác nhận mới.</p>}
+    {canCreate&&cap?.restriction&&<p role="note" className="portal-notice">{cap.restriction}</p>}
     {canCreate&&cap?.enabled&&<form className="coordination-create" onSubmit={e=>{e.preventDefault();void execute('create');}}>
-      <label>Nhóm lý do<select aria-label="Nhóm lý do điều phối" value={reasonCode} disabled={busy||conflict} onChange={e=>setReasonCode(e.target.value)}>{Object.entries(reasons).filter(([code])=>code!=='CONFLICT_OF_INTEREST'||cap.conflictOfInterestEnabled).map(([code,label])=><option key={code} value={code}>{label}</option>)}</select></label>
+      <label>Nhóm lý do<select aria-label="Nhóm lý do điều phối" value={reasonCode} disabled={busy||conflict} onChange={e=>setReasonCode(e.target.value)}>{Object.entries(reasons).filter(([code])=>(code!=='CONFLICT_OF_INTEREST'||cap.conflictOfInterestEnabled)&&(!cap.reasonCodes||cap.reasonCodes.includes(code))).map(([code,label])=><option key={code} value={code}>{label}</option>)}</select></label>
       <label>Lý do cụ thể<textarea aria-label="Lý do đề nghị điều phối" required maxLength={2000} value={reason} disabled={busy||conflict} onChange={e=>setReason(e.target.value)}/></label>
       {reasonCode==='CONFLICT_OF_INTEREST'&&<p className="portal-error">Khi gửi, bạn sẽ bị chặn ghi nghiệp vụ trên hồ sơ liên quan đến khi quản lý giải quyết; không được tự rút để bỏ chặn.</p>}
       <button className="btn btn-primary" disabled={busy||conflict||!reason.trim()}>Gửi đề nghị điều phối</button>

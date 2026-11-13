@@ -7,11 +7,11 @@ import {RoleCode} from '@prisma/client';
 import {AssignmentChangeRequestsService} from './assignment-change-requests.service';
 import {LoanActor} from '../workflow/loan-policy';
 @UseGuards(JwtAuthGuard,RolesGuard)
-@Roles(RoleCode.CBTD,RoleCode.QUAN_LY)
+@Roles(RoleCode.CBTD,RoleCode.QUAN_LY,RoleCode.ADMIN)
 @Controller('assignment-change-requests')
 export class AssignmentChangeRequestsController{
   constructor(private service:AssignmentChangeRequestsService){}
-  @Get('capabilities') capabilities(){return this.service.capabilities();}
+  @Get('capabilities') capabilities(@Query() query:any,@CurrentUser() actor:LoanActor){return this.service.capabilities(query,actor);}
   @Get() list(@Query() query:any,@CurrentUser() actor:LoanActor){return this.service.list(query,actor);}
   @Get(':id') detail(@Param('id') id:string,@CurrentUser() actor:LoanActor){return this.service.detail(id,actor);}
   @Post() @Roles(RoleCode.CBTD) create(@Body() body:any,@CurrentUser() actor:LoanActor){return this.service.create(body,actor);}

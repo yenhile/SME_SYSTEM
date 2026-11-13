@@ -105,11 +105,12 @@ test('early warnings exclude TIEP_NHAN for THAM_QUYEN only',async()=>{
   assert.equal(wheres[2].currentStage,undefined);
 });
 
-test('portal intake queue is limited to CBTD and QUAN_LY',()=>{
+test('portal intake queue is limited to CBTD and QUAN_LY, with Admin read-only',()=>{
   const rolesGuard=new RolesGuard(new Reflector());
   const ctx=(method,roles)=>({getHandler:()=>PortalIntakesController.prototype[method],getClass:()=>PortalIntakesController,switchToHttp:()=>({getRequest:()=>({user:{roles}})})});
-  for(const role of ['CBTD','QUAN_LY']) assert.equal(rolesGuard.canActivate(ctx('list',[role])),true);
-  for(const role of ['THAM_QUYEN','ADMIN']) assert.throws(()=>rolesGuard.canActivate(ctx('list',[role])),e=>status(e)===403);
+  for(const role of ['CBTD','QUAN_LY','ADMIN']) assert.equal(rolesGuard.canActivate(ctx('list',[role])),true);
+  assert.throws(()=>rolesGuard.canActivate(ctx('list',['THAM_QUYEN'])),e=>status(e)===403);
+  for(const method of ['assign','review','accept']) assert.throws(()=>rolesGuard.canActivate(ctx(method,['ADMIN'])),e=>status(e)===403,method);
 });
 
 test('findAll includes the pending supplement deadline markers for the list badge',async()=>{

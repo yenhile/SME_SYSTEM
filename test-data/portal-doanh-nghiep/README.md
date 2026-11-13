@@ -41,3 +41,10 @@ Các tệp PDF/XLSX có nội dung tổng hợp giả lập, dùng để test up
 Mở http://localhost:5173 → đăng nhập quản lý `test_quan_ly` / `123456` → Quản lý hồ sơ → Danh sách hồ sơ → Chờ tiếp nhận. Mở mã `DN-20261021-A3E441DB-173` và phân công cho `test_cbtd`. Sau đó đăng xuất quản lý, đăng nhập `test_cbtd` / `123456`, mở thông báo hoặc đề nghị được giao, kiểm tra tài liệu/MST rồi tiếp nhận. Chỉ thao tác tiếp nhận mới tạo doanh nghiệp/hồ sơ vay test và bắt đầu công đoạn Tiếp nhận. Đề nghị mẫu được giữ nguyên để PO tự phân công; không tự tạo lại thông báo cho đề nghị đã gửi từ trước.
 
 `danh-sach-de-nghi.json` lưu ID/mã của đúng bộ dữ liệu này để tra cứu hoặc dọn sau khi PO yêu cầu. Chưa tạo lệnh tự xóa dữ liệu để tránh xóa hồ sơ PO đang test.
+
+## Tài khoản QC test đăng ký mới (09/11/2026)
+
+- Email: `qc.dn20261109@sme-demo.test` · Mật khẩu test: `QcPortal2026` · đã xác minh qua hộp thư local.
+- Doanh nghiệp giả lập `CONG TY TNHH QC TEST PORTAL (DU LIEU GIA LAP)`, MST giả lập `9990000209`.
+- Đề nghị `DN-18`: đã gửi lúc 11:08 ngày 09/11/2026, trạng thái Chờ phân công, 6 tệp (A, B 2025, C, D, E, F).
+- Phiên 2 cùng ngày: `DN-18` được `nhung.nguyen` phân công cho `nam.hoang`, tiếp nhận thành hồ sơ vay `SME-6`, qua một lần bổ sung, tờ trình bản 1 và bản 2, `ha.le` phê duyệt 7.500.000.000 VNĐ lãi suất 9,5%. Kết quả test ghi tại `docs/BUG_LOG_NGUOI_DUNG.md`.

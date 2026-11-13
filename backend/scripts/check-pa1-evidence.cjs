@@ -85,8 +85,8 @@ async function main() {
     });
 
     // Tạo tờ trình và submit
-    const REPORT_FIELDS = ['legalAssessment','businessAssessment','financialAssessment','repaymentSource','collateralAssessment','risks','recommendation','proposedConditions'];
-    const content = Object.fromEntries(REPORT_FIELDS.map(k => [k, 'Synthetic evidence: ' + k]));
+    const REPORT_FIELDS = ['legalAssessment','businessAssessment','financialAssessment','repaymentSource','collateralAssessment','risks','recommendation','proposedInterestRate','proposedConditions'];
+    const content = Object.fromEntries(REPORT_FIELDS.map(k => [k, k === 'proposedInterestRate' ? '8' : 'Synthetic evidence: ' + k]));
     
     // Chuyển sang Thẩm định bằng cách submit Tờ trình Bản 1 (tự động chuyển công đoạn sang THAM_DINH)
     let rep = await appraisal.view(loan.id);

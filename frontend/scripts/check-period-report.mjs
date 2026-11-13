@@ -46,9 +46,11 @@ test('CSV has every section, escapes commas and quotes, and leaves empty rates b
   assert.equal(csv.includes('NaN') || csv.includes('null') || csv.includes('undefined'), false);
 });
 
-test('the report is rendered only for the Branch Manager and uses the manager-only endpoint', async () => {
-  const dashboard = await readFile(new URL('../src/components/DashboardView.tsx', import.meta.url), 'utf8');
-  assert.match(dashboard, /activeRole === 'QUAN_LY' && <PeriodReport \/>/);
+test('the period report is shared by the Branch Manager and the Admin, using the manager endpoint', async () => {
+  const manager = await readFile(new URL('../src/components/dashboard/ManagerDashboard.tsx', import.meta.url), 'utf8');
+  assert.match(manager, /<PeriodReport scope="Toàn chi nhánh" showOfficers/);
+  const admin = await readFile(new URL('../src/components/dashboard/AdminDashboard.tsx', import.meta.url), 'utf8');
+  assert.match(admin, /<PeriodReport scope="Toàn hệ thống"/);
   const component = await readFile(new URL('../src/components/PeriodReport.tsx', import.meta.url), 'utf8');
   assert.match(component, /\/dashboard\/report\?from=/);
 });

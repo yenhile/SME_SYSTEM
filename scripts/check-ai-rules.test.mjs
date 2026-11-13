@@ -12,7 +12,7 @@ const base = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 const fixture = path.join(base, 'repo');
 const inventory = JSON.parse(fs.readFileSync(path.join(repo, 'docs/ai/skills-inventory.json'), 'utf8'));
 const sources = [
-  'AGENTS.md', 'GEMINI.md', 'Project.md', 'README.md', 'docker-compose.yml',
+  'AGENTS.md', 'Project.md', 'README.md', 'docker-compose.yml',
   'start-local.ps1', 'run-local-dev.ps1', 'start-use.ps1', 'start-use.bat',
   '.agents/AGENTS.md', '.agents/AI-SETUP.md', '.agents/skills.json',
   '.agents/rules', '.agents/workflow', 'docs/ai',
@@ -37,12 +37,6 @@ try {
     assert(!path.relative(repo, source).startsWith('..'));
     assert(!path.relative(fixture, destination).startsWith('..'));
     fs.mkdirSync(path.dirname(destination), { recursive: true });
-    // A valid synthetic host entry isolates negative cases in the disposable
-    // fixture. The real repository validator still reports a missing GEMINI.md.
-    if (relative === 'GEMINI.md' && !fs.existsSync(source)) {
-      fs.writeFileSync(destination, '# Gemini fixture\nRead AGENTS.md and .agents/AGENTS.md. SME-AI-011 and SME-AI-012 apply; follow .agents/workflow/impact-analysis.md.\n');
-      continue;
-    }
     fs.cpSync(source, destination, { recursive: true });
   }
   function run(name, expectedExit, diagnostic) {
@@ -88,8 +82,8 @@ try {
     'Empty recursive impact rule rejected', 'FAIL Core defines SME-AI-012');
   modify('AGENTS.md', text => text.replaceAll('SME-AI-011', 'REMOVED-011'),
     'Codex cannot omit hard-rule wiring', 'FAIL Hard rules and impact workflow wired: AGENTS.md');
-  modify('GEMINI.md', text => text.replaceAll('SME-AI-012', 'REMOVED-012'),
-    'Gemini cannot omit hard-rule wiring', 'FAIL Hard rules and impact workflow wired: GEMINI.md');
+  modify('.agents/rules/ai-rules.md', text => text.replaceAll('SME-AI-012', 'REMOVED-012'),
+    'Antigravity bootstrap cannot omit hard-rule wiring', 'FAIL Hard rules and impact workflow wired: .agents/rules/ai-rules.md');
   modify('.agents/skills.json', text => {
     const data = JSON.parse(text);
     data.hard_rules['SME-AI-011'].po_approval_before_alternative = false;

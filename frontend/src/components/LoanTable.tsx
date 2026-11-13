@@ -58,6 +58,16 @@ export function PredictionChip({ loan }: { loan: LoanApplication }) {
   return <span className={`lt-status lt-status-${alert.tone}`} title={`Nguy cơ trễ SLA: ${predictionHeadline(prediction)}`}>{alert.label}</span>;
 }
 
+/** Mức cần chú ý của dòng: quá hạn SLA hoặc dự báo Khẩn là "danger", Chú ý là "warning"; hồ sơ đã kết thúc không đánh dấu. */
+export function rowAttention(loan: LoanApplication): 'danger' | 'warning' | null {
+  if (isLoanFinished(loan)) return null;
+  if (loan.slaSummary?.isOverdue) return 'danger';
+  const prediction = loan.delayPredictions?.[0];
+  if (!prediction || loan.predictionStatus === 'INCOMPATIBLE_PA1') return null;
+  const tone = alertDisplay(prediction.riskLevel, prediction.delayProbability, false)?.tone;
+  return tone === 'red' ? 'danger' : tone === 'amber' ? 'warning' : null;
+}
+
 export function LoanStatusBadges({ loan }: { loan: LoanApplication }) {
   const status = loanStatusView(loan.currentStatus);
   return <div className="lt-badges">
@@ -156,8 +166,9 @@ export function LoanTable({ columns, loans, total, page, pageSize, loading, erro
             : <Message span={span} title={emptyTitle} detail={emptyDetail} />)}
           {!error && loans.map(loan => {
             const isOpen = expanded.has(loan.id);
+            const attention = rowAttention(loan);
             return <Fragment key={loan.id}>
-              <tr className="lt-row" onClick={() => onSelectLoan(loan.id)}>
+              <tr className={`lt-row${attention ? ` lt-row-${attention}` : ''}`} onClick={() => onSelectLoan(loan.id)}>
                 <td className="lt-expand"><button type="button" className="lt-icon-button" aria-expanded={isOpen} aria-label={`${isOpen ? 'Thu gọn' : 'Mở rộng'} ${loan.applicationCode}`} onClick={event => { event.stopPropagation(); toggle(loan.id); }}>{isOpen ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}</button></td>
                 {shown.map(column => <td key={column.label} data-label={column.label}>{column.render(loan)}</td>)}
               </tr>

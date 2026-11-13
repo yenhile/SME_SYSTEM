@@ -6,8 +6,8 @@
 .review-heading h2 { margin: 6px 0 8px; font-size: 26px; letter-spacing: -.5px; }
 .review-heading p { margin: 0; max-width: 620px; }
 .review-save-indicator { flex-shrink: 0; color: #64748b; font-size: 12px; padding-top: 8px; }
-.review-status { display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px; border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 12px; margin-bottom: 24px; }
-.review-status > svg { flex-shrink: 0; color: #1e40af; margin-top: 2px; }
+.review-status { display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px; border: 1px solid #c3d4ea; background: #edf3fa; border-radius: 12px; margin-bottom: 24px; }
+.review-status > svg { flex-shrink: 0; color: #1d4e89; margin-top: 2px; }
 .review-status strong { font-size: 16px; color: #0f172a; }
 .review-status p { margin: 5px 0 0; font-size: 13px; color: #475569; }
 .review-status-ready { background: #ecfdf5; border-color: #a7f3d0; }
@@ -26,13 +26,13 @@
 .review-section > summary::-webkit-details-marker { display: none; }
 .review-section > summary > svg { flex-shrink: 0; color: #64748b; transition: transform .15s; }
 .review-section[open] > summary > svg { transform: rotate(180deg); }
-.review-section-number { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; background: #eff6ff; color: #1e40af; font-weight: 700; }
+.review-section-number { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; background: #edf3fa; color: #1d4e89; font-weight: 700; }
 .review-section-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: #0f172a; }
 .review-section-title small { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: #64748b; }
 .review-section-title small.review-needs-label { color: #b45309; }
 .review-section-body { padding: 0 20px 20px; border-top: 1px solid #f1f5f9; }
 .review-full-answers { margin: 16px 0; }
-.review-full-answers > summary { color: #1e40af; font-size: 13px; font-weight: 500; cursor: pointer; }
+.review-full-answers > summary { color: #1d4e89; font-size: 13px; font-weight: 500; cursor: pointer; }
 .portal-review dl.review-answer-list { display: block; margin: 8px 0 16px; }
 .review-answer-list > div { display: grid; grid-template-columns: minmax(0, 42%) minmax(0, 1fr); gap: 12px; padding: 11px 0; border-bottom: 1px solid #f1f5f9; }
 .portal-review .review-answer-list dt { margin: 0; color: #64748b; font-size: 13px; }
@@ -65,7 +65,7 @@
 .review-advice p { font-size: 12px; }
 .review-advice .portal-link { text-align: left; font-size: 13px; }
 .review-submit-card { position: sticky; top: 104px; padding: 22px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 16px rgb(15 23 42 / 4%); }
-.review-submit-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; color: #1e40af; }
+.review-submit-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; color: #1d4e89; }
 .portal-shell .review-submit-heading h3 { font-size: 16px; }
 .portal-review dl.review-loan-facts { display: block; margin: 0 0 20px; }
 .review-loan-facts > div { margin: 0 0 14px; }
@@ -82,7 +82,7 @@
 .portal-shell .review-privacy { display: flex; gap: 8px; font-size: 12px; color: #64748b; margin: 18px 0 0; padding-top: 16px; border-top: 1px solid #f1f5f9; }
 .review-privacy svg { flex-shrink: 0; margin-top: 2px; }
 .portal-shell .review-test-notice { font-size: 12px; color: #92400e; background: #fffbeb; padding: 10px; border-radius: 7px; }
-.review-section summary:focus-visible, .review-doc-details summary:focus-visible, .review-advice summary:focus-visible { outline: 2px solid #1e40af; outline-offset: -3px; }
+.review-section summary:focus-visible, .review-doc-details summary:focus-visible, .review-advice summary:focus-visible { outline: 2px solid #1d4e89; outline-offset: -3px; }
 @media(max-width: 900px) { .review-layout { grid-template-columns: minmax(0, 1fr); } .review-submit-card { position: static; } }
 @media(max-width: 600px) {
   .v2-stepper ol { display: flex; gap: 4px; }

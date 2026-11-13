@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Brain } from 'lucide-react';
+import { AlarmClock } from 'lucide-react';
 import { api } from '../api/client';
 import { stageLabel } from '../loanListDisplay';
 import { alertDisplay, compareAlerts, predictedAtText, slaLeftText } from '../slaDisplay';
 import type { EarlyWarningItem } from '../types';
+import './my-warnings.css';
 
 const MAX_ROWS = 5;
 
@@ -30,27 +31,36 @@ export function MyWarningsPanel({ refreshKey, onSelectLoan }: { refreshKey: numb
     })
     .sort(compareAlerts);
 
-  return <section className="card" style={{ marginBottom: 16 }} aria-label="Hồ sơ cần ưu tiên theo mô hình dự báo">
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-      <Brain size={18} aria-hidden="true" />
-      <h3 style={{ fontSize: 14, margin: 0 }}>Hồ sơ của tôi cần ưu tiên</h3>
+  return <section className="card mw-panel" aria-label="Hồ sơ cần xử lý ngay theo dự báo trễ SLA">
+    <div className="mw-head">
+      <span className="mw-icon" aria-hidden="true"><AlarmClock size={16} /></span>
+      <h3>Cần xử lý ngay</h3>
+      {urgent.length > 0 && <span className="mw-count">{urgent.length}</span>}
     </div>
-    {error && <p role="alert" style={{ fontSize: 12, margin: 0 }}>{error}</p>}
-    {!error && items === null && <p style={{ fontSize: 12, margin: 0 }} role="status">Đang tải…</p>}
-    {!error && items !== null && urgent.length === 0 && <p style={{ fontSize: 13, margin: 0 }}>Hiện không có hồ sơ nào cần ưu tiên.</p>}
-    {urgent.length > 0 && <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+    {error && <p role="alert" className="mw-note">{error}</p>}
+    {!error && items === null && <p className="mw-note" role="status">Đang tải…</p>}
+    {!error && items !== null && urgent.length === 0 && <p className="mw-note">Hiện không có hồ sơ nào cần ưu tiên.</p>}
+    {urgent.length > 0 && <ul className="mw-list">
       {urgent.slice(0, MAX_ROWS).map(item => {
         const alert = alertDisplay(item.riskLevel, item.delayProbability, item.slaOverdue)!;
-        const left = slaLeftText(item);
-        return <li key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span className={`badge ${alert.tone === 'red' ? 'badge-soft-red' : 'badge-soft-amber'}`}>{alert.label}</span>
-          <button type="button" className="lt-code" onClick={() => onSelectLoan(item.id)}>{item.applicationCode}</button>
-          <span style={{ fontSize: 13 }}>{item.companyName}</span>
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{stageLabel(item.currentStage)}{left ? ` · ${left}` : ''}</span>
-          {item.topReasons[0] && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.topReasons[0]}{predictedAtText(item.predictedAt) ? ` (${predictedAtText(item.predictedAt)})` : ''}</span>}
+        const left = item.slaOverdue ? null : slaLeftText(item);
+        const predictedAt = predictedAtText(item.predictedAt);
+        return <li key={item.id} className={`mw-item mw-${alert.tone === 'red' ? 'danger' : 'warning'}`}>
+          <button type="button" className="mw-row" onClick={() => onSelectLoan(item.id)}>
+            <span className={`badge mw-badge ${alert.tone === 'red' ? 'badge-soft-red' : 'badge-soft-amber'}`}>{alert.label}</span>
+            <span className="mw-main">
+              <span className="mw-code">{item.applicationCode}</span>
+              <span className="mw-company">{item.companyName}</span>
+            </span>
+            <span className="mw-stage">
+              <span>{stageLabel(item.currentStage)}</span>
+              {left && <span className="mw-left">{left}</span>}
+            </span>
+            {item.topReasons[0] && <span className="mw-reason" title={predictedAt ?? undefined}>{item.topReasons[0]}</span>}
+          </button>
         </li>;
       })}
     </ul>}
-    {urgent.length > MAX_ROWS && <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '8px 0 0' }}>Còn {urgent.length - MAX_ROWS} hồ sơ khác trong danh sách bên dưới.</p>}
+    {urgent.length > MAX_ROWS && <p className="mw-note mw-more">Còn {urgent.length - MAX_ROWS} hồ sơ khác trong danh sách bên dưới.</p>}
   </section>;
 }

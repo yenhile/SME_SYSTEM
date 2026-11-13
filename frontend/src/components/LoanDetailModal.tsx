@@ -781,7 +781,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
                   <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Lãi suất phê duyệt (%/năm):</label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min={0}
                     max={100}
                     required

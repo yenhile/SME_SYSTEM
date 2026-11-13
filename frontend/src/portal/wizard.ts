@@ -9,13 +9,29 @@ export function loanTypeOptions(labels:Record<string,string>, supported=['VAY_VO
 }
 
 /** Private recovery can populate an editable draft, never a submitted record. */
+/** Bản nháp chỉ được tạo trên hệ thống khi đã có tên doanh nghiệp hoặc mã số thuế. */
+export function canCreateDraft(data: PortalData): boolean {
+  return [data.companyName, data.taxCode].some(value => typeof value === 'string' && value.trim() !== '');
+}
+
+/** Thông tin doanh nghiệp ít đổi giữa các đề nghị; doanh thu theo kỳ và nhu cầu vay không được chép sang. */
+export const COMPANY_PREFILL_KEYS = ['companyName', 'taxCode', 'companyType', 'industry', 'businessScope', 'establishedDate', 'establishedYear', 'address', 'representativeName', 'phone', 'charterCapital'] as const;
+
+export function companyPrefill(previous: PortalData | undefined): PortalData {
+  if (!previous) return {};
+  return Object.fromEntries(COMPANY_PREFILL_KEYS.filter(key => previous[key] !== undefined && previous[key] !== null && previous[key] !== '').map(key => [key, previous[key]])) as PortalData;
+}
+
+/** Ô ngân hàng kiểm tra trước khi tiếp nhận đề nghị (cùng danh sách với kiểm tra sẵn sàng ở máy chủ). */
+export const REQUIRED_FOR_SUBMIT: ReadonlySet<string> = new Set(['companyName', 'taxCode', 'industry', 'establishedYear', 'annualRevenue', 'revenuePeriod', 'charterCapital', 'representativeName', 'phone', 'address', 'loanPurpose', 'loanType', 'proposedAmount', 'loanTermMonths']);
+
 export function initialDraftState(initial: Pick<PortalRequest, 'data' | 'revision'> | null, recovery: DraftRecovery | null, editable: boolean, defaults: PortalData) {
   const restore = editable && !!recovery;
   return {
     data: restore ? recovery.data : initial?.data ?? defaults,
     baseRevision: restore ? recovery.baseRevision : initial?.revision ?? 0,
     step: restore ? Math.min(5, Math.max(1, Number(recovery.step) || 1)) : 1,
-    dirty: editable && (restore || !initial),
+    dirty: editable && restore,
     conflict: restore && (!!recovery.conflict || (!!initial && recovery.baseRevision !== (initial.revision ?? 0))),
     recoveryApplied: restore,
     retainedRecovery: editable ? null : recovery,

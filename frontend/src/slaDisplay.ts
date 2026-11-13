@@ -44,6 +44,15 @@ export function workingDurationText(hours?: number | null): string {
   return rest === 0 ? `${days} ngày` : `${days} ngày ${decimalText(rest)} giờ`;
 }
 
+interface HandledFigures { totalHandled: number; delayRate: number; avgNetWorkHours: number }
+
+/** Số liệu thực tế của một công đoạn như bảng Điểm nghẽn: có lượt xử lý theo giờ làm việc (PA1) thì dùng PA1, ngược lại dùng cách cũ theo giờ thực. */
+export function stageActualFigures(stage: HandledFigures & { pa1?: HandledFigures | null }): { handled: number; avgText: string; delayRate: number } {
+  const pa1 = stage.pa1 && stage.pa1.totalHandled > 0 ? stage.pa1 : null;
+  const figures = pa1 ?? stage;
+  return { handled: figures.totalHandled, avgText: pa1 ? workingDurationText(figures.avgNetWorkHours) : `${figures.avgNetWorkHours} giờ`, delayRate: figures.delayRate };
+}
+
 /** Công đoạn PA1 hiển thị theo ngày làm việc; hồ sơ tính theo cách cũ giữ nguyên số giờ. */
 export function stageDurationText(hours: number | null | undefined, policy?: string | null): string {
   return policy === 'PA1' ? workingDurationText(hours) : hoursText(hours);

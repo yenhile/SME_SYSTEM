@@ -116,6 +116,7 @@ async function submitAppraisal(loanId, officer, spec) {
     collateralAssessment: 'Vay vốn lưu động, không yêu cầu tài sản bảo đảm.',
     risks: 'Rủi ro biến động giá nguyên vật liệu đầu vào.',
     recommendation: spec.recommend,
+    proposedInterestRate: '8.5',
     proposedConditions: 'Giải ngân theo tiến độ đơn hàng và sao kê tài khoản định kỳ.',
   };
   ok(await call(`/appraisals/${loanId}/draft`, officer, { content, clientRequestId: randomUUID(), expectedRevision: 0 }, 'PUT'), 'lưu nháp tờ trình');

@@ -9,7 +9,9 @@ import { overdueAt as supplementDueAt } from '../supplements/supplement-deadline
 import { waitingOn } from '../supplements/portal-supplement';
 import { computeStageClosing, loadPauseIntervals, resolveStageSla } from './sla/sla-policy';
 import { assertBranchAmount } from './loan-policy';
-import { assertReportDecision } from '../appraisal/appraisal.logic';
+import { assertReportDecision, decisionRateReason, digest, isValidRate, proposedRateOf } from '../appraisal/appraisal.logic';
+import { randomUUID } from 'node:crypto';
+import { assertRateInBand, bandView, findActiveBand, type RateBandView } from '../rate-bands/rate-band.logic';
 import { isPublicRejectionReasonCode, PUBLIC_REJECTION_REASONS } from '../portal/portal.tracking';
 import { Prisma } from '@prisma/client';
 
@@ -49,6 +51,7 @@ export class WorkflowService {
       if (fromReception && loan.assignedTo !== user.id) throw new ForbiddenException('Hồ sơ chưa được phân công cho bạn.');
       if (!fromReception && loan.assignedTo === user.id) throw new ForbiddenException('Bạn đã xử lý hồ sơ này ở công đoạn Tiếp nhận nên không được tự thẩm định hoặc phê duyệt.');
       let decidedReport: { report: any; version: any } | null = null;
+      let rateDecision: { approvedInterestRate: number; proposedInterestRate: number | null; interestRateReason: string | null; band: RateBandView | null } | null = null;
       if (loan.businessPolicyVersion) {
         assertBranchAmount(loan.officialAmount || loan.proposedAmount);
         if (fromReception) {
@@ -68,13 +71,19 @@ export class WorkflowService {
       } else if (dto.targetStage === StageCode.HOAN_TAT && dto.targetStatus === LoanStatus.APPROVED) {
         if (amount > 10000000000) throw new BadRequestException('Khoản vay vượt hạn mức chi nhánh (tối đa 10 tỷ), không thể phê duyệt.');
         if (!Number.isFinite(dto.approvedAmount) || dto.approvedAmount! <= 0 || dto.approvedAmount! > amount) throw new BadRequestException('Số tiền phê duyệt phải dương và không vượt hạn mức.');
-        if (!Number.isFinite(dto.interestRate) || dto.interestRate! < 0 || dto.interestRate! > 100) throw new BadRequestException('Lãi suất phải từ 0 đến 100%.');
+        if (!isValidRate(dto.interestRate)) throw new BadRequestException('Lãi suất phải từ 0 đến 100%/năm, tối đa 2 chữ số thập phân.');
+        const band = await findActiveBand(tx, loan.loanType, loan.loanTermMonths, clock);
+        assertRateInBand(dto.interestRate, band, loan.loanType, 'Lãi suất phê duyệt');
+        const proposedInterestRate = decidedReport ? proposedRateOf(decidedReport.version.content) : null;
+        if (decidedReport && proposedInterestRate === null) throw new BadRequestException('Tờ trình chưa có lãi suất đề xuất. Yêu cầu CBTD làm rõ và trình lại với lãi suất đề xuất trước khi phê duyệt.');
+        if (decidedReport) rateDecision = { approvedInterestRate: dto.interestRate, proposedInterestRate, interestRateReason: decisionRateReason(dto.interestRate, proposedInterestRate, dto.interestRateReason), band: bandView(band) };
       } else throw new BadRequestException('Cặp công đoạn và trạng thái không hợp lệ.');
       if (dto.officialAmount !== undefined) throw new BadRequestException('Xác định hạn mức ở công đoạn tiếp nhận, trước khi chuyển thẩm định.');
       const target = await tx.workflowStage.findUnique({ where: { stageCode: dto.targetStage } });
       if (!target) throw new BadRequestException('Chưa cấu hình công đoạn đích.');
       if (decidedReport) {
         await tx.appraisalReport.update({ where: { id: decidedReport.report.id }, data: { status: 'DECIDED', decidedVersionId: decidedReport.version.id, revision: { increment: 1 } } });
+        if (rateDecision) await tx.appraisalReportEvent.create({ data: { reportId: decidedReport.report.id, actorId: user.id, kind: 'RATE_DECIDED', clientRequestId: randomUUID(), payloadHash: digest(rateDecision), payload: rateDecision } });
       }
       const now = clock;
       const terminal = dto.targetStage === StageCode.HOAN_TAT;

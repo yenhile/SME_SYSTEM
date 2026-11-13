@@ -6,6 +6,7 @@ const {validate}=require('class-validator');
 const {plainToInstance}=require('class-transformer');
 const {BadRequestException}=require('@nestjs/common');
 const {AdminController,UpdateSlaDto}=require('../dist/admin.controller');
+const {AdminService}=require('../dist/admin.service');
 const {OPERATING_CALENDAR_2026:calendar,workingDeadline,workingHoursBetween,CalendarCoverageError}=require('../dist/modules/workflow/sla/working-time');
 const {calendarByVersion,computeStageClosing,resolveStageSla,stageSlaSummary}=require('../dist/modules/workflow/sla/sla-policy');
 const {SupplementsService}=require('../dist/modules/supplements/supplements.service');
@@ -23,6 +24,23 @@ test('the 2026 calendar is registered with exactly the approved holidays',()=>{
   assert.equal(calendarByVersion(calendar.version),calendar);
   assert.equal(calendar.coverageFrom,'2026-01-01');assert.equal(calendar.coverageTo,'2026-12-31');
   assert.deepEqual([...calendar.holidays],['2026-01-01','2026-02-16','2026-02-17','2026-02-18','2026-02-19','2026-02-20','2026-04-27','2026-04-30','2026-05-01','2026-09-01','2026-09-02','2026-11-24']);
+});
+test('the extended calendar keeps every 2026 holiday and adds only 01/01/2027 up to 31/01/2027',()=>{
+  const ext=calendarByVersion('VN-20260101-20270131-v2');
+  assert.equal(calendarByVersion(calendar.version),calendar);
+  assert.equal(ext.coverageFrom,'2026-01-01');assert.equal(ext.coverageTo,'2027-01-31');
+  assert.deepEqual([...ext.holidays],[...calendar.holidays,'2027-01-01']);
+});
+test('extended calendar: Tiếp nhận entering 23/12/2026 08:00 ends 12/01/2027 17:00, skipping weekends and 01/01',()=>{
+  const ext=calendarByVersion('VN-20260101-20270131-v2');
+  assert.equal(iso(workingDeadline(vn('2026-12-23T08:00:00'),TIEP_NHAN,ext)),iso(vn('2027-01-12T17:00:00')));
+  assert.equal(workingHoursBetween(vn('2027-01-01T00:00:00'),vn('2027-01-02T00:00:00'),ext),0);
+  assert.throws(()=>workingDeadline(vn('2026-12-23T08:00:00'),TIEP_NHAN,calendar),CalendarCoverageError);
+});
+test('extended calendar: a stage still open on 31/01/2027 cannot be measured into February',()=>{
+  const ext=calendarByVersion('VN-20260101-20270131-v2');
+  assert.equal(workingHoursBetween(vn('2027-01-29T08:00:00'),vn('2027-01-31T23:59:00'),ext),8);
+  assert.throws(()=>workingHoursBetween(vn('2027-01-29T08:00:00'),vn('2027-02-01T09:00:00'),ext),CalendarCoverageError);
 });
 test('23/11 is a working day and 24/11 is not',()=>{
   assert.equal(workingHoursBetween(vn('2026-11-23T00:00:00'),vn('2026-11-24T00:00:00'),calendar),8);
@@ -102,9 +120,9 @@ test('opening a stage outside the calendar is refused with a clear message',asyn
   await assert.rejects(resolveStageSla(db,vn('2027-01-04T08:00:00')),e=>e instanceof BadRequestException&&/không bao phủ ngày 2027-01-04/.test(e.message));
 });
 
-test('Admin cannot change Hoàn tất through the API, not even its name',()=>{
-  const controller=new AdminController({workflowStage:{update:async()=>{throw new Error('không được ghi');}}});
-  assert.throws(()=>controller.updateStage('HOAN_TAT',{stageName:'Hoàn tất',standardSlaHours:40}),BadRequestException);
+test('Admin cannot change Hoàn tất through the API, not even its name',async()=>{
+  const controller=new AdminController(new AdminService({workflowStage:{update:async()=>{throw new Error('không được ghi');}}}));
+  await assert.rejects(controller.updateStage('HOAN_TAT',{stageName:'Hoàn tất',standardSlaHours:40}),BadRequestException);
 });
 const dtoErrors=async standardSlaHours=>validate(plainToInstance(UpdateSlaDto,{stageName:'Thẩm định',standardSlaHours}));
 test('the quota must be a positive multiple of 4 hours',async()=>{

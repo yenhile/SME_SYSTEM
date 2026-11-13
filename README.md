@@ -36,20 +36,23 @@ Portal V2 hiện mở vốn lưu động sản xuất/thương mại/dịch vụ
 <a id="tai-khoan-noi-bo"></a>
 ## Tài khoản nội bộ đang sử dụng
 
-Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://localhost:5173/ . Mật khẩu **không ghi trong tài liệu**: lấy từ người quản trị, hoặc từ biến `DEMO_PASSWORD` / dòng in một lần khi chạy `npm run seed:demo`.
+Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://localhost:5173/ .
 
-| Tên đăng nhập | Họ tên | Vai trò |
-|---|---|---|
-| khoa.tran | Trần Minh Khoa | Quản trị viên (ADMIN) |
-| nhung.nguyen | Nguyễn Thị Hồng Nhung | Quản lý chi nhánh (QUAN_LY) |
-| ha.le | Lê Thị Thu Hà | Cán bộ thẩm quyền (THAM_QUYEN) |
-| huy.vu | Vũ Quang Huy | Cán bộ thẩm quyền (THAM_QUYEN) |
-| nam.hoang | Hoàng Văn Nam | Cán bộ tín dụng (CBTD) |
-| mai.bui | Bùi Thị Mai | Cán bộ tín dụng (CBTD) |
-| thanh.ngo | Ngô Đức Thành | Cán bộ tín dụng (CBTD) |
+| Tên đăng nhập | Mật khẩu | Họ tên | Vai trò |
+|---|---|---|---|
+| khoa.tran | `Demo@2026` | Trần Minh Khoa | Quản trị viên (ADMIN) |
+| nhung.nguyen | `Demo@2026` | Nguyễn Thị Hồng Nhung | Quản lý chi nhánh (QUAN_LY) |
+| ha.le | `Demo@2026` | Lê Thị Thu Hà | Cán bộ thẩm quyền (THAM_QUYEN) |
+| huy.vu | `Demo@2026` | Vũ Quang Huy | Cán bộ thẩm quyền (THAM_QUYEN) |
+| nam.hoang | `Demo@2026` | Hoàng Văn Nam | Cán bộ tín dụng (CBTD) |
+| mai.bui | `Demo@2026` | Bùi Thị Mai | Cán bộ tín dụng (CBTD) |
+| thanh.ngo | `Demo@2026` | Ngô Đức Thành | Cán bộ tín dụng (CBTD) |
+
+- Mật khẩu `Demo@2026` chỉ dùng cho dữ liệu demo trên máy cá nhân, không dùng lại ở nơi khác và không dùng khi triển khai thật. Đã kiểm tra khớp trên DB máy PO ngày 10/11/2026.
+- Tài khoản tạo **trên máy mới** bằng `npm run seed:demo` không còn mặc định `Demo@2026`: mật khẩu lấy từ biến `DEMO_PASSWORD`, nếu không đặt thì sinh ngẫu nhiên và chỉ in một lần. Muốn dùng đúng bảng trên thì chạy `DEMO_PASSWORD=Demo@2026 npm run seed:demo`.
 
 - Chi nhánh nhỏ chỉ cần **một** Quản lý; 2 Thẩm quyền khớp số người mà mô hình dự báo đã học.
-- Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) đã **xóa khỏi DB ngày 09/11/2026** (có sao lưu trước khi xóa); hệ thống chỉ còn đúng 7 tài khoản ở bảng trên. Chạy `npm run prisma:seed` sẽ tạo lại 4 tài khoản `test_*` (mật khẩu ngắn, chỉ cho kiểm thử tự động, không chạy trên production); sau khi chạy kiểm thử xong nên xóa lại. `npm run accounts:tidy` dùng khi cần khóa tài khoản thừa mới phát sinh.
+- Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) không dùng nữa: trên máy người bàn giao đã **xóa khỏi DB ngày 09/11/2026**; trên máy PO đã **khóa ngày 10/11/2026** bằng `npm run accounts:tidy -- --apply` (không đăng nhập được, không được tính khi mô hình đếm Thẩm quyền, giữ lịch sử hồ sơ). Dữ liệu DB không đi theo git, nên máy mới cần chạy lệnh này. Chỉ 7 tài khoản ở bảng trên đang mở. Chạy `npm run prisma:seed` sẽ tạo lại 4 tài khoản `test_*` (mật khẩu ngắn, chỉ cho kiểm thử tự động, không chạy trên production); sau khi chạy kiểm thử xong nên xóa lại. `npm run accounts:tidy` dùng khi cần khóa tài khoản thừa mới phát sinh.
 - Trang giới thiệu vay vốn là lớp đầu của cổng doanh nghiệp (http://localhost:5173/portal); cổng 5173 gốc `/` dành riêng cho cán bộ ngân hàng.
 - Doanh nghiệp không dùng các tài khoản này; tự đăng ký tại http://localhost:5173/portal (xác minh email qua hộp thư nội bộ http://localhost:8025/).
 - Dọn dữ liệu thử sau khi kiểm thử (hồ sơ "[MÔ PHỎNG]", tài khoản cổng `mo.phong.*`): `npm run cleanup:test` trong `backend` (mặc định chỉ xem trước; thêm `-- --apply` để xóa). Không đụng bộ demo, tài khoản cán bộ và các tài khoản cổng khác.

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
-import { getDefaultTab, resolveTab, type Tab } from './navigation';
+import { canOpenTab, getDefaultTab, resolveTab, type Tab } from './navigation';
 import { appraisalPath, appraisalRefFromPath, isLookupAddress, lookupAppraisalPath } from './appraisalWorkspace';
 import { LEAVE_WARNING, officerCasePath, officerCaseRefFromPath } from './officerCase';
 import { AppraisalWorkspace } from './components/AppraisalWorkspace';
@@ -17,6 +17,8 @@ import { AssignmentsView } from './components/AssignmentsView';
 import { CreateLoanModal } from './components/CreateLoanModal';
 import { LoanDetailModal } from './components/LoanDetailModal';
 import { AdminView } from './components/AdminView';
+import { InterestRateBandsView } from './components/InterestRateBandsView';
+import { AdminActivityLog } from './components/AdminActivityLog';
 import { CompaniesView } from './components/CompaniesView';
 import { PortalApp } from './portal/PortalApp';
 import { AssignmentChangeRequestModal } from './components/AssignmentChangeRequestModal';
@@ -137,7 +139,7 @@ function Workspace() {
   const activeTab = caseRef ? 'loans' : appraisalRef ? (lookup ? 'loans' : 'appraisal') : resolveTab(tab, activeRole);
 
   return (
-    <div className="app-container">
+    <div className="app-container" data-role={activeRole}>
       <Navbar
         activeTab={accountPage ? ('' as Tab) : activeTab}
         onTabChange={changeTab}
@@ -205,8 +207,8 @@ function Workspace() {
           <AppraisalWorkspace key={appraisalRef} reference={appraisalRef} lookup={lookup} onOpenForReview={openLoan} onBack={() => changeTab(lookup || tab === 'loans' ? 'loans' : 'appraisal')} onChanged={refresh} onResolved={showAppraisalCode} />
         ) : activeTab === 'loans' && (
           <div hidden={Boolean(caseRef)}>
-            {isOfficer && <MyWarningsPanel refreshKey={revision} onSelectLoan={openLoanForLookup} />}
             <LoanList
+              priority={isOfficer && <MyWarningsPanel refreshKey={revision} onSelectLoan={openLoanForLookup} />}
               intakeTarget={intakeTarget}
               refreshKey={revision}
               onSelectLoan={openLoanForLookup}
@@ -217,10 +219,12 @@ function Workspace() {
         {caseRef && <OfficerCaseWorkspace key={caseRef} reference={caseRef} refreshKey={revision} onBack={() => changeTab(tab)} onResolved={showCaseCode} onDirtyChange={markCaseDirty} />}
         {!appraisalRef && !caseRef && activeTab === 'appraisal' && <AppraisalQueue refreshKey={revision} onSelectLoan={openLoan} />}
         {!appraisalRef && activeTab === 'companies' && <CompaniesView />}
-        {!appraisalRef && activeTab === 'dashboard' && <DashboardView onSelectLoan={openLoan} onGoToAssignments={() => setTab('assignments')} />}
+        {!appraisalRef && activeTab === 'dashboard' && <DashboardView onSelectLoan={openLoan} onOpenTab={next => { if (canOpenTab(next, activeRole)) setTab(next); }} onGoToAssignments={activeRole === 'QUAN_LY' ? () => setTab('assignments') : undefined} />}
         {activeTab === 'assignments' && <AssignmentsView onOpenCase={openCase} />}
         {activeTab === 'users' && <AdminView section="users" />}
         {activeTab === 'settings' && <AdminView section="settings" />}
+        {activeTab === 'rates' && <InterestRateBandsView />}
+        {activeTab === 'activity' && <AdminActivityLog />}
         </div>
       </main>
 

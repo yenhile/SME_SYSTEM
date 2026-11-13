@@ -11,7 +11,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { StageCode, LoanStatus } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, RolesGuard, LoanAccessGuard)
-@Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN, RoleCode.QUAN_LY)
+@Roles(RoleCode.CBTD, RoleCode.THAM_QUYEN, RoleCode.QUAN_LY, RoleCode.ADMIN)
 @Controller('loan-applications')
 export class LoanApplicationsController {
   private readonly logger = new Logger(LoanApplicationsController.name);
@@ -44,6 +44,7 @@ export class LoanApplicationsController {
     @Query('pageSize') pageSize?: string,
     @Query('queue') queue?: string,
     @Query('sort') sort?: string,
+    @Query('lifecycle') lifecycle?: string,
   ) {
     return this.loanService.findAll(user, {
       stage,
@@ -58,6 +59,7 @@ export class LoanApplicationsController {
       page,
       pageSize,
       queue,
+      lifecycle,
       sort,
     });
   }

@@ -3,7 +3,8 @@ import { PrismaService } from '../../prisma.service';
 import { WorkflowService } from '../workflow/workflow.service';
 import { PredictionService } from '../prediction/prediction.service';
 import { assertOfficialAmount, BRANCH_POLICY, LoanActor } from '../workflow/loan-policy';
-import { assertIndependent, digest, isEvidenceChanged, reportEvidence, validateReport } from './appraisal.logic';
+import { assertIndependent, digest, isEvidenceChanged, proposedRateOf, reportEvidence, validateReport } from './appraisal.logic';
+import { assertRateInBand, findActiveBand } from '../rate-bands/rate-band.logic';
 import {assertNoCoordinationConflict} from '../assignments/assignment-coordination';
 @Injectable()
 export class AppraisalService {
@@ -93,7 +94,7 @@ export class AppraisalService {
       if(kind==='CLARIFICATION_REQUESTED') {
         if(report.status!=='SUBMITTED' || typeof body.message!=='string' || !body.message.trim() || body.message.length>4000) throw new BadRequestException('Cần nội dung làm rõ cụ thể cho bản đã trình.');
         await tx.appraisalReport.update({where:{id:report.id},data:{status:'CLARIFICATION_REQUIRED',revision:{increment:1},clarification:{message:body.message.trim(),actorId:user.id,at:new Date().toISOString()}}});
-        await tx.internalNotification.create({data:{userId:loan.assignedTo!,applicationId:id,title:'Tờ trình cần làm rõ',message:body.message.trim()}});
+        await tx.internalNotification.create({data:{userId:loan.assignedTo!,applicationId:id,title:'Tờ trình cần làm rõ',message:`Hồ sơ ${loan.applicationCode}: ${body.message.trim()}`}});
       } else {
         if(!['DRAFT','CLARIFICATION_REQUIRED'].includes(report.status)) throw new ConflictException('Bản đã trình được khóa. Chỉ sửa khi có yêu cầu làm rõ.');
         if(loan.currentStage!=='TIEP_NHAN' && report.status!=='CLARIFICATION_REQUIRED') throw new ForbiddenException('Chưa mở quyền sửa tờ trình tại công đoạn này.');
@@ -103,6 +104,7 @@ export class AppraisalService {
           if(loan.currentStage==='TIEP_NHAN' && (!loan.isDocumentComplete || loan.currentStatus!=='CHECKED')) throw new BadRequestException('Cần xác nhận đủ chứng từ trước khi trình.');
           if(!loan.officialAmount) throw new BadRequestException('Cần xác nhận hạn mức chính thức trước khi trình.');
           assertOfficialAmount(loan.officialAmount, loan.proposedAmount);
+          assertRateInBand(proposedRateOf(content)!, await findActiveBand(tx, loan.loanType, loan.loanTermMonths, new Date()), loan.loanType, 'Lãi suất đề xuất');
           const evidence=await reportEvidence(tx,loan);
           const sequence=await tx.appraisalReportVersion.count({where:{reportId:report.id}})+1;
           await tx.appraisalReportVersion.create({data:{reportId:report.id,sequence,content,evidence,evidenceHash:digest(evidence),submittedBy:user.id}});

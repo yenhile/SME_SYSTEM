@@ -63,3 +63,26 @@ test('the service queries by Vietnam-time boundaries and only PA1 stages',async(
   assert.equal(r.range.days,6);
   await assert.rejects(()=>svc.getPeriodReport('2026-12-01','2026-12-02',NOW),/tương lai/);
 });
+
+test('the trend is daily for short periods and monthly for long ones, every bucket present, each case counted once',()=>{
+  const short=parseReportRange('2026-10-31','2026-11-06',NOW);
+  const created=[loan({createdAt:vn('2026-11-01')}),loan({createdAt:vn('2026-11-01','23:30')}),loan({createdAt:vn('2026-11-06')})];
+  const completed=[loan({completedAt:vn('2026-11-02'),currentStatus:'APPROVED',approvedAmount:1e9}),loan({completedAt:vn('2026-11-02'),currentStatus:'REJECTED'}),loan({completedAt:vn('2026-11-03'),currentStatus:'CLOSED_TIMEOUT'})];
+  const daily=buildPeriodReport({range:short,created,completed,stages:[],officerNames:{}}).trend;
+  assert.equal(daily.granularity,'day');
+  assert.deepEqual(daily.buckets.map(b=>b.key),['2026-10-31','2026-11-01','2026-11-02','2026-11-03','2026-11-04','2026-11-05','2026-11-06']);
+  const nov1=daily.buckets.find(b=>b.key==='2026-11-01');assert.equal(nov1.created,2);
+  const nov2=daily.buckets.find(b=>b.key==='2026-11-02');assert.deepEqual({c:nov2.completed,a:nov2.approved,r:nov2.rejected},{c:2,a:1,r:1});
+  assert.equal(daily.buckets.reduce((s,b)=>s+b.created,0),3);
+  assert.equal(daily.buckets.reduce((s,b)=>s+b.completed,0),3);
+  const long=parseReportRange('2026-01-01','2026-11-06',NOW);
+  const monthly=buildPeriodReport({range:long,created,completed,stages:[],officerNames:{}}).trend;
+  assert.equal(monthly.granularity,'month');assert.equal(monthly.buckets.length,11);assert.equal(monthly.buckets.at(-1).key,'2026-11');
+});
+
+test('stage on-time figures are counted in stage passes, separately from cases',()=>{
+  const range=parseReportRange('2026-10-31','2026-11-06',NOW);
+  const stages=[{stageCode:'TIEP_NHAN',handledBy:'u1',netWorkDurationHours:10,isDelayed:false},{stageCode:'TIEP_NHAN',handledBy:'u1',netWorkDurationHours:120,isDelayed:true},{stageCode:'THAM_DINH',handledBy:'t',netWorkDurationHours:30,isDelayed:false}];
+  const report=buildPeriodReport({range,created:[],completed:[],stages,officerNames:{}});
+  assert.deepEqual(report.onTime,{unit:'stagePass',handled:3,onTime:2,rate:66.7});
+});

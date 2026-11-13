@@ -33,3 +33,12 @@ test('a decided loan with an unreadable status does not hide its supplement or b
   const s = summarizeHome([req('a', 'ACCEPTED', { loanId: 'L' })], {}, {});
   assert.deepEqual(s.counts, { draft: 0, waitingBank: 0, returned: 0, inProgress: 1, decided: 0 });
 });
+
+test('the request list groups what the enterprise must do apart from what waits on the bank', async () => {
+  const { listGroup, listCounts } = await import('./home.ts');
+  const rows = [req('a', 'DRAFT'), req('b', 'RETURNED'), req('c', 'SUBMITTED'), req('d', 'ASSIGNED'), req('e', 'ACCEPTED', { loanId: 'L' }), req('f', 'ACCEPTED', { loanId: 'L2' }), req('g', 'ACCEPTED', { loanId: 'L3' })];
+  const supplements = { e: 1 };
+  const outcomes = { f: done('REJECTED', 'Không được chấp thuận'), g: done('APPRAISAL', 'Đang thẩm định') };
+  assert.deepEqual(rows.map(r => listGroup(r, supplements, outcomes)), ['DRAFT', 'ACTION', 'WAITING', 'WAITING', 'ACTION', 'DECIDED', 'PROCESSING']);
+  assert.deepEqual(listCounts(rows, supplements, outcomes), { ALL: 7, ACTION: 2, DRAFT: 1, WAITING: 2, PROCESSING: 1, DECIDED: 1 });
+});

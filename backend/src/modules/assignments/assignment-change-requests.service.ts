@@ -5,16 +5,26 @@ import {lockOfficer,LoanActor} from '../workflow/loan-policy';
 import {assignmentPayloadHash,assignmentReason,assertAssignmentVersion,validateAssignmentOperation} from './assignment-safety';
 import {AssignmentSubject,COORDINATION_REASONS,lockCoordinationCompany,obsoleteCoordination} from './assignment-coordination';
 import {transferLoan,transferPortal,assignmentPrediction} from './assignment.transactions';
+import {allowedCoordinationReasons} from './coordination-scope';
 
 const person={id:true,fullName:true,username:true};
 const people={requester:{select:person},resolver:{select:person},targetOfficer:{select:person}};
 const states=['PENDING','APPROVED','REJECTED','CANCELLED','OBSOLETE'];
+/** Vai trò xem toàn bộ đề nghị của chi nhánh; quyền quyết định thuộc riêng Quản lý, Admin chỉ xem. */
+const BRANCH_WIDE=['QUAN_LY','ADMIN'];
 type Kind='approve'|'reject'|'cancel';
 @Injectable()
 export class AssignmentChangeRequestsService{
   constructor(private prisma:PrismaService,private prediction:PredictionService){}
-  capabilities(){return{enabled:true,conflictOfInterestEnabled:true,reasonCodes:COORDINATION_REASONS};}
-  private role(actor:LoanActor){if(!['CBTD','QUAN_LY'].includes(actor.activeRole))throw new ForbiddenException('Vai trò không được dùng đề nghị điều phối.');}
+  /** Lý do dùng được cho hồ sơ vay do chính CBTD phụ trách; không có hồ sơ hoặc không phải người phụ trách thì trả đủ lý do. */
+  async capabilities(query:{subjectType?:string;subjectId?:string}={},actor?:LoanActor){
+    const base={enabled:true,conflictOfInterestEnabled:true,reasonCodes:[...COORDINATION_REASONS] as string[],restriction:null as string|null};
+    if(query.subjectType!=='LOAN'||typeof query.subjectId!=='string'||!query.subjectId||actor?.activeRole!=='CBTD')return base;
+    const owner=await this.prisma.loanApplication.findUnique({where:{id:query.subjectId},select:{assignedTo:true}});
+    if(owner?.assignedTo!==actor.id)return base;
+    return {...base,...await allowedCoordinationReasons(this.prisma,query.subjectId)};
+  }
+  private role(actor:LoanActor){if(!['CBTD','QUAN_LY','ADMIN'].includes(actor.activeRole))throw new ForbiddenException('Vai trò không được dùng đề nghị điều phối.');}
   private subject(r:any):AssignmentSubject{return r.portalRequestId?{portalRequestId:r.portalRequestId}:{applicationId:r.applicationId};}
   private async context(db:any,subject:AssignmentSubject,lock=false){
     if(subject.portalRequestId){
@@ -26,14 +36,14 @@ export class AssignmentChangeRequestsService{
     const r=await db.loanApplication.findUnique({where:{id:subject.applicationId},select:{id:true,applicationCode:true,assignedTo:true,assignmentVersion:true,currentStage:true,completedAt:true,company:{select:{taxCode:true}}}});
     return r?{subjectType:'LOAN',subjectId:r.id,code:r.applicationCode,owner:r.assignedTo,accessOwner:r.assignedTo,version:r.assignmentVersion,taxCode:r.company.taxCode,eligible:!r.completedAt&&r.currentStage!=='HOAN_TAT',closed:r.completedAt||r.currentStage==='HOAN_TAT'?'LOAN_COMPLETED':null}:null;
   }
-  private authorize(r:any,actor:LoanActor){this.role(actor);if(!r||(actor.activeRole!=='QUAN_LY'&&r.requestedById!==actor.id))throw new NotFoundException('Không tìm thấy biên nhận điều phối trong phạm vi của bạn.');}
+  private authorize(r:any,actor:LoanActor){this.role(actor);if(!r||(!BRANCH_WIDE.includes(actor.activeRole)&&r.requestedById!==actor.id))throw new NotFoundException('Không tìm thấy biên nhận điều phối trong phạm vi của bạn.');}
   private async view(db:any,r:any,actor:LoanActor,replayed=false){
     const c=await this.context(db,this.subject(r));
     return{id:r.id,subjectType:c?.subjectType??(r.portalRequestId?'PORTAL':'LOAN'),subjectId:c?.subjectId??r.portalRequestId??r.applicationId,subjectCode:c?.code??'Hồ sơ không còn khả dụng',
       requestedById:r.requestedById,requester:r.requester??null,resolver:r.resolver??null,targetOfficer:r.targetOfficer??null,
       reasonCode:r.reasonCode,reason:r.reason,status:r.status,requestVersion:r.requestVersion,createdAt:r.createdAt,resolvedAt:r.resolvedAt,
       decisionReason:r.decisionReason,resolutionCode:r.resolutionCode,managerRecipientCount:r.managerRecipientCount,
-      currentOwnerId:c?.owner??null,currentAssignmentVersion:c?.version??null,currentCaseLinkAllowed:!!c&&(actor.activeRole==='QUAN_LY'||(actor.activeRole==='CBTD'&&c.accessOwner===actor.id)),
+      currentOwnerId:c?.owner??null,currentAssignmentVersion:c?.version??null,currentCaseLinkAllowed:!!c&&(BRANCH_WIDE.includes(actor.activeRole)||(actor.activeRole==='CBTD'&&c.accessOwner===actor.id)),
       canResolve:r.status==='PENDING'&&actor.activeRole==='QUAN_LY'&&actor.id!==r.requestedById,
       canCancel:r.status==='PENDING'&&actor.activeRole==='CBTD'&&actor.id===r.requestedById&&r.reasonCode!=='CONFLICT_OF_INTEREST',replayed};
   }
@@ -61,6 +71,10 @@ export class AssignmentChangeRequestsService{
       if(prior){if(prior.createPayloadHash!==payloadHash)throw new ConflictException('Mã thao tác đã dùng cho đề nghị khác.');return this.view(tx,prior,actor,true);}
       if(c.owner!==actor.id)throw new ForbiddenException('Bạn chỉ được đề nghị điều phối hồ sơ đang phụ trách.');
       if(!c.eligible)throw new ConflictException('Đối tượng đã chuyển giai đoạn hoặc kết thúc; hãy tải lại.');
+      if(subject.applicationId&&body.reasonCode!=='CONFLICT_OF_INTEREST'){
+        const scope=await allowedCoordinationReasons(tx,subject.applicationId);
+        if(!scope.reasonCodes.includes(body.reasonCode))throw new ConflictException(scope.restriction);
+      }
       assertAssignmentVersion(c.version,body.expectedAssignmentVersion);
       if(await tx.assignmentChangeRequest.findFirst({where:{...subject,status:'PENDING'}}))throw new ConflictException('Đã có đề nghị điều phối đang chờ giải quyết.');
       if(body.reasonCode==='CONFLICT_OF_INTEREST')await lockCoordinationCompany(tx,actor.id,c.taxCode);

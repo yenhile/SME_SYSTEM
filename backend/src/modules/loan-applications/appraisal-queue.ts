@@ -19,7 +19,7 @@ export interface QueueFacts {
 
 export function assertQueueRequest(queue: string, actor: QueueActor): QueueGroup {
   if (!QUEUE_GROUPS.includes(queue as QueueGroup)) throw new BadRequestException('Nhóm hồ sơ không hợp lệ.');
-  if (actor.activeRole !== RoleCode.THAM_QUYEN && actor.activeRole !== RoleCode.QUAN_LY) throw new ForbiddenException('Vai trò của bạn không xem được hàng việc thẩm định.');
+  if (actor.activeRole !== RoleCode.THAM_QUYEN && actor.activeRole !== RoleCode.QUAN_LY && actor.activeRole !== RoleCode.ADMIN) throw new ForbiddenException('Vai trò của bạn không xem được hàng việc thẩm định.');
   return queue as QueueGroup;
 }
 

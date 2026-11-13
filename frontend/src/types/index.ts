@@ -135,6 +135,8 @@ export interface LoanApplication {
   approvedAmount?: number | string;
   loanTermMonths: number;
   interestRate?: number | string;
+  rateDecision?: { proposedInterestRate: number | null; interestRateReason: string | null; band?: { id: string; minRate: number; maxRate: number; effectiveFrom: string; basis: string } | null } | null;
+  rateBand?: { id: string; minRate: number; maxRate: number; effectiveFrom: string; basis: string } | null;
   currentStage: StageCode;
   currentStatus: LoanStatus;
   assignedTo?: string;

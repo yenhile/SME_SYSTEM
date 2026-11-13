@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client';
-import { REPORT_FORM_FIELDS, REPORT_CONDITIONS_LABEL, type AppraisalReportView } from '../appraisalWorkspace';
+import { bandText, NO_BAND_ERROR, normalizeRateText, parseRateText, RATE_ERROR, rateInBand, REPORT_FORM_FIELDS, REPORT_CONDITIONS_LABEL, REPORT_RATE_KEY, type AppraisalReportView } from '../appraisalWorkspace';
 import { draftChanged, submitBlockReason } from '../officerCase';
 import type { LoanApplication } from '../types';
 
@@ -32,11 +32,19 @@ export function OfficerReportEditor({ loan, report, busy, run, onReport, onDirty
   }, [dirty, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
 
-  const blockReason = submitBlockReason({ loan, report, content, dirty, required: REQUIRED_FIELDS });
+  const rateBand = loan.rateBand;
+  const rateValue = content[REPORT_RATE_KEY]?.trim() ? parseRateText(content[REPORT_RATE_KEY]) : null;
+  const rateInvalid = Boolean(content[REPORT_RATE_KEY]?.trim()) && rateValue === null;
+  const rateOutside = rateValue !== null && Boolean(rateBand) && !rateInBand(rateValue, rateBand!);
+  const blockReason = rateInvalid ? RATE_ERROR
+    : rateBand === null ? NO_BAND_ERROR
+    : rateOutside ? `Lãi suất đề xuất phải trong khung ${bandText(rateBand!)}.`
+    : submitBlockReason({ loan, report, content, dirty, required: REQUIRED_FIELDS });
   const requestBody = () => ({ expectedRevision: report?.revision ?? 0, clientRequestId: crypto.randomUUID() });
 
   const saveDraft = () => run(async () => {
-    const next = await api.put<AppraisalReportView>(`/appraisals/${loan.id}/draft`, { ...requestBody(), content });
+    const rate = content[REPORT_RATE_KEY];
+    const next = await api.put<AppraisalReportView>(`/appraisals/${loan.id}/draft`, { ...requestBody(), content: rate === undefined ? content : { ...content, [REPORT_RATE_KEY]: normalizeRateText(rate) } });
     const draft = next.draft ?? {};
     lastSaved.current = draft;
     setContent(draft);
@@ -56,13 +64,16 @@ export function OfficerReportEditor({ loan, report, busy, run, onReport, onDirty
     {report?.status === 'CLARIFICATION_REQUIRED' && report.clarification && <p className="aw-alert aw-alert-warning"><strong>Yêu cầu làm rõ: </strong>{report.clarification.message}</p>}
     <div className="aw-form oc-report-form">
       {REPORT_FORM_FIELDS.map(([key, label]) => <label key={key}>{label}
-        <textarea rows={5} maxLength={10000} disabled={busy} value={content[key] ?? ''} onChange={event => setContent({ ...content, [key]: event.target.value })} />
+        {key === REPORT_RATE_KEY
+          ? <><input type="number" inputMode="decimal" min={rateBand?.minRate ?? 0} max={rateBand?.maxRate ?? 100} step="0.01" disabled={busy} value={content[key] ?? ''} onChange={event => setContent({ ...content, [key]: event.target.value })} aria-invalid={rateInvalid || rateOutside} />
+            {rateBand !== undefined && <span className="aw-hint">{rateBand ? `Khung lãi suất: ${bandText(rateBand)}` : NO_BAND_ERROR}</span>}</>
+          : <textarea rows={5} maxLength={10000} disabled={busy} value={content[key] ?? ''} onChange={event => setContent({ ...content, [key]: event.target.value })} />}
       </label>)}
     </div>
     <div className="oc-report-actions">
       <p className={blockReason ? 'aw-hint' : 'aw-hint oc-ready'} role="status">{blockReason ?? 'Bản nháp đã lưu, có thể trình tờ trình.'}</p>
       <div className="aw-form-actions">
-        <button type="button" className="btn btn-secondary" disabled={busy || (!dirty && Boolean(report))} onClick={() => void saveDraft()}>Lưu nháp</button>
+        <button type="button" className="btn btn-secondary" disabled={busy || rateInvalid || (!dirty && Boolean(report))} onClick={() => void saveDraft()}>Lưu nháp</button>
         <button type="button" className="btn btn-primary" disabled={busy || Boolean(blockReason)} onClick={() => void submit()}>{report?.status === 'CLARIFICATION_REQUIRED' ? 'Trình lại tờ trình' : 'Trình tờ trình'}</button>
       </div>
     </div>

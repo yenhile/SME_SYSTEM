@@ -306,6 +306,45 @@ model SlaPolicyActivation {
   @@map("sla_policy_activations")
 }
 
+/// Khung lãi suất theo loại vay, chỉ thêm (interest-rate-bands.sql chặn UPDATE/DELETE). Khung hiệu lực là phiên bản có
+/// `effectiveFrom` gần nhất đã tới; kỳ hạn để trống nghĩa là áp mọi kỳ hạn.
+model InterestRateBand {
+  id             String   @id @default(uuid())
+  loanType       LoanType @map("loan_type")
+  termFromMonths Int?     @map("term_from_months")
+  termToMonths   Int?     @map("term_to_months")
+  minRate        Decimal  @map("min_rate") @db.Decimal(5, 2)
+  maxRate        Decimal  @map("max_rate") @db.Decimal(5, 2)
+  effectiveFrom  DateTime @map("effective_from")
+  basis          String
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([loanType, effectiveFrom])
+  @@map("interest_rate_bands")
+}
+
+/// Nhật ký thao tác quản trị, chỉ thêm (admin-audit-log.sql chặn UPDATE/DELETE). Người làm lưu kèm tên đăng nhập và họ tên
+/// tại thời điểm ghi, không khóa ngoại, để dòng nhật ký vẫn đọc được khi tài khoản bị xóa.
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  actorId       String   @map("actor_id")
+  actorUsername String   @map("actor_username")
+  actorName     String   @map("actor_name")
+  action        String
+  targetType    String   @map("target_type")
+  targetId      String   @map("target_id")
+  targetLabel   String   @map("target_label")
+  before        Json?
+  after         Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@map("admin_audit_logs")
+}
+
 model Document {
   id            String       @id @default(uuid())
   applicationId String       @map("application_id")

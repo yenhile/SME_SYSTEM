@@ -29,7 +29,7 @@ const { workingDeadline, workingHoursBetween } = require(path.join(DIST, 'module
 const { BRANCH_POLICY } = require(path.join(DIST, 'modules/workflow/loan-policy'));
 const { reportEvidence, digest } = require(path.join(DIST, 'modules/appraisal/appraisal.logic'));
 
-const CAL_VERSION = 'VN-20260101-20261231-v1';
+const CAL_VERSION = 'VN-20260101-20270131-v2';
 const cal = calendarByVersion(CAL_VERSION);
 const NOW = new Date();
 const H = 3600000;
@@ -122,9 +122,18 @@ async function main() {
   const existing = await db.company.count({ where: { taxCode: { startsWith: 'DEMO' } } });
   if (existing && !RESET) { console.log(`Đã có ${existing} công ty demo; bỏ qua. Dùng --reset để dựng lại.`); await app.close(); return; }
   if (existing) {
-    await db.loanApplication.deleteMany({ where: { company: { taxCode: { startsWith: 'DEMO' } } } });
-    await db.company.deleteMany({ where: { taxCode: { startsWith: 'DEMO' } } });
-    console.log(`Đã gỡ dữ liệu demo cũ (${existing} công ty).`);
+    const demoLoan = { company: { taxCode: { startsWith: 'DEMO' } } };
+    // Thông báo, yêu cầu điều chuyển và đề nghị cổng không tự xóa theo hồ sơ. Hồ sơ demo gắn với đề nghị cổng thì dừng thay vì xóa dữ liệu của doanh nghiệp.
+    const linkedPortal = await db.portalRequest.count({ where: { loan: demoLoan } });
+    if (linkedPortal) throw new Error(`${linkedPortal} đề nghị cổng doanh nghiệp đang gắn với hồ sơ demo; không dựng lại để tránh xóa dữ liệu cổng.`);
+    const removed = await db.$transaction(async tx => {
+      const notices = await tx.internalNotification.deleteMany({ where: { OR: [{ application: demoLoan }, { assignmentChangeRequest: { application: demoLoan } }] } });
+      await tx.assignmentChangeRequest.deleteMany({ where: { application: demoLoan } });
+      await tx.loanApplication.deleteMany({ where: demoLoan });
+      await tx.company.deleteMany({ where: { taxCode: { startsWith: 'DEMO' } } });
+      return notices.count;
+    }, { timeout: 120000 });
+    console.log(`Đã gỡ dữ liệu demo cũ (${existing} công ty, ${removed} thông báo nội bộ).`);
   }
 
   // ----- tài khoản -----

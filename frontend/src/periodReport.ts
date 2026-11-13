@@ -7,6 +7,8 @@ export interface PeriodReportData {
   byOfficer: { id: string; fullName: string; created: number; completed: number; approved: number; rejected: number; receptionHandled: number; receptionDelayed: number }[];
   byLoanType: { loanType: string; created: number; approved: number; approvedAmount: number }[];
   monthly: { month: string; created: number; completed: number }[];
+  trend: { granularity: 'day' | 'month'; buckets: { key: string; created: number; completed: number; approved: number; rejected: number }[] };
+  onTime: { unit: 'stagePass'; handled: number; onTime: number; rate: number | null };
   basis: string;
 }
 

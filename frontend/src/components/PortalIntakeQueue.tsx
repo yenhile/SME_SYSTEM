@@ -43,7 +43,7 @@ export function PortalIntakeQueue({ activeRole, onSelectLoan, onRefresh, target 
   }, [target, activeRole]);
   const acceptEnabled = !selected?.coordinationRestrictions?.writeBlocked && !!selected && canAcceptIntake(selected, config) && (!config?.intakeCycleEnabled||selected.formVersion!==2||(cycle?.requestId===selected.id&&cycle.revision===selected.revision&&cycle.canAccept));
   return <section className="portal-intake">
-    <div className="portal-section-heading"><div><h2>Đề nghị từ cổng doanh nghiệp</h2><p>Kiểm tra thông tin và tài liệu trước khi tiếp nhận thành hồ sơ vay.</p></div><button className="btn btn-secondary" disabled={busy} onClick={() => void run(async () => { await Promise.all([load(), loadConfig()]); if (selected) { setSelected(await api.get<PortalRequest>(`/portal-intakes/${selected.id}`)); setMatch(null); setConfirmed(false); } })}>Làm mới</button></div>
+    <div className="portal-section-heading"><h2>Đề nghị từ cổng doanh nghiệp</h2><button className="btn btn-secondary" disabled={busy} onClick={() => void run(async () => { await Promise.all([load(), loadConfig()]); if (selected) { setSelected(await api.get<PortalRequest>(`/portal-intakes/${selected.id}`)); setMatch(null); setConfirmed(false); } })}>Làm mới</button></div>
     {error && <p role="alert" className="error-message">{error}</p>}{configError && <p role="alert" className="error-message">Không tải được cấu hình tiếp nhận: {configError}. Chức năng tiếp nhận V2 được giữ khóa.</p>}{busy && <p role="status">Đang xử lý…</p>}
     {selected ? <>
       <button className="portal-link portal-back" disabled={busy} onClick={() => { setSelected(null); setMatch(null); setConfirmed(false); }}>← Quay lại danh sách</button>

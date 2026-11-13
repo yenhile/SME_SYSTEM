@@ -4,6 +4,7 @@ import { applyPreferences, loadPreferences } from './userPreferences';
 import App from './App';
 import './styles.css';
 import './theme.css';
+import './workspace-theme.css';
 
 applyPreferences(loadPreferences());
 createRoot(document.getElementById('root')!).render(

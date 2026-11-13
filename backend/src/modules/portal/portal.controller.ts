@@ -63,14 +63,14 @@ export class PortalRequestsController {
 }
 @Controller('portal-intakes')
 @UseGuards(JwtAuthGuard,RolesGuard)
-@Roles(RoleCode.CBTD,RoleCode.QUAN_LY)
+@Roles(RoleCode.CBTD,RoleCode.QUAN_LY,RoleCode.ADMIN)
 export class PortalIntakesController {
   private readonly logger = new Logger(PortalIntakesController.name);
   constructor(private service:PortalService,private prediction:PredictionService) {}
   @Get() list(@Req() req:any) {return this.service.list(undefined,req.user);}
-  @Get('officers') @Roles(RoleCode.QUAN_LY)
+  @Get('officers') @Roles(RoleCode.QUAN_LY,RoleCode.ADMIN)
   officers() {return this.service.officers();}
-  @Get('form-config') @Roles(RoleCode.CBTD,RoleCode.QUAN_LY,RoleCode.THAM_QUYEN) config() {return this.service.formConfig();}
+  @Get('form-config') @Roles(RoleCode.CBTD,RoleCode.QUAN_LY,RoleCode.THAM_QUYEN,RoleCode.ADMIN) config() {return this.service.formConfig();}
   @Post(':id/assign') @Roles(RoleCode.QUAN_LY)
   assign(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.assign(id,body,req.user.id);}
   @Get(':id/assignment-history')

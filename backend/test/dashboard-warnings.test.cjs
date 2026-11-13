@@ -53,3 +53,27 @@ test('loans already past their SLA are listed first',async()=>{
   const list=await atClock('2026-11-05T14:00:00+07:00',()=>svc.getEarlyWarningList({activeRole:'QUAN_LY'}));
   assert.equal(list[0].id,'late');assert.equal(list[0].slaOverdue,true);
 });
+
+test('the CBTD priority list keeps only loans waiting on the officer, not on the enterprise or the approver',async()=>{
+  const {digest,reportEvidence}=require('../dist/modules/appraisal/appraisal.logic');
+  const policy='SME_BRANCH_20261031_V1';
+  const prisma={
+    $queryRaw:async()=>[],
+    company:{findUnique:async()=>({id:'c',companyName:'ABC'})},
+    document:{findMany:async()=>[]},
+    supplementRequest:{findMany:async()=>[]},
+  };
+  const appraisal=(id,status,hash)=>row(id,{businessPolicyVersion:policy,intakeOfficerId:'u1',companyId:'c',supplementRequests:[],coordinationRequests:[],appraisalReport:{status,versions:[{evidenceHash:hash}]}});
+  const fresh=digest(await reportEvidence(prisma,appraisal('probe','SUBMITTED','x')));
+  const intake=(id,status)=>row(id,{currentStage:'TIEP_NHAN',currentStatus:status,businessPolicyVersion:policy,supplementRequests:[],coordinationRequests:[],appraisalReport:null});
+  const rows=[
+    intake('received','RECEIVED'),intake('checked','CHECKED'),intake('supplement','SUPPLEMENT_REQUIRED'),
+    appraisal('waiting-decision','SUBMITTED',fresh),appraisal('clarify','CLARIFICATION_REQUIRED',fresh),appraisal('evidence-changed','SUBMITTED','stale'),
+  ];
+  let args;
+  prisma.loanApplication={findMany:async a=>{args=a;return rows;}};
+  const svc=new DashboardService(prisma);
+  const list=await atClock('2026-10-27T14:00:00+07:00',()=>svc.getEarlyWarningList({activeRole:'CBTD'},'u1',{officerTurnOnly:true}));
+  assert.deepEqual(list.map(x=>x.id).sort(),['checked','clarify','evidence-changed','received']);
+  assert.equal(args.where.assignedTo,'u1');
+});

@@ -8,7 +8,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RoleCode } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RoleCode.QUAN_LY)
+@Roles(RoleCode.QUAN_LY, RoleCode.ADMIN)
 @Controller('assignments')
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
-import { REPORT_FORM_FIELDS } from '../appraisalWorkspace';
+import { REPORT_FORM_FIELDS, REPORT_RATE_KEY } from '../appraisalWorkspace';
 import { useAuth } from '../context/AuthContext';
 import type { LoanApplication } from '../types';
 
@@ -64,7 +64,9 @@ export function AppraisalPanel({loan,evidenceKey,onChanged,onVersion}:{loan:Loan
     {activeRole==='THAM_QUYEN'&&report?.evidenceChanged&&loan.currentStatus!=='SUPPLEMENT_REQUIRED'&&<p role="alert" className="portal-error">Căn cứ đã thay đổi sau khi tờ trình được trình (có chứng từ hoặc yêu cầu bổ sung mới). Hãy yêu cầu CBTD làm rõ và trình lại; sau đó mới phê duyệt hoặc từ chối được.</p>}
     {report?.decidedVersionId&&<p>Quyết định trên phiên bản {report.versions.find(version=>version.id===report.decidedVersionId)?.sequence??'—'}.</p>}
     {!loading&&<><div className="portal-field-grid">{Object.entries(fields).map(([key,label])=><label key={key}>{label}
-      <textarea aria-label={label} rows={3} maxLength={10000} disabled={busy} readOnly={!editable} value={content[key]??''} onChange={e=>setContent({...content,[key]:e.target.value})}/>
+      {key===REPORT_RATE_KEY
+        ?<input type="number" aria-label={label} min={0} max={100} step="0.01" disabled={busy} readOnly={!editable} value={content[key]??''} onChange={e=>setContent({...content,[key]:e.target.value})}/>
+        :<textarea aria-label={label} rows={3} maxLength={10000} disabled={busy} readOnly={!editable} value={content[key]??''} onChange={e=>setContent({...content,[key]:e.target.value})}/>}
     </label>)}</div>
     {editable&&<div>
       <div className="portal-actions">

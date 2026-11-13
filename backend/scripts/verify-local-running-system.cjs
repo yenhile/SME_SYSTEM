@@ -396,6 +396,7 @@ async function main() {
     collateralAssessment: 'Khoản vay vốn lưu động không yêu cầu tài sản bảo đảm bổ sung.',
     risks: 'Rủi ro biến động giá thép và vật liệu đầu vào.',
     recommendation: 'Đề xuất phê duyệt cho vay hạn mức 150.000.000 VND, thời hạn 12 tháng.',
+    proposedInterestRate: '8.5',
     proposedConditions: 'Giải ngân theo tiến độ đơn hàng và sao kê tài khoản thanh toán định kỳ.',
   };
 

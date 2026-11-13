@@ -1,0 +1,92 @@
+/* Trình bày chung cho không gian làm việc của cán bộ ngân hàng. */
+.app-container {
+  min-height: 100dvh;
+  background: var(--bg-body);
+  color: var(--text-primary);
+}
+.app-container input:focus,
+.app-container select:focus,
+.app-container textarea:focus { box-shadow: 0 0 0 3px rgb(29 78 137 / 18%); }
+
+.app-container .sidebar { background: #fff; }
+.app-container .nav-group-heading { color: #5f6e82; font-size: 12px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+.app-container .nav-group-heading svg { width: 16px; height: 16px; }
+.app-container .sidebar .nav-group-items .nav-tab-btn { min-height: 40px; padding: 8px 12px 8px 36px; color: #2b3a4f; border-radius: 6px; }
+.app-container .sidebar .nav-tab-btn:hover { color: var(--primary); background: var(--bg-surface); }
+.app-container .sidebar .nav-tab-btn.active { color: var(--primary); background: var(--primary-light); font-weight: 600; box-shadow: inset 3px 0 0 var(--primary); }
+.app-container .sidebar .nav-tab-btn:disabled { color: #5f6e82; }
+.app-container .nav-group-items .nav-tab-btn small { color: #5f6e82; font-size: 12px; }
+
+.app-container .portal-intake > .portal-card:has(> .data-table-container) { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.app-container .portal-intake .data-table th { padding: 10px 12px; white-space: normal; background: #f1f4f8; vertical-align: bottom; }
+.app-container .portal-intake .data-table td { padding: 12px; overflow-wrap: anywhere; }
+.app-container .portal-intake .data-table tr > :last-child { position: sticky; right: 0; z-index: 1; background: #fff; box-shadow: -1px 0 0 var(--border-color); }
+.app-container .portal-intake .data-table thead tr > :last-child { background: #f1f4f8; }
+.app-container .portal-intake .data-table tbody tr:hover > :last-child { background: #f8fafc; }
+.app-container .portal-intake .data-table td[colspan] { position: static; box-shadow: none; }
+
+.app-container .btn { border-radius: 6px; }
+.app-container .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.app-container .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+.app-container .btn-secondary:hover:not(:disabled) { color: var(--primary); border-color: var(--primary-border); background: var(--primary-light); }
+.app-container .card { border-radius: 10px; }
+
+.app-container .portal-tabs { gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+.app-container .portal-tabs .btn {
+  min-height: 44px; margin-bottom: -1px; padding: 8px 14px;
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: transparent; color: var(--text-secondary); box-shadow: none; font-weight: 500;
+}
+.app-container .portal-tabs .btn:hover { color: var(--primary); background: transparent; }
+.app-container .portal-tabs .btn-primary { border-bottom-color: var(--primary); color: var(--primary); font-weight: 600; }
+
+.app-container .loan-page-heading { margin-bottom: 16px; }
+.app-container .main-content h2 { color: var(--text-primary); }
+.app-container .main-content h2 + p { color: var(--text-secondary); font-size: 14px; }
+
+.app-container .lt-filters-head { padding: 10px 16px; }
+.app-container .lt-filters-head h3 { font-size: 14px; }
+.app-container .lt-filters-actions .btn { min-height: 36px; padding: 6px 14px; }
+.app-container .lt-apply { background: var(--primary); border-color: var(--primary); color: #fff; }
+.app-container .lt-apply:hover:not(:disabled) { background: var(--primary-hover); }
+.app-container .lt-filters-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 12px; padding: 12px 16px 14px; }
+.app-container .lt-filters-grid input:not([type=checkbox]),
+.app-container .lt-filters-grid select { min-height: 40px; padding: 8px 11px; border-radius: 6px; }
+.app-container .lt-filters-grid .lt-check { min-height: 40px; }
+
+.app-container .lt-container { border-radius: 10px; }
+.app-container .lt-table thead th { padding: 10px 12px; background: #f1f4f8; color: #46566c; font-size: 12px; font-weight: 600; letter-spacing: .2px; }
+.app-container .lt-table td { padding: 14px 12px; border-top-color: var(--border-color); }
+.app-container .lt-row:hover td { background: #f5f8fc; }
+.app-container .lt-row-danger > td:first-child { box-shadow: inset 4px 0 0 var(--sla-danger); }
+.app-container .lt-row-warning > td:first-child { box-shadow: inset 4px 0 0 var(--sla-warning); }
+.app-container .lt-code { color: var(--primary); font-size: 14px; font-weight: 600; }
+.app-container .lt-chip { background: #eef1f5; color: #46566c; font-size: 11px; }
+.app-container .lt-metrics strong { font-size: 14px; }
+.app-container .lt-metrics > div { border-left-color: var(--border-light); }
+.app-container .lt-dot { background: var(--primary); }
+.app-container .lt-status { border-radius: 999px; padding: 1px 9px; }
+.app-container .lt-progress i { height: 4px; }
+.app-container .lt-progress-blue .is-done,
+.app-container .lt-progress-teal .is-done,
+.app-container .lt-progress-purple .is-done,
+.app-container .lt-progress-gray .is-done { background: var(--primary); }
+.app-container .lt-tone-danger { color: var(--sla-danger); }
+.app-container .lt-icon-button:hover:not(:disabled) { background: var(--primary-light); color: var(--primary); }
+
+.app-container .sme-brand-icon { background: var(--primary); color: #fff; }
+.app-container .account-avatar { background: var(--primary); color: #fff; }
+
+@media (max-width: 768px) {
+  .app-container .lt-row-danger { box-shadow: inset 4px 0 0 var(--sla-danger); }
+  .app-container .lt-row-warning { box-shadow: inset 4px 0 0 var(--sla-warning); }
+  .app-container .lt-row-danger > td:first-child,
+  .app-container .lt-row-warning > td:first-child { box-shadow: none; }
+}
+
+.app-container .portal-intake .portal-section-heading { margin-bottom: 16px; }
+.app-container .portal-intake .portal-section-heading h2 { font-size: 18px !important; }
+.app-container .loan-page-heading { margin-bottom: 12px; }
+.app-container .portal-tabs { margin-bottom: 16px; }
+.app-container .mw-head { padding: 10px 16px; }
+.app-container .mw-row { padding-top: 8px; padding-bottom: 8px; row-gap: 2px; }

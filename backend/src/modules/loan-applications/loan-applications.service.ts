@@ -5,7 +5,8 @@ import { CreateLoanDto } from './dto/create-loan.dto';
 import { LoanStatus, LoanType, Prisma, StageCode, RoleCode } from '@prisma/client';
 import { compareLoanQueue } from './loan-queue';
 import { assertQueueRequest, classifyQueueRow, QUEUE_GROUPS, type QueueActor, type QueueGroup, type QueueReason } from './appraisal-queue';
-import { isEvidenceChanged } from '../appraisal/appraisal.logic';
+import { isEvidenceChanged, rateDecisionView } from '../appraisal/appraisal.logic';
+import { bandView, findActiveBand } from '../rate-bands/rate-band.logic';
 import { nextDocumentCode } from '../../common/document-codes';
 import { assertOfficerMayWriteCompany } from '../companies/company-access';
 import { companySnapshot, lockCompany, withLoanCompany } from '../companies/company-snapshot';
@@ -28,6 +29,8 @@ export interface LoanListQuery {
   pageSize?: string;
   queue?: string;
   sort?: string;
+  /** `active`: hồ sơ chưa kết thúc; `finished`: hồ sơ đã kết thúc. Bỏ trống thì lấy cả hai. */
+  lifecycle?: string;
 }
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -176,6 +179,9 @@ export class LoanApplicationsService {
       : query.stage;
 
     const conditions: Prisma.LoanApplicationWhereInput[] = [];
+    if (query.lifecycle !== undefined && query.lifecycle !== 'active' && query.lifecycle !== 'finished') throw new BadRequestException('Phạm vi hồ sơ không hợp lệ.');
+    if (query.lifecycle === 'active') conditions.push({ completedAt: null, currentStage: { not: StageCode.HOAN_TAT } });
+    if (query.lifecycle === 'finished') conditions.push({ OR: [{ completedAt: { not: null } }, { currentStage: StageCode.HOAN_TAT }] });
     if (query.company) {
       conditions.push({ OR: [
         { company: { companyName: { contains: query.company, mode: 'insensitive' } } },
@@ -374,11 +380,18 @@ export class LoanApplicationsService {
       source: loan.portalRequest ? 'PORTAL' : 'QUAY',
       coordinationRestrictions:await this.coordinationRestrictions(id,actor?.id),
       makerCheckerRestrictions:await this.makerCheckerRestrictions(loan,actor?.id),
+      rateDecision: loan.currentStatus === LoanStatus.APPROVED ? await this.rateDecision(id) : null,
+      rateBand: loan.completedAt ? null : bandView(await findActiveBand(this.prisma, loan.loanType, loan.loanTermMonths, now)),
       predictionStatus: predictionStatusOf(!!detailCurrent),
       slaState,
       liveSla,
       slaSummary: open ? stageSlaSummary(open, pauses.map(p => ({ start: p.startedAt, end: p.endedAt })), now) : null,
     };
+  }
+
+  private async rateDecision(applicationId: string) {
+    const event = await this.prisma.appraisalReportEvent.findFirst({ where: { kind: 'RATE_DECIDED', report: { applicationId } }, orderBy: { createdAt: 'desc' }, select: { payload: true } });
+    return rateDecisionView(event?.payload);
   }
 
   private async makerCheckerRestrictions(loan: { id: string; assignedTo?: string | null; intakeOfficerId?: string | null }, actorId?: string) {

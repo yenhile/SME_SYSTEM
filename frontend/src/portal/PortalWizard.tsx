@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Building2, FileText, LockKeyhole, Plus, Save, Tr
 import { portalApi, PortalApiError } from './client';
 import { loanTypes } from './model';
 import type { PortalAccount, PortalData, PortalFormConfig, PortalRequest, PortalChecklist } from './model';
-import { capitalTotals, normalizeV2, validateV2, sameDraft, initialDraftState, loanTypeOptions, type DraftRecovery } from './wizard';
+import { canCreateDraft, capitalTotals, companyPrefill, normalizeV2, validateV2, sameDraft, initialDraftState, loanTypeOptions, REQUIRED_FOR_SUBMIT, type DraftRecovery } from './wizard';
 import { DocumentManager } from './DocumentManager';
 import { canEditCycle, canSendCycle } from './intake-cycle';
 import { IntakeCyclePanel } from './IntakeCyclePanel';
@@ -21,13 +21,13 @@ function readRecovery(accountId: string, id: string): DraftRecovery | null {
     return value && typeof value.data === 'object' && value.data !== null && !Array.isArray(value.data) && Number.isSafeInteger(value.baseRevision) ? value : null;
   } catch { return null; }
 }
-type FieldProps = { path: string; label: string; value?: string | number; type?: string; hint?: string; error?: string; onChange: (value: string | number | undefined) => void; readOnly?: boolean; options?: Record<string, string>; };
-function Field({ path, label, value, type = 'text', hint, error, onChange, readOnly, options }: FieldProps) {
+type FieldProps = { path: string; label: string; value?: string | number; type?: string; hint?: string; error?: string; onChange: (value: string | number | undefined) => void; readOnly?: boolean; options?: Record<string, string>; required?: boolean; };
+function Field({ path, label, value, type = 'text', hint, error, onChange, readOnly, options, required }: FieldProps) {
   return <label className={`v2-field ${type === 'textarea' ? 'v2-wide' : ''}`} htmlFor={`v2-${path}`}>
-    <span>{label}</span>
-    {options ? <select id={`v2-${path}`} value={value ?? ''} disabled={readOnly} aria-invalid={!!error} aria-describedby={error ? `v2-error-${path}` : undefined} onChange={e => onChange(e.target.value || undefined)}><option value="">Chọn thông tin</option>{Object.entries(options).map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select>
-      : type === 'textarea' ? <textarea id={`v2-${path}`} rows={3} maxLength={4000} value={value ?? ''} readOnly={readOnly} aria-invalid={!!error} aria-describedby={error ? `v2-error-${path}` : undefined} onChange={e => onChange(e.target.value)} />
-        : <input id={`v2-${path}`} type={type} inputMode={type === 'number' ? 'decimal' : undefined} step={type === 'number' ? 'any' : undefined} maxLength={4000} value={value ?? ''} readOnly={readOnly} aria-invalid={!!error} onChange={e => onChange(type === 'number' ? e.target.value === '' ? undefined : Number(e.target.value) : e.target.value)} />}
+    <span>{label}{required && <span className="portal-required" aria-hidden="true"> *</span>}</span>
+    {options ? <select id={`v2-${path}`} value={value ?? ''} disabled={readOnly} aria-invalid={!!error} aria-describedby={error ? `v2-error-${path}` : undefined} aria-required={required || undefined} onChange={e => onChange(e.target.value || undefined)}><option value="">Chọn thông tin</option>{Object.entries(options).map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select>
+      : type === 'textarea' ? <textarea id={`v2-${path}`} aria-required={required || undefined} rows={3} maxLength={4000} value={value ?? ''} readOnly={readOnly} aria-invalid={!!error} aria-describedby={error ? `v2-error-${path}` : undefined} onChange={e => onChange(e.target.value)} />
+        : <input id={`v2-${path}`} aria-required={required || undefined} type={type} inputMode={type === 'number' ? 'decimal' : undefined} step={type === 'number' ? 'any' : undefined} maxLength={4000} value={value ?? ''} readOnly={readOnly} aria-invalid={!!error} onChange={e => onChange(type === 'number' ? e.target.value === '' ? undefined : Number(e.target.value) : e.target.value)} />}
     {hint && <small>{hint}</small>}{error && <small id={`v2-error-${path}`} className="portal-error">{error}</small>}
   </label>;
 }
@@ -48,9 +48,9 @@ function show(value: unknown): string {
   return loanTypes[String(value)] || String(value);
 }
 
-export function PortalWizard({ initial, draftId, account, config, onBack, onSaved }: { initial: PortalRequest | null; draftId: string; account: PortalAccount; config: PortalFormConfig; onBack: () => void; onSaved: (request: PortalRequest) => void }) {
+export function PortalWizard({ initial, draftId, account, config, prefill, onBack, onSaved }: { initial: PortalRequest | null; draftId: string; account: PortalAccount; config: PortalFormConfig; prefill?: { reference: string; data: PortalData }; onBack: () => void; onSaved: (request: PortalRequest) => void }) {
   const [recovery] = useState(() => readRecovery(account.id, draftId));
-  const [initialState] = useState(() => initialDraftState(initial, recovery, canEditCycle(initial, config), { contactName: account.contactName, contactPhone: account.phone, contactEmail: account.email }));
+  const [initialState] = useState(() => initialDraftState(initial, recovery, canEditCycle(initial, config), { ...companyPrefill(prefill?.data), contactName: account.contactName, contactPhone: account.phone, contactEmail: account.email }));
   const [retainedRecovery, setRetainedRecovery] = useState(initialState.retainedRecovery);
   const [request, setRequest] = useState(initial);
   const [data, setData] = useState<PortalData>(initialState.data);
@@ -110,6 +110,7 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
     if (!editable) throw new Error('Bản nháp này hiện không mở chỉnh sửa.');
     if (conflict) throw new Error('Cần đối chiếu phiên bản trước khi lưu tiếp. Nội dung đang nhập được giữ lại.');
     if (requestRef.current && !dirtyRef.current) return requestRef.current;
+    if (!requestRef.current && !canCreateDraft(dataRef.current)) { setShowErrors(true); setStep(1); throw new Error('Nhập tên doanh nghiệp hoặc mã số thuế để lưu nháp.'); }
     const errors = validateV2(normalizeV2(dataRef.current)).filter(issue => issue.severity === 'error');
     if (errors.length) { setShowErrors(true); setStep(errors[0].step); throw new Error(errors[0].message); }
     const payload = normalizeV2(dataRef.current);
@@ -143,7 +144,7 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
   }
   async function navigate(next: number) {
     if (busy || next === step) return;
-    if (editable && !conflict) { const ok = await run(async () => { await persist(); }); if (!ok) return; }
+    if (editable && !conflict && (requestRef.current || canCreateDraft(dataRef.current))) { const ok = await run(async () => { await persist(); }); if (!ok) return; }
     setStep(next); setShowErrors(false); window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   async function latest() {
@@ -169,26 +170,30 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
     });
   }
   function field(key: keyof PortalData, options: Partial<FieldProps> = {}) {
-    return <Field key={key} path={key} label={labels[key]} value={data[key] as string | number | undefined} error={issueFor(key)} onChange={value => assign(key, value)} {...options} />;
+    return <Field key={key} path={key} label={labels[key]} value={data[key] as string | number | undefined} error={issueFor(key)} required={REQUIRED_FOR_SUBMIT.has(key)} onChange={value => assign(key, value)} {...options} />;
   }
   function planField(key: string, label: string, type = 'text') {
     return <Field path={`capitalPlan.${key}`} label={label} value={data.capitalPlan?.[key as keyof NonNullable<PortalData['capitalPlan']>] as string | number | undefined} type={type} error={issueFor(`capitalPlan.${key}`)} onChange={value => plan(key, value)} />;
   }
   return <section className="portal-wizard">
-    <button className="portal-link portal-back" disabled={busy || pendingFiles > 0} onClick={() => void run(async () => { if (dirtyRef.current) await persist(); onBack(); })}><ArrowLeft size={16} /> Danh sách đề nghị</button>
+    <button className="portal-link portal-back" disabled={busy || pendingFiles > 0} onClick={() => void run(async () => { if (dirtyRef.current) { if (requestRef.current || canCreateDraft(dataRef.current)) await persist(); else if (!window.confirm('Chưa có tên doanh nghiệp hoặc mã số thuế nên nội dung chưa được lưu. Rời khỏi biểu mẫu?')) return; else try { sessionStorage.removeItem(recoveryKey(account.id, draftId)); } catch { /* Không còn gì để khôi phục. */ } } onBack(); })}><ArrowLeft size={16} /> Danh sách đề nghị</button>
     <div className="v2-heading"><div><span className="portal-eyebrow">HỒ SƠ DOANH NGHIỆP · PHIÊN BẢN 2</span><h1>{request?.reference || 'Chuẩn bị đề nghị vay'}</h1><p>Khai thông tin từng bước, lưu nháp và tiếp tục khi thuận tiện.</p></div><span className="portal-status">{request?.status === 'RETURNED' ? 'Đang chỉnh sửa theo yêu cầu' : request?.status === 'DRAFT' || !request ? 'Bản nháp' : 'Đã khóa chỉnh sửa'}</span></div>
     {request&&request.status!=='DRAFT'&&config.intakeCycleEnabled&&<IntakeCyclePanel key={request.id} request={request} mode="portal" onUpdated={r=>{if(dirtyRef.current){setRemote(r);markConflict();}else{received(r,true);setNotice('Đã tải trạng thái mới nhất.');}}}/>}
     <nav className="v2-stepper" aria-label="Các bước chuẩn bị hồ sơ"><ol>{steps.map((name, index) => <li key={name} className={step === index + 1 ? 'active' : step > index + 1 ? 'visited' : ''}><button disabled={busy} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => void navigate(index + 1)}><span>{index + 1}</span><strong>{name}</strong></button></li>)}</ol><div className="v2-progress" role="progressbar" aria-label="Vị trí trong biểu mẫu" aria-valuemin={1} aria-valuemax={5} aria-valuenow={step}><span style={{ width: `${step * 20}%` }} /></div></nav>
-    <div className="v2-save-status" role="status"><span className={dirty ? 'unsaved' : 'saved'}>{busy ? 'Đang lưu / xử lý…' : dirty ? 'Có nội dung chưa lưu trên hệ thống' : 'Đã lưu trên hệ thống'}</span><span>Bước {step}/5 · Tiến độ khai báo, không phải kết quả xét duyệt</span></div>
-    {initialState.recoveryApplied && editable && <p className="portal-notice">Đã khôi phục nội dung chưa lưu trong tab này. File chưa tải lên cần được chọn lại; file đã lưu trên hệ thống vẫn được giữ nguyên.</p>}
+    <div className="v2-save-status" role="status"><span className={dirty ? 'unsaved' : request ? 'saved' : 'pending'}>{busy ? 'Đang lưu / xử lý…' : dirty ? 'Có thay đổi chưa lưu' : request ? 'Đã lưu trên hệ thống' : canCreateDraft(data) ? 'Chưa lưu lên hệ thống' : 'Chưa lưu · nhập tên doanh nghiệp hoặc mã số thuế để lưu nháp'}</span><span>Bước {step}/5 · Tiến độ khai báo, không phải kết quả xét duyệt</span></div>
+    {editable && (initialState.recoveryApplied || !initial || config.rolloutEnabled) && <ul className="portal-notice v2-notes">
+      {initialState.recoveryApplied && <li>Đã khôi phục nội dung chưa lưu trong tab này. File chưa tải lên cần được chọn lại; file đã lưu trên hệ thống vẫn được giữ nguyên.</li>}
+      {!initial && !initialState.recoveryApplied && <li>{prefill && canCreateDraft(companyPrefill(prefill.data)) ? `Đã điền sẵn thông tin doanh nghiệp từ đề nghị ${prefill.reference} và người liên hệ từ tài khoản. Kiểm tra lại trước khi gửi.` : 'Đã điền sẵn người liên hệ từ tài khoản. Kiểm tra lại trước khi gửi.'}</li>}
+      {config.rolloutEnabled && <li>Tiếp nhận vay vốn lưu động cho sản xuất, thương mại và dịch vụ, tối đa 10 tỷ đồng mỗi hồ sơ. Ngoài phạm vi này, vui lòng liên hệ ngân hàng.</li>}
+    </ul>}
     {retainedRecovery && <details className="portal-card v2-retained-recovery"><summary>Nội dung chưa gửi được giữ riêng trong tab</summary><p>Biểu mẫu bên dưới hiển thị bản đã lưu trên hệ thống. Nội dung sau đây chưa được ngân hàng tiếp nhận và không thay đổi bản đã gửi.</p><dl>{Object.keys(labels).filter(key => retainedRecovery.data[key as keyof PortalData] !== undefined).map(key => <div key={key}><dt>{labels[key]}</dt><dd>{show(retainedRecovery.data[key as keyof PortalData])}</dd></div>)}</dl></details>}
     {error && <p role="alert" className="portal-error portal-alert">{error}</p>}{storageError && <p role="alert" className="portal-error portal-alert">{storageError}</p>}{notice && <p role="status" className="portal-notice">{notice}</p>}
     {!editable && <p className="v2-policy"><LockKeyhole size={18} />{request && request.status !== 'DRAFT' ? 'Hồ sơ đã khóa, chỉ được xem.' : 'Chế độ lưu nháp V2 hiện chưa được bật hoặc phiên bản không tương thích. Nội dung đã lưu vẫn có thể xem.'}</p>}
-    {config.rolloutEnabled&&<p className="portal-notice">Tiếp nhận vay vốn lưu động cho sản xuất, thương mại và dịch vụ, tối đa 10 tỷ đồng mỗi hồ sơ. Ngoài phạm vi này, vui lòng liên hệ ngân hàng.</p>}
+    {!editable && config.rolloutEnabled&&<p className="portal-notice">Tiếp nhận vay vốn lưu động cho sản xuất, thương mại và dịch vụ, tối đa 10 tỷ đồng mỗi hồ sơ. Ngoài phạm vi này, vui lòng liên hệ ngân hàng.</p>}
     {Number(data.proposedAmount)>10000000000&&<p role="alert" className="portal-error">Số tiền vượt giới hạn tiếp nhận 10 tỷ đồng. Bạn có thể lưu nháp; cần điều chỉnh hoặc liên hệ ngân hàng trước khi gửi.</p>}
     {conflict && <section className="v2-conflict portal-card" role="alert"><h2>Bản nháp đã có phiên bản khác</h2><p>Nội dung đang nhập được giữ lại. Hãy đối chiếu trước khi lưu để tránh ghi đè thay đổi ở tab khác.</p><button className="btn btn-secondary" disabled={busy} onClick={() => void latest()}>Xem bản mới nhất</button>{remote && <><div className="v2-compare"><section><h3>Nội dung đang nhập</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(data[key as keyof PortalData])}</p>)}</section><section><h3>Bản trên hệ thống</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(remote.data[key as keyof PortalData])}</p>)}</section></div><div className="portal-actions"><button className="btn btn-secondary" onClick={() => useRemote(false)}>Dùng bản trên hệ thống</button>{canEditCycle(remote,config)&&<button className="btn btn-primary" onClick={() => useRemote(true)}>Giữ nội dung đang nhập để lưu tiếp</button>}</div></>}</section>}
     <fieldset className="portal-fieldset" disabled={busy || !editable || conflict}>
-      {step === 1 && <section className="portal-card v2-form-card"><div className="portal-card-title"><Building2 size={22} /><div><h2>Thông tin doanh nghiệp</h2><p>Thông tin phục vụ tiếp nhận. Mã số thuế không thay thế việc đối chiếu pháp lý của ngân hàng.</p></div></div><div className="portal-field-grid">
+      {step === 1 && <section className="portal-card v2-form-card"><div className="portal-card-title"><Building2 size={22} /><div><h2>Thông tin doanh nghiệp</h2><p>Thông tin phục vụ tiếp nhận. Mã số thuế không thay thế việc đối chiếu pháp lý của ngân hàng.</p></div></div><p className="v2-required-note">Ô có dấu <span className="portal-required">*</span> cần hoàn tất trước khi gửi. Có thể lưu nháp khi chưa điền đủ.</p><h3 className="v2-subheading">Doanh nghiệp</h3><div className="portal-field-grid">
         {field('companyName')}{field('taxCode', { readOnly:!!request?.submittedAt,hint: '10 hoặc 13 chữ số; thay chủ thể sau gửi cần lập đề nghị mới.' })}{field('companyType', { hint: 'Ví dụ: Công ty TNHH, Công ty cổ phần.' })}{field('industry')}
         {data.businessScope==='SERVICES'&&<Field path="serviceProofMode" label="Căn cứ doanh thu dịch vụ" value={data.serviceProofMode} options={{CONTRACT_OR_ORDER:'Hợp đồng hoặc đơn đặt dịch vụ',ACCEPTANCE_INVOICE:'Nghiệm thu kèm hóa đơn'}} onChange={v=>assign('serviceProofMode',v)}/>}
         <Field path="businessScope" label="Phạm vi hoạt động" value={data.businessScope} options={config.rolloutEnabled?{MANUFACTURING:'Sản xuất',TRADING:'Thương mại',SERVICES:'Dịch vụ',OTHER:'Khác / cần tư vấn'}:{MANUFACTURING:'Doanh nghiệp sản xuất',OTHER:'Hoạt động khác'}} onChange={value=>assign('businessScope',value)}/>
@@ -196,9 +201,9 @@ export function PortalWizard({ initial, draftId, account, config, onBack, onSave
         {data.representative?.mode==='AUTHORIZED'&&<Field path="representative.name" label="Họ tên người được ủy quyền" value={data.representative.name} onChange={value=>assign('representative',{...data.representative,name:value})}/>}
         {field('establishedDate', { type: 'date', onChange: value => change({ ...dataRef.current, establishedDate: value as string | undefined, establishedYear: value ? Number(String(value).slice(0, 4)) : undefined }) })}
         {!data.establishedDate && field('establishedYear', { type: 'number', hint: 'Nhập năm thực tế nếu chưa biết ngày chính xác; không tạo ngày giả.' })}
-        {field('address')}{field('representativeName')}{field('phone', { type: 'tel' })}{field('contactName', { hint: 'Người phối hợp chuẩn bị hồ sơ, có thể khác người đại diện pháp luật.' })}{field('contactPosition')}{field('contactPhone', { type: 'tel' })}{field('contactEmail', { type: 'email' })}{field('annualRevenue', { type: 'number' })}{field('revenuePeriod', { hint: 'Năm lịch hoàn thành gần nhất, dạng YYYY; không quy đổi tháng/quý.' })}{field('charterCapital', { type: 'number' })}
-      </div><p className="v2-footnote">Có thể lưu khi chưa điền đủ. Chính sách mô phỏng áp dụng năm lịch hoàn thành gần nhất; ví dụ gửi năm 2026 sử dụng năm 2025.</p></section>}
-      {step === 2 && <section className="portal-card v2-form-card"><h2>Nhu cầu vay vốn</h2><p>Ghi rõ mục đích và thời điểm cần vốn để ngân hàng có cơ sở tiếp nhận.</p>{editable&&data.loanType&&!supportedTypes.includes(data.loanType)&&<p role="alert" className="portal-error">Loại vay đang lưu chưa được tiếp nhận trên cổng V2. Chọn vốn lưu động hoặc liên hệ ngân hàng; dữ liệu cũ được giữ để đối chiếu.</p>}<div className="portal-field-grid">{field('loanType', { options: productOptions })}{field('proposedAmount', { type: 'number', hint: 'Dùng chung cho phương án vốn ở bước 3.' })}{field('loanPurpose', { type: 'textarea', hint: 'Ví dụ: Mua nguyên vật liệu để thực hiện đơn hàng sản xuất.' })}{field('loanTermMonths', { type: 'number' })}{field('neededAt', { type: 'date' })}{field('preferredBranch', { hint: 'Tùy chọn; đây là mong muốn, chưa phải xác nhận ngân hàng tiếp nhận.' })}
+        {field('address')}{field('representativeName')}{field('phone', { type: 'tel' })}{field('annualRevenue', { type: 'number' })}{field('revenuePeriod', { hint: 'Năm lịch hoàn thành gần nhất, dạng YYYY; không quy đổi tháng/quý.' })}{field('charterCapital', { type: 'number' })}
+      </div><h3 className="v2-subheading">Người liên hệ hồ sơ</h3><div className="portal-field-grid">{field('contactName', { hint: 'Người phối hợp chuẩn bị hồ sơ, có thể khác người đại diện pháp luật.' })}{field('contactPosition')}{field('contactPhone', { type: 'tel' })}{field('contactEmail', { type: 'email' })}</div><p className="v2-footnote">Có thể lưu khi chưa điền đủ. Chính sách mô phỏng áp dụng năm lịch hoàn thành gần nhất; ví dụ gửi năm 2026 sử dụng năm 2025.</p></section>}
+      {step === 2 && <section className="portal-card v2-form-card"><h2>Nhu cầu vay vốn</h2><p>Ghi rõ mục đích và thời điểm cần vốn để ngân hàng có cơ sở tiếp nhận.</p><p className="v2-required-note">Ô có dấu <span className="portal-required">*</span> cần hoàn tất trước khi gửi.</p>{editable&&data.loanType&&!supportedTypes.includes(data.loanType)&&<p role="alert" className="portal-error">Loại vay đang lưu chưa được tiếp nhận trên cổng V2. Chọn vốn lưu động hoặc liên hệ ngân hàng; dữ liệu cũ được giữ để đối chiếu.</p>}<div className="portal-field-grid">{field('loanType', { options: productOptions })}{field('proposedAmount', { type: 'number', hint: 'Dùng chung cho phương án vốn ở bước 3.' })}{field('loanPurpose', { type: 'textarea', hint: 'Ví dụ: Mua nguyên vật liệu để thực hiện đơn hàng sản xuất.' })}{field('loanTermMonths', { type: 'number' })}{field('neededAt', { type: 'date' })}{field('preferredBranch', { hint: 'Tùy chọn; đây là mong muốn, chưa phải xác nhận ngân hàng tiếp nhận.' })}
         <Field path="collateral.mode" label="Hình thức bảo đảm dự kiến" value={data.collateral?.mode} options={{ PROPOSED: 'Có tài sản bảo đảm', NONE_REQUESTED: 'Đề nghị không bảo đảm', UNDECIDED: 'Chưa xác định' }} onChange={value => assign('collateral', { ...data.collateral, mode: value })} />
         {data.collateral?.mode === 'PROPOSED' && <Field path="collateral.description" label="Thông tin tài sản dự kiến" value={data.collateral.description} type="textarea" hint="Mô tả loại tài sản và giấy tờ đang có; chưa cần tự xác định giá trị thẩm định." onChange={value => assign('collateral', { ...data.collateral, description: value })} />}
         {data.collateral?.mode === 'NONE_REQUESTED' && <p className="v2-guidance">Đã ghi nhận đề nghị không bảo đảm. Bước chuẩn bị không bắt tải giấy tờ tài sản; ngân hàng sẽ xem xét theo chính sách được phê duyệt.</p>}

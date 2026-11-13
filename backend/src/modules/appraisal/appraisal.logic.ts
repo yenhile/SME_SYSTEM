@@ -4,7 +4,34 @@ import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { uploadRoot } from '../../common/storage';
 import { companyForLoan } from '../companies/company-snapshot';
-export const REPORT_FIELDS = ['legalAssessment','businessAssessment','financialAssessment','repaymentSource','collateralAssessment','risks','recommendation','proposedConditions'] as const;
+export const REPORT_FIELDS = ['legalAssessment','businessAssessment','financialAssessment','repaymentSource','collateralAssessment','risks','recommendation','proposedInterestRate','proposedConditions'] as const;
+const RATE_TEXT = /^\d{1,3}(\.\d{1,2})?$/;
+const RATE_REASON_MAX = 2000;
+export const isRateText = (text: string) => RATE_TEXT.test(text) && Number(text) <= 100;
+/** Lãi suất %/năm từ 0 đến 100, tối đa 2 chữ số thập phân. */
+export const isValidRate = (rate: unknown): rate is number =>
+  typeof rate === 'number' && Number.isFinite(rate) && rate >= 0 && rate <= 100 && Math.abs(rate * 100 - Math.round(rate * 100)) < 1e-6;
+export function proposedRateOf(content: unknown): number | null {
+  const text = (content as Record<string, unknown> | null)?.proposedInterestRate;
+  return typeof text === 'string' && isRateText(text) ? Number(text) : null;
+}
+/** Thẩm quyền chọn lãi suất khác mức CBTD đề xuất phải ghi lý do; tờ trình không có mức đề xuất thì không cần. */
+export function rateDecisionView(payload: unknown): { proposedInterestRate: number | null; interestRateReason: string | null; band: Record<string, unknown> | null } | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const { proposedInterestRate, interestRateReason, band } = payload as Record<string, unknown>;
+  return {
+    proposedInterestRate: typeof proposedInterestRate === 'number' ? proposedInterestRate : null,
+    interestRateReason: typeof interestRateReason === 'string' ? interestRateReason : null,
+    band: band && typeof band === 'object' ? band as Record<string, unknown> : null,
+  };
+}
+export function decisionRateReason(rate: number, proposed: number | null, reason: unknown): string | null {
+  if (proposed === null || proposed === rate) return null;
+  const text = typeof reason === 'string' ? reason.trim() : '';
+  if (!text) throw new BadRequestException(`Lãi suất phê duyệt khác lãi suất CBTD đề xuất (${proposed}%/năm), cần ghi lý do.`);
+  if (text.length > RATE_REASON_MAX) throw new BadRequestException(`Lý do tối đa ${RATE_REASON_MAX} ký tự.`);
+  return text;
+}
 export function validateReport(value: unknown, complete = false): Record<string, string> {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(k => !REPORT_FIELDS.includes(k as any))) throw new BadRequestException('Nội dung tờ trình không hợp lệ.');
   const result: Record<string,string> = {};
@@ -13,6 +40,7 @@ export function validateReport(value: unknown, complete = false): Record<string,
     if (v !== undefined && (typeof v !== 'string' || v.length > 10000)) throw new BadRequestException(`Nội dung không hợp lệ: ${field}.`);
     if (complete && field !== 'proposedConditions' && !v?.trim()) throw new BadRequestException('Cần hoàn tất các phần phân tích và kết luận trước khi trình.');
     result[field] = v?.trim() ?? '';
+    if (field === 'proposedInterestRate' && result[field] && !isRateText(result[field])) throw new BadRequestException('Lãi suất đề xuất phải từ 0 đến 100%/năm, tối đa 2 chữ số thập phân.');
   }
   return result;
 }
