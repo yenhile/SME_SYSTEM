@@ -110,7 +110,7 @@ export class WorkflowService {
         ...(dto.targetStatus === LoanStatus.REJECTED ? { rejectionReasonCode: dto.rejectionReasonCode, rejectionNote: dto.rejectionNote } : {}),
       } });
     };
-    const updated = transaction ? await run(transaction) : await this.prisma.$transaction(run);
+    const updated = transaction ? await run(transaction) : await this.prisma.$transaction(run, { timeout: 30000 });
     if (!transaction && updated.currentStage !== StageCode.HOAN_TAT) {
       try { await this.predictionService.predictForApplication(applicationId); }
       catch (err) { this.logger.warn(`Không cập nhật được dự báo AI: ${(err as Error).message}`); }

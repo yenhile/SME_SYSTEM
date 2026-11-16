@@ -68,7 +68,7 @@ async function main(){
   async function openLoan(username){
     await navigate(site+'/');await evaluate('localStorage.removeItem("sme_token");localStorage.removeItem("sme_active_role")');await navigate(site+'/?rollout='+randomUUID());
     await input('.login-card input[autocomplete=username]',username);await input('.login-card input[type=password]',f.password);await click('Đăng nhập');await wait('document.querySelector(".account-trigger")','staff signed in');
-    await evaluate('document.querySelector("button[data-tab=loans]").click()');await click('Danh sách bảng');
+    await evaluate('document.querySelector("button[data-tab=loans]").click()');
     await wait('[...document.querySelectorAll("tbody tr")].some(r=>r.textContent.includes('+JSON.stringify(loan.applicationCode)+'))','loan row');
     await evaluate('[...document.querySelectorAll("tbody tr")].find(r=>r.textContent.includes('+JSON.stringify(loan.applicationCode)+')).click()');
     await wait('document.querySelector(".appraisal-panel textarea")','report panel');

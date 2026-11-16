@@ -72,3 +72,51 @@ test('SMTP mailer delivers real verification mail to a loopback inbox', async()=
     await mailbox.close();
   }
 });
+
+const MAIL_KEYS=['NODE_ENV','MAIL_PROVIDER','BREVO_API_KEY','MAIL_FROM_EMAIL','MAIL_FROM_NAME'];
+async function withMailEnv(env,fetchImpl,run) {
+  const saved=Object.fromEntries(MAIL_KEYS.map(k=>[k,process.env[k]])),savedFetch=globalThis.fetch;
+  for(const k of MAIL_KEYS) delete process.env[k];
+  Object.assign(process.env,env);
+  if(fetchImpl) globalThis.fetch=fetchImpl;
+  try {await run();}
+  finally {
+    globalThis.fetch=savedFetch;
+    for(const [k,v] of Object.entries(saved)) {if(v===undefined) delete process.env[k];else process.env[k]=v;}
+  }
+}
+const brevoEnv={MAIL_PROVIDER:'brevo',BREVO_API_KEY:'xkeysib-unit-test',MAIL_FROM_EMAIL:'noreply@sme-loan.test',MAIL_FROM_NAME:'SME Loan'};
+
+test('Brevo mailer posts the verification code to the transactional email API', async()=> {
+  const {PortalMailer}=require('../dist/modules/portal/portal.mailer');
+  const calls=[];
+  await withMailEnv(brevoEnv,async(url,init)=>{calls.push({url,init});return new Response(JSON.stringify({messageId:'<id@brevo>'}),{status:201});},async()=>{
+    await new PortalMailer().sendCode('unit@example.test','654321');
+  });
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].url,'https://api.brevo.com/v3/smtp/email');
+  assert.equal(calls[0].init.method,'POST');
+  assert.equal(calls[0].init.headers['api-key'],'xkeysib-unit-test');
+  const body=JSON.parse(calls[0].init.body);
+  assert.deepEqual(body.sender,{email:'noreply@sme-loan.test',name:'SME Loan'});
+  assert.deepEqual(body.to,[{email:'unit@example.test'}]);
+  assert.ok(body.textContent.includes('654321') && body.textContent.includes('10 minutes'));
+});
+
+test('Brevo rejection surfaces as a delivery failure without leaking the API key', async()=> {
+  const {PortalMailer}=require('../dist/modules/portal/portal.mailer');
+  await withMailEnv(brevoEnv,async()=>new Response(JSON.stringify({code:'unauthorized',message:'Key not found'}),{status:401}),async()=>{
+    await assert.rejects(new PortalMailer().sendCode('unit@example.test','654321'),e=>e.getStatus()===503 && !JSON.stringify(e.getResponse()).includes('xkeysib'));
+    await assert.rejects(new PortalMailer().sendPasswordReset('unit@example.test','http://x'),e=>e.getStatus()===503);
+    await assert.rejects(new PortalMailer().sendSupplementReminder('unit@example.test','HS-1'),e=>e.getStatus()===503);
+  });
+});
+
+test('production refuses to send without Brevo configuration', async()=> {
+  const {PortalMailer}=require('../dist/modules/portal/portal.mailer');
+  let called=false;const spy=async()=>{called=true;return new Response('{}',{status:201});};
+  for(const env of [{NODE_ENV:'production'},{NODE_ENV:'production',MAIL_PROVIDER:'local'},{NODE_ENV:'production',MAIL_PROVIDER:'brevo',MAIL_FROM_EMAIL:'noreply@sme-loan.test'},{NODE_ENV:'production',MAIL_PROVIDER:'brevo',BREVO_API_KEY:'xkeysib-unit-test'}]) {
+    await withMailEnv(env,spy,async()=>{await assert.rejects(new PortalMailer().sendCode('unit@example.test','654321'),e=>e.getStatus()===503);});
+  }
+  assert.equal(called,false);
+});

@@ -210,6 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSessionNotice('');
     setSessionError('');
     const result = await api.post<{ accessToken: string; user: User }>('/auth/login', { username, password });
+    if (window.location.pathname !== '/' || window.location.search) window.history.replaceState(null, '', '/');
     acceptUser(result.user);
     setAuthToken(result.accessToken);
   };

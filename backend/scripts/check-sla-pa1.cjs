@@ -10,6 +10,15 @@ const { startIsolated } = require('./check-portal-v2-intake.cjs');
 
 const root = path.resolve(__dirname, '..');
 const vn = (date, time) => new Date(`${date}T${time}:00+07:00`);
+// Dự báo tính giờ đã dùng tới thời điểm hiện tại; trong lúc gọi, "hiện tại" là một mốc nằm trong kỳ của lịch giả lập.
+async function atClock(clock, fn) {
+  const RealDate = Date;
+  global.Date = class extends RealDate {
+    constructor(...args) { if (args.length) super(...args); else super(clock.getTime()); }
+    static now() { return clock.getTime(); }
+  };
+  try { return await fn(); } finally { global.Date = RealDate; }
+}
 
 function applySlaSql() {
   for (const file of ['prisma/sla-pa1.sql', 'prisma/document-codes.sql']) {
@@ -337,10 +346,11 @@ async function runChecks(h) {
     const predictionService = app.get(PredictionService, { strict: false });
 
     // --- 13. Quy tắc ML v4: dự báo theo giờ làm việc khi công đoạn tính theo PA1; cách tính cũ thì không dự báo ---
-    const pa1Prediction = await predictionService.predictForApplication(loop.id);
+    const predictionClock = vn('2026-10-28', '15:00');
+    const pa1Prediction = await atClock(predictionClock, () => predictionService.predictForApplication(loop.id));
     ok(!pa1Prediction.unavailable && pa1Prediction.stage === 'THAM_DINH', 'PA1 loan: manual prediction runs on the open stage (needs ML service)');
     ok(await db.delayPrediction.count({ where: { applicationId: loop.id } }) >= 1, 'PA1 loan: prediction stored');
-    const legacyPrediction = await predictionService.predictForApplication(old.id);
+    const legacyPrediction = await atClock(predictionClock, () => predictionService.predictForApplication(old.id));
     ok(!legacyPrediction.unavailable, 'loan whose Reception used the old calculation but whose open stage is PA1 is predicted by the open stage');
 
     // --- 14. Chi tiết hồ sơ: trạng thái SLA và số giờ đang chạy ---
@@ -426,4 +436,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(e => { console.error('SLA_PA1_FAILED:', e.message); process.exitCode = 1; });
-module.exports = { runChecks };
+module.exports = { runChecks, atClock };

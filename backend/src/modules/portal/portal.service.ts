@@ -1,14 +1,13 @@
 import {transferPortal} from '../assignments/assignment.transactions';
 import {officerWorkloads} from '../assignments/officer-workloads';
 import {assertNoCoordinationConflict,obsoleteCoordination,assertNoCompanyConflict} from '../assignments/assignment-coordination';
-import { uploadRoot } from '../../common/storage';
+import { readStored, removeStored, uploadRoot, writeStored } from '../../common/storage';
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { nextDocumentCode } from '../../common/document-codes';
 import { Prisma, DocumentType, LoanStatus } from '@prisma/client';
 import { randomUUID, createHash } from 'node:crypto';
-import { mkdir, writeFile, unlink, readFile } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { basename } from 'node:path';
 import { groups, PortalFile, validatePortalData, validatePortalFile } from './portal.validation';
 import { assertPreviewEnabled, validateDraftV2, validateCoverage, getFormConfig, checklistFor, LEGACY_CHECKLIST_VERSION, PREVIEW_CHECKLIST_VERSION } from './portal.foundation';
 import { evaluatePolicy, resolveTestPolicy, type PortalPolicyContext } from './portal.policy';
@@ -169,7 +168,7 @@ export class PortalService {
     if(v2 && (typeof options.clientUploadId!=='string' || !/^[a-zA-Z0-9_-]{8,100}$/.test(options.clientUploadId))) throw new BadRequestException('Cần clientUploadId hợp lệ để tải tệp an toàn khi thử lại.');
     const meta=await validatePortalFile(group,file);
     const contentHash=createHash('sha256').update(file.buffer).update(JSON.stringify({group,coverage,fileName:meta.fileName,supersedesId:supersedesId??null})).digest('hex');
-    const key=randomUUID();await mkdir(this.dir,{recursive:true});await writeFile(join(this.dir,key),file.buffer,{flag:'wx'});
+    const key=randomUUID();await writeStored(this.dir,key,file.buffer);
     let retained=false;
     try {
       return await this.prisma.$transaction(async tx=> {
@@ -195,7 +194,7 @@ export class PortalService {
         return tx.portalRequest.findUniqueOrThrow({where:{id},include});
       });
     } catch(e) {retained=false;throw e;}
-    finally {if(!retained) await unlink(join(this.dir,key)).catch(()=>undefined);}
+    finally {if(!retained) await removeStored(this.dir,key).catch(()=>undefined);}
   }
   async deleteDocument(id:string,accountId:string,documentId:string,expectedRevision?:number) {
     const result=await this.prisma.$transaction(async tx=> {
@@ -209,7 +208,7 @@ export class PortalService {
       await tx.portalRequest.update({where:{id},data:{revision:(r.revision??0)+1}});
       return {document:d,keep:r.formVersion===2,request:await tx.portalRequest.findUniqueOrThrow({where:{id},include})};
     });
-    if(!result.keep) await unlink(join(this.dir,result.document.filePath)).catch(()=>undefined);
+    if(!result.keep) await removeStored(this.dir,result.document.filePath).catch(()=>undefined);
     return result.request;
   }
   async documentVersions(id:string,accountId:string,documentId:string) {
@@ -239,7 +238,7 @@ export class PortalService {
     const d=await this.prisma.portalDocument.findFirst({where:{id:documentId,requestId:id}});
     if(!d || basename(d.filePath)!==d.filePath) throw new NotFoundException('Không tìm thấy tệp.');
     let buffer:Buffer;
-    try {buffer=await readFile(join(this.dir,d.filePath));}
+    try {buffer=await readStored(this.dir,d.filePath);}
     catch {throw new NotFoundException('Không tìm thấy tệp đã lưu.');}
     if(frozen && (buffer.length!==frozen.fileSize || createHash('sha256').update(buffer).digest('hex')!==frozen.sha256
       || !sameJson({id:d.id,documentGroup:d.documentGroup,fileName:d.fileName,fileSize:d.fileSize,mimeType:d.mimeType,uploadedAt:new Date(d.uploadedAt).toISOString(),coverage:d.coverage,version:d.version,contentHash:d.contentHash??null},
@@ -249,7 +248,7 @@ export class PortalService {
   private async physicalFiles(documents:any[]) {
     return Promise.all(documents.map(async d=>{
       if(basename(d.filePath)!==d.filePath) throw new ConflictException('Đường dẫn chứng từ không hợp lệ.');
-      let buffer:Buffer;try {buffer=await readFile(join(this.dir,d.filePath));} catch {throw new ConflictException('Không tìm thấy chứng từ đã lưu; chưa thể gửi hoặc tiếp nhận.');}
+      let buffer:Buffer;try {buffer=await readStored(this.dir,d.filePath);} catch {throw new ConflictException('Không tìm thấy chứng từ đã lưu; chưa thể gửi hoặc tiếp nhận.');}
       if(buffer.length!==d.fileSize) throw new ConflictException('Dung lượng chứng từ không đồng nhất.');
       await validatePortalFile(d.documentGroup,{buffer,originalname:d.fileName,size:buffer.length,mimetype:d.mimeType});
       return {...d,sha256:createHash('sha256').update(buffer).digest('hex')};

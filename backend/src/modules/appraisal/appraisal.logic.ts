@@ -1,8 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { uploadRoot } from '../../common/storage';
+import { readStored, uploadRoot } from '../../common/storage';
 import { companyForLoan } from '../companies/company-snapshot';
 export const REPORT_FIELDS = ['legalAssessment','businessAssessment','financialAssessment','repaymentSource','collateralAssessment','risks','recommendation','proposedInterestRate','proposedConditions'] as const;
 const RATE_TEXT = /^\d{1,3}(\.\d{1,2})?$/;
@@ -49,24 +48,23 @@ export async function reportEvidence(tx: any, loan: any) {
   await tx.$queryRaw`SELECT id FROM companies WHERE id=${loan.companyId} FOR SHARE`;
   const company = companyForLoan(loan,await tx.company.findUnique({where:{id:loan.companyId}}));
   const docs = await tx.document.findMany({where:{applicationId:loan.id},orderBy:{id:'asc'}});
-  const documents = [];
-  for (const d of docs) {
-    if (basename(d.filePath) !== d.filePath) throw new ConflictException('Tài liệu chưa có tệp thực để làm căn cứ tờ trình.');
+  for (const d of docs) if (basename(d.filePath) !== d.filePath) throw new ConflictException('Tài liệu chưa có tệp thực để làm căn cứ tờ trình.');
+  const documents = await Promise.all(docs.map(async (d: any) => {
     let bytes: Buffer;
-    try { bytes = await readFile(join(uploadRoot(),d.filePath)); }
+    try { bytes = await readStored(uploadRoot(),d.filePath); }
     catch { throw new ConflictException('Không đọc được tài liệu làm căn cứ tờ trình.'); }
     if (bytes.length !== d.fileSize) throw new ConflictException('Tài liệu làm căn cứ đã thay đổi.');
-    documents.push({id:d.id,documentType:d.documentType,fileName:d.fileName,fileSize:d.fileSize,sha256:createHash('sha256').update(bytes).digest('hex')});
-  }
+    return {id:d.id,documentType:d.documentType,fileName:d.fileName,fileSize:d.fileSize,sha256:createHash('sha256').update(bytes).digest('hex')};
+  }));
   const supplements = await tx.supplementRequest.findMany({where:{applicationId:loan.id},orderBy:{id:'asc'}});
-  for(const request of supplements) for(const file of request.portalSupplement?.files ?? []) {
-    if(!file.submittedAt) continue;
-    if(basename(file.filePath)!==file.filePath) throw new ConflictException('Đường dẫn căn cứ bổ sung không hợp lệ.');
+  const submitted = supplements.flatMap((request: any) => (request.portalSupplement?.files ?? []).filter((file: any) => file.submittedAt));
+  for (const file of submitted) if(basename(file.filePath)!==file.filePath) throw new ConflictException('Đường dẫn căn cứ bổ sung không hợp lệ.');
+  await Promise.all(submitted.map(async (file: any) => {
     let bytes:Buffer;
-    try {bytes=await readFile(join(uploadRoot(),'supplements',file.filePath));}
+    try {bytes=await readStored(join(uploadRoot(),'supplements'),file.filePath);}
     catch {throw new ConflictException('Không đọc được căn cứ bổ sung.');}
     if(bytes.length!==file.fileSize || createHash('sha256').update(bytes).digest('hex')!==file.sha256) throw new ConflictException('Căn cứ bổ sung đã thay đổi.');
-  }
+  }));
   return JSON.parse(JSON.stringify({company,proposedAmount:String(loan.proposedAmount),officialAmount:String(loan.officialAmount),loanPurpose:loan.loanPurpose,
     loanType:loan.loanType,loanTermMonths:loan.loanTermMonths,documents,
     supplements:supplements.map((s:any)=>({id:s.id,status:s.status,portalSupplement:s.portalSupplement,requestContent:s.requestContent,resolvedAt:s.resolvedAt}))}));

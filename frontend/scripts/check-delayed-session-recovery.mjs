@@ -20,6 +20,8 @@ function createAuthContextHarness(customClient, customSource = null) {
   win.addEventListener = win.addEventListener.bind(win);
   win.removeEventListener = win.removeEventListener.bind(win);
   win.dispatchEvent = win.dispatchEvent.bind(win);
+  win.location = { pathname: '/', search: '' };
+  win.history = { replaceState: (_state, _title, url) => { win.location = { pathname: url, search: '' }; } };
 
   const module = { exports: {} };
   const fn = new Function('require', 'module', 'exports', 'window', 'localStorage', outputText);

@@ -58,7 +58,7 @@ async function staffOpen(f,code){
     await input('.login-card input[autocomplete=username]',f.officerUsername);await input('.login-card input[type=password]',f.password);await click('Đăng nhập');
     await wait(`document.querySelector('.account-trigger')`,'actual staff login');check(true,'actual CBTD login');
   }
-  await evaluate(`document.querySelector('button[data-tab=loans]').click()`);await wait(`document.querySelector('.view-switcher')`,'loan list');await click('Danh sách bảng');
+  await evaluate(`document.querySelector('button[data-tab=loans]').click()`);await wait(`document.querySelector('tbody tr')`,'loan list');
   await wait(`[...document.querySelectorAll('tbody tr')].some(row=>row.textContent.includes(${JSON.stringify(code)}))`,'fixture loan row');
   await evaluate(`[...document.querySelectorAll('tbody tr')].find(row=>row.textContent.includes(${JSON.stringify(code)})).click()`);
   await wait(`document.querySelector('.modal-content')`,'loan detail');

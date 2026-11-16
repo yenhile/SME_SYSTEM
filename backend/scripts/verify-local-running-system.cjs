@@ -5,6 +5,7 @@ const { randomUUID, createHash } = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 const { PDFDocument } = require('pdf-lib');
+const { assertActiveBandResponse } = require('./rate-band-fixtures.cjs');
 
 const BASE_URL = 'http://localhost:3000/api';
 const FRONTEND_URL = 'http://localhost:5173';
@@ -18,6 +19,8 @@ const STAFF_PASSWORD = '123456';
 const DN_PASSWORD = 'LocalTestDN123!';
 const SYNTHETIC_TAX = '9990000001';
 const SYNTHETIC_DN_EMAIL = 'local_test_dn@example.test';
+// Lãi suất đề xuất và phê duyệt của hồ sơ thử; phải nằm trong khung hiệu lực của Vốn lưu động.
+const RATE = 8.5;
 
 async function generatePdf(text) {
   const doc = await PDFDocument.create();
@@ -119,6 +122,11 @@ async function main() {
     checks++;
     console.log(`  [PASS ${checks}] ${desc}`);
   };
+
+  // Khung lãi suất Vốn lưu động phải có trước khi ghi dữ liệu thử; script không tự tạo khung.
+  const adminLogin = expectStatus(await apiCall('/auth/login', {}, { username: 'test_admin', password: STAFF_PASSWORD }), [200, 201], 'Login staff test_admin');
+  assertActiveBandResponse(await apiCall('/admin/interest-rate-bands', { token: adminLogin.accessToken, role: 'ADMIN' }), 'VAY_VON_LUU_DONG', RATE);
+  markCheck(`Có khung lãi suất hiệu lực cho Vốn lưu động chứa ${RATE}%/năm`);
 
   // Pre-clean any leftover synthetic test data
   await cleanupTestData();
@@ -396,7 +404,7 @@ async function main() {
     collateralAssessment: 'Khoản vay vốn lưu động không yêu cầu tài sản bảo đảm bổ sung.',
     risks: 'Rủi ro biến động giá thép và vật liệu đầu vào.',
     recommendation: 'Đề xuất phê duyệt cho vay hạn mức 150.000.000 VND, thời hạn 12 tháng.',
-    proposedInterestRate: '8.5',
+    proposedInterestRate: String(RATE),
     proposedConditions: 'Giải ngân theo tiến độ đơn hàng và sao kê tài khoản thanh toán định kỳ.',
   };
 
@@ -470,7 +478,7 @@ async function main() {
     targetStage: 'HOAN_TAT',
     targetStatus: 'APPROVED',
     approvedAmount: 140000000,
-    interestRate: 8.5,
+    interestRate: RATE,
     reportVersionId: versionIdV2,
     notes: 'Đồng ý phê duyệt cấp tín dụng theo tờ trình thẩm định v2.',
   });

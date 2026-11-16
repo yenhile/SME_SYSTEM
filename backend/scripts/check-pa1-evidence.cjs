@@ -4,7 +4,7 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { PrismaClient } = require('@prisma/client');
 const { startIsolated } = require('./check-portal-v2-intake.cjs');
-const { runChecks } = require('./check-sla-pa1.cjs');
+const { runChecks, atClock } = require('./check-sla-pa1.cjs');
 
 const root = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(root, '..');
@@ -88,11 +88,13 @@ async function main() {
     const REPORT_FIELDS = ['legalAssessment','businessAssessment','financialAssessment','repaymentSource','collateralAssessment','risks','recommendation','proposedInterestRate','proposedConditions'];
     const content = Object.fromEntries(REPORT_FIELDS.map(k => [k, k === 'proposedInterestRate' ? '8' : 'Synthetic evidence: ' + k]));
     
+    // Lịch đang kích hoạt là lịch giả lập; trình và làm rõ tờ trình diễn ra trong kỳ của lịch đó.
+    const clock = new Date('2026-11-02T09:00:00+07:00');
     // Chuyển sang Thẩm định bằng cách submit Tờ trình Bản 1 (tự động chuyển công đoạn sang THAM_DINH)
     let rep = await appraisal.view(loan.id);
     await appraisal.mutate(loan.id, 'DRAFT_SAVED', { expectedRevision: rep?.revision ?? 0, clientRequestId: randomUUID(), content }, { id: cbtd.id, activeRole: 'CBTD' });
     rep = await appraisal.view(loan.id);
-    await appraisal.mutate(loan.id, 'SUBMITTED', { expectedRevision: rep.revision, clientRequestId: randomUUID() }, { id: cbtd.id, activeRole: 'CBTD' });
+    await atClock(clock, () => appraisal.mutate(loan.id, 'SUBMITTED', { expectedRevision: rep.revision, clientRequestId: randomUUID() }, { id: cbtd.id, activeRole: 'CBTD' }));
 
     // Kiểm tra lịch sử công đoạn Thẩm định
     let stageHistory = await db.applicationStageHistory.findFirst({
@@ -106,7 +108,7 @@ async function main() {
 
     // Thẩm quyền yêu cầu LÀM RÕ NỘI BỘ (Clarification)
     rep = await appraisal.view(loan.id);
-    await appraisal.mutate(loan.id, 'CLARIFICATION_REQUESTED', { expectedRevision: rep.revision, clientRequestId: randomUUID(), message: 'Can lam ro nguon tra no' }, { id: approver.id, activeRole: 'THAM_QUYEN' });
+    await atClock(new Date(clock.getTime() + 3600000), () => appraisal.mutate(loan.id, 'CLARIFICATION_REQUESTED', { expectedRevision: rep.revision, clientRequestId: randomUUID(), message: 'Can lam ro nguon tra no' }, { id: approver.id, activeRole: 'THAM_QUYEN' }));
 
     // Kiểm tra: Làm rõ nội bộ KHÔNG ĐƯỢC dừng SLA!
     stageHistory = await db.applicationStageHistory.findFirst({
