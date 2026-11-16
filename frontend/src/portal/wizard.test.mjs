@@ -118,3 +118,9 @@ test('fields the bank checks before submission are marked as required',()=>{
   for(const key of ['companyName','taxCode','industry','establishedYear','annualRevenue','revenuePeriod','charterCapital','representativeName','phone','address','loanPurpose','loanType','proposedAmount','loanTermMonths']) assert.ok(draftRules.REQUIRED_FOR_SUBMIT.has(key),key);
   assert.equal(draftRules.REQUIRED_FOR_SUBMIT.has('contactPosition'),false);
 });
+
+test('tax code check digit follows the Vietnamese rule', async () => {
+  const { hasValidTaxCodeChecksum } = await import('./wizard.ts');
+  for (const code of ['0300588569', '0101248141', '0300588569001']) assert.equal(hasValidTaxCodeChecksum(code), true, code);
+  for (const code of ['0300588568', '0319876543', '1234567890', '0300588569000', '03005885']) assert.equal(hasValidTaxCodeChecksum(code), false, code);
+});

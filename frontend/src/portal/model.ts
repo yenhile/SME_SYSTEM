@@ -31,7 +31,7 @@ export interface ApprovedIntakeAssessment {
   canSubmit: false; canAccept: false; businessValidity: 'NOT_REVIEWED'; creditDecision: null; note: string;
 }
 export interface IntakeUser { id: string; fullName: string; username: string }
-export interface PortalRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'RETURNED' | 'ACCEPTED'; data: PortalData; documents: PortalDocument[]; submittedAt?: string; acceptedAt?: string; loanId?: string; assignedTo?: string | null; assignmentVersion?:number; currentLoanOfficer?:IntakeUser|null;coordinationRestrictions?:{writeBlocked:boolean;decisionBlocked:boolean}; assignmentReceipt?:{id:string;toUserId:string;replayed:boolean}; assignedBy?: string | null; assignedAt?: string | null; assignedOfficer?: IntakeUser | null; formVersion?: number; checklistVersion?: string; revision?: number; account?: PortalAccount; checklistSnapshot?: Record<string, unknown> | null }
+export interface PortalRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'RETURNED' | 'ACCEPTED' | 'CLOSED'; closedAt?: string | null; closedReason?: string | null; companyCheck?: { status: 'NEW' | 'EXISTING' | 'NAME_MISMATCH'; companyName?: string }; data: PortalData; documents: PortalDocument[]; submittedAt?: string; acceptedAt?: string; loanId?: string; assignedTo?: string | null; assignmentVersion?:number; currentLoanOfficer?:IntakeUser|null;coordinationRestrictions?:{writeBlocked:boolean;decisionBlocked:boolean}; assignmentReceipt?:{id:string;toUserId:string;replayed:boolean}; assignedBy?: string | null; assignedAt?: string | null; assignedOfficer?: IntakeUser | null; formVersion?: number; checklistVersion?: string; revision?: number; account?: PortalAccount; checklistSnapshot?: Record<string, unknown> | null }
 export interface PortalAccount { id: string; email: string; contactName: string; phone: string }
 export interface PortalFormConfig {
   rolloutEnabled?: boolean; branchLimit?: number; supportedScopes?: string[]; supportedLoanTypes?: string[];
@@ -54,7 +54,7 @@ export interface PortalChecklist {
   formVersion: number; checklistVersion: string; policyStatus: string; cannotSubmit: boolean;
   groups: { code: GroupCode; name: string; required: boolean | null; status: string; documents: { id: string; coverage: PortalDocument['coverage'] }[] }[];
 }
-export const requestStatus = { DRAFT: 'Bản nháp', SUBMITTED: 'Chờ phân công', ASSIGNED: 'Đã phân công — chờ tiếp nhận', RETURNED: 'Cần chỉnh sửa đề nghị', ACCEPTED: 'Đã tiếp nhận' };
+export const requestStatus = { DRAFT: 'Bản nháp', SUBMITTED: 'Chờ phân công', ASSIGNED: 'Đã phân công — chờ tiếp nhận', RETURNED: 'Cần chỉnh sửa đề nghị', ACCEPTED: 'Đã tiếp nhận', CLOSED: 'Đã đóng' };
 export const groups: { code: GroupCode; name: string; description: string; accept: string }[] = [
   { code: 'A', name: 'Pháp lý', description: 'Giấy đăng ký doanh nghiệp, điều lệ, giấy tờ người đại diện; giấy ủy quyền hoặc nghị quyết nếu cần.', accept: '.pdf' },
   { code: 'B', name: 'Tài chính', description: 'Báo cáo tài chính 2–3 năm và kỳ gần nhất, công nợ phải thu/phải trả, tồn kho.', accept: '.pdf,.xlsx' },

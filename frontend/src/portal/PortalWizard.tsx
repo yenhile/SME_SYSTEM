@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Building2, FileText, LockKeyhole, Plus, Save, Tr
 import { portalApi, PortalApiError } from './client';
 import { loanTypes } from './model';
 import type { PortalAccount, PortalData, PortalFormConfig, PortalRequest, PortalChecklist } from './model';
-import { canCreateDraft, capitalTotals, companyPrefill, normalizeV2, validateV2, sameDraft, initialDraftState, loanTypeOptions, REQUIRED_FOR_SUBMIT, type DraftRecovery } from './wizard';
+import { canCreateDraft, capitalTotals, companyPrefill, normalizeV2, validateV2, sameDraft, initialDraftState, loanTypeOptions, REQUIRED_FOR_SUBMIT, hasValidTaxCodeChecksum, TAX_CODE_CHECKSUM_MESSAGE, type DraftRecovery } from './wizard';
 import { DocumentManager } from './DocumentManager';
 import { canEditCycle, canSendCycle } from './intake-cycle';
 import { IntakeCyclePanel } from './IntakeCyclePanel';
@@ -73,6 +73,7 @@ export function PortalWizard({ initial, draftId, account, config, prefill, onBac
   const approvedAssessment=checklist?.approvedIntakeAssessment;
   const canSendApproved=canSendCycle({enabled:!!config.canSubmit,editable,dirty,busy,conflict,pendingFiles,dataReady:approvedAssessment?.dataReady===true,assessmentRevision,revision:request?.revision});
   const issues = validateV2(normalizeV2(data), step === 5 || showErrors); const totals = capitalTotals(data);
+  const taxCodeChecksumError = !request?.submittedAt && /^(\d{10}|\d{13})$/.test(data.taxCode ?? '') && !hasValidTaxCodeChecksum(data.taxCode) ? TAX_CODE_CHECKSUM_MESSAGE : undefined;
   const issueFor = (path: string) => showErrors ? issues.find(issue => issue.path === path && issue.severity === 'error')?.message : undefined;
   const stash = (next: PortalData, nextStep = step) => {
     if (!dirtyRef.current) return;
@@ -161,7 +162,7 @@ export function PortalWizard({ initial, draftId, account, config, prefill, onBac
   }
   function jump(path: string, targetStep: number) { setStep(targetStep); setShowErrors(true); setTimeout(() => document.getElementById(`v2-${path}`)?.focus(), 50); }
   async function submitTestRequest() {
-    if (!config.canSubmit || pendingFiles > 0 || !editable || conflict || (config.intakeCycleEnabled&&!canSendApproved)) return;
+    if (!config.canSubmit || pendingFiles > 0 || !editable || conflict || taxCodeChecksumError || (config.intakeCycleEnabled&&!canSendApproved)) return;
     if (!window.confirm(config.intakeCycleEnabled?'Xác nhận gửi đề nghị và tài liệu hiện tại cho ngân hàng kiểm tra? Bản gửi này được lưu và khóa chỉnh sửa.':'Gửi đề nghị bằng policy thử nghiệm trong môi trường cách ly? Đây không phải chính sách ngân hàng được duyệt để vận hành.')) return;
     await run(async () => {
       const saved = await persist();
@@ -195,7 +196,7 @@ export function PortalWizard({ initial, draftId, account, config, prefill, onBac
     {conflict && <section className="v2-conflict portal-card" role="alert"><h2>Bản nháp đã có phiên bản khác</h2><p>Nội dung đang nhập được giữ lại. Hãy đối chiếu trước khi lưu để tránh ghi đè thay đổi ở tab khác.</p><button className="btn btn-secondary" disabled={busy} onClick={() => void latest()}>Xem bản mới nhất</button>{remote && <><div className="v2-compare"><section><h3>Nội dung đang nhập</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(data[key as keyof PortalData])}</p>)}</section><section><h3>Bản trên hệ thống</h3>{Object.keys(labels).filter(key => JSON.stringify(data[key as keyof PortalData]) !== JSON.stringify(remote.data[key as keyof PortalData])).map(key => <p key={key}><strong>{labels[key]}:</strong> {show(remote.data[key as keyof PortalData])}</p>)}</section></div><div className="portal-actions"><button className="btn btn-secondary" onClick={() => useRemote(false)}>Dùng bản trên hệ thống</button>{canEditCycle(remote,config)&&<button className="btn btn-primary" onClick={() => useRemote(true)}>Giữ nội dung đang nhập để lưu tiếp</button>}</div></>}</section>}
     <fieldset className="portal-fieldset" disabled={busy || !editable || conflict}>
       {step === 1 && <section className="portal-card v2-form-card"><div className="portal-card-title"><Building2 size={22} /><div><h2>Thông tin doanh nghiệp</h2><p>Thông tin phục vụ tiếp nhận. Mã số thuế không thay thế việc đối chiếu pháp lý của ngân hàng.</p></div></div><p className="v2-required-note">Ô có dấu <span className="portal-required">*</span> cần hoàn tất trước khi gửi. Có thể lưu nháp khi chưa điền đủ.</p><h3 className="v2-subheading">Doanh nghiệp</h3><div className="portal-field-grid">
-        {field('companyName')}{field('taxCode', { readOnly:!!request?.submittedAt,hint: '10 hoặc 13 chữ số; thay chủ thể sau gửi cần lập đề nghị mới.' })}{field('companyType', { hint: 'Ví dụ: Công ty TNHH, Công ty cổ phần.' })}{field('industry')}
+        {field('companyName')}{field('taxCode', { readOnly:!!request?.submittedAt, ...(taxCodeChecksumError ? { error: taxCodeChecksumError } : {}),hint: '10 hoặc 13 chữ số; thay chủ thể sau gửi cần lập đề nghị mới.' })}{field('companyType', { hint: 'Ví dụ: Công ty TNHH, Công ty cổ phần.' })}{field('industry')}
         {data.businessScope==='SERVICES'&&<Field path="serviceProofMode" label="Căn cứ doanh thu dịch vụ" value={data.serviceProofMode} options={{CONTRACT_OR_ORDER:'Hợp đồng hoặc đơn đặt dịch vụ',ACCEPTANCE_INVOICE:'Nghiệm thu kèm hóa đơn'}} onChange={v=>assign('serviceProofMode',v)}/>}
         <Field path="businessScope" label="Phạm vi hoạt động" value={data.businessScope} options={config.rolloutEnabled?{MANUFACTURING:'Sản xuất',TRADING:'Thương mại',SERVICES:'Dịch vụ',OTHER:'Khác / cần tư vấn'}:{MANUFACTURING:'Doanh nghiệp sản xuất',OTHER:'Hoạt động khác'}} onChange={value=>assign('businessScope',value)}/>
         <Field path="representative.mode" label="Tư cách người gửi" value={data.representative?.mode} options={{LEGAL_REPRESENTATIVE:'Người đại diện pháp luật',AUTHORIZED:'Người được ủy quyền'}} onChange={value=>assign('representative',{...data.representative,mode:value})}/>
@@ -225,7 +226,7 @@ export function PortalWizard({ initial, draftId, account, config, prefill, onBac
         busy={busy} editable={editable} conflict={conflict} dirty={dirty} pendingFiles={pendingFiles}
         fresh={assessmentRevision === request?.revision} checkError={!!checklistError || (!config.intakeCycleEnabled && !!readinessError)}
         readiness={!config.intakeCycleEnabled ? readiness : undefined}
-        submitDisabled={Number(data.proposedAmount)>10000000000|| (config.intakeCycleEnabled?!canSendApproved:busy||!editable||conflict||!config.canSubmit||pendingFiles>0||checklist?.cannotSubmit!==false)}
+        submitDisabled={Number(data.proposedAmount)>10000000000|| !!taxCodeChecksumError || (config.intakeCycleEnabled?!canSendApproved:busy||!editable||conflict||!config.canSubmit||pendingFiles>0||checklist?.cannotSubmit!==false)}
         displayValue={show} onJump={jump} onSubmit={() => void submitTestRequest()}
         onSave={() => void run(async () => { await persist(); setNotice("Đã lưu bản nháp trên hệ thống."); })}
         onDeclaration={accepted => assign('submissionDeclaration', { accepted, version: config.approvedIntakePolicy!.policy.declaration.version })} />}

@@ -4,13 +4,14 @@ import { api, ApiError } from '../api/client';
 import type { Company, RoleCode } from '../types';
 import { loanTypes, requestStatus, type PortalFormConfig, type PortalRequest } from '../portal/model';
 import { IntakeAssignment } from './IntakeAssignment';
+import { IntakeCloseAction } from './IntakeCloseAction';
 import {AssignmentChangeRequestPanel} from './AssignmentChangeRequestPanel';
 import {comparedValue,IntakeCyclePanel,type IntakeCycleView} from '../portal/IntakeCyclePanel';
 import { compactMoney } from '../loanListDisplay';
 import './loan-table.css';
 import { PortalIntakeDetails, canAcceptIntake, intakeData, intakeMoney, mvpFinancialConfirmationRequired } from './PortalIntakeDetails';
 
-const intakeTone: Record<string, string> = { DRAFT: 'gray', SUBMITTED: 'amber', ASSIGNED: 'blue', RETURNED: 'red', ACCEPTED: 'green' };
+const intakeTone: Record<string, string> = { DRAFT: 'gray', SUBMITTED: 'amber', ASSIGNED: 'blue', RETURNED: 'red', ACCEPTED: 'green', CLOSED: 'gray' };
 
 export function PortalIntakeQueue({ activeRole, onSelectLoan, onRefresh, target }: { activeRole: RoleCode | null; onSelectLoan: (id: string) => void; onRefresh: () => void; target?: { id: string; revision: number } | null }) {
   const scopeKey=`${activeRole}:${target?.id??''}:${target?.revision??''}`;
@@ -53,6 +54,7 @@ export function PortalIntakeQueue({ activeRole, onSelectLoan, onRefresh, target 
       <button className="portal-link portal-back" disabled={busy} onClick={() => { setSelected(null); setMatch(null); setConfirmed(false); }}>← Quay lại danh sách</button>
       <section className="portal-card"><div className="portal-section-heading"><h2>{selected.reference}</h2><span className="portal-status">{requestStatus[selected.status]}</span></div>
         <IntakeAssignment key={selected.id} request={selected} activeRole={activeRole} disabled={busy} onUpdated={async request => { setSelected(request); setMatch(null); setConfirmed(false); await load(); }} />
+        <IntakeCloseAction key={'close:'+selected.id} request={selected} activeRole={activeRole} disabled={busy || !!selected.coordinationRestrictions?.writeBlocked} onClosed={async request => { setSelected(request); setMatch(null); setConfirmed(false); await load(); onRefresh(); }} />
         <AssignmentChangeRequestPanel key={'coordination:'+selected.id} subject={{type:'PORTAL',id:selected.id,assignmentVersion:selected.assignmentVersion,ownerId:selected.assignedTo,closed:!['ASSIGNED','RETURNED'].includes(selected.status)}} onChanged={async()=>{setSelected(await api.get<PortalRequest>(`/portal-intakes/${selected.id}`));await load();}}/>
         {selected.coordinationRestrictions?.writeBlocked&&<p role="alert" className="portal-error">Bạn đang chờ giải quyết xung đột lợi ích; các thao tác ghi nghiệp vụ trên đề nghị này bị chặn.</p>}
         {selected.formVersion===2&&config?.intakeCycleEnabled&&<IntakeCyclePanel key={selected.id+':'+activeRole} request={selected} mode="staff" activeRole={activeRole} onState={setCycle} onUpdated={r=>{setSelected(r);setMatch(null);setConfirmed(false);void load();}}/>}
@@ -69,7 +71,7 @@ export function PortalIntakeQueue({ activeRole, onSelectLoan, onRefresh, target 
       <td data-label="Doanh nghiệp"><span className="lt-clamp" title={data.companyName}>{data.companyName || '—'}</span><span className="lt-sub">MST {data.taxCode || '—'}</span></td>
       <td data-label="Nhu cầu vay"><strong>{compactMoney(data.proposedAmount)}</strong><span className="lt-sub">{data.loanType ? loanTypes[data.loanType] ?? data.loanType : '—'}</span>{data.loanPurpose && <span className="lt-sub lt-clamp" title={data.loanPurpose}>{data.loanPurpose}</span>}{data.preferredBranch && <span className="lt-sub">Đơn vị mong muốn: {data.preferredBranch}</span>}</td>
       <td data-label="Ngày gửi" className="lt-nowrap">{sent ? <>{sent.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}<span className="lt-sub">{sent.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })}</span></> : '—'}</td>
-      <td data-label="Trạng thái"><span className={`lt-status lt-status-${intakeTone[item.status] ?? 'gray'}`}>{requestStatus[item.status]}</span><span className="lt-sub">{officer ? `CBTD: ${officer}` : 'Chưa phân công CBTD'}</span>{item.status === 'ACCEPTED' && <span className="lt-sub">Đang phụ trách hồ sơ vay: {item.currentLoanOfficer?.fullName || item.currentLoanOfficer?.username || 'Chưa xác định'}</span>}</td>
+      <td data-label="Trạng thái"><span className="lt-badges"><span className={`lt-status lt-status-${intakeTone[item.status] ?? 'gray'}`}>{requestStatus[item.status]}</span>{item.companyCheck?.status === 'NAME_MISMATCH' && <span className="lt-status lt-status-red" title={`Mã số thuế đã thuộc ${item.companyCheck.companyName ?? 'doanh nghiệp khác'}`}>Trùng MST</span>}</span>{item.companyCheck?.status === 'NAME_MISMATCH' && <span className="lt-sub lt-tone-danger">MST đã thuộc {item.companyCheck.companyName}</span>}<span className="lt-sub">{officer ? `CBTD: ${officer}` : 'Chưa phân công CBTD'}</span>{item.status === 'ACCEPTED' && <span className="lt-sub">Đang phụ trách hồ sơ vay: {item.currentLoanOfficer?.fullName || item.currentLoanOfficer?.username || 'Chưa xác định'}</span>}</td>
       <td data-label="Thao tác" className="lt-nowrap lt-intake-action"><button type="button" className="btn btn-secondary" disabled={busy} onClick={event => { event.stopPropagation(); open(); }}>Xem đề nghị</button></td>
     </tr>; })}{!busy && !error && !items.length && <tr className="lt-message"><td colSpan={6}><strong>Chưa có đề nghị từ cổng doanh nghiệp</strong><p>Đề nghị doanh nghiệp gửi sẽ xuất hiện tại đây.</p></td></tr>}</tbody></table></div>}
   </section>;

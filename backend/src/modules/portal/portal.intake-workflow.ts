@@ -143,6 +143,18 @@ export class PortalIntakeWorkflow {
       return tx.portalRequest.update({where:{id},data:{status:'RETURNED',revision:{increment:1},correctionRequest:Prisma.DbNull},include:this.include});
     });
   }
+  /** Closing ends a request the bank cannot accept as submitted (e.g. the tax code belongs to another legal entity); the enterprise must file a new request. */
+  async closeRequest(id:string,body:any,actor:Actor) {
+    this.body(body,['expectedRevision','clientRequestId','reason']);
+    const reason=this.text(body.reason,'lý do đóng đề nghị');
+    return this.db.$transaction(async tx=>{
+      const r=await this.lock(tx,id,actor,actor.roles.includes('QUAN_LY'));
+      if(await this.operation(tx,r,body,actor.id,'CLOSE'))return r;
+      if(!['SUBMITTED','ASSIGNED','RETURNED'].includes(r.status))throw new ConflictException('Chỉ đóng được đề nghị chưa tiếp nhận.');
+      if(await tx.portalIntakeIssue.findFirst({where:{requestId:id,kind:'COMPANY_RECONCILIATION',status:'OPEN'}}))throw new ConflictException('Đang có đối soát doanh nghiệp chờ xử lý.');
+      return tx.portalRequest.update({where:{id},data:{status:'CLOSED',closedAt:new Date(),closedBy:actor.id,closedReason:reason,revision:{increment:1},correctionRequest:Prisma.DbNull},include:this.include});
+    });
+  }
   async requestCorrection(id:string,body:any,accountId:string) {
     this.body(body,['expectedRevision','clientRequestId','message']);
     const message=this.text(body.message,'nội dung cần chỉnh sửa');

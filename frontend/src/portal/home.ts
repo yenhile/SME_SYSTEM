@@ -1,6 +1,6 @@
 // Tổng hợp cho trang chủ doanh nghiệp: số đề nghị theo trạng thái, việc cần làm ngay và kết quả cuối cùng. Hàm thuần, không phụ thuộc React.
 
-export interface HomeRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'RETURNED' | 'ACCEPTED'; loanId?: string; data: { companyName?: string; proposedAmount?: number | string } }
+export interface HomeRequest { id: string; reference: string; status: 'DRAFT' | 'SUBMITTED' | 'ASSIGNED' | 'RETURNED' | 'ACCEPTED' | 'CLOSED'; loanId?: string; data: { companyName?: string; proposedAmount?: number | string } }
 export interface HomeOutcome { status: { code: string; label: string; message: string }; rejection?: { label: string } }
 
 export interface HomeAction { kind: 'RETURNED' | 'SUPPLEMENT' | 'DRAFT'; requestId: string; reference: string; text: string }
@@ -47,6 +47,7 @@ export function listGroup(item: HomeRequest, supplementCounts: Record<string, nu
   if (item.status === 'DRAFT') return 'DRAFT';
   if (item.status === 'RETURNED') return 'ACTION';
   if (item.status === 'SUBMITTED' || item.status === 'ASSIGNED') return 'WAITING';
+  if (item.status === 'CLOSED') return 'DECIDED';
   if (isFinal(outcomes[item.id]?.status.code)) return 'DECIDED';
   return (supplementCounts[item.id] ?? 0) > 0 ? 'ACTION' : 'PROCESSING';
 }

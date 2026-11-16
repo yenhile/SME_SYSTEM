@@ -25,7 +25,7 @@ const EXPECTED={
   SupplementsController:{portalDetails:[C,T,Q,A],review:[C,T],returnCorrections:[C,T],download:[C,T,Q,A],getSupplements:[C,T,Q,A],createRequest:[C,T],resolveRequest:[C,T]},
   UsersController:{findAll:[A],findOne:[A],create:[A],update:[A]},
   WorkflowController:{getWorkflowStages:[C,T,Q,A],getWorkflowHistory:[C,T,Q,A],transitionStage:[C,T],closeOverdueSupplement:[Q]},
-  PortalIntakesController:{list:[C,Q,A],officers:[Q,A],config:[C,Q,T,A],assign:[Q],history:[C,Q,A],one:[C,Q,A],match:[C,Q,A],cycle:[C,Q,A],review:[C],returnCorrection:[C],correctionDecision:[C],reconciliation:[C],resolveReconciliation:[Q],issue:[Q],download:[C,Q,A],accept:[C]},
+  PortalIntakesController:{list:[C,Q,A],officers:[Q,A],config:[C,Q,T,A],assign:[Q],history:[C,Q,A],one:[C,Q,A],match:[C,Q,A],cycle:[C,Q,A],review:[C],close:[C,Q],returnCorrection:[C],correctionDecision:[C],reconciliation:[C],resolveReconciliation:[Q],issue:[Q],download:[C,Q,A],accept:[C]},
   AuthController:{login:null,getProfile:null,changePassword:null},
   NotificationsController:{list:null,read:null},
 };

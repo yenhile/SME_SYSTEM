@@ -109,7 +109,7 @@ try {
   await click('Tạo đề nghị vay'); await wait(`document.querySelector('.v2-stepper li.active')`, 'wizard');
   equal(await evaluate(`document.getElementById('v2-contactEmail').value`), email, 'contact autofill');
   equal(await evaluate(`document.querySelectorAll('.v2-stepper li').length`), 5);
-  await field('companyName', 'SME Browser Manufacturing'); await field('taxCode', '0123456789'); await field('revenuePeriod', '2025');
+  await field('companyName', 'SME Browser Manufacturing'); await field('taxCode', '0123456787'); await field('revenuePeriod', '2025');
   await click('Lưu nháp'); await saved();
   console.log('Browser: partial draft saved');
   let requests = (await call('/requests', token)).data; equal(requests.length, 1); const id = requests[0].id;

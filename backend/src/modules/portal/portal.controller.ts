@@ -80,6 +80,8 @@ export class PortalIntakesController {
   @Get(':id/intake-cycle') cycle(@Req() req:any,@Param('id') id:string) {return this.service.intakeCycle(id,undefined,req.user);}
   @Post(':id/review') @Roles(RoleCode.CBTD)
   review(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.reviewIntake(id,body,req.user);}
+  @Post(':id/close') @Roles(RoleCode.CBTD,RoleCode.QUAN_LY)
+  close(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.closeIntake(id,body,req.user);}
   @Post(':id/return-correction') @Roles(RoleCode.CBTD)
   returnCorrection(@Req() req:any,@Param('id') id:string,@Body() body:any) {return this.service.returnIntake(id,body,req.user);}
   @Post(':id/correction-decision') @Roles(RoleCode.CBTD)
