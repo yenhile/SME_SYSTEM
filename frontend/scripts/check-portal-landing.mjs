@@ -33,3 +33,11 @@ test('only the Enterprise tile is active; the other tiles are symbolic and not l
   const tiles = landing.match(/const TILES = \[[\s\S]*?\];/)[0];
   assert.equal((tiles.match(/href:/g) ?? []).length, 1);
 });
+
+test('a successful submit returns the enterprise to the request list with a confirmation', async () => {
+  const wizard = await readFile(new URL('../src/portal/PortalWizard.tsx', import.meta.url), 'utf8');
+  assert.match(wizard, /received\(sent, true\);[^\n]*onSubmitted\(sent, message\)/, 'wizard hands the submitted request back instead of staying on step 5');
+  assert.match(portal, /function submitted\(value: PortalRequest, message: string\) \{ saved\(value\); back\(\); setHomeNotice\(message\);/);
+  assert.match(portal, /<PortalWizard [^>]*onSubmitted=\{submitted\}/);
+  assert.match(portal, /\{homeNotice && <p role="status" className="portal-notice">\{homeNotice\}<\/p>\}/);
+});
