@@ -66,14 +66,14 @@ test('SMTP mailer delivers real verification mail to a loopback inbox', async()=
     await new PortalMailer().sendCode('unit@example.test','123456');
     const response=await fetch(`http://127.0.0.1:${mailbox.httpPort}/api/messages`);const body=await response.json();
     const messages=Array.isArray(body)?body:body.messages;
-    assert.ok(messages.some(m=>m.text.includes('123456') && m.text.includes('10 minutes')));
+    assert.ok(messages.some(m=>m.text.includes('Mã xác minh: 123456') && m.text.includes('10 phút') && !m.text.includes('<')));
   } finally {
     for(const [key,value] of Object.entries({SMTP_HOST:old.host,SMTP_PORT:old.port,SMTP_SECURE:old.secure,SMTP_USER:old.user})) {if(value===undefined) delete process.env[key];else process.env[key]=value;}
     await mailbox.close();
   }
 });
 
-const MAIL_KEYS=['NODE_ENV','MAIL_PROVIDER','BREVO_API_KEY','MAIL_FROM_EMAIL','MAIL_FROM_NAME'];
+const MAIL_KEYS=['NODE_ENV','MAIL_PROVIDER','BREVO_API_KEY','MAIL_FROM_EMAIL','MAIL_FROM_NAME','FRONTEND_URL'];
 async function withMailEnv(env,fetchImpl,run) {
   const saved=Object.fromEntries(MAIL_KEYS.map(k=>[k,process.env[k]])),savedFetch=globalThis.fetch;
   for(const k of MAIL_KEYS) delete process.env[k];
@@ -100,7 +100,42 @@ test('Brevo mailer posts the verification code to the transactional email API', 
   const body=JSON.parse(calls[0].init.body);
   assert.deepEqual(body.sender,{email:'noreply@sme-loan.test',name:'SME Loan'});
   assert.deepEqual(body.to,[{email:'unit@example.test'}]);
-  assert.ok(body.textContent.includes('654321') && body.textContent.includes('10 minutes'));
+  assert.equal(body.subject,'SME Loan - Mã xác minh đăng ký tài khoản');
+  assert.ok(body.textContent.includes('654321') && body.textContent.includes('10 phút'));
+  assert.ok(body.htmlContent.includes('654321') && body.htmlContent.includes('10 phút'));
+});
+
+async function captureBrevo(env,send) {
+  const bodies=[];
+  const {PortalMailer}=require('../dist/modules/portal/portal.mailer');
+  await withMailEnv({...brevoEnv,...env},async(url,init)=>{bodies.push(JSON.parse(init.body));return new Response('{}',{status:201});},()=>send(new PortalMailer()));
+  return bodies;
+}
+
+test('Brevo mails send Vietnamese HTML with a plain-text fallback and escape every inserted value', async()=> {
+  const link='https://app.test/portal?reset=a&b="x"<script>alert(1)</script>';
+  const [reset,reminder]=await captureBrevo({FRONTEND_URL:'https://app.test'},async m=>{
+    await m.sendPasswordReset('unit@example.test',link);
+    await m.sendSupplementReminder('unit@example.test','HS-<b>1</b>&"x"');
+  });
+  assert.equal(reset.subject,'SME Loan - Đặt lại mật khẩu');
+  assert.ok(reset.textContent.includes(link));
+  assert.ok(!reset.htmlContent.includes('<script>') && !reset.htmlContent.includes('"x"'));
+  assert.ok(reset.htmlContent.includes('href="https://app.test/portal?reset=a&amp;b=&quot;x&quot;&lt;script&gt;alert(1)&lt;/script&gt;"'));
+  assert.ok(reset.htmlContent.includes('10 phút') && reset.htmlContent.includes('không trả lời'));
+  assert.equal(reminder.subject,'SME Loan - Nhắc bổ sung chứng từ');
+  assert.ok(reminder.textContent.includes('HS-<b>1</b>&"x"') && reminder.textContent.includes('https://app.test/portal'));
+  assert.ok(reminder.htmlContent.includes('HS-&lt;b&gt;1&lt;/b&gt;&amp;&quot;x&quot;') && !reminder.htmlContent.includes('<b>1</b>'));
+  assert.ok(reminder.htmlContent.includes('href="https://app.test/portal"'));
+  const [code]=await captureBrevo({},m=>m.sendCode('unit@example.test','<1&2>'));
+  assert.ok(code.htmlContent.includes('&lt;1&amp;2&gt;') && !code.htmlContent.includes('<1&2>'));
+  for(const body of [reset,reminder,code]) assert.ok(/<html[^>]*lang="vi"/.test(body.htmlContent) && !/<script|<img|@import|<link/i.test(body.htmlContent.replace(/&lt;script/g,'')));
+});
+
+test('supplement reminder omits the portal link when FRONTEND_URL is not configured', async()=> {
+  const [reminder]=await captureBrevo({},m=>m.sendSupplementReminder('unit@example.test','HS-2'));
+  assert.ok(reminder.htmlContent.includes('HS-2') && !reminder.htmlContent.includes('href='));
+  assert.ok(reminder.textContent.includes('HS-2') && !reminder.textContent.includes('http'));
 });
 
 test('Brevo rejection surfaces as a delivery failure without leaking the API key', async()=> {

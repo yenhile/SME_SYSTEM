@@ -49,6 +49,24 @@ async function main() {
     const html = await (await fetch(base)).text();
     assert.ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
     assert.ok(!html.includes('<script>alert(1)</script>'));
+    const multipart = await connect(mailbox.smtpPort);
+    await multipart.command('EHLO local.test', 250);
+    await multipart.command('MAIL FROM:<sender@example.test>', 250);
+    await multipart.command('RCPT TO:<recipient@example.test>', 250);
+    await multipart.command('DATA', 354);
+    await multipart.command([
+      'Subject: multipart', 'MIME-Version: 1.0', 'Content-Type: multipart/mixed; boundary="outer"', '',
+      '--outer', 'Content-Type: multipart/alternative;', ' boundary="----_NmP-1-Part_1"', '',
+      '------_NmP-1-Part_1', 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: quoted-printable', '',
+      'M=C3=A3 x=C3=A1c minh: 246810', 'http://localhost/portal?reset=3Dabcdef0123456789abcdef0123456789abcdef0123456789abcdef=', '0123456789',
+      '------_NmP-1-Part_1', 'Content-Type: text/html; charset=utf-8', 'Content-Transfer-Encoding: quoted-printable', '',
+      '<p style=3D"color:#182234">HTML</p>',
+      '------_NmP-1-Part_1--', '--outer--', '.',
+    ].join('\r\n'), 250);
+    await multipart.command('QUIT', 221);
+    const [alternative] = await (await fetch(`${base}/api/messages`)).json();
+    assert.equal(alternative.subject, 'multipart');
+    assert.equal(alternative.text, 'Mã xác minh: 246810\r\nhttp://localhost/portal?reset=abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789');
     assert.equal((await fetch(`${base}/api/messages`, { method: 'DELETE' })).status, 204);
     assert.deepEqual(await (await fetch(`${base}/api/messages`)).json(), []);
     const bounded = await connect(mailbox.smtpPort);
@@ -83,7 +101,7 @@ async function main() {
       probe.listen(freePort, '127.0.0.1'); await once(probe, 'listening');
       await new Promise(resolve => probe.close(resolve));
     } finally { await new Promise(resolve => blocker.close(resolve)); }
-    console.log('PASS SMTP delivery/commands, dot unstuffing, base64, bounded inbox, 2MB limit, escaped UI/API, clear, origin/bind restrictions, startup cleanup');
+    console.log('PASS SMTP delivery/commands, dot unstuffing, base64, multipart text/plain, bounded inbox, 2MB limit, escaped UI/API, clear, origin/bind restrictions, startup cleanup');
   } finally { await mailbox.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
