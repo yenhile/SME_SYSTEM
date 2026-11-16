@@ -259,15 +259,6 @@ button.portal-request-row:hover { background:#f8faff; }
 .portal-document-row { margin-top:14px; overflow-wrap:anywhere; }.portal-document-row>div>small { color:#8794a7; font-size:11px; }.portal-document-row p { font-size:12px; }.portal-version-list { padding-left:20px; }.portal-version-list li { border-top:1px solid #e9edf5; padding:14px 0; font-size:12px; }.portal-version-list small { color:#8794a7; }
 @media(max-width:800px) { .v2-stepper button { flex-direction:column; text-align:center; gap:10px; font-size:11px; }.v2-stepper ol { padding:15px 6px; }.v2-finance-summary { grid-template-columns:1fr; }.v2-finance-summary>div { border-right:0; border-bottom:1px solid #e9e5fc; }.v2-cost-row { grid-template-columns:20px 1fr 1fr 24px; }.v2-cost-row .v2-field:nth-of-type(3) { grid-column:2/4; }.v2-remove-cost { grid-column:4; grid-row:1; }.v2-compare { grid-template-columns:1fr; } }
 @media(max-width:600px) { .v2-heading { flex-wrap:wrap; gap:10px; margin-bottom:20px; }.v2-heading h1 { font-size:23px; }.v2-save-status { align-items:flex-start; flex-direction:column; gap:5px; }.v2-stepper button { font-size:10px; }.v2-stepper button>span { width:25px; height:25px; }.v2-stepper strong { font-weight:500; line-height:1.4; }.v2-stepper ol { gap:3px; }.v2-wizard-footer { flex-wrap:wrap; padding:12px; gap:8px; }.v2-wizard-footer .btn { font-size:12px; padding:10px; }.v2-footer-spacer { display:none; }.v2-wizard-footer button:first-child { margin-right:auto; }.v2-review dl { grid-template-columns:1fr; }.v2-dashboard-stats { gap:8px; }.v2-dashboard-stats section { padding:12px; }.v2-dashboard-stats span { font-size:10px; }.v2-dashboard-stats strong { font-size:22px; }.portal-coverage-row { grid-template-columns:1fr; gap:9px; }.portal-preview-backdrop { padding:8px; }.v2-cost-heading { flex-wrap:wrap; }.v2-cost-row { grid-template-columns:18px 1fr 24px; }.v2-cost-row .v2-field { grid-column:2; }.v2-cost-row .v2-field:nth-of-type(3) { grid-column:2; }.v2-remove-cost { grid-column:3; }.portal-document-manager .portal-doc-grid { grid-template-columns:1fr; } }
-.portal-intake .intake-details > section { margin-block: 24px; }
-.portal-intake .intake-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px 24px; margin-block: 16px; }
-.portal-intake .intake-facts > div { min-width: 0; }
-.portal-intake .intake-facts dt { color: var(--text-secondary, #64748b); font-size: .85rem; margin-bottom: 4px; }
-.portal-intake .intake-facts dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-.portal-intake .intake-coverage { display: block; }
-.portal-intake .intake-checklist { list-style: none; padding: 0; }
-.portal-intake .intake-checklist > li { border-block-end: 1px solid var(--border-color, #e2e8f0); padding-block: 12px; }
-.portal-intake .intake-details caption { text-align: start; padding-block: 12px; font-weight: 600; }
 .supplement-panel { display: grid; gap: 16px; min-width: 0; }
 .supplement-dashboard-status { display: block; margin-top: 6px; color: #1d4e89; font-weight: 600; }
 .supplement-entry { margin-top: 24px; }
@@ -302,15 +293,6 @@ button.portal-request-row:hover { background:#f8faff; }
 .tracking-step.current strong { color: #1d4e89; }
 .tracking-step.stopped .tracking-mark { background: #dc2626; border-color: #dc2626; color: #fff; }
 .tracking-message { margin: 0 0 8px; }
-.intake-cycle { min-width: 0; margin-block: 18px; overflow-wrap: anywhere; }
-.intake-cycle label { display: grid; gap: 8px; margin: 12px 0; font-weight: 600; }
-.intake-cycle textarea { box-sizing: border-box; width: 100%; min-height: 88px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; resize: vertical; }
-.intake-cycle button { max-width: 100%; white-space: normal; }
-.intake-cycle .btn { margin: 6px 8px 6px 0; }
-.intake-cycle .intake-review-item { margin: 12px 0; padding: 18px; }
-.intake-cycle .intake-submission { margin: 12px 0; padding: 14px; border: 1px solid #dbe3ef; border-radius: 8px; }
-.intake-cycle summary { cursor: pointer; font-weight: 600; }
-.intake-cycle dd { margin-left: 0; }
 .approved-checklist li { margin-block: 14px; }
 
 /* Trang chủ doanh nghiệp */

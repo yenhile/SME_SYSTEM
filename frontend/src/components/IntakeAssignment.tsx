@@ -26,8 +26,11 @@ export function IntakeAssignment({ request, activeRole, disabled, onUpdated }: {
   }, [request.id, request.assignedTo, request.assignmentVersion, activeRole, canAssign]);
   const reassign = !!request.assignedTo && officerId !== request.assignedTo;
   return <section className="intake-assignment" aria-label="Phân công đề nghị">
-    {request.status==='ACCEPTED'&&request.currentLoanOfficer&&<p>CBTD đang phụ trách hồ sơ vay: <strong>{request.currentLoanOfficer.fullName||request.currentLoanOfficer.username}</strong>. Phân công trước tiếp nhận được giữ trong lịch sử.</p>}
-    <p>{request.status === 'ACCEPTED' ? 'CBTD được phân công trước tiếp nhận' : 'Cán bộ được giao'}: <strong>{request.assignedOfficer?.fullName || request.assignedOfficer?.username || 'Chưa phân công'}</strong>{request.assignedAt && ` • ${new Date(request.assignedAt).toLocaleString('vi-VN')}`}</p>
+    {request.status==='ACCEPTED'&&request.currentLoanOfficer&&<p className="intake-assignment-current">CBTD đang phụ trách hồ sơ vay: <strong>{request.currentLoanOfficer.fullName||request.currentLoanOfficer.username}</strong>. Phân công trước tiếp nhận được giữ trong lịch sử.</p>}
+    <div className="intake-assignee">
+      <p><span>{request.status === 'ACCEPTED' ? 'CBTD được phân công trước tiếp nhận' : 'Cán bộ được giao'}:</span> <strong>{request.assignedOfficer?.fullName || request.assignedOfficer?.username || 'Chưa phân công'}</strong>{request.assignedAt && <small>{new Date(request.assignedAt).toLocaleString('vi-VN')}</small>}</p>
+      <details className="intake-assignment-log"><summary>Lịch sử phân công ({history.length})</summary>{!loading && !history.length && <p>Chưa có lịch sử phân công.</p>}<ol className="intake-assignment-history">{history.map(entry => <li key={entry.id}><strong>{entry.fromUser?.fullName || 'Chưa phân công'} → {entry.toUser.fullName || entry.toUser.username}</strong><p>Người phân công: {entry.manager.fullName || entry.manager.username} • {new Date(entry.assignedAt).toLocaleString('vi-VN')}</p>{entry.note && <p>Ghi chú: {entry.note}</p>}</li>)}</ol></details>
+    </div>
     {canAssign && <form className="intake-assignment-form" onSubmit={async event => {
       event.preventDefault(); setError(''); setNotice('');
       if(lock.current||conflict)return;
@@ -48,6 +51,5 @@ export function IntakeAssignment({ request, activeRole, disabled, onUpdated }: {
     </form>}
     {loading && <p role="status">Đang tải phân công…</p>}{error && <p role="alert" className="error-message">{error}</p>}{notice && <p role="status">{notice}</p>}
     {conflict&&<button type="button" className="btn btn-secondary" disabled={busy} onClick={async()=>{if(lock.current)return;lock.current=true;setBusy(true);try{const fresh=await api.get<PortalRequest>(`/portal-intakes/${request.id}`);await onUpdated(fresh);setOfficerId(fresh.assignedTo||'');setConflict(false);setError('');operation.current=null;}catch(err){setError((err as Error).message);}finally{lock.current=false;setBusy(false);}}}>Tải lại phân công</button>}
-    <details><summary>Lịch sử phân công ({history.length})</summary>{!loading && !history.length && <p>Chưa có lịch sử phân công.</p>}<ol className="intake-assignment-history">{history.map(entry => <li key={entry.id}><strong>{entry.fromUser?.fullName || 'Chưa phân công'} → {entry.toUser.fullName || entry.toUser.username}</strong><p>Người phân công: {entry.manager.fullName || entry.manager.username} • {new Date(entry.assignedAt).toLocaleString('vi-VN')}</p>{entry.note && <p>Ghi chú: {entry.note}</p>}</li>)}</ol></details>
   </section>;
 }
