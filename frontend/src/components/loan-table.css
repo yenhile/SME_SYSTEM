@@ -94,6 +94,15 @@
 
 .lt-pagination { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
 
+.lt-nowrap { white-space: nowrap; }
+.lt-intake-table thead th:first-child { width: auto; padding-right: 12px !important; }
+.lt-intake-table td:nth-child(2) { min-width: 220px; }
+.lt-intake-table td:nth-child(3) { max-width: 340px; }
+.lt-intake-table td strong { font-weight: 600; }
+.lt-intake-action { text-align: right; vertical-align: middle !important; }
+.lt-intake-action .btn { min-height: 36px; padding: 6px 14px; font-size: 13px; }
+.lt-intake-table .lt-status { justify-self: start; }
+
 @media (max-width: 768px) {
   .lt-filters-head { padding: 12px 16px; }
   .lt-filters-grid { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 16px; }
@@ -104,9 +113,11 @@
   .lt-table td { padding: 4px 16px; border: 0; }
   .lt-expand { position: absolute; top: 12px; right: 8px; width: auto !important; padding: 0 !important; }
   .lt-table td[data-label="Mã hồ sơ"] { display: flex; align-items: center; gap: 8px; padding-right: 48px; }
+  .lt-table td[data-label="Mã đề nghị"] { display: flex; align-items: center; gap: 8px; }
+  .lt-intake-action { text-align: left; padding-top: 8px !important; }
   .lt-chip { margin-top: 0; }
-  .lt-table td[data-label]:not([data-label="Mã hồ sơ"]):not([data-label="Thao tác"]) { display: grid; grid-template-columns: 84px minmax(0, 1fr); column-gap: 12px; }
-  .lt-table td[data-label]:not([data-label="Mã hồ sơ"]):not([data-label="Thao tác"])::before { content: attr(data-label); grid-row: 1 / span 3; font-size: 12px; color: var(--text-secondary); }
+  .lt-table td[data-label]:not([data-label="Mã hồ sơ"]):not([data-label="Mã đề nghị"]):not([data-label="Thao tác"]) { display: grid; grid-template-columns: 84px minmax(0, 1fr); column-gap: 12px; }
+  .lt-table td[data-label]:not([data-label="Mã hồ sơ"]):not([data-label="Mã đề nghị"]):not([data-label="Thao tác"])::before { content: attr(data-label); grid-row: 1 / span 3; font-size: 12px; color: var(--text-secondary); }
   .lt-table td[data-label] > * { grid-column: 2; }
   .lt-detail-row td { padding: 12px 16px; }
   .lt-pagination { justify-content: space-between; }
