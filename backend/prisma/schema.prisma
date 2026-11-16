@@ -90,6 +90,7 @@ model User {
   acceptedPortalRequests PortalRequest[]
   assignedPortalRequests PortalRequest[] @relation("PortalAssignedOfficer")
   portalAssignmentsMade PortalRequest[] @relation("PortalAssigningManager")
+  closedPortalRequests PortalRequest[] @relation("PortalClosingUser")
   portalAssignmentsFrom PortalAssignment[] @relation("PortalAssignmentFrom")
   portalAssignmentsTo PortalAssignment[] @relation("PortalAssignmentTo")
   portalAssignmentHistory PortalAssignment[] @relation("PortalAssignmentManager")
@@ -370,6 +371,7 @@ enum PortalRequestStatus {
   ASSIGNED
   RETURNED
   ACCEPTED
+  CLOSED
 }
 
 model PortalAccount {
@@ -411,6 +413,9 @@ model PortalRequest {
   assignmentVersion Int @default(0) @map("assignment_version")
   assignedBy String? @map("assigned_by")
   assignedAt DateTime? @map("assigned_at")
+  closedAt DateTime? @map("closed_at")
+  closedBy String? @map("closed_by")
+  closedReason String? @map("closed_reason")
   loanId String? @unique @map("loan_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -418,6 +423,7 @@ model PortalRequest {
   acceptedUser User? @relation(fields: [acceptedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedOfficer User? @relation("PortalAssignedOfficer", fields: [assignedTo], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assigningManager User? @relation("PortalAssigningManager", fields: [assignedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  closingUser User? @relation("PortalClosingUser", fields: [closedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   loan LoanApplication? @relation(fields: [loanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   documents PortalDocument[]
   assignments PortalAssignment[]

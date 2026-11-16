@@ -92,9 +92,10 @@ export async function runRound1Checks(ctx){
   }finally{await inbox.close();for(const k of smtpKeys)saved[k]===undefined?delete process.env[k]:process.env[k]=saved[k];}
 }
 
+function validTaxCode(seed){const w=[31,29,23,19,17,13,7,5,3];for(let n=Number(seed);;n=(n+1)%1e9){const b=String(n).padStart(9,'0');const c=10-[...b].reduce((s,d,i)=>s+w[i]*Number(d),0)%11;if(c<=9)return b+c;}}
 async function submitToDecision(ctx,owner){
   const {h,f,officer,api,check}=ctx;
-  const data={...h.browserData,taxCode:'900'+String(Date.now()).slice(-10),annualRevenueBasis:undefined};
+  const data={...h.browserData,taxCode:validTaxCode(String(Date.now()).slice(-9))+'001',annualRevenueBasis:undefined};
   let request=await api('/portal/requests',owner,{formVersion:2,clientRequestId:randomUUID(),data});
   const coverage={A:['A_BUSINESS_REGISTRATION','A_CHARTER','A_REPRESENTATIVE_AUTHORITY','A_REPRESENTATIVE_ID'].map(documentTypeCode=>({documentTypeCode})),B:[{documentTypeCode:'B_FINANCIAL_STATEMENTS',period:data.revenuePeriod,components:['BALANCE_SHEET','INCOME_STATEMENT','CASH_FLOW_STATEMENT','NOTES']}],C:['C_PRODUCTION_PLAN','C_BUSINESS_CONTRACT'].map(documentTypeCode=>({documentTypeCode})),D:['D_LOAN_REQUEST','D_CAPITAL_PLAN'].map(documentTypeCode=>({documentTypeCode}))};
   for(const [group,metadata] of Object.entries(coverage)){const form=new FormData();form.append('file',new Blob([h.browserPdf],{type:'application/pdf'}),'full-flow-'+group+'.pdf');form.append('documentGroup',group);form.append('coverage',JSON.stringify(metadata));form.append('clientUploadId',randomUUID());form.append('expectedRevision',String(request.revision));request=await api('/portal/requests/'+request.id+'/documents',owner,form);}

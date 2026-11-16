@@ -193,4 +193,35 @@ export class PortalMailer {
     ]);
     await this.deliver({ to: email, subject, text, html }, 'Không gửi được email nhắc bổ sung chứng từ.');
   }
+
+  /** Tells the enterprise that the bank returned its request for correction or closed it; only the reference and the bank's message to the enterprise are included. */
+  async sendIntakeNotice(email: string, reference: string, kind: 'RETURNED' | 'CLOSED', details: string[]) {
+    const returned = kind === 'RETURNED';
+    const subject = returned ? `SME Loan - Đề nghị ${reference} cần chỉnh sửa` : `SME Loan - Đề nghị ${reference} đã được đóng`;
+    const heading = returned ? 'Đề nghị vay cần chỉnh sửa' : 'Đề nghị vay đã được đóng';
+    const intro = returned
+      ? 'Ngân hàng đã kiểm tra đề nghị vay dưới đây và đề nghị Quý doanh nghiệp chỉnh sửa trước khi gửi lại:'
+      : 'Ngân hàng không thể tiếp nhận đề nghị vay dưới đây và đã đóng đề nghị:';
+    const next = returned
+      ? 'Vui lòng đăng nhập cổng doanh nghiệp, mở đề nghị để xem chi tiết, chỉnh sửa và gửi lại.'
+      : 'Nếu vẫn có nhu cầu vay vốn, Quý doanh nghiệp vui lòng lập đề nghị mới trên cổng doanh nghiệp với thông tin chính xác.';
+    const portal = portalLink();
+    const lines = details.map(line => line.trim()).filter(Boolean);
+    const html = layout(subject, `${heading}: ${reference}`, heading,
+      paragraph(intro) +
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;"><tr>` +
+      `<td class="panel" style="padding:14px 18px;background-color:${BRAND_SOFT};border-left:4px solid ${BRAND};border-radius:6px;font-size:15px;line-height:1.5;color:#1f2a3d;">Mã đề nghị: <strong style="font-size:17px;">${escapeHtml(reference)}</strong>` +
+      (lines.length ? `<div style="margin-top:10px;">${returned ? 'Nội dung cần chỉnh sửa' : 'Lý do'}:</div><ul style="margin:6px 0 0;padding-left:20px;">${lines.map(line => `<li style="margin:0 0 4px;">${escapeHtml(line)}</li>`).join('')}</ul>` : '') +
+      `</td></tr></table>` +
+      paragraph(next) +
+      (portal ? button(portal, 'Mở cổng doanh nghiệp') : ''));
+    const text = plainText([
+      intro,
+      `Mã đề nghị: ${reference}`,
+      ...(lines.length ? [`${returned ? 'Nội dung cần chỉnh sửa' : 'Lý do'}:`, ...lines.map(line => `- ${line}`)] : []),
+      next,
+      ...(portal ? [`Đăng nhập tại: ${portal}`] : []),
+    ]);
+    await this.deliver({ to: email, subject, text, html }, 'Không gửi được email thông báo đề nghị.');
+  }
 }

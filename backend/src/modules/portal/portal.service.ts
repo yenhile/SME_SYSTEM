@@ -1,8 +1,10 @@
+import { assertTaxCodeChecksum } from '../../common/tax-code';
 import {transferPortal} from '../assignments/assignment.transactions';
 import {officerWorkloads} from '../assignments/officer-workloads';
 import {assertNoCoordinationConflict,obsoleteCoordination,assertNoCompanyConflict} from '../assignments/assignment-coordination';
 import { readStored, removeStored, uploadRoot, writeStored } from '../../common/storage';
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional, Inject, Logger } from '@nestjs/common';
+import { PortalMailer } from './portal.mailer';
 import { PrismaService } from '../../prisma.service';
 import { nextDocumentCode } from '../../common/document-codes';
 import { Prisma, DocumentType, LoanStatus } from '@prisma/client';
@@ -32,7 +34,8 @@ import { assertBranchAmount, BRANCH_POLICY, lockOfficer } from '../workflow/loan
 @Injectable()
 export class PortalService {
   private readonly dir=uploadRoot();
-  constructor(private prisma:PrismaService,@Optional() @Inject('PORTAL_POLICY_CONTEXT') private policyContext?:PortalPolicyContext) {}
+  private readonly logger=new Logger(PortalService.name);
+  constructor(private prisma:PrismaService,@Optional() @Inject('PORTAL_POLICY_CONTEXT') private policyContext?:PortalPolicyContext,@Optional() private mailer?:PortalMailer) {}
   private cycle() {return new PortalIntakeWorkflow(this.prisma,include,docs=>this.physicalFiles(docs));}
   private usesCycle(r:any) {return r.formVersion===2 && isApprovedIntakeVersion(r.checklistVersion);}
   private published(r:any) {const s=r.checklistSnapshot as any;return this.usesCycle(r)&&s?readV2Snapshot({...r,data:s.data,revision:s.revision,submittedAt:s.submittedAt}):readV2Snapshot(r);}
@@ -90,7 +93,24 @@ export class PortalService {
     if(this.usesCycle(r)&&r.status==='RETURNED'){const s=this.published(r);return {...r,data:s.data,documents:s.documents};}
     return r;
   }
-  async list(accountId?:string,user?:{id:string,roles:string[]}) {const rows=await this.prisma.portalRequest.findMany({where:accountId?{accountId}:await this.intakeScope(user),include,orderBy:{createdAt:'desc'}});return accountId?rows:Promise.all(rows.map(r=>this.internalCoordinationView(this.internalPublished(r),user?.id)));}
+  async list(accountId?:string,user?:{id:string,roles:string[]}) {
+    const rows=await this.prisma.portalRequest.findMany({where:accountId?{accountId}:await this.intakeScope(user),include,orderBy:{createdAt:'desc'}});
+    if(accountId) return rows;
+    const views=await Promise.all(rows.map(r=>this.internalCoordinationView(this.internalPublished(r),user?.id)));
+    return this.withCompanyCheck(views);
+  }
+  /** Staff-only hint: whether the declared tax code already belongs to a stored enterprise and whether the declared name matches it. */
+  private async withCompanyCheck(rows:any[]) {
+    const taxCodes=[...new Set(rows.filter(r=>r.status!=='ACCEPTED').map(r=>(r.data as any)?.taxCode).filter((t:unknown)=>typeof t==='string'))] as string[];
+    const companies=taxCodes.length?await this.prisma.company.findMany({where:{taxCode:{in:taxCodes}},select:{taxCode:true,companyName:true}}):[];
+    const byTaxCode=new Map(companies.map(c=>[c.taxCode,c.companyName]));
+    const same=(a:unknown,b:unknown)=>String(a??'').trim().toLocaleLowerCase('vi-VN')===String(b??'').trim().toLocaleLowerCase('vi-VN');
+    return rows.map(r=>{
+      if(r.status==='ACCEPTED') return r;
+      const data=r.data as any,stored=byTaxCode.get(data?.taxCode);
+      return {...r,companyCheck:stored===undefined?{status:'NEW'}:same(stored,data?.companyName)?{status:'EXISTING'}:{status:'NAME_MISMATCH',companyName:stored}};
+    });
+  }
   private async internalCoordinationView(r:any,actorId?:string){
     const pending=await this.prisma.assignmentChangeRequest.findMany({where:{portalRequestId:r.id,status:'PENDING',reasonCode:'CONFLICT_OF_INTEREST'},select:{requestedById:true}});
     const loan=r.loanId?await this.prisma.loanApplication.findUnique({where:{id:r.loanId},select:{assignedTo:true,assignedUser:{select:officerSelect}}}):null;
@@ -266,6 +286,7 @@ export class PortalService {
         if(intakeCycleEnabled() || this.usesCycle(r)) {
           if(!intakeCycleEnabled())throw new ConflictException('Chức năng gửi mới đang tạm khóa.');
           if(['DRAFT','RETURNED'].includes(r.status)) assertBranchAmount((r.data as any).proposedAmount);
+          if(r.status==='DRAFT') assertTaxCodeChecksum((r.data as any).taxCode);
           return this.cycle().publish(tx,r,body);
         }
         const currentPolicy=resolveTestPolicy(this.policyContext);
@@ -376,10 +397,20 @@ export class PortalService {
     return this.cycle().view(r,!accountId);
   }
   reviewIntake(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().review(id,body,user);}
-  returnIntake(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().returnForCorrection(id,body,user);}
+  async returnIntake(id:string,body:any,user:{id:string;roles:string[]}) {const r=await this.cycle().returnForCorrection(id,body,user);this.notifyEnterprise(r,'RETURNED');return r;}
   requestIntakeCorrection(id:string,body:any,accountId:string) {return this.cycle().requestCorrection(id,body,accountId);}
   decideIntakeCorrection(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().decideCorrection(id,body,user);}
   requestCompanyReconciliation(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().requestCompanyReconciliation(id,body,user);}
   resolveCompanyReconciliation(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().resolveCompanyReconciliation(id,body,user);}
   intakeIssue(id:string,body:any,user:{id:string;roles:string[]}) {return this.cycle().issue(id,body,user);}
+  async closeIntake(id:string,body:any,user:{id:string;roles:string[]}) {const r=await this.cycle().closeRequest(id,body,user);this.notifyEnterprise(r,'CLOSED');return r;}
+  /** Best effort after commit: a delivery failure is logged and never undoes the bank's decision. */
+  private notifyEnterprise(r:any,kind:'RETURNED'|'CLOSED') {
+    if(!this.mailer||r?.status!==kind||!r.account?.email)return;
+    const mailer=this.mailer;
+    void (async()=>{
+      const details=kind==='CLOSED'?[r.closedReason??'']:((await this.prisma.portalSubmission.findFirst({where:{requestId:r.id},orderBy:{sequence:'desc'},select:{returnItems:true}}))?.returnItems as any[]??[]).map(item=>item?.message??'');
+      await mailer.sendIntakeNotice(r.account.email,r.reference,kind,details);
+    })().catch(()=>this.logger.warn(`Không gửi được email thông báo ${kind} cho ${r.reference}.`));
+  }
 }

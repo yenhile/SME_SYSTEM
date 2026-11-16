@@ -108,6 +108,10 @@ label { color: var(--text-secondary); }
 .intake-assignment { margin: 20px 0; padding: 16px; border: 1px solid var(--border-color); border-radius: 8px; }
 .intake-assignment-form { display: grid; gap: 14px; margin-bottom: 16px; }
 .intake-assignment-form label { display: grid; gap: 6px; }
+.intake-close { margin: 0 0 20px; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; }
+.intake-close summary { cursor: pointer; font-weight: 600; color: var(--text-primary); }
+.intake-close label { display: grid; gap: 6px; margin: 12px 0; }
+.intake-close textarea { width: 100%; }
 .intake-assignment-form select, .intake-assignment-form textarea { width: 100%; min-width: 0; }
 .intake-assignment-form textarea { min-height: 76px; }
 .intake-assignment-form .btn { justify-self: start; }

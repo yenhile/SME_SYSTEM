@@ -22,7 +22,7 @@ function fixture(){
  const s={id:'submission',requestId:r.id,sequence:1,sourceRevision:2,snapshot:snap,submittedAt:now,reviews:intakeChecklist(snap).map(i=>({...i,decision:'ACCEPTED',message:'',reviewerId:'officer',reviewedAt:now.toISOString()})),returnItems:[]};
  const notices=[],operations=[];
  const tx={$queryRaw:async()=>[],portalRequest:{findUnique:async()=>r,findFirst:async()=>r,findMany:async()=>[r],update:async({data})=>{for(const[k,v]of Object.entries(data))r[k]=v&&typeof v==='object'&&'increment'in v?r[k]+v.increment:v;return {...r};}},portalSubmission:{findFirst:async()=>s,findMany:async()=>[s],update:async({data})=>Object.assign(s,data)},portalIntakeOperation:{findUnique:async({where})=>operations.find(x=>x.clientRequestId===where.requestId_clientRequestId.clientRequestId)||null,create:async({data})=>{operations.push(data);return data;}},portalIntakeIssue:{findMany:async()=>[],count:async()=>0},assignmentChangeRequest:{findMany:async()=>[],findFirst:async()=>null},internalNotification:{createMany:async({data})=>{notices.push(...data);return{count:data.length};}},user:{findMany:async()=>[{id:'manager'}]}};
- const db={...tx,$transaction:async fn=>fn(tx)};
+ const db={...tx,company:{...tx.company,findMany:tx.company?.findMany??(async()=>[])},$transaction:async fn=>fn(tx)};
  return {r,s,notices,operations,tx,db,service:new PortalService(db),flow:new PortalIntakeWorkflow(db,{},async()=>[])};
 }
 const body=r=>({expectedRevision:r.revision,clientRequestId:require('crypto').randomUUID()});

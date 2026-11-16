@@ -100,7 +100,7 @@ export function PortalReview(props: Props) {
         <p id="review-submit-help" className="review-submit-help">{status.message}</p>
         <p className="review-privacy"><ShieldCheck size={17} /> Gửi đề nghị để ngân hàng kiểm tra, chưa phải quyết định phê duyệt khoản vay.</p>
         {!config.intakeCycleEnabled && config.canSubmit && <p className="review-test-notice">Môi trường thử nghiệm TEST_ONLY. Thao tác gửi không được mở trên hệ thống vận hành chính.</p>}
-        {request?.submittedAt && request.status !== 'RETURNED' && <p className="portal-notice">Đề nghị đã gửi và khóa chỉnh sửa. Theo dõi kết quả tại danh sách đề nghị.</p>}
+        {request?.submittedAt && request.status !== 'RETURNED' && <p className="portal-notice">{request.status === 'CLOSED' ? `Ngân hàng đã đóng đề nghị này${request.closedReason ? `: ${request.closedReason}` : '.'} Vui lòng lập đề nghị mới nếu vẫn có nhu cầu vay.` : 'Đề nghị đã gửi và khóa chỉnh sửa. Theo dõi kết quả tại danh sách đề nghị.'}</p>}
       </aside>
     </div>
   </section>;

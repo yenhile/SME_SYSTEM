@@ -1361,6 +1361,31 @@ Khuyến nghị của Lead PO: **B kèm A**, chặn cứng ngoài khung (không 
 
 Cấu hình cloud cục bộ ở `backend/.env.cloud` (đã thêm vào `.gitignore`). **Việc sau khi xong:** mật khẩu DB và khóa `service_role` đã lộ trong hội thoại → đổi mật khẩu DB, xoay khóa JWT/chuyển sang khóa secret mới, cập nhật Render.
 
+**PO tự thử luồng trên cloud (16–17/11, đang làm).** Đề nghị thử: DN-23 (MST giả lập trùng doanh nghiệp có sẵn → bị chặn tiếp nhận, đúng thiết kế); bộ PDF giả lập ở `evidence/cloud-test-20261116/`.
+
+| Bước | Kết quả | Bằng chứng |
+|---|---|---|
+| 1 DN đăng ký → mã xác minh → đăng nhập | Đạt | `portal_accounts` đã xác minh 13:12 UTC; tài khoản cũ chưa xác minh cùng email được xóa theo PO duyệt |
+| 2 DN tạo đề nghị V2, tải chứng từ, gửi | Đạt sau 2 sửa | DN-23 `SUBMITTED` 17:35 UTC |
+| 3 QLCN phân công CBTD | Đạt | DN-23 `ASSIGNED` → `mai.bui` |
+| 4 CBTD tiếp nhận | Chặn đúng thiết kế | MST thuộc doanh nghiệp khác, dữ liệu trọng yếu lệch → không tiếp nhận; trả sửa 18:00 chạy đúng, MST không đổi được sau gửi (đúng quy tắc) |
+| 5–8 | Chưa làm | Chờ đề nghị mới với MST hợp lệ `0319876546` |
+
+| Mã | Vấn đề / cải tiến | Trạng thái | Bằng chứng |
+|---|---|---|---|
+| C1 | Supabase session pooler 5432 hết 15 kết nối → DB lỗi, Portal bị đẩy về đăng nhập | **Xong** (PO đổi `DATABASE_URL` Render sang 6543 `pgbouncer=true&connection_limit=5`) | 30/30 health đồng thời `database: ready` (trước: 8/30 lỗi) |
+| C2 | `PortalGuard` biến lỗi CSDL thành 401 | **Xong**, PR #18 | Test mới đỏ→xanh; trả 503 `PORTAL_SESSION_CHECK_UNAVAILABLE` |
+| U1 | Gửi đề nghị xong đứng ở bước 5 | **Xong**, PR #18 | Về danh sách + thông báo "Đã gửi đề nghị DN-xx"; chưa thấy lần gửi thật trên bản mới |
+| U2 | Bảng "Đề nghị từ cổng doanh nghiệp" rối | **Xong**, commit `f5a4298` (chờ PR) | 6 cột kiểu `lt-*`, ảnh `evidence/cloud-test-20261116/ui/` |
+| U3 | Bước 4 Hồ sơ tài liệu khó dùng (loại tài liệu áp cho mọi tệp trong một lần tải, nút Thay thế giống tiêu đề) | Backlog | Ảnh PO 16/11 |
+| U4 | Màn CBTD tiếp nhận rối | Phiên phụ `intake-ui` đang làm (worktree riêng) | — |
+| M1 | MST không kiểm tra chữ số kiểm tra | **Code xong, chưa commit** | Chặn khi gửi bản nháp (BE `assertTaxCodeChecksum`, FE báo lỗi tại ô MST); lưu nháp vẫn được; `test/tax-code.test.cjs` đỏ→xanh |
+| M2 | Trùng MST chỉ lộ ra khi CBTD bấm kiểm tra | **Code xong, chưa commit** | Danh sách cán bộ có nhãn "Trùng MST" (một truy vấn gộp); `test/portal-intake-company-check.test.cjs` |
+| M3 | Đề nghị sai chủ thể treo mãi | **Code xong, chưa commit; cần chạy SQL cloud trước khi deploy** | `POST /portal-intakes/:id/close` (CBTD được giao hoặc QLCN, trạng thái chưa tiếp nhận, bắt buộc lý do); trạng thái `CLOSED`; SQL `backend/prisma/portal-intake-close.sql`; `test/portal-intake-close.test.cjs` |
+| N1 | Không có email khi trả sửa/đóng | **Code xong, chưa commit** | `sendIntakeNotice` gửi sau khi lưu, lỗi gửi chỉ ghi log; `test/portal-intake-notice.test.cjs` |
+
+Kiểm tra M1–N1: backend 523/523, frontend tsc + 106 test + build đạt. **Chưa kiểm chứng:** giao diện thật của nút Đóng/nhãn Trùng MST, email thật qua Brevo, SQL M3 trên DB local (container DB local đang dừng) và Supabase.
+
 <a id="chuan-hoa-trang-thai"></a>
 ## 4. Chuẩn hóa trạng thái và Lịch sử các đợt review
 

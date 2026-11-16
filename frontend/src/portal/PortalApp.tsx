@@ -194,7 +194,7 @@ export function PortalApp() {
                           <span className="v2-version">V{item.formVersion ?? 1}</span>
                         </div>
                         <span className="portal-company-text">{item.data.companyName || 'Chưa nhập tên doanh nghiệp'}</span>
-                        <small className="portal-next-action">{item.status === 'DRAFT' ? 'Tiếp tục khai và chuẩn bị tài liệu' : item.status === 'RETURNED' ? 'Xem những mục được yêu cầu chỉnh sửa' : item.status === 'ACCEPTED' ? 'Theo dõi kết quả và yêu cầu bổ sung' : 'Đã gửi · Theo dõi tiến độ xử lý'}</small>
+                        <small className="portal-next-action">{item.status === 'DRAFT' ? 'Tiếp tục khai và chuẩn bị tài liệu' : item.status === 'RETURNED' ? 'Xem những mục được yêu cầu chỉnh sửa' : item.status === 'ACCEPTED' ? 'Theo dõi kết quả và yêu cầu bổ sung' : item.status === 'CLOSED' ? `Ngân hàng đã đóng đề nghị${item.closedReason ? `: ${item.closedReason}` : ''}` : 'Đã gửi · Theo dõi tiến độ xử lý'}</small>
                         {item.status === 'ACCEPTED' && item.loanId && (
                           <small className="supplement-dashboard-status">
                             {supplementCounts[item.id] === undefined ? (loading ? 'Đang tải tình trạng bổ sung…' : 'Chưa tải được tình trạng bổ sung') : supplementCounts[item.id] > 0 ? `${supplementCounts[item.id]} yêu cầu bổ sung đang mở` : 'Không có yêu cầu bổ sung đang mở'}
