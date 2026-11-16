@@ -1,4 +1,5 @@
 const {assignmentFixture}=require('./assignment-fixtures.cjs');
+const {simulatedBandRows}=require('./rate-band-fixtures.cjs');
 /* Real HTTP/PostgreSQL integration, with a TEST_ONLY policy injected into this process.
  * Never imports main.js, seeds public, resets a database, or enables the normal server.
  * Build backend first. KEEP_TEST_SERVER_MS=60000 optionally holds fixtures for browser QA
@@ -174,6 +175,9 @@ async function startIsolated(options={}) {
       const migration=spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','execute','--file',path.join(root,'prisma/round3-intake.sql'),'--schema',path.join(root,'prisma/schema.prisma')],{cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true});
       assert.equal(migration.status,0,'Round 3 additive SQL migration failed; output withheld');
     }
+    // db push không tạo sequence đánh mã đề nghị và mã hồ sơ; nextDocumentCode cần chúng.
+    const codes=spawnSync(process.execPath,[require.resolve('prisma/build/index.js'),'db','execute','--file',path.join(root,'prisma/document-codes.sql'),'--schema',path.join(root,'prisma/schema.prisma')],{cwd:root,env:{...process.env,DATABASE_URL:isolatedUrl},encoding:'utf8',timeout:60000,windowsHide:true});
+    assert.equal(codes.status,0,'Document code sequences SQL failed; output withheld');
     Object.assign(process.env,{DATABASE_URL:isolatedUrl,NODE_ENV:'test',PORTAL_FOUNDATION_PREVIEW:'true',PORTAL_V2_SUBMIT_ENABLED:'true',PORTAL_V2_ROLLOUT_ENABLED:'false',ML_SERVICE_URL:'http://127.0.0.1:8000'});
     if(options.approvedIntake) process.env.PORTAL_V2_INTAKE_ENABLED='true'; else delete process.env.PORTAL_V2_INTAKE_ENABLED;
     process.chdir(root);
@@ -193,6 +197,8 @@ async function startIsolated(options={}) {
     app.useGlobalPipes(new ValidationPipe({transform:true,whitelist:true,forbidNonWhitelisted:false}));
     await app.listen(3002,'127.0.0.1');
     db = new PrismaClient({datasources:{db:{url:isolatedUrl}}});
+    // Schema tạm có sẵn khung lãi suất mô phỏng cho 3 loại vay, hiệu lực từ 0 giờ 01/01/2026 giờ Việt Nam để kiểm thử dùng đồng hồ giả lập trong năm 2026 vẫn trình, phê duyệt được.
+    await db.interestRateBand.createMany({data:simulatedBandRows('isolated-test-fixture',new Date('2025-12-31T17:00:00.000Z'))});
     return {app,db,schema,policy,close,uploadRoot:uploadDir,base:'http://127.0.0.1:3002/api'};
   } catch(e) {
     await close().catch(cleanup=>{e.message+='; '+cleanup.message;});
@@ -235,6 +241,8 @@ async function runChecks(h) {
   }
   for(const [i,stageCode] of ['TIEP_NHAN','THAM_DINH','HOAN_TAT'].entries()) await db.workflowStage.create({data:{stageCode,stageName:stageCode,standardSlaHours:[8,24,4][i],orderIndex:i+1}});
   const portal=portals[0], manager=actors.QUAN_LY, officer=actors.CBTD;
+  // Công đoạn mở sau mốc kích hoạt tính SLA theo PA1 với lịch vận hành hiện hành; ML chỉ dự báo công đoạn PA1.
+  if(!await db.slaPolicyActivation.findFirst({where:{policyCode:'PA1'}}))await db.slaPolicyActivation.create({data:{policyCode:'PA1',calendarVersion:'VN-20260101-20270131-v2',activatedAt:new Date(Date.now()-60000),note:'Synthetic isolated activation'}});
   const {PDFDocument} = require('pdf-lib');
   const pdfDoc = await PDFDocument.create();pdfDoc.addPage([120,120]);
   const pdf=Buffer.from(await pdfDoc.save());
@@ -299,9 +307,9 @@ async function runChecks(h) {
   expect(await call(`${requestPath(r)}/documents/${b2.id}`,{...portal,method:'DELETE',body:{expectedRevision:r.revision}}),409,'post-send withdrawal locked');
   const late=new FormData();late.append('documentGroup','A');late.append('file',new Blob([pdf]),'late.pdf');
   expect(await call(`${requestPath(r)}/documents`,{...portal,method:'POST',body:late}),409,'post-send upload locked');
-  for(const actor of [manager,actors.THAM_QUYEN]) expect(await call(`/portal-intakes/${r.id}`,actor),200,'management sees submitted request');
+  for(const actor of [manager,actors.ADMIN]) expect(await call(`/portal-intakes/${r.id}`,actor),200,'manager and ADMIN (view only) see submitted request');
+  expect(await call(`/portal-intakes/${r.id}`,actors.THAM_QUYEN),403,'THAM_QUYEN not granted intake role');
   expect(await call(`/portal-intakes/${r.id}`,officer),404,'unassigned CBTD cannot see submitted request');
-  expect(await call(`/portal-intakes/${r.id}`,actors.ADMIN),403,'ADMIN not granted intake role');
   expect(await post(`/portal-intakes/${r.id}/assign`,officer,{officerId:officer.user.id,expectedAssignedTo:null}),403,'CBTD cannot self assign');
   await assign(r);
   expect(await call(`/portal-intakes/${r.id}`,officer),200,'assigned CBTD sees request');
@@ -373,7 +381,12 @@ async function runChecks(h) {
   // Current internal confirmation accepts the officer's explicit decision; it does
   // not enforce six groups. Exercise that existing API without inventing E/F files.
   expect(await call(`/loan-applications/${loanId}/check-documents`,{...officer,method:'PUT',body:{isComplete:true}}),200,'officer confirms internal completeness');
-  expect(await post(`/workflow/${loanId}/transition`,officer,{targetStage:'THAM_DINH',targetStatus:'PENDING_APPRAISAL'}),201,'existing internal next-stage transition');
+  // CBTD trình tờ trình ở Tiếp nhận là bước chuyển sang Thẩm định; cần hạn mức chính thức và lãi suất đề xuất trong khung Vốn lưu động.
+  const accepted=await db.loanApplication.findUniqueOrThrow({where:{id:loanId}});
+  if(!accepted.officialAmount) expect(await call(`/loan-applications/${loanId}/set-amount`,{...officer,method:'PUT',body:{officialAmount:Number(accepted.proposedAmount)}}),200,'officer confirms official amount');
+  const reportContent={legalAssessment:'Synthetic legal assessment.',businessAssessment:'Synthetic business assessment.',financialAssessment:'Synthetic financial assessment.',repaymentSource:'Synthetic repayment source.',collateralAssessment:'Synthetic collateral assessment.',risks:'Synthetic risks.',recommendation:'Synthetic recommendation.',proposedInterestRate:'8.5',proposedConditions:'Synthetic conditions.'};
+  expect(await call(`/appraisals/${loanId}/draft`,{...officer,method:'PUT',body:{content:reportContent,clientRequestId:randomUUID(),expectedRevision:0}}),200,'officer saves appraisal draft');
+  expect(await post(`/appraisals/${loanId}/submit`,officer,{content:reportContent,clientRequestId:randomUUID(),expectedRevision:1}),201,'submitting the appraisal report moves the loan to THAM_DINH');
   const advanced=await db.loanApplication.findUniqueOrThrow({where:{id:loanId}});
   const advancedHistory=await db.applicationStageHistory.findMany({where:{applicationId:loanId},orderBy:{enteredAt:'asc'}});
   check(advanced.currentStage==='THAM_DINH' && advanced.currentStatus==='PENDING_APPRAISAL' && advancedHistory.length===2 && advancedHistory[0].exitedAt!==null && advancedHistory[1].exitedAt===null,'next stage preserves status and one open SLA history');

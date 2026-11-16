@@ -109,11 +109,11 @@ test('a locked entry stays unreachable even though it is shown', () => {
   }
 });
 
-test('every role lands on a page it is allowed to open', () => {
+test('every role lands on the dashboard after signing in', () => {
   assert.equal(nav.getDefaultTab('ADMIN'), 'dashboard');
   assert.equal(nav.getDefaultTab('CBTD'), 'dashboard');
   assert.equal(nav.getDefaultTab('QUAN_LY'), 'dashboard');
-  assert.equal(nav.getDefaultTab('THAM_QUYEN'), 'appraisal');
+  assert.equal(nav.getDefaultTab('THAM_QUYEN'), 'dashboard');
   for (const role of ROLES) assert.equal(nav.canOpenTab(nav.getDefaultTab(role), role), true, role);
 });
 
@@ -123,7 +123,7 @@ test('a forbidden page falls back to the role landing page', () => {
   assert.equal(nav.resolveTab('settings', 'QUAN_LY'), 'dashboard');
   assert.equal(nav.resolveTab('loans', 'ADMIN'), 'loans');
   assert.equal(nav.resolveTab('loans', 'CBTD'), 'loans');
-  assert.equal(nav.resolveTab('assignments', 'THAM_QUYEN'), 'appraisal');
+  assert.equal(nav.resolveTab('assignments', 'THAM_QUYEN'), 'dashboard');
 });
 
 test('unimplemented entries stay disabled for everyone who can see them', () => {
@@ -141,4 +141,10 @@ test('screen titles carry no caption line underneath', async () => {
     const source = await readFile(new URL(`../src/components/${name}.tsx`, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /<\/h2>\s*<p[ >]/, name);
   }
+});
+
+test('a fresh sign-in drops any old deep link so the workspace opens on the dashboard', async () => {
+  const auth = await readFile(new URL('../src/context/AuthContext.tsx', import.meta.url), 'utf8');
+  const login = auth.slice(auth.indexOf('const login = async'), auth.indexOf('const selectRole'));
+  assert.ok(login.indexOf("window.history.replaceState(null, '', '/')") > -1 && login.indexOf("replaceState(null, '', '/')") < login.indexOf('acceptUser(result.user)'));
 });

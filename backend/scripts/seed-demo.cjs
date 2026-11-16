@@ -14,6 +14,8 @@
  *     DELETE FROM companies WHERE tax_code LIKE 'DEMO%';
  *   (tài khoản mô phỏng không bị gỡ bởi --reset; tắt/xóa trong màn quản trị người dùng nếu cần)
  * - Lịch 2026 kết thúc 31/12/2026: chạy sau ngày đó cần lịch mới.
+ * - Loại vay chưa có khung lãi suất hiệu lực thì được tạo khung mô phỏng (scripts/rate-band-fixtures.cjs), không ghi nhật ký quản trị;
+ *   loại vay đã có khung giữ nguyên. Lãi suất đề xuất trong tờ trình và lãi suất hồ sơ đã duyệt nằm trong khung theo loại vay, kỳ hạn của hồ sơ.
  */
 require('reflect-metadata');
 const fs = require('node:fs');
@@ -28,6 +30,8 @@ const { calendarByVersion, computeStageClosing } = require(path.join(DIST, 'modu
 const { workingDeadline, workingHoursBetween } = require(path.join(DIST, 'modules/workflow/sla/working-time'));
 const { BRANCH_POLICY } = require(path.join(DIST, 'modules/workflow/loan-policy'));
 const { reportEvidence, digest } = require(path.join(DIST, 'modules/appraisal/appraisal.logic'));
+const { selectActiveBand } = require(path.join(DIST, 'modules/rate-bands/rate-band.logic'));
+const { ensureSimulatedBands, rateInBand } = require('./rate-band-fixtures.cjs');
 
 const CAL_VERSION = 'VN-20260101-20270131-v2';
 const cal = calendarByVersion(CAL_VERSION);
@@ -44,6 +48,8 @@ function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t 
 const rnd = mulberry32(20261107);
 const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
 const between = (a, b) => a + (b - a) * rnd();
+// Lãi suất đề xuất trong tờ trình lấy từ dãy riêng để dãy chính (thời gian, công ty, số tiền) không đổi.
+const proposalRnd = mulberry32(20261113);
 
 const ACCOUNTS = [
   ['khoa.tran', 'Trần Minh Khoa', ['ADMIN']], ['nhung.nguyen', 'Nguyễn Thị Hồng Nhung', ['QUAN_LY']],
@@ -136,6 +142,14 @@ async function main() {
     console.log(`Đã gỡ dữ liệu demo cũ (${existing} công ty, ${removed} thông báo nội bộ).`);
   }
 
+  // ----- khung lãi suất -----
+  const rateBands = await ensureSimulatedBands(db, NOW, 'seed-demo');
+  const bandFor = (loanType, termMonths) => {
+    const band = selectActiveBand(rateBands.bands, { loanType, termMonths, at: NOW });
+    if (!band) throw new Error(`Không có khung lãi suất hiệu lực cho loại vay ${loanType}, kỳ hạn ${termMonths} tháng; Admin bổ sung khung rồi chạy lại.`);
+    return band;
+  };
+
   // ----- tài khoản -----
   let madeUsers = 0;
   for (const [username, fullName, roles] of ACCOUNTS) {
@@ -194,13 +208,15 @@ async function main() {
     const done = kind === 'DONE';
     const approved = done && rnd() < 0.78;
     const rej = pick(REJECT);
+    const loanType = c.term >= 12 && c.amount > 3 ? 'VAY_DAU_TU_TSCD' : 'VAY_VON_LUU_DONG';
+    const band = bandFor(loanType, c.term);
     const loan = await db.loanApplication.create({ data: {
       applicationCode: `SME-${day}-${codeSeq[day]}`, companyId: company.id, loanPurpose: pick(['Bổ sung vốn lưu động', 'Mua nguyên vật liệu', 'Mở rộng kho xưởng', 'Đầu tư máy móc thiết bị']),
-      loanType: c.term >= 12 && c.amount > 3 ? 'VAY_DAU_TU_TSCD' : 'VAY_VON_LUU_DONG', proposedAmount: proposed, officialAmount: proposed, loanTermMonths: c.term,
+      loanType, proposedAmount: proposed, officialAmount: proposed, loanTermMonths: c.term,
       currentStage: done ? 'HOAN_TAT' : (kind === 'TD' ? 'THAM_DINH' : 'TIEP_NHAN'), currentStatus: done ? (approved ? 'APPROVED' : 'REJECTED') : item.status,
       assignedTo: users[cbtd], intakeOfficerId: users[cbtd], businessPolicyVersion: BRANCH_POLICY, isDocumentComplete: !done ? (item.status !== 'RECEIVED' && item.status !== 'SUPPLEMENT_REQUIRED') : true,
       supplementCount: kind === 'TN_WAIT' ? 1 : tl.pauses.length, createdAt: tl.start, completedAt: done ? tl.tdExit : null,
-      ...(done && approved ? { approvedAmount: Math.round(proposed * between(0.8, 1)), interestRate: Math.round(between(7.5, 11.5) * 100) / 100 } : {}),
+      ...(done && approved ? { approvedAmount: Math.round(proposed * between(0.8, 1)), interestRate: rateInBand(band, rnd()) } : {}),
       ...(done && !approved ? { rejectionReasonCode: rej[0], rejectionNote: rej[1] } : {}),
     } });
 
@@ -230,9 +246,10 @@ async function main() {
       const clarifying = Math.abs(item.elapsed - 0.48 * td) < 1e-6;
       const fresh = await db.loanApplication.findUnique({ where: { id: loan.id } });
       const evidence = await reportEvidence(db, fresh);
-      const report = await db.appraisalReport.create({ data: { applicationId: loan.id, status: clarifying ? 'CLARIFICATION_REQUIRED' : 'SUBMITTED', revision: clarifying ? 3 : 2, draft: REPORT,
+      const content = { ...REPORT, proposedInterestRate: String(rateInBand(band, proposalRnd())) };
+      const report = await db.appraisalReport.create({ data: { applicationId: loan.id, status: clarifying ? 'CLARIFICATION_REQUIRED' : 'SUBMITTED', revision: clarifying ? 3 : 2, draft: content,
         ...(clarifying ? { clarification: { message: 'Đề nghị làm rõ nguồn trả nợ và tình hình công nợ phải thu (hồ sơ mô phỏng).', actorId: users[tq], at: new Date().toISOString() } } : {}) } });
-      await db.appraisalReportVersion.create({ data: { reportId: report.id, sequence: 1, content: REPORT, evidence, evidenceHash: digest(evidence), submittedBy: users[cbtd], submittedAt: tl.tdEnter } });
+      await db.appraisalReportVersion.create({ data: { reportId: report.id, sequence: 1, content, evidence, evidenceHash: digest(evidence), submittedBy: users[cbtd], submittedAt: tl.tdEnter } });
       await db.appraisalReportEvent.create({ data: { reportId: report.id, actorId: users[cbtd], kind: 'SUBMITTED', clientRequestId: 'demo-submit-' + loan.id, payloadHash: digest({ demo: loan.id }), payload: {}, createdAt: tl.tdEnter } });
       if (clarifying) await db.appraisalReportEvent.create({ data: { reportId: report.id, actorId: users[tq], kind: 'CLARIFICATION_REQUESTED', clientRequestId: 'demo-clarify-' + loan.id, payloadHash: digest({ demo: 'c' + loan.id }), payload: { message: 'Đề nghị làm rõ nguồn trả nợ và tình hình công nợ phải thu (hồ sơ mô phỏng).' }, createdAt: new Date(tl.tdEnter.getTime() + 0.6 * (NOW.getTime() - tl.tdEnter.getTime())) } });
     }
@@ -245,7 +262,7 @@ async function main() {
     try { const r = await prediction.predictForApplication(id); r.unavailable ? skipped++ : predicted++; } catch { skipped++; }
   }
   if (madeUsers && GENERATED_PASSWORD) console.log(`Mật khẩu ${madeUsers} tài khoản mới (chỉ hiện lần này): ${PASSWORD}`);
-  console.log(JSON.stringify({ sla: SLA, accountsCreated: madeUsers, casesCreated: created, openCases: openIds.length, predictions: predicted, predictionsSkipped: skipped,
+  console.log(JSON.stringify({ sla: SLA, rateBandsCreated: rateBands.created, accountsCreated: madeUsers, casesCreated: created, openCases: openIds.length, predictions: predicted, predictionsSkipped: skipped,
     note: skipped ? 'Một số hồ sơ chưa có dự báo (ml-service chưa chạy?). Chạy lại dự báo sau từ màn hình hoặc đợi lượt chấm 08:00.' : undefined }, null, 1));
   await app.close();
 }

@@ -2,6 +2,7 @@ node_modules/
 .codegraph/
 dist/
 .env
+.env.cloud
 *.log
 .venv/
 __pycache__/

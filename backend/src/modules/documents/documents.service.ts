@@ -1,11 +1,10 @@
-import { uploadRoot } from '../../common/storage';
+import { readStored, removeStored, uploadRoot, writeStored } from '../../common/storage';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentType, LoanStatus, StageCode } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { basename } from 'node:path';
 
 import { assertLoanWrite } from '../workflow/loan-policy';
 import { validatePortalFile } from '../portal/portal.validation';
@@ -28,20 +27,18 @@ export class DocumentsService {
 
   async upload(applicationId: string, documentType: DocumentType, file: { buffer: Buffer; originalname: string; size: number; mimetype: string }, userId: string, activeRole = 'CBTD') {
     const checked = await validatePortalFile(PORTAL_GROUP_BY_TYPE[documentType], file);
-    await mkdir(this.uploadDir, { recursive: true });
     const key = randomUUID();
-    const path = join(this.uploadDir, key);
-    await writeFile(path, file.buffer);
+    await writeStored(this.uploadDir, key, file.buffer);
     try {
       return await this.create(applicationId, { documentType, fileName: checked.fileName, fileSize: file.size, mimeType: checked.mimeType, filePath: key }, userId, activeRole);
-    } catch (err) { await unlink(path); throw err; }
+    } catch (err) { await removeStored(this.uploadDir, key); throw err; }
   }
   async download(id: string) {
     const document = await this.prisma.document.findUnique({ where: { id } });
     if (!document) throw new NotFoundException('Không tìm thấy chứng từ.');
     // Seed metadata may reference files that were never uploaded.
     if (basename(document.filePath) !== document.filePath) throw new NotFoundException('Tệp chưa được tải lên hệ thống.');
-    try { return { buffer: await readFile(join(this.uploadDir, document.filePath)), fileName: document.fileName }; }
+    try { return { buffer: await readStored(this.uploadDir, document.filePath), fileName: document.fileName }; }
     catch { throw new NotFoundException('Không tìm thấy tệp đã lưu.'); }
   }
 
@@ -142,7 +139,7 @@ export class DocumentsService {
       if (loan) await this.withdrawConfirmation(tx, loan);
       return removed;
     });
-    if (!doc.portalDocumentId && basename(doc.filePath) === doc.filePath) await unlink(join(this.uploadDir, doc.filePath)).catch(() => undefined);
+    if (!doc.portalDocumentId && basename(doc.filePath) === doc.filePath) await removeStored(this.uploadDir, doc.filePath).catch(() => undefined);
     return deleted;
   }
 }

@@ -1,8 +1,7 @@
 import {assertNoCoordinationConflict} from '../assignments/assignment-coordination';
-import { uploadRoot } from '../../common/storage';
+import { readStored, removeStored, uploadRoot, writeStored } from '../../common/storage';
 import { Injectable, BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, open, readFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { PrismaService } from '../../prisma.service';
 import { PortalFile, validatePortalFile } from '../portal/portal.validation';
@@ -111,7 +110,7 @@ export class PortalSupplementsService {
     const meta=await validatePortalFile(item.documentGroup,file);
     const sha256=createHash('sha256').update(file.buffer).digest('hex');
     const fingerprint=hash({itemId,sha256,fileName:meta.fileName,supersedesId:body.supersedesId??null});
-    let createdPath:string|undefined,committed=false;
+    let createdKey:string|undefined,committed=false;
     try {
       const result=await this.prisma.$transaction(async tx=> {
         const r=await this.locked(tx,id,{requestId,accountId}),m=metadata(r);
@@ -122,15 +121,13 @@ export class PortalSupplementsService {
         if(!current || !['PENDING','REPLACE_REQUIRED'].includes(current.status)) throw new ConflictException('Mục này chưa mở nhận tệp bổ sung.');
         const head=heads(m).find(f=>f.itemId===itemId);
         if((head?.id??undefined)!==(body.supersedesId??undefined)) throw new ConflictException('Phải thay thế đúng phiên bản tệp hiện hành.');
-        const key=randomUUID();await mkdir(this.dir,{recursive:true});const path=join(this.dir,key);
-        const handle=await open(path,'wx');createdPath=path;
-        try {await handle.writeFile(file.buffer);} finally {await handle.close();}
+        const key=randomUUID();createdKey=key;await writeStored(this.dir,key,file.buffer);
         const at=new Date().toISOString();m.files.push({id:key,itemId,fileName:meta.fileName,mimeType:meta.mimeType,fileSize:file.size,version:(head?.version??0)+1,...(head?{supersedesId:head.id}:{}),uploadedAt:at,filePath:key,sha256});
         m.events.push({type:'UPLOADED',at,itemId});
         return this.save(tx,r,m,body.clientUploadId,'upload',fingerprint);
       });
       committed=true;return result;
-    } finally {if(createdPath && !committed) await unlink(createdPath).catch(()=>undefined);}
+    } finally {if(createdKey && !committed) await removeStored(this.dir,createdKey).catch(()=>undefined);}
   }
   async download(id:string,fileId:string,scope?:{requestId:string;accountId:string}) {
     const r=await this.prisma.supplementRequest.findUnique({where:{id}});
@@ -141,7 +138,7 @@ export class PortalSupplementsService {
   }
   private async fileBytes(m:any,f:any) {
     if(!f || !/^[0-9a-f-]{36}$/i.test(f.filePath) || f.filePath!==f.id) throw new NotFoundException('Không tìm thấy tệp.');
-    let buffer:Buffer;try {buffer=await readFile(join(this.dir,f.filePath));} catch {throw new ConflictException('Không đọc được tệp bổ sung.');}
+    let buffer:Buffer;try {buffer=await readStored(this.dir,f.filePath);} catch {throw new ConflictException('Không đọc được tệp bổ sung.');}
     if(buffer.length!==f.fileSize || createHash('sha256').update(buffer).digest('hex')!==f.sha256) throw new ConflictException('Nội dung tệp không khớp bản đã lưu.');
     await validatePortalFile(m.items.find((i:any)=>i.id===f.itemId).documentGroup,{buffer,originalname:f.fileName,size:buffer.length,mimetype:f.mimeType});
     return buffer;

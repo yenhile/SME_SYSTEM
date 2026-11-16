@@ -3,7 +3,8 @@
  *   DEMO_PASSWORD=<mật khẩu cán bộ> node scripts/seed-portal-flow.cjs
  *   API_URL (mặc định http://localhost:3001/api), MAILBOX_URL (mặc định http://localhost:8025)
  *
- * Yêu cầu: backend + ml-service + hộp thư nội bộ đang chạy, PORTAL_V2_ROLLOUT_ENABLED=true, đã chạy seed:demo (có 7 tài khoản cán bộ).
+ * Yêu cầu: backend + ml-service + hộp thư nội bộ đang chạy, PORTAL_V2_ROLLOUT_ENABLED=true, đã chạy seed:demo (có 7 tài khoản cán bộ),
+ * có khung lãi suất hiệu lực cho Vốn lưu động chứa mức 8,5%/năm dùng trong tờ trình và phê duyệt (script kiểm tra trước, không tự tạo khung).
  * Mỗi lần chạy tạo thêm 3 doanh nghiệp mô phỏng (mã số thuế bắt đầu 99, tên có "[MÔ PHỎNG]") với 6 đề nghị ở các chặng khác nhau:
  *   1 được phê duyệt, 1 bị từ chối (TC02), 1 đang thẩm định, 1 đã tiếp nhận (đang kiểm tra), 1 chờ phân công, 1 bản nháp.
  * Đây là dữ liệu MÔ PHỎNG, tách khỏi bộ hồ sơ dùng huấn luyện mô hình. Không chạy khi NODE_ENV=production.
@@ -11,6 +12,7 @@
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { PDFDocument } = require('pdf-lib');
+const { assertActiveBandResponse } = require('./rate-band-fixtures.cjs');
 
 if (process.env.NODE_ENV === 'production') { console.error('Không chạy trên production.'); process.exit(1); }
 const API = process.env.API_URL || 'http://localhost:3001/api';
@@ -20,6 +22,7 @@ if (!STAFF_PASSWORD) { console.error('Cần đặt DEMO_PASSWORD (mật khẩu c
 const DN_PASSWORD = process.env.PORTAL_DEMO_PASSWORD || 'MoPhong#2026Dn';
 const YEAR = String(new Date().getFullYear() - 1);
 const RUN = Date.now().toString().slice(-6);
+const RATE = 8.5;
 
 async function call(path, actor, body, method) {
   const headers = {};
@@ -116,7 +119,7 @@ async function submitAppraisal(loanId, officer, spec) {
     collateralAssessment: 'Vay vốn lưu động, không yêu cầu tài sản bảo đảm.',
     risks: 'Rủi ro biến động giá nguyên vật liệu đầu vào.',
     recommendation: spec.recommend,
-    proposedInterestRate: '8.5',
+    proposedInterestRate: String(RATE),
     proposedConditions: 'Giải ngân theo tiến độ đơn hàng và sao kê tài khoản định kỳ.',
   };
   ok(await call(`/appraisals/${loanId}/draft`, officer, { content, clientRequestId: randomUUID(), expectedRevision: 0 }, 'PUT'), 'lưu nháp tờ trình');
@@ -129,6 +132,7 @@ const spec = (n, over) => ({
 });
 
 (async () => {
+  assertActiveBandResponse(await call('/admin/interest-rate-bands', await staff('khoa.tran')), 'VAY_VON_LUU_DONG', RATE);
   const manager = await staff('nhung.nguyen'), cbtdA = await staff('nam.hoang'), cbtdB = await staff('mai.bui'), appraiser = await staff('ha.le');
   const a = spec(1, { name: 'TNHH Cơ khí Tân Hưng', industry: 'Cơ khí - Chế tạo', year: 2017, revenue: 6200000000, capital: 2500000000, rep: 'Nguyễn Văn Hưng', address: 'Quận 12, TP.HCM', purpose: 'Mua thép và vật tư gia công đơn hàng quý 1', amount: 1200000000, recommend: 'Đề xuất phê duyệt hạn mức 1,2 tỷ đồng, thời hạn 12 tháng.' });
   const b = spec(2, { name: 'Dệt may Bình Minh', industry: 'Dệt may', year: 2019, revenue: 3100000000, capital: 1200000000, rep: 'Trần Thị Minh', address: 'Quận Bình Tân, TP.HCM', purpose: 'Mua vải và phụ liệu cho đơn xuất khẩu', amount: 900000000, recommend: 'Đề xuất từ chối do dòng tiền chưa đáp ứng.' });
@@ -143,7 +147,7 @@ const spec = (n, over) => ({
   await assign(r, manager, cbtdA);
   let loan = await accept(r, cbtdA);
   let versionId = await submitAppraisal(loan, cbtdA, a);
-  ok(await call(`/workflow/${loan}/transition`, appraiser, { targetStage: 'HOAN_TAT', targetStatus: 'APPROVED', approvedAmount: 1000000000, interestRate: 8.5, reportVersionId: versionId, notes: 'Đồng ý phê duyệt theo tờ trình (hồ sơ mô phỏng).' }), 'phê duyệt');
+  ok(await call(`/workflow/${loan}/transition`, appraiser, { targetStage: 'HOAN_TAT', targetStatus: 'APPROVED', approvedAmount: 1000000000, interestRate: RATE, reportVersionId: versionId, notes: 'Đồng ý phê duyệt theo tờ trình (hồ sơ mô phỏng).' }), 'phê duyệt');
   let st = ok(await call(`/portal/requests/${r.id}/status`, dn1), 'tiến độ'); assert.equal(st.status.code, 'APPROVED');
   log.push(`${r.reference}: ${st.status.label}`);
 

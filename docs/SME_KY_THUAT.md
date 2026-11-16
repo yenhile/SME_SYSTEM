@@ -11,7 +11,7 @@ flowchart LR
   STAFF[Cổng cán bộ /] --> API
   API --> DB[(PostgreSQL)]
   API --> FILES[Tệp chứng từ cục bộ]
-  API --> MAIL[SMTP local / hộp thư thử]
+  API --> MAIL[Brevo API / hộp thư local khi test]
   API --> ML[FastAPI / mô hình trễ SLA]
 ```
 
@@ -21,7 +21,7 @@ flowchart LR
 | Backend | NestJS, Prisma 6.19; [main.ts](../backend/src/main.ts), [AppModule](../backend/src/app.module.ts) | Auth, phân quyền, validation, transaction, API, thông báo và tích hợp |
 | Database | PostgreSQL; [schema.prisma](../backend/prisma/schema.prisma) | Nguồn dữ liệu bền vững; không thay bằng mock để che lỗi |
 | ML service | FastAPI/scikit-learn; [main.py](../ml-service/app/main.py), [predictor](../ml-service/app/predictor.py) | Dự báo nguy cơ trễ SLA, không quyết định tín dụng |
-| Tệp | [storage.ts](../backend/src/common/storage.ts), uploads của backend | Nội dung chứng từ; metadata/hash/version trong DB |
+| Tệp | [storage.ts](../backend/src/common/storage.ts): `STORAGE_PROVIDER=local` ghi vào `UPLOAD_ROOT` (mặc định `backend/uploads`), `supabase` ghi vào bucket riêng tư `SUPABASE_STORAGE_BUCKET` bằng `SUPABASE_SERVICE_ROLE_KEY`; đường dẫn trong bucket giống đường dẫn dưới `UPLOAD_ROOT` (`<key>`, `supplements/<key>`), không ghi đè tệp đã có. Chuyển tệp cũ: `npm run storage:upload` (xem trước) rồi `-- --apply` trong `backend` | Nội dung chứng từ; metadata/hash/version trong DB |
 | Cấu hình | README, `start-use.ps1`, compose, các file env cục bộ | Chạy đúng target; không in/commit secret hoặc dump |
 
 ### Module và nguồn tra cứu
@@ -81,7 +81,7 @@ API điều phối: `GET /assignment-change-requests/capabilities`, list/detail,
 | Doanh nghiệp | http://localhost:5173/portal |
 | API / health | http://localhost:3000/api/health |
 | ML / health | http://localhost:8000/health |
-| Hộp thư local | http://localhost:8025/; SMTP loopback 1025 |
+| Email Portal | `MAIL_PROVIDER=brevo`: gửi thật qua Brevo API (`BREVO_API_KEY`, `MAIL_FROM_EMAIL` là sender đã xác minh; bắt buộc ở production). `MAIL_PROVIDER=local`: hộp thư http://localhost:8025/ (SMTP loopback 1025), dùng cho seed/E2E |
 | PostgreSQL local | localhost:5432; cấu hình thật trong env cục bộ, không đưa credential vào tài liệu |
 
 `start-use` khởi động dịch vụ còn thiếu, không tự migration/push/seed và không thay process đang chạy. Python dùng `-X utf8` để tránh UnicodeEncodeError khi chạy ẩn. Script giả định DB/dependency/build đã được chuẩn bị; máy mới không được coi là đã setup chỉ vì có script.

@@ -38,6 +38,7 @@
     "predictions:prune": "node scripts/predictions-prune.cjs",
     "cleanup:test": "node scripts/cleanup-test-data.cjs",
     "accounts:tidy": "node scripts/accounts-tidy.cjs",
+    "storage:upload": "node scripts/upload-files-to-supabase.cjs",
     "seed:portal-flow": "node scripts/seed-portal-flow.cjs"
   },
   "prisma": {

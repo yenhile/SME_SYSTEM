@@ -53,10 +53,8 @@ export function canOpenTab(tab: Tab, role: RoleInput): boolean {
   return allowedNavItems(role).some(item => item.tab === tab && !item.unavailable);
 }
 
-/** Trang đầu theo vai trò: luôn là trang vai trò đó được phép (không đưa CBTD hay Admin vào trang bị từ chối). */
-export function getDefaultTab(role: RoleInput): Tab {
-  if (role === 'CBTD') return 'dashboard';
-  if (role === 'THAM_QUYEN') return 'appraisal';
+/** Trang đầu của mọi vai trò là Dashboard tổng quan. */
+export function getDefaultTab(_role: RoleInput): Tab {
   return 'dashboard';
 }
 
