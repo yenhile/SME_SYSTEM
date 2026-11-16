@@ -48,7 +48,7 @@ function show(value: unknown): string {
   return loanTypes[String(value)] || String(value);
 }
 
-export function PortalWizard({ initial, draftId, account, config, prefill, onBack, onSaved }: { initial: PortalRequest | null; draftId: string; account: PortalAccount; config: PortalFormConfig; prefill?: { reference: string; data: PortalData }; onBack: () => void; onSaved: (request: PortalRequest) => void }) {
+export function PortalWizard({ initial, draftId, account, config, prefill, onBack, onSaved, onSubmitted }: { initial: PortalRequest | null; draftId: string; account: PortalAccount; config: PortalFormConfig; prefill?: { reference: string; data: PortalData }; onBack: () => void; onSubmitted?: (request: PortalRequest, message: string) => void; onSaved: (request: PortalRequest) => void }) {
   const [recovery] = useState(() => readRecovery(account.id, draftId));
   const [initialState] = useState(() => initialDraftState(initial, recovery, canEditCycle(initial, config), { ...companyPrefill(prefill?.data), contactName: account.contactName, contactPhone: account.phone, contactEmail: account.email }));
   const [retainedRecovery, setRetainedRecovery] = useState(initialState.retainedRecovery);
@@ -166,7 +166,8 @@ export function PortalWizard({ initial, draftId, account, config, prefill, onBac
     await run(async () => {
       const saved = await persist();
       const sent = await portalApi.post<PortalRequest>(`/requests/${saved.id}/submit`, { expectedRevision: saved.revision, documentIds: saved.documents.map(doc => doc.id) });
-      received(sent, true); setNotice(config.intakeCycleEnabled?'Đã gửi đề nghị cho ngân hàng kiểm tra. Chưa tạo hồ sơ vay hoặc bắt đầu SLA.':'Đã gửi đề nghị vào hàng chờ phân công trong môi trường test cách ly. Chưa tạo hồ sơ vay hoặc bắt đầu SLA.');
+      const message = config.intakeCycleEnabled?`Đã gửi đề nghị ${sent.reference} cho ngân hàng kiểm tra. Chưa tạo hồ sơ vay hoặc bắt đầu SLA.`:`Đã gửi đề nghị ${sent.reference} vào hàng chờ phân công trong môi trường test cách ly. Chưa tạo hồ sơ vay hoặc bắt đầu SLA.`;
+      received(sent, true); if (onSubmitted) onSubmitted(sent, message); else setNotice(message);
     });
   }
   function field(key: keyof PortalData, options: Partial<FieldProps> = {}) {

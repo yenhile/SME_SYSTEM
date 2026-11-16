@@ -54,3 +54,12 @@ test('legacy portal JWT is accepted only at account version zero; malformed vers
   for(const av of [-1,'0',null,0.5])await assert.rejects(guard.canActivate(context(await sign(av))));
   await f.db.portalAccount.update({data:{authVersion:{increment:1}}});await assert.rejects(guard.canActivate(context(legacy)));
 });
+
+test('database outage during portal session check is 503, not a forced logout',async()=>{
+  const f=await fixture(),guard=new PortalGuard(f.jwt,f.auth);
+  const login=await f.auth.login({email:f.row().email,password:'OldPassword1'},'login');
+  const context=token=>({switchToHttp:()=>({getRequest:()=>({headers:{authorization:'Bearer '+token}})})});
+  f.db.portalAccount.findUnique=async()=>{throw Object.assign(new Error('max clients reached'),{code:'P1001'});};
+  await assert.rejects(guard.canActivate(context(login.accessToken)),e=>e.getStatus?.()===503&&e.getResponse?.().code==='PORTAL_SESSION_CHECK_UNAVAILABLE');
+  await assert.rejects(guard.canActivate(context('not-a-jwt')),e=>e.getStatus?.()===401);
+});

@@ -146,13 +146,20 @@ export class PortalGuard implements CanActivate {
     const req=context.switchToHttp().getRequest();
     const token=req.headers.authorization?.match(/^Bearer ([^ ]+)$/)?.[1];
     if(!token) throw new UnauthorizedException();
+    let sub:string, version:number;
     try {
       const payload=await this.jwt.verifyAsync(token,{secret:portalSecret(),audience,issuer:audience,algorithms:['HS256']});
       if(payload.type!=='portal' || typeof payload.sub!=='string') throw new Error('Principal');
-      const version=payload.av===undefined?0:payload.av;
+      version=payload.av===undefined?0:payload.av;
       if(!Number.isSafeInteger(version)||version<0) throw new Error('Session version');
-      req.portalAccount=await this.auth.me(payload.sub,version);
+      sub=payload.sub;
     } catch {throw new UnauthorizedException('Phiên doanh nghiệp không hợp lệ.');}
+    try { req.portalAccount=await this.auth.me(sub,version); }
+    catch(e) {
+      if(e instanceof UnauthorizedException) throw new UnauthorizedException('Phiên doanh nghiệp không hợp lệ.');
+      // A database outage must not revoke a valid session on the client.
+      throw new ServiceUnavailableException({code:'PORTAL_SESSION_CHECK_UNAVAILABLE',message:'Hệ thống đang bận, vui lòng thử lại sau ít phút.'});
+    }
     return true;
   }
 }
