@@ -7,20 +7,41 @@ const MAX_MESSAGE_BYTES = 2 * 1024 * 1024;
 const MAX_MESSAGES = 100;
 const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
-function readMessage(raw) {
+const MAX_MIME_DEPTH = 5;
+
+function splitEntity(raw) {
   const boundary = raw.indexOf('\r\n\r\n');
   const headerText = boundary < 0 ? raw : raw.slice(0, boundary);
-  let text = boundary < 0 ? '' : raw.slice(boundary + 4);
   const headers = {};
   for (const line of headerText.replace(/\r\n[ \t]+/g, ' ').split('\r\n')) {
     const index = line.indexOf(':');
     if (index > 0) headers[line.slice(0, index).toLowerCase()] = line.slice(index + 1).trim();
   }
-  if (headers['content-transfer-encoding']?.toLowerCase() === 'base64') text = Buffer.from(text, 'base64').toString('utf8');
-  if (headers['content-transfer-encoding']?.toLowerCase() === 'quoted-printable') {
-    text = Buffer.from(text.replace(/=\r\n/g, '').replace(/=([\da-f]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16))), 'latin1').toString('utf8');
+  return { headers, body: boundary < 0 ? '' : raw.slice(boundary + 4) };
+}
+
+function decodeBody(body, encoding) {
+  if (encoding?.toLowerCase() === 'base64') return Buffer.from(body, 'base64').toString('utf8');
+  if (encoding?.toLowerCase() === 'quoted-printable') {
+    return Buffer.from(body.replace(/=\r\n/g, '').replace(/=([\da-f]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16))), 'latin1').toString('utf8');
   }
-  return { subject: headers.subject || '(no subject)', text };
+  return body;
+}
+
+/** Text shown for an entity: a multipart message yields its first text/plain part, else its first readable part. */
+function readText({ headers, body }, depth = 0) {
+  const contentType = headers['content-type'] || 'text/plain';
+  const boundary = /boundary="?([^";]+)"?/i.exec(contentType)?.[1];
+  if (!/^multipart\//i.test(contentType) || !boundary || depth >= MAX_MIME_DEPTH) return { type: contentType, text: decodeBody(body, headers['content-transfer-encoding']) };
+  const delimiter = `--${boundary}`;
+  const parts = body.split(new RegExp(`(?:^|\\r\\n)${delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:--)?[ \\t]*(?:\\r\\n|$)`)).slice(1, -1)
+    .map(part => readText(splitEntity(part), depth + 1));
+  return parts.find(part => /^text\/plain/i.test(part.type)) || parts[0] || { type: contentType, text: '' };
+}
+
+function readMessage(raw) {
+  const entity = splitEntity(raw);
+  return { subject: entity.headers.subject || '(no subject)', text: readText(entity).text };
 }
 
 async function startMailbox({ smtpPort = 1025, httpPort = 8025, host = '127.0.0.1' } = {}) {
