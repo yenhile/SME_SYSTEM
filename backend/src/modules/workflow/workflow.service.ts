@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger, Optional } from '@nestjs/common';
 import { LoanStatus, StageCode, SupplementStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma.service';
 import {assertNoCoordinationConflict,obsoleteCoordination} from '../assignments/assignment-coordination';
@@ -12,7 +12,8 @@ import { assertBranchAmount } from './loan-policy';
 import { assertReportDecision, decisionRateReason, digest, isValidRate, proposedRateOf } from '../appraisal/appraisal.logic';
 import { randomUUID } from 'node:crypto';
 import { assertRateInBand, bandView, findActiveBand, type RateBandView } from '../rate-bands/rate-band.logic';
-import { isPublicRejectionReasonCode, PUBLIC_REJECTION_REASONS } from '../portal/portal.tracking';
+import { GENERIC_REJECTION, isPublicRejectionReasonCode, PUBLIC_REJECTION_REASONS } from '../portal/portal.tracking';
+import { PortalMailer } from '../portal/portal.mailer';
 import { Prisma } from '@prisma/client';
 
 function decisionNotice(applicationCode: string, dto: TransitionStageDto) {
@@ -32,7 +33,7 @@ function decisionNotice(applicationCode: string, dto: TransitionStageDto) {
 @Injectable()
 export class WorkflowService {
   private readonly logger = new Logger(WorkflowService.name);
-  constructor(private prisma: PrismaService, private predictionService: PredictionService) {}
+  constructor(private prisma: PrismaService, private predictionService: PredictionService, @Optional() private mailer?: PortalMailer) {}
   getWorkflowStages() { return this.prisma.workflowStage.findMany({ orderBy: { orderIndex: 'asc' } }); }
   async getWorkflowHistory(applicationId: string) {
     return this.prisma.applicationStageHistory.findMany({ where: { applicationId }, include: { stage: true, handler: { select: { id: true, fullName: true, username: true } } }, orderBy: { enteredAt: 'asc' } });
@@ -115,7 +116,23 @@ export class WorkflowService {
       try { await this.predictionService.predictForApplication(applicationId); }
       catch (err) { this.logger.warn(`Không cập nhật được dự báo AI: ${(err as Error).message}`); }
     }
+    if (!transaction) this.notifyDecision(updated);
     return updated;
+  }
+
+  /** Best effort after commit: only portal loans are emailed, and a delivery failure never undoes the decision. */
+  private notifyDecision(loan: { id: string; applicationCode: string; currentStatus: LoanStatus; rejectionReasonCode?: string | null }) {
+    if (!this.mailer || (loan.currentStatus !== LoanStatus.APPROVED && loan.currentStatus !== LoanStatus.REJECTED)) return;
+    const mailer = this.mailer;
+    const outcome = loan.currentStatus;
+    void (async () => {
+      const request = await this.prisma.portalRequest.findUnique({ where: { loanId: loan.id }, select: { reference: true, account: { select: { email: true } } } });
+      if (!request?.account?.email) return;
+      const reason = outcome === LoanStatus.REJECTED
+        ? (isPublicRejectionReasonCode(loan.rejectionReasonCode) ? PUBLIC_REJECTION_REASONS[loan.rejectionReasonCode] : GENERIC_REJECTION)
+        : null;
+      await mailer.sendDecisionResult(request.account.email, request.reference, loan.applicationCode, outcome, reason);
+    })().catch(() => this.logger.warn(`Không gửi được email kết quả hồ sơ ${loan.applicationCode}.`));
   }
 
   /**

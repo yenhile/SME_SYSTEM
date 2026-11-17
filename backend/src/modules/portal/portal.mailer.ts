@@ -224,4 +224,33 @@ export class PortalMailer {
     ]);
     await this.deliver({ to: email, subject, text, html }, 'Không gửi được email thông báo đề nghị.');
   }
+
+  /** Tells the enterprise the bank's final decision with the same wording as the portal; never includes amount, rate or internal notes. */
+  async sendDecisionResult(email: string, reference: string, applicationCode: string, outcome: 'APPROVED' | 'REJECTED', rejectionLabel: string | null) {
+    const approved = outcome === 'APPROVED';
+    const subject = approved ? `SME Loan - Hồ sơ ${applicationCode} đã được phê duyệt` : `SME Loan - Hồ sơ ${applicationCode} không được chấp thuận`;
+    const heading = approved ? 'Hồ sơ vay đã được phê duyệt' : 'Hồ sơ vay không được chấp thuận';
+    const result = approved ? 'Hồ sơ đã được phê duyệt. Ngân hàng sẽ liên hệ về các bước tiếp theo.' : 'Hồ sơ không được chấp thuận.';
+    const reason = !approved && rejectionLabel?.trim() ? rejectionLabel.trim() : null;
+    const portal = portalLink();
+    const html = layout(subject, `${heading}: ${applicationCode}`, heading,
+      paragraph('Ngân hàng đã có kết quả xét duyệt cho hồ sơ vay vốn dưới đây:') +
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;"><tr>` +
+      `<td class="panel" style="padding:14px 18px;background-color:${BRAND_SOFT};border-left:4px solid ${BRAND};border-radius:6px;font-size:15px;line-height:1.5;color:#1f2a3d;">Mã hồ sơ: <strong style="font-size:17px;">${escapeHtml(applicationCode)}</strong><br>Mã đề nghị: ${escapeHtml(reference)}` +
+      `<div style="margin-top:10px;">${escapeHtml(result)}</div>` +
+      (reason ? `<div style="margin-top:6px;">Lý do: ${escapeHtml(reason)}</div>` : '') +
+      `</td></tr></table>` +
+      paragraph('Vui lòng đăng nhập cổng doanh nghiệp để xem chi tiết kết quả hồ sơ.') +
+      (portal ? button(portal, 'Mở cổng doanh nghiệp') : ''));
+    const text = plainText([
+      'Ngân hàng đã có kết quả xét duyệt cho hồ sơ vay vốn dưới đây.',
+      `Mã hồ sơ: ${applicationCode}`,
+      `Mã đề nghị: ${reference}`,
+      result,
+      ...(reason ? [`Lý do: ${reason}`] : []),
+      'Vui lòng đăng nhập cổng doanh nghiệp để xem chi tiết kết quả hồ sơ.',
+      ...(portal ? [`Đăng nhập tại: ${portal}`] : []),
+    ]);
+    await this.deliver({ to: email, subject, text, html }, 'Không gửi được email kết quả hồ sơ.');
+  }
 }
