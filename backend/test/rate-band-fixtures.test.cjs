@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { SIMULATED_BANDS, SIMULATED_BASIS, SIMULATED_EFFECTIVE_FROM, simulatedBandRows, ensureSimulatedBands, rateInBand, assertActiveBandResponse } = require('../scripts/rate-band-fixtures.cjs');
+const { SIMULATED_BANDS, SIMULATED_EFFECTIVE_FROM, simulatedBandRows, ensureSimulatedBands, rateInBand, assertActiveBandResponse } = require('../scripts/rate-band-fixtures.cjs');
 
 const NOW = new Date('2026-11-15T03:00:00Z');
 
@@ -9,18 +9,30 @@ test('Khung mô phỏng: đúng số liệu, kỳ hạn để trống, hiệu l�
     ['VAY_VON_LUU_DONG', 6.5, 10.5], ['VAY_DAU_TU_TSCD', 7.5, 12], ['THAU_CHI', 8, 13],
   ]);
   assert.equal(SIMULATED_EFFECTIVE_FROM.toISOString(), '2026-11-12T17:00:00.000Z');
-  assert.match(SIMULATED_BASIS, /^Biểu lãi suất mô phỏng phục vụ nghiên cứu, không phải biểu lãi suất chính thức của ngân hàng\./);
-  assert.match(SIMULATED_BASIS, /không thuộc diện khống chế trần lãi suất ưu tiên\.$/);
-  assert.ok(SIMULATED_BASIS.length <= 500);
   const rows = simulatedBandRows('fixture');
   assert.equal(rows.length, 3);
   for (const row of rows) {
     assert.equal(row.termFromMonths, null); assert.equal(row.termToMonths, null);
-    assert.equal(row.basis, SIMULATED_BASIS); assert.equal(row.createdBy, 'fixture');
+    assert.equal(row.createdBy, 'fixture');
     assert.equal(row.effectiveFrom.getTime(), SIMULATED_EFFECTIVE_FROM.getTime());
   }
   const early = new Date('2025-12-31T17:00:00.000Z');
-  assert.ok(simulatedBandRows('fixture', early).every(r => r.effectiveFrom === early && r.basis === SIMULATED_BASIS));
+  assert.ok(simulatedBandRows('fixture', early).every((r, i) => r.effectiveFrom === early && r.basis === rows[i].basis));
+});
+
+test('Căn cứ ban hành riêng từng loại vay: nhãn mô phỏng, nguồn kèm ngày đối chiếu, tối đa 500 ký tự', () => {
+  const basis = Object.fromEntries(simulatedBandRows('fixture').map(r => [r.loanType, r.basis]));
+  assert.equal(new Set(Object.values(basis)).size, 3);
+  for (const text of Object.values(basis)) {
+    assert.match(text, /^Số liệu mô phỏng cho khóa luận/);
+    assert.match(text, /17\/11\/2026/);
+    assert.match(text, /NHNN/);
+    assert.ok(text.length <= 500, String(text.length));
+  }
+  assert.match(basis.VAY_VON_LUU_DONG, /không thuộc diện trần ưu tiên/);
+  assert.match(basis.VAY_VON_LUU_DONG, /Agribank tháng 10\/2026 cho vay ngắn hạn thông thường từ 6,1%\/năm/);
+  assert.match(basis.VAY_DAU_TU_TSCD, /trung dài hạn từ 7,8%\/năm/);
+  assert.match(basis.THAU_CHI, /là giả định/);
 });
 
 function fakeDb(existing) {
