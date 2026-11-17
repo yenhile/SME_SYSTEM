@@ -6,6 +6,7 @@ import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 import { lockOfficer } from '../workflow/loan-policy';
 import { accountChangeEntries, recordAdminActions } from '../../admin-audit';
+import { assertAppraiserMinimum, assertNoRoleConflict, isCountedAppraiser } from './account-rules';
 
 /** Việc còn trên tay một cán bộ: còn việc thì không được khóa hay bỏ vai trò CBTD. Danh sách tài khoản đếm theo cùng điều kiện. */
 const OPEN_LOAN_WHERE = { completedAt: null };
@@ -86,6 +87,7 @@ export class UsersService {
     if (existing) {
       throw new BadRequestException('Tên đăng nhập hoặc Email đã tồn tại trong hệ thống.');
     }
+    assertNoRoleConflict(data.roles);
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(data.password, salt);
@@ -160,6 +162,11 @@ export class UsersService {
       }
       const selected = roles ? await tx.role.findMany({ where: { code: { in: roles } } }) : null;
       if (selected && selected.length !== roles!.length) throw new BadRequestException('Vai trò không hợp lệ.');
+      const nextRoles = roles ?? currentRoles;
+      assertNoRoleConflict(nextRoles, currentRoles);
+      if (isCountedAppraiser(current.isActive, currentRoles) && !isCountedAppraiser(profile.isActive ?? current.isActive, nextRoles)) {
+        await assertAppraiserMinimum(tx, id);
+      }
       const losesCbtd = profile.isActive === false || (roles && !roles.includes(RoleCode.CBTD));
       if (losesCbtd) {
         const open = await tx.loanApplication.count({ where: { assignedTo: id, ...OPEN_LOAN_WHERE } });

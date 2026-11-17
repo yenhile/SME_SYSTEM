@@ -320,6 +320,6 @@ test('AD-01: Admin không tự đổi vai trò của chính mình, vẫn cấp v
   assert.deepEqual(profileOnly.writes, [{ op: 'updateUser', data: { phone: '0900000000' } }]);
 
   const other = fixture(['CBTD']);
-  await other.service.update('officer-1', { roles: ['CBTD', 'THAM_QUYEN'] }, 'admin-1');
+  await other.service.update('officer-1', { roles: ['CBTD', 'QUAN_LY'] }, 'admin-1');
   assert.ok(other.writes.some(w => w.op === 'createRoles'));
 });

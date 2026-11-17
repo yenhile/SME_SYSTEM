@@ -1396,7 +1396,135 @@ Khuyến nghị của Lead PO: **B kèm A**, chặn cứng ngoài khung (không 
 
 **Kiểm tra đã chạy:** backend 523/523; frontend tsc, 106 test, build đạt sau khi gộp `312aa95`; CodeGraph làm mới.
 
-**Việc tiếp theo (18/11):** (1) PO hoàn thành bước 6–8 và xác nhận email đóng DN-23; (2) ~~chốt và làm N2 email kết quả~~ code xong 17/11, chờ commit/PR/deploy rồi thử một quyết định trên cloud; (3) sửa U3 Bước 4 — chờ PO chọn: loại tài liệu riêng cho từng tệp trong hàng chờ, hay mỗi lần tải một loại; (4) ~~chạy SQL M3 trên DB local~~ xong 17/11 (D1); (5) đổi mật khẩu DB/khóa bị lộ (PO làm trên Supabase, cập nhật Render).
+**Việc tiếp theo (18/11):** (1) PO hoàn thành bước 6–8 và xác nhận email đóng DN-23; (2) ~~chốt và làm N2 email kết quả~~ xong 17/11, `43d41b9` đã merge PR #21; còn thử một quyết định trên cloud; (3) sửa U3 Bước 4 — chờ PO chọn: loại tài liệu riêng cho từng tệp trong hàng chờ, hay mỗi lần tải một loại; (4) ~~chạy SQL M3 trên DB local~~ xong 17/11 (D1); (5) đổi mật khẩu DB/khóa bị lộ (PO làm trên Supabase, cập nhật Render).
+
+<a id="viec-con-lai-20261117"></a>
+#### Tổng hợp việc còn lại trước bảo vệ 23/12 — rà ngày 17/11/2026
+
+Rà từ mục cloud ở trên, bảng [việc còn chờ chốt C1–C12](#phuong-an-c1-c3-20261114) và các backlog còn mở. Cloud đang chạy đủ 4 dịch vụ (health 10:44 ngày 17/11). Luồng chính DN → phê duyệt đã đạt trên cloud. Không còn lỗi chặn luồng chính.
+
+| Ưu tiên | Mã | Việc | Loại | Ai làm / trạng thái |
+|---|---|---|---|---|
+| **1 — Bảo mật** | S1 | Mật khẩu DB Supabase và khóa `service_role` đã lộ trong hội thoại | Phải làm | PO đổi trên Supabase, cập nhật biến Render và `backend/.env.cloud` |
+| **1 — Bảo mật** | S2 | Repo GitHub `yenhile/SME_SYSTEM` **công khai**, mật khẩu demo của 7 tài khoản nội bộ (kể cả Admin) còn trong lịch sử git và 2 tệp `docs/ai/2026-11-04-…`, `docs/ai/2026-11-06-…`; bản cloud mở ra internet nên ai đọc repo cũng đăng nhập được. README đã ẩn mật khẩu (`57d4574`) | Phải làm | Chờ PO chọn: chuyển repo riêng tư, hoặc đổi mật khẩu 7 tài khoản trên CSDL cloud (ghi dữ liệu cloud, cần PO cho phép) |
+| **2 — Lỗi giao diện** | U3 | Bước 4 Hồ sơ tài liệu: loại tài liệu áp cho mọi tệp trong một lần tải, nút "Thay thế" giống tiêu đề, khung "Nguồn doanh thu năm" khó thấy | Phải sửa | Chờ PO chọn: loại riêng từng tệp trong hàng chờ, hay mỗi lần tải một loại |
+| **2 — Dữ liệu demo** | C2 | 4 hồ sơ demo ở Thẩm định có tờ trình cũ chưa có lãi suất đề xuất, không phê duyệt được. CSDL cloud sao từ local nên **cloud cũng có 4 hồ sơ này** | Phải xử lý trước demo | PO đã chốt: `demo:refresh` một lần vài ngày trước 23/12 (sao lưu trước). Cần chốt thêm có chạy trên cloud không |
+| **3 — Kiểm thử** | C11 | E2E toàn luồng chạy lần cuối 10/11; chưa chạy lại sau các đợt sửa 11–17/11 | Phải làm trước bảo vệ | Cần sửa trước 4 script mở `/portal` rồi chờ form (trang chủ cổng chặn): `check-sme-rollout-browser`, `check-portal-v2-intake-browser`, `check-portal-mvp-supplements-browser`, `round3-intake-checks` (thư mục `frontend/scripts`); chạy E2E ghi dữ liệu nên cần PO cho phép môi trường |
+| **3 — Kiểm chứng cloud** | V1 | Bước 6–8 trên cloud: DN xem kết quả, quên mật khẩu qua link Vercel, tải chứng từ từ Storage; email đóng DN-23 (N1); email kết quả (N2) sau một quyết định mới | Kiểm tay | PO thử trên web |
+| 4 — Chờ PO chốt nghiệp vụ | C1, C4–C8 | Khoản vay ưu tiên; quy tắc tài khoản (cấm kiêm nhiệm, tối thiểu 2 Thẩm quyền); màn Liên hệ cá nhân; Dashboard; khối "Vướng mắc nội bộ"; dữ liệu thử LS-1/LS-2 | Tính năng/quyết định | Không cần cho demo nếu PO không chốt |
+| 5 — Tùy chọn | U5, C9, backlog 06/11 | Hộp xác nhận gửi dùng `window.confirm`; Thẩm quyền còn thao tác ngoài danh sách; form phê duyệt chưa có ô điều kiện; CBTD chưa được báo khi QLCN đóng quá hạn; `LoanDetailModal` còn nhánh không dùng; menu khổ điện thoại dài; rời trang chưa cảnh báo nội dung đang gõ | Cải tiến | Sau bảo vệ nếu không ảnh hưởng demo |
+| Ghi nhận | C10 | Lịch SLA v2 phủ tới 31/01/2027 | Đủ cho 23/12 | Không làm |
+
+**Thứ tự đề xuất:** S1, S2 → U3 → sửa 4 script E2E → `demo:refresh` (C2) → chạy E2E (C11) → PO kiểm tay V1 trên cloud.
+
+<a id="review-nhan-viec-tham-quyen-20261117"></a>
+#### Review cách Thẩm quyền nhận tờ trình — 17/11/2026 (chỉ review, chưa sửa code)
+
+**Câu hỏi PO:** sau khi CBTD trình, sao hệ thống không xác định Thẩm quyền nhận mà "ai đăng nhập trước thì nhận"? Có đúng nghiệp vụ và vận hành ngân hàng không?
+
+**Hiện trạng (ĐÃ KIỂM CHỨNG bằng source, CodeGraph `fn-impact transitionStage`, `classifyQueueRow`):**
+
+1. CBTD trình (`AppraisalService.mutate` kind `SUBMITTED`) → `WorkflowService.transitionStage` chuyển _Thẩm định_ / `PENDING_APPRAISAL`. **`assignedTo` vẫn là CBTD**, schema không có trường người phê duyệt dự kiến.
+2. Hệ thống gửi thông báo "Tờ trình chờ xem xét" cho **mọi tài khoản Thẩm quyền đang mở**, trừ người trình (`appraisal.service.ts` dòng 116–117). Không lọc người không độc lập, không lọc chi nhánh.
+3. Hàng việc (`appraisal-queue.ts`) và Danh sách (`listWhere`) cho mọi Thẩm quyền thấy cùng một tập hồ sơ. Người không độc lập thấy hồ sơ ở nhóm "Thẩm quyền khác xử lý".
+4. Không có thao tác "Nhận xử lý". **Người bấm quyết định hợp lệ trước là người quyết.** Đăng nhập trước hay mở trước không giành được hồ sơ.
+5. Chống quyết trùng: khóa dòng `FOR UPDATE`, quyết định phải đúng `reportVersionId` mới nhất, căn cứ không đổi. Người thứ hai nhận lỗi "Hồ sơ đã kết thúc" hoặc "Cần đọc và quyết định trên đúng bản tờ trình". Người quyết được lưu ở `handledBy` của lịch sử công đoạn.
+6. Thẩm quyền A yêu cầu làm rõ, CBTD trình lại → thông báo lại cho mọi Thẩm quyền; **B được quyết bản mới**.
+
+> **THEO TÀI LIỆU:** đây là quyết định PO đã chốt, **[DEC-10](#quyet-dinh-po-va-ranh-gioi) ngày 12/11/2026**: hàng việc chung, người thao tác hợp lệ trước là người quyết. Phân việc theo người (`reviewerId`, "Nhận xử lý") để backlog với điều kiện kích hoạt ghi trong DEC-10. Mô tả "ai đăng nhập trước thì nhận" **chưa đúng**: đúng là "hàng chờ chung, ai quyết trước thì hồ sơ thuộc người đó".
+
+**Đối chiếu vận hành ngân hàng (GIẢ ĐỊNH theo thông lệ chung, chưa đối chiếu quy chế cấp tín dụng của một ngân hàng cụ thể):**
+
+| Thông lệ | Hệ thống hiện tại | Nhận xét |
+|---|---|---|
+| Phê duyệt theo **hạn mức phán quyết được ủy quyền bằng văn bản** cho từng cá nhân/cấp | Hai Thẩm quyền cùng một mức ≤10 tỷ | Chấp nhận được khi hai người cùng mức. Không mô phỏng được chi nhánh có PGĐ và GĐ khác hạn mức |
+| Tờ trình gửi **cấp có thẩm quyền xác định** (thường PGĐ phụ trách tín dụng); GĐ hoặc người được ủy quyền thay khi vắng | Không chỉ định; ai độc lập cũng quyết | Lệch thông lệ về **trách nhiệm trước khi quyết**. Bù lại không kẹt hồ sơ khi một người vắng |
+| Tách thẩm định và phê duyệt (người lập không tự duyệt) | Maker-checker 3 tầng (D4-04, D5-04) | **Đúng**, đã kiểm chứng bằng test |
+| Hệ thống LOS dùng hàng chung thường có **nhận việc (claim)** để một người chịu trách nhiệm | Không có claim | Có thể trùng công: hai người cùng đọc một tờ trình |
+| Người yêu cầu làm rõ thường là người xem lại bản sửa | Người khác được quyết bản sau làm rõ | Mất liên tục ý kiến; DEC-10 đã chấp nhận |
+
+**Đánh giá:** với chi nhánh demo 2 Thẩm quyền cùng hạn mức, hàng chung **hợp lệ và đã có quyết định PO**, an toàn dữ liệu (không quyết trùng, maker-checker đúng). Điểm yếu là **trách nhiệm và tính liên tục**, không phải lỗi. Khi hội đồng hỏi, cần trình bày rõ đây là lựa chọn có chủ đích kèm điều kiện chuyển sang giao đích danh.
+
+| Mã | Tình huống | Hiện trạng / mong đợi | Rủi ro | Bằng chứng | Phương án | Phạm vi ảnh hưởng | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|---|---|
+| TQ-01 | Hồ sơ vào Thẩm định, chưa ai quyết | Không có người chịu trách nhiệm trước khi quyết / thông lệ có người nhận hoặc được chỉ định | 🟡 Trễ SLA không quy được cho ai; hội đồng có thể hỏi | Schema không có trường người phê duyệt; DEC-10 | A: giữ, bổ sung thuyết minh. B/C: thêm người nhận | B/C: schema, hàng việc, dashboard, thông báo, ML | B/C: mỗi hồ sơ Thẩm định hiện tên người nhận; người khác không quyết được |
+| TQ-02 | Hai Thẩm quyền cùng mở một tờ trình | Cả hai đọc; người sau mới biết khi bấm / mong đợi biết trước ai đang xử lý | 🟢 Không sai dữ liệu; tốn công | `FOR UPDATE`, `assertReportDecision` | B: claim; hoặc nhãn "đã có người nhận" | Hàng việc, chi tiết hồ sơ | Người thứ hai thấy tên người nhận trước khi đọc |
+| TQ-03 | A yêu cầu làm rõ, B quyết bản sau | B quyết, có thể không theo ý A / thông lệ người hỏi xem lại | 🟡 Mất liên tục ý kiến | `mutate` thông báo mọi Thẩm quyền; DEC-10 | A: hiện rõ người và nội dung làm rõ trước nút quyết định; B: ưu tiên người đã hỏi | Khối tờ trình | Bản trình lại hiện "A đã yêu cầu làm rõ: …". Hiện trạng (THEO CODE `AppraisalReportCard.tsx` dòng 44, 52–75): đã hiện nội dung làm rõ và nhãn "Đã sửa so với phiên bản trước", **chưa hiện tên người yêu cầu** |
+| TQ-04 | Thông báo khi trình | Gửi mọi Thẩm quyền đang mở, cả người không độc lập / mong đợi chỉ người quyết được | 🟢 Thông báo thừa | `appraisal.service.ts` 116–117 | Lọc theo `assertIndependent` | Thông báo nội bộ | Người tiếp nhận ban đầu kiêm Thẩm quyền không nhận thông báo |
+| TQ-05 | Thẩm quyền vắng | Hàng chung tự xử lý / giao đích danh cần ủy quyền | Giao đích danh mà thiếu ủy quyền sẽ kẹt hồ sơ | DEC-10 | B/C phải có QLCN chuyển người nhận | Điều phối (`assignments`) | QLCN chuyển người nhận, lịch sử ghi lại |
+
+**Phương án:**
+
+- **A — Giữ DEC-10, chỉnh nhỏ (khuyến nghị trước 23/12).** Không đổi schema, quy trình, SLA, ML. Bổ sung thuyết minh "hàng chờ chung có kiểm soát" cho báo cáo/bảo vệ; tùy chọn làm TQ-03, TQ-04. Đánh đổi: TQ-01, TQ-02 vẫn còn.
+- **B — "Nhận xử lý" từ hàng chung (backlog DEC-10).** Thêm `reviewerId`; Thẩm quyền bấm Nhận, người khác chỉ xem; QLCN chuyển người nhận khi vắng; người hỏi làm rõ được ưu tiên giữ hồ sơ. Đặc trưng ML `appraisalQueueLen`, `appraisersActive` vẫn đúng giả định hàng chung đến lúc nhận. Đánh đổi: migration, sửa hàng việc, dashboard, thông báo, điều phối và test; rủi ro trước 23/12.
+- **C — Chỉ định đích danh khi trình (gần thông lệ nhất).** CBTD hoặc QLCN chọn Thẩm quyền, kèm ủy quyền khi vắng và có thể phân cấp hạn mức. Đánh đổi: đổi quy trình và quyền vai trò; **ML giả định hàng chung**, đổi sang hàng riêng từng người cần xem lại đặc trưng và có thể huấn luyện lại. Không nên làm trước bảo vệ.
+
+**Câu hỏi PO cần chốt:**
+
+| # | Câu hỏi | Bị chặn nếu chưa trả lời |
+|---|---|---|
+| Q1 | Giữ DEC-10 (phương án A) đến hết bảo vệ? | Mọi thay đổi code phần nhận việc |
+| Q2 | Nếu giữ A, có làm TQ-03 (hiện người và nội dung làm rõ) và TQ-04 (lọc thông báo) không? | Phạm vi sửa nhỏ |
+| Q3 | Mô hình nghiệp vụ muốn trình bày: hai Thẩm quyền ngang hạn mức, hay PGĐ/GĐ khác hạn mức? | Chọn giữa B và C về sau |
+| Q4 | Có muốn ghi điều kiện chuyển sang B/C vào báo cáo khóa luận như hướng phát triển? | Nội dung chương hạn chế/hướng phát triển |
+
+**Bổ sung 17/11 — ưu điểm, rủi ro và lập luận bảo vệ phương án A:**
+
+| Ưu điểm | Căn cứ |
+|---|---|
+| Hồ sơ không kẹt khi một Thẩm quyền vắng, nghỉ phép, quá tải | Mọi Thẩm quyền độc lập đều quyết được (DEC-10) |
+| Tải tự cân bằng giữa 2 người cùng hạn mức | Hàng việc chung `appraisal-queue.ts` |
+| An toàn quyết định đã đủ: không tự duyệt, không quyết trùng, không quyết trên bản cũ hoặc căn cứ đã đổi | `assertIndependent`, `FOR UPDATE`, `assertReportDecision` (ĐÃ KIỂM CHỨNG bằng test, mục Nhóm 5–6) |
+| Truy vết sau quyết định đầy đủ: ai quyết, lúc nào, bản tờ trình nào, lãi suất và lý do | `handledBy`, `decidedVersionId`, sự kiện `RATE_DECIDED` |
+| Nhất quán với ML: đặc trưng `appraisalQueueLen`, `appraisersActive` giả định hàng chung | `prediction.service.ts`; không phải huấn luyện lại |
+| Không thay đổi code trước bảo vệ | Không phát sinh rủi ro hồi quy |
+
+| Rủi ro | Mức | Vì sao không tác động mạnh / cách giảm |
+|---|---|---|
+| Chưa có người chịu trách nhiệm **trước** khi quyết (TQ-01) | 🟡 Trung bình về quản trị, thấp trong phạm vi khóa luận | Trách nhiệm **sau** quyết định đầy đủ; SLA và cảnh báo trễ tính trên hồ sơ, Dashboard Thẩm quyền thấy cả hàng chung |
+| Thẩm quyền chọn hồ sơ dễ, để lại hồ sơ khó; hoặc CBTD nhờ người quen quyết | 🟡 Thấp đến trung bình | CBTD không chọn được người quyết; hệ thống ghi người quyết từng hồ sơ để QLCN rà soát. Chưa có báo cáo thống kê theo người quyết (GIẢ ĐỊNH cần nếu triển khai thật) |
+| Hai người cùng đọc một tờ trình (TQ-02) | 🟢 Thấp | Chỉ tốn công, dữ liệu đúng; chi nhánh có 2 người |
+| Người quyết bản sau làm rõ khác người đã hỏi (TQ-03) | 🟢 Thấp | Bản trình lại đã hiện nội dung làm rõ và phần đã sửa; chỉ thiếu tên người hỏi |
+| Không mô phỏng phân cấp hạn mức khác nhau | 🟢 Thuộc phạm vi đã chốt | Một chi nhánh, một mức ≤10 tỷ, không có Cấp trên |
+
+> **Kết luận:** không rủi ro nào làm sai quyết định, sai tiền hay sai dữ liệu. Rủi ro còn lại nằm ở **quản trị trách nhiệm**, chấp nhận được với chi nhánh 2 Thẩm quyền cùng hạn mức.
+
+**Lập luận trình bày với GVHD:** (1) thừa nhận ngân hàng thường chỉ định người phê duyệt theo hạn mức ủy quyền; (2) nêu phạm vi: một chi nhánh, 2 Thẩm quyền ngang hạn mức, nên hàng chung là lựa chọn có chủ đích (DEC-10) để không kẹt SLA; (3) chứng minh kiểm soát bằng demo: tài khoản lập tờ trình bị khóa quyết định, Thẩm quyền thứ hai bấm sau bị từ chối, kết quả hiện người quyết; (4) nêu điều kiện chuyển sang phương án B/C (từ 3 Thẩm quyền, phân cấp hạn mức, nhiều chi nhánh, KPI theo người, kiểm toán yêu cầu chỉ định trước) như hướng phát triển. Tránh nói "ai đăng nhập trước thì nhận"; dùng "hàng chờ chung có kiểm soát, quyết định hợp lệ đầu tiên được ghi nhận".
+
+**Ràng buộc bổ sung nếu chốt A (ĐỀ XUẤT, chờ PO duyệt; không đổi quy trình, SLA, ML):**
+
+| Mã | Việc | Lý do | Cần làm trước 23/12? |
+|---|---|---|---|
+| R1 | Quy tắc tài khoản: luôn có **ít nhất 2 Thẩm quyền độc lập** đang mở, cấm một người kiêm CBTD + Thẩm quyền (trùng C4, DEC-12 còn mở) | Hàng chung chỉ an toàn khi luôn còn người quyết được; nếu khóa còn 1 Thẩm quyền mà người đó không độc lập thì hồ sơ kẹt | **Nên** — đổi quyền tài khoản nên cần PO chốt |
+| R2 | Hồ sơ không còn Thẩm quyền độc lập nào quyết được → cảnh báo cho QLCN | Chưa xác minh hiện có cảnh báo này | Nên kiểm tra; sửa nếu thiếu |
+| R3 | Hiện tên người yêu cầu làm rõ trên bản trình lại (TQ-03) | Người quyết sau biết ai đã hỏi để trao đổi | Tùy chọn, công sức nhỏ |
+| R4 | Thông báo "Tờ trình chờ xem xét" chỉ gửi Thẩm quyền độc lập (TQ-04) | Bớt thông báo thừa | Tùy chọn, công sức nhỏ |
+| R5 | Báo cáo số hồ sơ đã quyết theo từng Thẩm quyền cho QLCN | Phát hiện chọn hồ sơ dễ | Sau bảo vệ |
+
+Không cần thêm khóa hay ràng buộc cho phần quyết định: khóa dòng, kiểm tra đúng bản tờ trình và maker-checker đã đủ.
+
+**Kiểm tra R1, R2 có sẵn chưa (17/11, THEO CODE nhánh `LeThiYenNhi` tại `57d4574`):** **chưa có cả hai.**
+- R1: `UsersService.create` chỉ kiểm vai trò hợp lệ; `UsersService.update` chỉ chặn tự khóa, tự bỏ quyền Admin và khóa/bỏ CBTD khi còn hồ sơ hoặc đề nghị Portal. Không chặn kiêm CBTD + Thẩm quyền, không chặn khóa hoặc bỏ vai trò Thẩm quyền cuối cùng. Khớp ghi nhận C4 "chưa chặn" và DEC-12 "chưa duyệt, chưa sửa code".
+- R2: hồ sơ người dùng không độc lập chỉ hiện ở tab "Thẩm quyền khác xử lý" của chính người đó (`classifyQueueRow`); không có cảnh báo cho QLCN khi không còn Thẩm quyền độc lập nào. Dashboard và thông báo không có điều kiện này.
+- Dữ liệu demo hiện vẫn an toàn: `ha.le`, `huy.vu` là Thẩm quyền chuyên trách. Rủi ro chỉ xảy ra khi Admin khóa bớt hoặc gán kiêm nhiệm.
+
+**PO duyệt ngày 17/11/2026: chốt phương án A (giữ DEC-10) và triển khai R1.** R2–R5 chưa duyệt, giữ backlog.
+
+R1 áp dụng theo khuyến nghị đã trình; PO chưa nêu khác, cần xác nhận lại khi nghiệm thu:
+- Tạo hoặc sửa tài khoản mà một người có cả CBTD và Thẩm quyền → chặn, báo "Một tài khoản không được kiêm CBTD và Thẩm quyền."
+- Khóa hoặc bỏ vai trò Thẩm quyền khiến số Thẩm quyền đang hoạt động **dưới 2** → chặn, báo lý do và hướng thêm Thẩm quyền trước.
+- Tài khoản đang kiêm nhiệm từ trước: giữ nguyên, chỉ chặn thay đổi từ nay.
+- Không đổi quy trình vay, quyền quyết định, SLA, ML.
+
+Tiêu chí nghiệm thu R1: (1) Admin gán CBTD + Thẩm quyền cho một tài khoản qua giao diện và qua API đều bị 400, không ghi nhật ký; (2) có đúng 2 Thẩm quyền hoạt động thì khóa hoặc bỏ vai trò một người bị 400; có 3 thì được; (3) nhiều thao tác khóa đồng thời không làm số Thẩm quyền xuống dưới 2; (4) test hồi quy quản lý tài khoản, chặn khóa CBTD còn hồ sơ, Admin chỉ xem vẫn đạt. Việc cần xét khi làm: cách đếm "Thẩm quyền hoạt động" có loại tài khoản `test_*` như đặc trưng ML `appraisersActive` hay không, và việc chặn kiêm nhiệm có ảnh hưởng tài khoản kiểm thử của các script E2E hay không.
+
+**Triển khai R1 — 17/11/2026 (PO yêu cầu, chưa commit):**
+- `backend/src/modules/users/account-rules.ts` (mới): chặn phát sinh kiêm CBTD + Thẩm quyền; tài khoản đã kiêm từ trước vẫn sửa thông tin hoặc bỏ bớt vai trò được. Thẩm quyền được tính = tài khoản mở, có Thẩm quyền, không kiêm CBTD. **Không loại `test_*`** (quy tắc nghiệp vụ không dựa vào tên đăng nhập), khác đặc trưng ML `appraisersActive`; ML không đổi.
+- `UsersService.create` kiểm kiêm nhiệm trước khi ghi. `UsersService.update`: khi thay đổi làm một Thẩm quyền được tính rời danh sách (khóa, bỏ vai trò Thẩm quyền), lấy khóa `pg_advisory_xact_lock('sme-appraiser-roster')` rồi đếm người còn lại; dưới 2 thì 400, không ghi gì, không vào nhật ký.
+- Giao diện không đổi: form "Sửa / Cấp quyền" đã hiện thông báo lỗi API trong hộp thoại.
+- **Kiểm chứng:** test đỏ trước (`backend/test/appraiser-roster.test.cjs`, 3/6 đỏ), sau sửa 6/6; sửa 2 test cũ đang gán CBTD + Thẩm quyền làm dữ liệu mẫu (`admin-audit-log`, `role-governance` AD-01) sang CBTD + Quản lý, ý nghĩa test giữ nguyên. Backend `npm test` 536/536; `nest build` đạt; CodeGraph 253 file, 5.894 node, 11.666 cạnh.
+- **Chưa kiểm chứng:** thao tác trên trình duyệt với backend đang chạy (không khởi động lại backend vì dùng chung với phiên chính); khóa đồng thời thật trên PostgreSQL (mới kiểm bằng test có khóa, chưa chạy hai giao dịch thật).
+- **Ảnh hưởng script ghi dữ liệu (chưa chạy, cần sửa trước E2E C11):** `backend/scripts/check-workflow.cjs` dòng 40–44 tạo tài khoản CBTD + Thẩm quyền và chờ 201, nay sẽ nhận 400. Script này vốn đã lệch quy trình hiện hành (cùng người tự phê duyệt hồ sơ mình lập).
 
 <a id="chuan-hoa-trang-thai"></a>
 ## 4. Chuẩn hóa trạng thái và Lịch sử các đợt review
