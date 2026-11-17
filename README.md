@@ -11,6 +11,31 @@ Hệ thống tiếp nhận, thẩm định và quyết định hồ sơ vay SME;
 
 Trong `docs` chỉ duy trì hai Markdown trên. Kế hoạch, quyết định sửa, nghiệm thu và backlog của 7 đợt review **chỉ cập nhật SME_MASTER**. Bằng chứng tại `evidence/reviews`; bản gốc trước hợp nhất được giữ trong ZIP tại `archive`.
 
+<a id="su-dung-tren-web"></a>
+## Sử dụng hệ thống trên web (cloud)
+
+Không cần cài đặt gì, chỉ cần trình duyệt. Bản cloud tự cập nhật mỗi khi merge vào `main`.
+
+| Phân hệ | Địa chỉ |
+|---|---|
+| Cán bộ ngân hàng | https://sme-frontend-mu.vercel.app/ |
+| Cổng doanh nghiệp | https://sme-frontend-mu.vercel.app/portal |
+| Kiểm tra backend | https://sme-backend-zx2y.onrender.com/api/health |
+| Kiểm tra ML | https://sme-system-69gt.onrender.com/health |
+
+**Các bước truy cập**
+
+1. **Đánh thức máy chủ** (bắt buộc nếu hơn 15 phút không ai dùng): mở lần lượt link *Kiểm tra ML* rồi *Kiểm tra backend*, chờ đến khi trang hiện chữ `"status":"ok"` (lần đầu mất khoảng 30–60 giây). Backend báo `database`, `prediction` đều `ready` là dùng được. Bỏ qua bước này thì lần đăng nhập đầu có thể chậm và dự báo trễ SLA đầu tiên có thể báo chưa sẵn sàng.
+2. **Cán bộ ngân hàng:** mở link *Cán bộ ngân hàng*, đăng nhập bằng [tài khoản nội bộ](#tai-khoan-noi-bo) (cùng tên đăng nhập và mật khẩu như bản local, vì CSDL cloud được sao từ máy PO ngày 16/11/2026).
+3. **Doanh nghiệp:** mở link *Cổng doanh nghiệp* → bấm "Đăng ký vay vốn ngay" → đăng ký bằng **email thật**. Mã xác minh, email quên mật khẩu, trả sửa/đóng đề nghị và kết quả phê duyệt/từ chối được gửi thật qua Brevo; nếu không thấy thư hãy xem mục **Spam/Quảng cáo**.
+
+**Lưu ý**
+
+- Dữ liệu cloud (Supabase) tách riêng với DB local: tạo/sửa hồ sơ trên web không ảnh hưởng máy cá nhân và ngược lại.
+- Sau khi merge vào `main`: frontend (Vercel) cập nhật sau khoảng 1–2 phút, backend (Render) sau khoảng 5–10 phút. Muốn chắc chắn bản mới đã chạy thì xem mục Events của dịch vụ `sme-backend` trên Render.
+- Không chạy các script seed, cleanup, `demo:refresh` hay migration nhắm vào CSDL cloud khi chưa sao lưu. Thay đổi cấu trúc CSDL trên cloud chạy bằng tệp SQL bổ sung, như `backend/prisma/portal-intake-close.sql`.
+- Bí mật cloud chỉ nằm trong biến môi trường Render/Vercel và `backend/.env.cloud` (không đưa lên git).
+
 ## Sử dụng bản local đã được chuẩn bị
 
 Nhấp đúp [start-use.bat](start-use.bat), hoặc chạy tại thư mục gốc:
@@ -36,20 +61,20 @@ Portal V2 hiện mở vốn lưu động sản xuất/thương mại/dịch vụ
 <a id="tai-khoan-noi-bo"></a>
 ## Tài khoản nội bộ đang sử dụng
 
-Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://localhost:5173/ .
+Chi nhánh nhỏ dùng bộ gọn dưới đây, đăng nhập tại http://localhost:5173/ (local) hoặc https://sme-frontend-mu.vercel.app/ (web).
 
-| Tên đăng nhập | Mật khẩu | Họ tên | Vai trò |
-|---|---|---|---|
-| khoa.tran | `Demo@2026` | Trần Minh Khoa | Quản trị viên (ADMIN) |
-| nhung.nguyen | `Demo@2026` | Nguyễn Thị Hồng Nhung | Quản lý chi nhánh (QUAN_LY) |
-| ha.le | `Demo@2026` | Lê Thị Thu Hà | Cán bộ thẩm quyền (THAM_QUYEN) |
-| huy.vu | `Demo@2026` | Vũ Quang Huy | Cán bộ thẩm quyền (THAM_QUYEN) |
-| nam.hoang | `Demo@2026` | Hoàng Văn Nam | Cán bộ tín dụng (CBTD) |
-| mai.bui | `Demo@2026` | Bùi Thị Mai | Cán bộ tín dụng (CBTD) |
-| thanh.ngo | `Demo@2026` | Ngô Đức Thành | Cán bộ tín dụng (CBTD) |
+| Tên đăng nhập | Họ tên | Vai trò |
+|---|---|---|
+| khoa.tran | Trần Minh Khoa | Quản trị viên (ADMIN) |
+| nhung.nguyen | Nguyễn Thị Hồng Nhung | Quản lý chi nhánh (QUAN_LY) |
+| ha.le | Lê Thị Thu Hà | Cán bộ thẩm quyền (THAM_QUYEN) |
+| huy.vu | Vũ Quang Huy | Cán bộ thẩm quyền (THAM_QUYEN) |
+| nam.hoang | Hoàng Văn Nam | Cán bộ tín dụng (CBTD) |
+| mai.bui | Bùi Thị Mai | Cán bộ tín dụng (CBTD) |
+| thanh.ngo | Ngô Đức Thành | Cán bộ tín dụng (CBTD) |
 
-- Mật khẩu `Demo@2026` chỉ dùng cho dữ liệu demo trên máy cá nhân, không dùng lại ở nơi khác và không dùng khi triển khai thật. Đã kiểm tra khớp trên DB máy PO ngày 10/11/2026.
-- Tài khoản tạo **trên máy mới** bằng `npm run seed:demo` không còn mặc định `Demo@2026`: mật khẩu lấy từ biến `DEMO_PASSWORD`, nếu không đặt thì sinh ngẫu nhiên và chỉ in một lần. Muốn dùng đúng bảng trên thì chạy `DEMO_PASSWORD=Demo@2026 npm run seed:demo`.
+- Mật khẩu không ghi trong repository; liên hệ PO để được cấp. Không dùng lại mật khẩu này ở nơi khác.
+- Tài khoản tạo **trên máy mới** bằng `npm run seed:demo` lấy mật khẩu từ biến `DEMO_PASSWORD`, nếu không đặt thì sinh ngẫu nhiên và chỉ in một lần. Muốn dùng chung mật khẩu với bộ demo hiện có thì chạy `DEMO_PASSWORD=<mật khẩu được cấp> npm run seed:demo`.
 
 - Chi nhánh nhỏ chỉ cần **một** Quản lý; 2 Thẩm quyền khớp số người mà mô hình dự báo đã học.
 - Các tài khoản cũ (`test_*`, `duc.pham`, `lan.dang`, `hanh.do`, `bao.phan`, `oanh.trinh`, `dat.nguyen`) không dùng nữa: trên máy người bàn giao đã **xóa khỏi DB ngày 09/11/2026**; trên máy PO đã **khóa ngày 10/11/2026** bằng `npm run accounts:tidy -- --apply` (không đăng nhập được, không được tính khi mô hình đếm Thẩm quyền, giữ lịch sử hồ sơ). Dữ liệu DB không đi theo git, nên máy mới cần chạy lệnh này. Chỉ 7 tài khoản ở bảng trên đang mở. Chạy `npm run prisma:seed` sẽ tạo lại 4 tài khoản `test_*` (mật khẩu ngắn, chỉ cho kiểm thử tự động, không chạy trên production); sau khi chạy kiểm thử xong nên xóa lại. `npm run accounts:tidy` dùng khi cần khóa tài khoản thừa mới phát sinh.
