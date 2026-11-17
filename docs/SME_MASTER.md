@@ -1524,7 +1524,73 @@ Tiêu chí nghiệm thu R1: (1) Admin gán CBTD + Thẩm quyền cho một tài 
 - Giao diện không đổi: form "Sửa / Cấp quyền" đã hiện thông báo lỗi API trong hộp thoại.
 - **Kiểm chứng:** test đỏ trước (`backend/test/appraiser-roster.test.cjs`, 3/6 đỏ), sau sửa 6/6; sửa 2 test cũ đang gán CBTD + Thẩm quyền làm dữ liệu mẫu (`admin-audit-log`, `role-governance` AD-01) sang CBTD + Quản lý, ý nghĩa test giữ nguyên. Backend `npm test` 536/536; `nest build` đạt; CodeGraph 253 file, 5.894 node, 11.666 cạnh.
 - **Chưa kiểm chứng:** thao tác trên trình duyệt với backend đang chạy (không khởi động lại backend vì dùng chung với phiên chính); khóa đồng thời thật trên PostgreSQL (mới kiểm bằng test có khóa, chưa chạy hai giao dịch thật).
+- **Đã commit `1799799`, push `origin/LeThiYenNhi` ngày 17/11/2026.**
 - **Ảnh hưởng script ghi dữ liệu (chưa chạy, cần sửa trước E2E C11):** `backend/scripts/check-workflow.cjs` dòng 40–44 tạo tài khoản CBTD + Thẩm quyền và chờ 201, nay sẽ nhận 400. Script này vốn đã lệch quy trình hiện hành (cùng người tự phê duyệt hồ sơ mình lập).
+
+**Triển khai R3 cơ bản — 17/11/2026 (PO duyệt; không gửi thông báo cho Thẩm quyền khác, chưa commit):**
+- Bản trình lại hiện "Phiên bản này trả lời yêu cầu làm rõ của <tên Thẩm quyền>: <nội dung>"; không tìm được tên thì giữ câu cũ không có tên.
+- `AppraisalService.view` trả `actorName` cho sự kiện `CLARIFICATION_REQUESTED`, lấy chung một lần truy vấn người dùng với tên người trình. `clarificationAnswered` (`appraisalWorkspace.ts`) trả `{ message, actorName }`; `AppraisalReportCard.tsx` hiển thị tên. Thông báo nội bộ không đổi.
+- **Kiểm chứng:** test đỏ trước (backend `tham-quyen-decision` thêm ca R3; frontend `check-appraisal-workspace` đổi kỳ vọng), sau sửa: backend `npm test` 537/537, frontend `tsc -b`, `test:appraisal` 42/42, Vite build đạt; CodeGraph 253 file, 5.895 node.
+- **Chưa kiểm chứng trên trình duyệt:** không có backend/frontend local đang chạy; khởi động cần CSDL local, không tự chạy. Cần mở một hồ sơ đã trình lại sau làm rõ để xem dòng có tên.
+
+<a id="review-khung-lai-suat-20261117"></a>
+### Review khung lãi suất và căn cứ ban hành — 17/11/2026 (Lead PO, chỉ đề xuất, chờ PO chốt)
+
+**Hiện trạng (theo code/DB):** 3 khung mô phỏng PO duyệt 13/11 (DEC-13, Q3): Vốn lưu động 6,5–10,5%, Đầu tư TSCĐ 7,5–12%, Thấu chi 8–13%/năm, kỳ hạn để trống (mọi kỳ hạn 1–120 tháng), **cùng một đoạn căn cứ** cho cả 3 loại. Khung chỉ thêm phiên bản, không sửa/xóa (trigger `interest-rate-bands.sql`), Admin thêm qua màn "Khung lãi suất", có nhật ký quản trị, hiệu lực không lùi ngày — phần quản trị này đã đủ chuẩn, không cần đổi. `findActiveBand`/`assertRateInBand` dùng ở `AppraisalService.mutate` (trình tờ trình), `workflow.service.ts` (phê duyệt), `LoanApplicationsService.findOne` (CodeGraph `fn-impact`: 9 hàm phụ thuộc). Bảng có sẵn cột `term_from_months`/`term_to_months` nhưng `RateBandInput`, `CreateRateBandDto` và form Admin không nhận kỳ hạn; `AdminService.rateBands` tính "khung đang áp dụng" với `termMonths: 1`.
+
+**Số liệu thị trường tra ngày 17/11/2026:**
+
+| Nguồn | Số liệu | Nhãn |
+|---|---|---|
+| NHNN qua index.vn 25/10/2026 | Lãi suất cho vay VND bình quân (khoản mới và dư nợ cũ) NHTM nhà nước và cổ phần: 8,4–10,9%/năm; ngắn hạn lĩnh vực ưu tiên khoảng 4%/năm | Đã kiểm chứng (đọc trang) |
+| Agribank, trang "Lãi suất cho vay", số liệu tháng 10/2026 | Ngắn hạn lĩnh vực ưu tiên 4,0; ngắn hạn thông thường **tối thiểu 6,1**; trung dài hạn **tối thiểu 7,8**; bình quân phát sinh 8,45 (%/năm); trang không ghi ngày đăng | Đã kiểm chứng (đọc trang) |
+| NHNN qua cafeland.vn 04/03/2026 (số liệu tháng 1/2026) | Bình quân 7,0–9,3%/năm; ưu tiên ngắn hạn khoảng 3,8%, thấp hơn trần 4% | Đã kiểm chứng (đọc trang) |
+| cafebiz.vn 12/08/2026 | Gói 220.000 tỷ của Agribank (70.000), BIDV, Vietcombank, VietinBank (50.000 mỗi ngân hàng) cho SME/lĩnh vực ưu tiên: thấp hơn bình quân cùng kỳ hạn tối thiểu 1%/năm (Agribank 1–2%); không công bố số tuyệt đối | Đã kiểm chứng (đọc trang) |
+| vietstock.vn 19/10/2026 | MB giảm 1,5%/năm cho 5 lĩnh vực ưu tiên, lãi vay từ 7,9%/năm | Đã kiểm chứng (đọc trang) |
+| Trần 4%/năm ngắn hạn lĩnh vực ưu tiên | Căn cứ Thông tư 39/2016/TT-NHNN và quyết định trần của Thống đốc (kết quả tìm kiếm nêu QĐ 1125/QĐ-NHNN; Tuổi Trẻ 17/06/2023 nêu mức 4%) | **Chưa xác minh** văn bản gốc còn hiệu lực trên sbv.gov.vn |
+| Biểu lãi suất thấu chi doanh nghiệp, biểu SME chính thức của Vietcombank/BIDV/VietinBank | Không tìm thấy số công bố | **Giả định** |
+
+**Đánh giá:** biên độ hiện tại **hợp lý, không có bằng chứng buộc đổi số**: sàn VLĐ 6,5% cao hơn mức thấp nhất thị trường (Agribank 6,1%), trần 10,5% sát bình quân cao nhất 10,9%; TSCĐ cao hơn VLĐ đúng xu hướng trung dài hạn; Thấu chi cao nhất đúng bản chất sản phẩm nhưng là giả định. Vấn đề nằm ở **căn cứ** (không kiểm chứng lại được) và **kỳ hạn** (một khung cho 1–120 tháng).
+
+| Mã | Tình huống | Hiện trạng / mong đợi | Rủi ro | Bằng chứng | Phương án | Phạm vi ảnh hưởng | Tiêu chí nghiệm thu |
+|---|---|---|---|---|---|---|---|
+| KL-01 | Hội đồng hỏi "6,5% lấy từ đâu?" | Căn cứ chỉ nêu tên ngân hàng, không số liệu, không đường dẫn, không cách suy ra / mỗi khung nêu nguồn, ngày, số đối chiếu và lý do chọn sàn–trần | Không bảo vệ được con số; người khác không kiểm lại được | `SIMULATED_BASIS` trong `rate-band-fixtures.cjs`; ảnh màn Admin | Admin thêm phiên bản mới, căn cứ viết lại riêng từng loại vay (mẫu dưới) | Dữ liệu `interest_rate_bands` (thêm 3 dòng qua UI); hằng `SIMULATED_BASIS` cho seed/schema tạm | Mỗi loại vay có căn cứ riêng ≤ 500 ký tự, có ít nhất 1 nguồn kèm ngày, nhãn "mô phỏng" |
+| KL-02 | Cùng một đoạn căn cứ cho 3 loại vay | Thấu chi ghi như có nguồn nhưng thực tế là giả định / ghi rõ giả định | Trình bày giả định như số liệu đã tra | Master DEC-13 ghi "Khung thấu chi là giả định" | Căn cứ Thấu chi ghi "giả định của khóa luận, chưa có biểu công bố" | Như KL-01 | Căn cứ Thấu chi có chữ "giả định" |
+| KL-03 | Khoản TSCĐ 60 tháng và VLĐ 6 tháng | Một khung cho 1–120 tháng / ngân hàng định giá khác nhau ngắn hạn và trung dài hạn (Agribank 6,1 vs 7,8) | Khung rộng, chưa phản ánh kỳ hạn; câu hỏi phản biện | `coversTerm`, kỳ hạn null; Portal cho 1–120 tháng mọi loại vay | Tùy chọn P2: tách ≤12 tháng / >12 tháng | `RateBandInput`, DTO, `parseBandInput` (kiểm trùng/hở kỳ hạn), `AdminService.rateBands` (bỏ `termMonths: 1`), `InterestRateBandsView`, fixtures, test | Hồ sơ 6 và 60 tháng nhận đúng khung; không có kỳ hạn rơi ngoài mọi khung |
+| KL-04 | DNNVV vay ngắn hạn thuộc diện ưu tiên | Sàn VLĐ 6,5% > trần ưu tiên 4% / cần khung riêng | Không phê duyệt được mức đúng quy định | Đã ghi ở C1 | Giữ nguyên quyết định C1-1 đang chờ, không lặp lại ở đây | C1 | Theo C1 |
+| KL-05 | Thị trường đổi sau 13/11 | Không có quy tắc rà soát / nêu chu kỳ rà soát trong tài liệu | Số liệu cũ dần | Lãi suất bình quân biến động 7,0–9,3 (tháng 1) → 8,4–10,9 (tháng 9) | Ghi quy tắc: Admin rà soát hằng quý hoặc khi NHNN đổi điều hành, thêm phiên bản mới | Chỉ tài liệu | Có câu quy tắc trong tài liệu bảo vệ |
+
+**Phương án:**
+
+| Phương án | Nội dung | Công | Đánh đổi |
+|---|---|---|---|
+| **P1 — Giữ số, viết lại căn cứ** (khuyến nghị trước 23/12) | Admin thêm 3 phiên bản mới cùng số, căn cứ cụ thể theo mẫu dưới; cập nhật `SIMULATED_BASIS` cho seed/schema tạm (sửa code nhỏ, cần PO duyệt); thêm KL-05 vào tài liệu bảo vệ | 0,5 ngày | Không đổi quy trình, hồ sơ đã quyết định giữ khung cũ; "Hiệu lực từ" thành ngày nhập mới. Chưa giải quyết kỳ hạn |
+| P2 — P1 + tách kỳ hạn | VLĐ/Thấu chi 1–12 tháng; TSCĐ hai nhóm ≤12 và 13–120 tháng (hoặc chỉ >12) | 1–1,5 ngày, có test | Chuẩn hơn về nghiệp vụ; đụng API/form/test và cần quyết định số khung mới; nên làm sau bảo vệ nếu không kịp |
+| P3 — Lãi suất cơ sở + biên độ | Khung = lãi suất cơ sở (bình quân NHNN) + biên độ theo loại vay | 2–3 ngày, đổi schema | **Không khuyến nghị**: trái Q9 (chỉ lưu một mức lúc phê duyệt), cần nguồn cơ sở cập nhật định kỳ |
+
+**Mẫu căn cứ ban hành viết lại (P1, mỗi đoạn < 500 ký tự, chờ PO duyệt câu chữ):**
+- *Vốn lưu động:* "Số liệu mô phỏng cho khóa luận, không phải biểu lãi suất của ngân hàng. Khoản vay VND thông thường, không thuộc diện trần ưu tiên. Đối chiếu ngày 17/11/2026: NHNN công bố lãi suất cho vay VND bình quân tháng 9/2026 là 8,4–10,9%/năm; Agribank tháng 10/2026 cho vay ngắn hạn thông thường từ 6,1%/năm, bình quân phát sinh 8,45%/năm. Sàn 6,5% cao hơn mức thấp nhất thị trường, trần 10,5% gần mức bình quân cao nhất."
+- *Đầu tư TSCĐ:* "Số liệu mô phỏng cho khóa luận, không phải biểu lãi suất của ngân hàng. Khoản vay VND thông thường, trung dài hạn. Đối chiếu ngày 17/11/2026: Agribank tháng 10/2026 cho vay trung dài hạn từ 7,8%/năm; NHNN công bố bình quân tháng 9/2026 là 8,4–10,9%/năm. Khung cao hơn vốn lưu động 1–1,5 điểm % do kỳ hạn dài hơn."
+- *Thấu chi:* "Số liệu mô phỏng cho khóa luận, là giả định vì chưa có biểu thấu chi doanh nghiệp công bố. Khoản vay VND thông thường. Đặt cao hơn vốn lưu động 1,5–2,5 điểm % do hạn mức rút linh hoạt, thường không tài sản bảo đảm. Đối chiếu bình quân NHNN tháng 9/2026: 8,4–10,9%/năm."
+- Nguồn để ghi trong tài liệu bảo vệ: index.vn (25/10/2026), agribank.com.vn/vn/lai-suat-cho-vay-agribank (số liệu tháng 10/2026), cafeland.vn (04/03/2026), cafebiz.vn (12/08/2026), vietstock.vn (19/10/2026); nên bổ sung bản công bố gốc trên sbv.gov.vn khi tra được.
+
+**Câu hỏi PO cần chốt:**
+
+| Mã | Câu hỏi | Khuyến nghị | Chặn |
+|---|---|---|---|
+| KQ1 | Chọn P1, P2 hay P1 trước bảo vệ rồi P2 sau? | P1 trước 23/12 | Có |
+| KQ2 | Giữ số 6,5–10,5 / 7,5–12 / 8–13 hay chỉnh? Riêng sàn TSCĐ 7,5% thấp hơn mức tối thiểu trung dài hạn Agribank 7,8% | Giữ; nếu muốn khớp nguồn hơn thì sàn TSCĐ 7,8 hoặc 8,0 | Có |
+| KQ3 | Duyệt câu chữ 3 đoạn căn cứ trên? Ai nhập (Admin `khoa.tran` trên local và cloud)? | Duyệt, Admin nhập qua UI ở cả hai môi trường | Có |
+| KQ4 | Có cập nhật `SIMULATED_BASIS` trong `rate-band-fixtures.cjs` để seed/schema tạm dùng căn cứ mới? | Có, cùng gói P1 | Không |
+| KQ5 | Nếu chọn P2: ranh giới kỳ hạn và số khung cho TSCĐ ≤12 tháng? | ≤12 tháng dùng khung VLĐ, >12 tháng 7,5–12 | Có với P2 |
+
+**Chưa xác minh:** văn bản gốc trần 4% còn hiệu lực; biểu SME công bố của Vietcombank/BIDV/VietinBank; biểu thấu chi doanh nghiệp. Review không sửa code, không ghi DB.
+
+**PO chọn P1 ngày 17/11/2026 (trước bảo vệ; giữ số, P2/P3 không làm). Tiến độ:**
+- *Đã code, chưa commit:* `backend/scripts/rate-band-fixtures.cjs` bỏ hằng chung `SIMULATED_BASIS`, mỗi phần tử `SIMULATED_BANDS` mang căn cứ riêng đúng 3 đoạn mẫu trên; số liệu, ngày hiệu lực 13/11 và kỳ hạn trống giữ nguyên. Ảnh hưởng: `seed-demo` (chỉ khi DB chưa có khung), `startIsolated`/`check-portal-v2-intake` (schema tạm); `seed-portal-flow`, `verify-local-running-system` chỉ dùng `assertActiveBandResponse`, không đổi.
+- *Kiểm chứng:* test mới trong `test/rate-band-fixtures.test.cjs` đỏ trước khi sửa, sau sửa 5/5; backend `npm test` 538/538; CodeGraph làm mới 253 file, 5.894 node.
+- *Còn lại, PO/Admin làm trên giao diện (ghi DB, không tự chạy):* đăng nhập Admin, màn "Khung lãi suất", thêm 3 phiên bản mới cùng số cũ, hiệu lực hôm nay, dán đúng 3 đoạn căn cứ trên — làm ở cả local và cloud. DB đã có khung nên `seed-demo`/`demo:refresh` không tự thay căn cứ cũ. Kiểm sau khi nhập: bảng khung đang áp dụng hiện căn cứ mới, nhật ký quản trị có 3 dòng "Thêm khung lãi suất", hồ sơ đã quyết định vẫn hiện khung cũ.
+- *Tài liệu bảo vệ:* thêm câu quy tắc KL-05 (Admin rà soát khung hằng quý hoặc khi NHNN đổi điều hành) và danh sách nguồn ở trên.
 
 <a id="chuan-hoa-trang-thai"></a>
 ## 4. Chuẩn hóa trạng thái và Lịch sử các đợt review

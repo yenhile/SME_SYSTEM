@@ -150,6 +150,16 @@ test('every submitted version names who submitted it, from one lookup',async()=>
   assert.deepEqual(view.versions.map(v=>v.submittedByName),['nguoi_khac','Nguyễn Cán Bộ']);
   assert.equal(h.state.userQueries,1);
 });
+test('R3: a clarification request names the Thẩm quyền who asked, in the same lookup',async()=>{
+  const h=viewHarness();const service=await h.build();
+  const report=await h.db.appraisalReport.findUnique();
+  report.events=[{kind:'SUBMITTED',actorId:'noname'},{kind:'CLARIFICATION_REQUESTED',actorId:'tq-a',payload:{message:'Làm rõ'}}];
+  const users=h.db.user.findMany;
+  h.db.user.findMany=async args=>[...await users({where:{id:{in:args.where.id.in.filter(id=>id!=='tq-a')}}}),...(args.where.id.in.includes('tq-a')?[{id:'tq-a',fullName:'Lê Thị Thu Hà',username:'ha.le'}]:[])];
+  const view=await service.view('loan1',{id:'tq',activeRole:'THAM_QUYEN'});
+  assert.deepEqual(view.events.map(e=>e.actorName),[null,'Lê Thị Thu Hà']);
+  assert.equal(h.state.userQueries,1);
+});
 test('the report says evidence is unchanged right after submission',async()=>{
   const h=viewHarness();const service=await h.build();
   assert.equal((await service.view('loan1',{id:'tq',activeRole:'THAM_QUYEN'})).evidenceChanged,false);

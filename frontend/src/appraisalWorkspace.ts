@@ -18,7 +18,7 @@ export function appraisalRefFromPath(pathname: string): string | null {
 }
 
 export interface ReportVersionView { id: string; sequence: number; content: Record<string, string>; submittedAt: string; submittedByName?: string | null }
-export interface ReportEventView { kind: string; createdAt: string; payload?: { message?: string } | null }
+export interface ReportEventView { kind: string; createdAt: string; payload?: { message?: string } | null; actorName?: string | null }
 export interface AppraisalReportView {
   id?: string;
   revision?: number;
@@ -104,7 +104,7 @@ export function changedReportSections(versions: ReportVersionView[], version: Re
   return new Set(Array.from(keys).filter(key => (version.content[key] ?? '').trim() !== (previous.content[key] ?? '').trim()));
 }
 
-export function clarificationAnswered(events: ReportEventView[] | undefined, versions: ReportVersionView[], version: ReportVersionView): string | null {
+export function clarificationAnswered(events: ReportEventView[] | undefined, versions: ReportVersionView[], version: ReportVersionView): { message: string; actorName: string | null } | null {
   const previous = previousVersion(versions, version);
   if (!previous || !events) return null;
   const from = new Date(previous.submittedAt).getTime();
@@ -112,7 +112,8 @@ export function clarificationAnswered(events: ReportEventView[] | undefined, ver
   const answered = events
     .filter(event => event.kind === 'CLARIFICATION_REQUESTED' && new Date(event.createdAt).getTime() > from && new Date(event.createdAt).getTime() <= to)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-  return answered?.payload?.message ?? null;
+  const message = answered?.payload?.message;
+  return message ? { message, actorName: answered.actorName ?? null } : null;
 }
 
 export function evidenceState(report: AppraisalReportView, version: ReportVersionView, finished: boolean): 'UNCHANGED' | 'CHANGED' | null {

@@ -1,19 +1,27 @@
 /* Khung lãi suất mô phỏng cho dữ liệu demo và schema kiểm thử tạm, cùng bước kiểm tra khung trước khi script chạy trên hệ thống thật.
  * Số liệu là biểu mô phỏng phục vụ nghiên cứu, áp cho khoản vay VND thông thường; kỳ hạn để trống nghĩa là áp mọi kỳ hạn.
  */
-const SIMULATED_BASIS = 'Biểu lãi suất mô phỏng phục vụ nghiên cứu, không phải biểu lãi suất chính thức của ngân hàng. Tham khảo chương trình tín dụng SME của Vietcombank, Agribank, BIDV và thông tin lãi suất NHNN; tra cứu ngày 13/11/2026. Áp dụng cho khoản vay VND thông thường, không thuộc diện khống chế trần lãi suất ưu tiên.';
 // 0 giờ ngày 13/11/2026 giờ Việt Nam.
 const SIMULATED_EFFECTIVE_FROM = new Date('2026-11-12T17:00:00.000Z');
 const SIMULATED_BANDS = [
-  { loanType: 'VAY_VON_LUU_DONG', minRate: 6.5, maxRate: 10.5 },
-  { loanType: 'VAY_DAU_TU_TSCD', minRate: 7.5, maxRate: 12 },
-  { loanType: 'THAU_CHI', minRate: 8, maxRate: 13 },
+  {
+    loanType: 'VAY_VON_LUU_DONG', minRate: 6.5, maxRate: 10.5,
+    basis: 'Số liệu mô phỏng cho khóa luận, không phải biểu lãi suất của ngân hàng. Khoản vay VND thông thường, không thuộc diện trần ưu tiên. Đối chiếu ngày 17/11/2026: NHNN công bố lãi suất cho vay VND bình quân tháng 9/2026 là 8,4–10,9%/năm; Agribank tháng 10/2026 cho vay ngắn hạn thông thường từ 6,1%/năm, bình quân phát sinh 8,45%/năm. Sàn 6,5% cao hơn mức thấp nhất thị trường, trần 10,5% gần mức bình quân cao nhất.',
+  },
+  {
+    loanType: 'VAY_DAU_TU_TSCD', minRate: 7.5, maxRate: 12,
+    basis: 'Số liệu mô phỏng cho khóa luận, không phải biểu lãi suất của ngân hàng. Khoản vay VND thông thường, trung dài hạn. Đối chiếu ngày 17/11/2026: Agribank tháng 10/2026 cho vay trung dài hạn từ 7,8%/năm; NHNN công bố bình quân tháng 9/2026 là 8,4–10,9%/năm. Khung cao hơn vốn lưu động 1–1,5 điểm % do kỳ hạn dài hơn.',
+  },
+  {
+    loanType: 'THAU_CHI', minRate: 8, maxRate: 13,
+    basis: 'Số liệu mô phỏng cho khóa luận, là giả định vì chưa có biểu thấu chi doanh nghiệp công bố. Khoản vay VND thông thường. Đặt cao hơn vốn lưu động 1,5–2,5 điểm % do hạn mức rút linh hoạt, thường không tài sản bảo đảm. Đối chiếu ngày 17/11/2026 với bình quân NHNN tháng 9/2026: 8,4–10,9%/năm.',
+  },
 ];
 const LABELS = { VAY_VON_LUU_DONG: 'Vốn lưu động', VAY_DAU_TU_TSCD: 'Đầu tư tài sản cố định', THAU_CHI: 'Thấu chi' };
 const percent = (value) => Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
 
 function simulatedBandRows(createdBy, effectiveFrom = SIMULATED_EFFECTIVE_FROM) {
-  return SIMULATED_BANDS.map(b => ({ ...b, termFromMonths: null, termToMonths: null, effectiveFrom, basis: SIMULATED_BASIS, createdBy }));
+  return SIMULATED_BANDS.map(b => ({ ...b, termFromMonths: null, termToMonths: null, effectiveFrom, createdBy }));
 }
 
 /** Tạo khung mô phỏng cho loại vay chưa có khung nào đã tới ngày hiệu lực; loại vay đã có khung giữ nguyên. Không ghi nhật ký quản trị. */
@@ -44,4 +52,4 @@ function assertActiveBandResponse(res, loanType, rate) {
   return band;
 }
 
-module.exports = { SIMULATED_BANDS, SIMULATED_BASIS, SIMULATED_EFFECTIVE_FROM, simulatedBandRows, ensureSimulatedBands, rateInBand, assertActiveBandResponse };
+module.exports = { SIMULATED_BANDS, SIMULATED_EFFECTIVE_FROM, simulatedBandRows, ensureSimulatedBands, rateInBand, assertActiveBandResponse };
