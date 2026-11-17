@@ -72,11 +72,11 @@ test('khóa, mở khóa và đổi vai trò mỗi loại một dòng, cùng mộ
   assert.deepEqual(unlock.logs.map(r=>r.action),['USER_UNLOCKED']);
 
   const both=usersDb();
-  await both.service.update('u1',{phone:'0999',roles:['THAM_QUYEN','CBTD']},ADMIN.id);
+  await both.service.update('u1',{phone:'0999',roles:['QUAN_LY','CBTD']},ADMIN.id);
   assert.deepEqual(both.logs.map(r=>r.action).sort(),['USER_PROFILE_UPDATED','USER_ROLES_CHANGED']);
   const roles=both.logs.find(r=>r.action==='USER_ROLES_CHANGED');
   assert.deepEqual(roles.before,{roles:['CBTD']});
-  assert.deepEqual(roles.after,{roles:['CBTD','THAM_QUYEN']});
+  assert.deepEqual(roles.after,{roles:['CBTD','QUAN_LY']});
 });
 
 test('lưu không đổi gì hoặc thao tác bị từ chối thì không có dòng nhật ký',async()=>{
