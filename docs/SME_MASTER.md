@@ -1524,7 +1524,14 @@ Tiêu chí nghiệm thu R1: (1) Admin gán CBTD + Thẩm quyền cho một tài 
 - Giao diện không đổi: form "Sửa / Cấp quyền" đã hiện thông báo lỗi API trong hộp thoại.
 - **Kiểm chứng:** test đỏ trước (`backend/test/appraiser-roster.test.cjs`, 3/6 đỏ), sau sửa 6/6; sửa 2 test cũ đang gán CBTD + Thẩm quyền làm dữ liệu mẫu (`admin-audit-log`, `role-governance` AD-01) sang CBTD + Quản lý, ý nghĩa test giữ nguyên. Backend `npm test` 536/536; `nest build` đạt; CodeGraph 253 file, 5.894 node, 11.666 cạnh.
 - **Chưa kiểm chứng:** thao tác trên trình duyệt với backend đang chạy (không khởi động lại backend vì dùng chung với phiên chính); khóa đồng thời thật trên PostgreSQL (mới kiểm bằng test có khóa, chưa chạy hai giao dịch thật).
+- **Đã commit `1799799`, push `origin/LeThiYenNhi` ngày 17/11/2026.**
 - **Ảnh hưởng script ghi dữ liệu (chưa chạy, cần sửa trước E2E C11):** `backend/scripts/check-workflow.cjs` dòng 40–44 tạo tài khoản CBTD + Thẩm quyền và chờ 201, nay sẽ nhận 400. Script này vốn đã lệch quy trình hiện hành (cùng người tự phê duyệt hồ sơ mình lập).
+
+**Triển khai R3 cơ bản — 17/11/2026 (PO duyệt; không gửi thông báo cho Thẩm quyền khác, chưa commit):**
+- Bản trình lại hiện "Phiên bản này trả lời yêu cầu làm rõ của <tên Thẩm quyền>: <nội dung>"; không tìm được tên thì giữ câu cũ không có tên.
+- `AppraisalService.view` trả `actorName` cho sự kiện `CLARIFICATION_REQUESTED`, lấy chung một lần truy vấn người dùng với tên người trình. `clarificationAnswered` (`appraisalWorkspace.ts`) trả `{ message, actorName }`; `AppraisalReportCard.tsx` hiển thị tên. Thông báo nội bộ không đổi.
+- **Kiểm chứng:** test đỏ trước (backend `tham-quyen-decision` thêm ca R3; frontend `check-appraisal-workspace` đổi kỳ vọng), sau sửa: backend `npm test` 537/537, frontend `tsc -b`, `test:appraisal` 42/42, Vite build đạt; CodeGraph 253 file, 5.895 node.
+- **Chưa kiểm chứng trên trình duyệt:** không có backend/frontend local đang chạy; khởi động cần CSDL local, không tự chạy. Cần mở một hồ sơ đã trình lại sau làm rõ để xem dòng có tên.
 
 <a id="chuan-hoa-trang-thai"></a>
 ## 4. Chuẩn hóa trạng thái và Lịch sử các đợt review

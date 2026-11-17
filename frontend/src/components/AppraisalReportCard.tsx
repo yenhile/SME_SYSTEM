@@ -41,7 +41,7 @@ export function AppraisalReportCard({ loan, report, finished }: { loan: LoanAppl
     {isOlder && <p className="aw-alert aw-alert-warning">Đang xem phiên bản cũ. Quyết định luôn áp dụng cho phiên bản mới nhất.</p>}
     {report?.status === 'CLARIFICATION_REQUIRED' && report.clarification && <p className="aw-alert aw-alert-warning"><strong>Yêu cầu làm rõ: </strong>{report.clarification.message}</p>}
     {decided && <p className="aw-hint">Quyết định trên phiên bản {decided.sequence}.</p>}
-    {answered && <p className="aw-report-answered"><strong>Phiên bản này trả lời yêu cầu làm rõ: </strong>{answered}</p>}
+    {answered && <p className="aw-report-answered"><strong>Phiên bản này trả lời yêu cầu làm rõ{answered.actorName ? ` của ${answered.actorName}` : ''}: </strong>{answered.message}</p>}
 
     {!shown && loan.businessPolicyVersion && <p className="aw-table-empty">CBTD chưa trình tờ trình cho hồ sơ này.</p>}
 

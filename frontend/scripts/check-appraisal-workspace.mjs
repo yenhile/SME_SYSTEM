@@ -89,13 +89,13 @@ test('a resubmitted version shows the clarification it answered', () => {
   const third = reportVersion(3, {}, '2026-11-05T01:00:00Z');
   const events = [
     { kind: 'SUBMITTED', createdAt: '2026-11-01T01:00:00Z', payload: {} },
-    { kind: 'CLARIFICATION_REQUESTED', createdAt: '2026-11-02T01:00:00Z', payload: { message: 'Làm rõ nguồn trả nợ' } },
+    { kind: 'CLARIFICATION_REQUESTED', createdAt: '2026-11-02T01:00:00Z', payload: { message: 'Làm rõ nguồn trả nợ' }, actorName: 'Lê Thị Thu Hà' },
     { kind: 'CLARIFICATION_REQUESTED', createdAt: '2026-11-04T01:00:00Z', payload: { message: 'Làm rõ tài sản' } },
     { kind: 'CLARIFICATION_REQUESTED', createdAt: '2026-11-06T01:00:00Z', payload: { message: 'Chưa trả lời' } },
   ];
   const versions = [third, second, first];
-  assert.equal(workspace.clarificationAnswered(events, versions, second), 'Làm rõ nguồn trả nợ');
-  assert.equal(workspace.clarificationAnswered(events, versions, third), 'Làm rõ tài sản');
+  assert.deepEqual(workspace.clarificationAnswered(events, versions, second), { message: 'Làm rõ nguồn trả nợ', actorName: 'Lê Thị Thu Hà' });
+  assert.deepEqual(workspace.clarificationAnswered(events, versions, third), { message: 'Làm rõ tài sản', actorName: null });
   assert.equal(workspace.clarificationAnswered(events, versions, first), null);
   assert.equal(workspace.clarificationAnswered(undefined, versions, second), null);
 });

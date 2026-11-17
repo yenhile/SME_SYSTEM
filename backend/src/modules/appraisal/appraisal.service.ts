@@ -44,14 +44,17 @@ export class AppraisalService {
     const latest = report.versions[0];
     const awaitingDecision = report.status === 'SUBMITTED' && loan?.currentStage === 'THAM_DINH' && !loan.completedAt && Boolean(latest);
     const evidenceChanged = awaitingDecision ? await isEvidenceChanged(this.prisma, loan, latest.evidenceHash) : false;
-    const authors = report.versions.length
-      ? await this.prisma.user.findMany({ where: { id: { in: [...new Set(report.versions.map(version => version.submittedBy))] } }, select: { id: true, fullName: true, username: true } })
+    const clarifications = report.events.filter(event => event.kind === 'CLARIFICATION_REQUESTED');
+    const people = [...new Set([...report.versions.map(version => version.submittedBy), ...clarifications.map(event => event.actorId)])];
+    const authors = people.length
+      ? await this.prisma.user.findMany({ where: { id: { in: people } }, select: { id: true, fullName: true, username: true } })
       : [];
     const authorNames = new Map(authors.map(author => [author.id, author.fullName || author.username]));
 
     return {
       ...report,
       versions: report.versions.map(version => ({ ...version, submittedByName: authorNames.get(version.submittedBy) ?? null })),
+      events: report.events.map(event => ({ ...event, actorName: event.kind === 'CLARIFICATION_REQUESTED' ? authorNames.get(event.actorId) ?? null : null })),
       evidenceChanged,
       makerChecker: {
         isIndependent,
