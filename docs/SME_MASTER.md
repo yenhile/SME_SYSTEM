@@ -1347,44 +1347,56 @@ Khuyến nghị của Lead PO: **B kèm A**, chặn cứng ngoài khung (không 
 
 **Kiểm chứng:** `test/file-storage.test.cjs` đỏ 5/5 trước khi code, xanh 5/5 sau; backend `npm test` 510/510; build đạt; CodeGraph làm mới. **Chưa kiểm chứng** với Supabase thật (chưa có project): cần tạo bucket riêng tư, đặt biến trên Render, chạy `storage:upload -- --apply`, rồi thử tải lên/tải xuống trên cloud.
 
-### Triển khai cloud — 16/11/2026 (đang làm)
+### Triển khai cloud — 16/11/2026 (đã chạy; luồng chính đạt, còn việc sửa 18/11)
+
+**Kiến trúc đang chạy:** trình duyệt → Vercel (frontend React/Vite, `VITE_API_URL` trỏ backend) → Render `sme-backend` (Docker NestJS, Singapore, Free) → Supabase (PostgreSQL 17 qua **transaction pooler cổng 6543** `pgbouncer=true&connection_limit=5`; Storage bucket riêng tư `sme-documents`) và Render `sme_ml-service` (Docker FastAPI, model v4.0, khóa `ML_API_KEY`); email qua Brevo API. Render Free ngủ sau 15 phút: trước khi dùng gọi `/health` của ML và backend. Bí mật chỉ nằm ở `backend/.env.cloud` (đã `.gitignore`) và biến môi trường Render/Vercel.
 
 | Dịch vụ | Trạng thái | Bằng chứng |
 |---|---|---|
-| Supabase CSDL (project `sme-loan`, Singapore, PostgreSQL 17, tắt Data API) | **Xong**: khôi phục `pg_dump` schema `public` của local (`evidence/private-backups/cloud-supabase-20261116_112530.dump`, `--no-owner --no-privileges`) | 27 bảng khớp số dòng với local (195 hồ sơ, 17 tài khoản, 3 khung lãi suất, 2 kích hoạt SLA), 2 sequence mã khớp, 4 trigger chỉ thêm còn đủ; `delay_predictions` 79 so với 87 vì 8 dự báo local chấm sau lúc sao lưu |
-| Supabase Storage (bucket riêng tư `sme-documents`) | **Xong**: `storage:upload -- --apply` 57/57 tệp | Chạy lại: 57 đã có, 0 lệch; 20/20 tệp DB tham chiếu đều có |
-| Render ML `https://sme-system-69gt.onrender.com` (Docker `ml-service`, Singapore, Free, `PORT=8000`, `ML_API_KEY`) | **Xong** 16/11 từ commit `2919694` | `/health` v4.0 `model_loaded=true`; `/predict` không khóa 401, có khóa 200 (p=0,6341, KHAN, 3 nguyên nhân); khi đã thức ~0,5 giây |
-| Render backend `https://sme-backend-zx2y.onrender.com` (Docker `backend`, Singapore, Free, biến từ `backend/.env.cloud`, chưa có Brevo/FRONTEND_URL) | **Xong** 16/11 từ `main` 78bff4f | `/api/health` backend/database/prediction đều ready; API không token 401, đăng nhập sai 401; quét dự báo lúc khởi động 8/8 thành công |
-| Vercel frontend `https://sme-frontend-mu.vercel.app` (root `frontend`, Vite, `VITE_API_URL` = backend Render) | **Xong** 16/11 | Trình duyệt: `/portal` hiện trang chủ, bấm đăng nhập ra form; bundle gọi backend Render (không còn localhost); mở thẳng `/tham-dinh/SME-1` trả 200 nhờ `vercel.json`; gọi backend từ domain Vercel qua CORS được; không lỗi console. Còn thêm `FRONTEND_URL` trên Render |
-| Brevo (sender `yenjj2025@gmail.com` đã xác minh, khóa API trên Render, Brevo không chặn IP) | **Xong** 16/11 | Gửi thử bằng `PortalMailer.sendCode` với cấu hình cloud: Brevo nhận lúc 19:38; Render deploy lại 19:41 với `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `FRONTEND_URL`, health ready. Gmail làm sender bị Brevo cảnh báo DMARC → thư có thể vào Spam. **Chưa kiểm chứng** đăng ký DN nhận mã trên cloud |
-| Ghi chú hạ tầng (PO chọn phương án B 16/11: Railway dùng thử hết 30 ngày trước 23/12; Render 750 giờ/tháng dùng chung, ngủ sau 15 phút, lần dự báo đầu sau khi ngủ có thể UNAVAILABLE vì backend chờ ML 4 giây; trước demo mở `/health` để đánh thức), Vercel (frontend), Brevo | Chưa làm | — |
+| Supabase CSDL (project `sme-loan`, Singapore, PostgreSQL 17, tắt Data API) | **Xong**: khôi phục `pg_dump` schema `public` của local (`evidence/private-backups/cloud-supabase-20261116_112530.dump`, `--no-owner --no-privileges`); 17/11 chạy thêm `backend/prisma/portal-intake-close.sql` (enum `CLOSED`, 3 cột `closed_*`, khóa ngoại) | 27 bảng khớp số dòng với local (195 hồ sơ, 17 tài khoản, 3 khung lãi suất, 2 kích hoạt SLA), 2 sequence mã khớp, 4 trigger chỉ thêm còn đủ; SQL bổ sung không đổi 19 đề nghị có sẵn |
+| Supabase Storage (bucket riêng tư `sme-documents`) | **Xong**: `storage:upload -- --apply` 57/57 tệp | Chạy lại: 57 đã có, 0 lệch; tệp DN tải lên cloud được lưu và CBTD mở được ở bước tiếp nhận |
+| Render ML `https://sme-system-69gt.onrender.com` | **Xong** | `/health` v4.0 `model_loaded=true`; SME-10 được chấm 2 lần (tiếp nhận THAP 0,72%, trình THAP 12,29%) |
+| Render backend `https://sme-backend-zx2y.onrender.com` | **Xong**, đang chạy `main` sau PR #20 | `/api/health` ok; `DATABASE_URL` đổi sang cổng 6543 ngày 16/11 (C1) |
+| Vercel frontend `https://sme-frontend-mu.vercel.app` | **Xong**, tự deploy từ `main` | Bundle có các sửa U1, U2, U4, M1–M3 |
+| Brevo (sender Gmail đã xác minh) | **Xong** | DN nhận được mã xác minh tiếng Việt trên cloud; Gmail làm sender bị cảnh báo DMARC → thư có thể vào Spam |
+| Hạ tầng (PO chọn phương án B 16/11) | Ghi nhận | Render 750 giờ/tháng dùng chung; lần dự báo đầu sau khi ML ngủ có thể UNAVAILABLE (đúng thiết kế) |
 
-Cấu hình cloud cục bộ ở `backend/.env.cloud` (đã thêm vào `.gitignore`). **Việc sau khi xong:** mật khẩu DB và khóa `service_role` đã lộ trong hội thoại → đổi mật khẩu DB, xoay khóa JWT/chuyển sang khóa secret mới, cập nhật Render.
+**Việc bảo mật còn lại:** mật khẩu DB và khóa `service_role` đã lộ trong hội thoại → đổi mật khẩu DB, xoay khóa JWT/chuyển sang khóa secret mới, cập nhật Render và `backend/.env.cloud`.
 
-**PO tự thử luồng trên cloud (16–17/11, đang làm).** Đề nghị thử: DN-23 (MST giả lập trùng doanh nghiệp có sẵn → bị chặn tiếp nhận, đúng thiết kế); bộ PDF giả lập ở `evidence/cloud-test-20261116/`.
+**PO tự thử luồng trên cloud (16–17/11).** Kết luận: **luồng happy case đạt từ DN gửi đề nghị đến Thẩm quyền phê duyệt**; còn thiếu email báo kết quả và một số lỗi giao diện/vận hành ghi dưới đây. Tài khoản DN thử `yenjj2022@gmail.com`; bộ PDF giả lập (MST hợp lệ `0319876546`) ở `evidence/cloud-test-20261116/ho-so-vay-moi-mst-0319876546/`.
 
 | Bước | Kết quả | Bằng chứng |
 |---|---|---|
-| 1 DN đăng ký → mã xác minh → đăng nhập | Đạt | `portal_accounts` đã xác minh 13:12 UTC; tài khoản cũ chưa xác minh cùng email được xóa theo PO duyệt |
-| 2 DN tạo đề nghị V2, tải chứng từ, gửi | Đạt sau 2 sửa | DN-23 `SUBMITTED` 17:35 UTC |
-| 3 QLCN phân công CBTD | Đạt | DN-23 `ASSIGNED` → `mai.bui` |
-| 4 CBTD tiếp nhận | Chặn đúng thiết kế | MST thuộc doanh nghiệp khác, dữ liệu trọng yếu lệch → không tiếp nhận; trả sửa 18:00 chạy đúng, MST không đổi được sau gửi (đúng quy tắc) |
-| 5–8 | Chưa làm | Chờ đề nghị mới với MST hợp lệ `0319876546` |
+| 1 DN đăng ký → mã xác minh → đăng nhập | **Đạt** | Tài khoản xác minh 13:12 UTC 16/11; tài khoản cũ chưa xác minh cùng email được xóa theo PO duyệt |
+| 2 DN tạo đề nghị V2, tải đủ chứng từ, gửi | **Đạt** (sau sửa C1, C2) | DN-24 gửi với 9 tệp, nguồn doanh thu là BCTC 2025 |
+| 3 QLCN phân công CBTD | **Đạt** | DN-23 → `mai.bui`; DN-24 → `nam.hoang` |
+| 4 CBTD tiếp nhận → xác nhận đủ → hạn mức → tờ trình 8 mục + lãi suất → trình | **Đạt** | DN-24 `ACCEPTED` → hồ sơ **SME-10**; hạn mức chính thức 3 tỷ; tờ trình bản 1 lãi suất 9% (khung VLĐ 6,5–10,5%), `nam.hoang` trình 18:48 UTC |
+| 5 Thẩm quyền phê duyệt (maker-checker) | **Đạt** | `ha.le` quyết định 18:50 UTC (khác người trình); SME-10 `HOAN_TAT` / `APPROVED` |
+| 6 DN xem kết quả, không thấy dữ liệu nội bộ | Chưa kiểm chứng | PO chưa báo kết quả |
+| 7 Quên mật khẩu → link Vercel `/portal?reset=` | Chưa kiểm chứng | — |
+| 8 Tải chứng từ từ Storage; dự báo trễ SLA | ML **đạt**; tải xuống chưa kiểm chứng riêng | 2 bản ghi `delay_predictions` của SME-10 |
+| Phụ: trùng MST bị chặn tiếp nhận | **Đạt, đúng thiết kế** | DN-23 dùng MST đã thuộc doanh nghiệp khác → không tiếp nhận được, không đổi được MST sau gửi; đóng bằng M3 → `CLOSED` có lý do |
 
 | Mã | Vấn đề / cải tiến | Trạng thái | Bằng chứng |
 |---|---|---|---|
-| C1 | Supabase session pooler 5432 hết 15 kết nối → DB lỗi, Portal bị đẩy về đăng nhập | **Xong** (PO đổi `DATABASE_URL` Render sang 6543 `pgbouncer=true&connection_limit=5`) | 30/30 health đồng thời `database: ready` (trước: 8/30 lỗi) |
-| C2 | `PortalGuard` biến lỗi CSDL thành 401 | **Xong**, PR #18 | Test mới đỏ→xanh; trả 503 `PORTAL_SESSION_CHECK_UNAVAILABLE` |
-| U1 | Gửi đề nghị xong đứng ở bước 5 | **Xong**, PR #18 | Về danh sách + thông báo "Đã gửi đề nghị DN-xx"; chưa thấy lần gửi thật trên bản mới |
-| U2 | Bảng "Đề nghị từ cổng doanh nghiệp" rối | **Xong**, commit `f5a4298` (chờ PR) | 6 cột kiểu `lt-*`, ảnh `evidence/cloud-test-20261116/ui/` |
-| U3 | Bước 4 Hồ sơ tài liệu khó dùng (loại tài liệu áp cho mọi tệp trong một lần tải, nút Thay thế giống tiêu đề) | Backlog | Ảnh PO 16/11 |
-| U4 | Màn CBTD tiếp nhận rối | Phiên phụ `intake-ui` đang làm (worktree riêng) | — |
-| M1 | MST không kiểm tra chữ số kiểm tra | **Code xong, chưa commit** | Chặn khi gửi bản nháp (BE `assertTaxCodeChecksum`, FE báo lỗi tại ô MST); lưu nháp vẫn được; `test/tax-code.test.cjs` đỏ→xanh |
-| M2 | Trùng MST chỉ lộ ra khi CBTD bấm kiểm tra | **Code xong, chưa commit** | Danh sách cán bộ có nhãn "Trùng MST" (một truy vấn gộp); `test/portal-intake-company-check.test.cjs` |
-| M3 | Đề nghị sai chủ thể treo mãi | **Code xong, chưa commit; cần chạy SQL cloud trước khi deploy** | `POST /portal-intakes/:id/close` (CBTD được giao hoặc QLCN, trạng thái chưa tiếp nhận, bắt buộc lý do); trạng thái `CLOSED`; SQL `backend/prisma/portal-intake-close.sql`; `test/portal-intake-close.test.cjs` |
-| N1 | Không có email khi trả sửa/đóng | **Code xong, chưa commit** | `sendIntakeNotice` gửi sau khi lưu, lỗi gửi chỉ ghi log; `test/portal-intake-notice.test.cjs` |
+| C1 | Supabase session pooler 5432 hết 15 kết nối → DB lỗi, DN bị đẩy về đăng nhập, deploy bản mới không khởi động | **Xong** (PO đổi `DATABASE_URL` Render sang cổng 6543) | 30/30 health đồng thời `database: ready` (trước 8/30 lỗi) |
+| C2 | `PortalGuard` biến lỗi CSDL thành 401 | **Xong**, PR #18 | Test đỏ→xanh; trả 503 `PORTAL_SESSION_CHECK_UNAVAILABLE` |
+| C3 | Lệnh đọc DB của AI đặt `default_transaction_read_only` cấp phiên qua pooler 6543 → dính sang kết nối backend, DN đăng nhập lỗi 500 | **Xong** 16/11 (đặt lại `off`, công cụ đọc chuyển sang giao dịch chỉ đọc) | 60/60 kết nối `off`; quy tắc: không `SET` cấp phiên khi đọc DB cloud |
+| U1 | Gửi đề nghị xong đứng ở bước 5 | **Xong**, PR #18 | Về danh sách + thông báo "Đã gửi đề nghị DN-xx" |
+| U2 | Bảng "Đề nghị từ cổng doanh nghiệp" rối | **Xong**, `f5a4298` | 6 cột kiểu `lt-*` |
+| U4 | Màn CBTD tiếp nhận rối, so sánh doanh nghiệp dạng key thô | **Xong**, `ae17bc1` (gộp `312aa95`) | Bảng so sánh 3 cột, thẻ kiểm tra có viền theo kết quả, lý do nút Tiếp nhận bị khóa |
+| M1 | MST không kiểm tra chữ số kiểm tra | **Xong**, `1b09fba` | Chặn khi gửi (FE + BE); lưu nháp vẫn được |
+| M2 | Trùng MST chỉ lộ ra khi CBTD bấm kiểm tra | **Xong**, `1b09fba` | Nhãn "Trùng MST" ở danh sách cán bộ |
+| M3 | Đề nghị sai chủ thể treo mãi | **Xong**, `1b09fba` + SQL cloud | DN-23 `CLOSED` có lý do |
+| N1 | Không có email khi trả sửa/đóng | **Code xong**, `1b09fba` | **Chưa kiểm chứng** PO nhận email đóng DN-23 |
+| **N2** | **Không có email báo kết quả phê duyệt/từ chối** — DN chỉ biết khi tự đăng nhập | **Code xong 17/11, chưa commit** (PO chốt chỉ báo kết quả; không làm email tiếp nhận) | `WorkflowService.notifyDecision` gửi sau khi transaction quyết định commit, chỉ khi hồ sơ đến từ cổng (`portal_requests.loan_id`); lỗi gửi chỉ ghi log mã hồ sơ, không hoàn tác quyết định. `PortalMailer.sendDecisionResult`: nêu mã hồ sơ + mã đề nghị, câu kết quả trùng cổng ("Hồ sơ đã được phê duyệt. Ngân hàng sẽ liên hệ…" / "Hồ sơ không được chấp thuận."), từ chối chỉ kèm lý do công khai TC01–TC05, không có số tiền, lãi suất, ghi chú nội bộ. `test/decision-result-email.test.cjs` đỏ 3/7 → xanh 7/7; backend `npm test` 530/530; DI thật của `WorkflowModule` tiêm được mailer. **Chưa kiểm chứng:** email thật qua Brevo sau khi deploy |
+| U3 | Bước 4 Hồ sơ tài liệu khó dùng: dòng "Loại tài liệu" áp cho mọi tệp trong một lần tải (A1/A2 bị gắn 4 loại), nút "Thay thế" trông như tiêu đề, khung "Nguồn doanh thu năm" nằm cuối Bước 4 khó thấy | Backlog, ưu tiên 18/11 | Ảnh PO 16/11 |
+| U5 | Hộp xác nhận gửi dùng `window.confirm` mặc định | Backlog (tùy chọn) | — |
+| D1 | Container DB local `sme-loan-workflow-db-1` dừng → chưa chạy SQL M3 trên DB local | **Xong** 17/11 | Docker Desktop không khởi động vì socket cũ `%LOCALAPPDATA%\docker-secrets-engine\engine.sock` (16/11) kẹt, không xóa được → đổi tên thư mục thành `docker-secrets-engine.stale-20261117`, Docker chạy lại. Sao lưu trước `evidence/private-backups/local-before-m3-20261117.dump`; sau SQL: enum có `CLOSED`, 3 cột `closed_*`, khóa ngoại `portal_requests_closed_by_fkey`; 18 đề nghị local giữ nguyên (17 DRAFT, 1 SUBMITTED) |
 
-Kiểm tra M1–N1: backend 523/523, frontend tsc + 106 test + build đạt. **Chưa kiểm chứng:** giao diện thật của nút Đóng/nhãn Trùng MST, email thật qua Brevo, SQL M3 trên DB local (container DB local đang dừng) và Supabase.
+**Kiểm tra đã chạy:** backend 523/523; frontend tsc, 106 test, build đạt sau khi gộp `312aa95`; CodeGraph làm mới.
+
+**Việc tiếp theo (18/11):** (1) PO hoàn thành bước 6–8 và xác nhận email đóng DN-23; (2) ~~chốt và làm N2 email kết quả~~ code xong 17/11, chờ commit/PR/deploy rồi thử một quyết định trên cloud; (3) sửa U3 Bước 4 — chờ PO chọn: loại tài liệu riêng cho từng tệp trong hàng chờ, hay mỗi lần tải một loại; (4) ~~chạy SQL M3 trên DB local~~ xong 17/11 (D1); (5) đổi mật khẩu DB/khóa bị lộ (PO làm trên Supabase, cập nhật Render).
 
 <a id="chuan-hoa-trang-thai"></a>
 ## 4. Chuẩn hóa trạng thái và Lịch sử các đợt review
