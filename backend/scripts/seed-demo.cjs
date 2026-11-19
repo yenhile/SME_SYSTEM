@@ -3,6 +3,7 @@
  * Chạy sau `npm run prisma:push`, `npm run prisma:seed` (seed bật PA1 và đặt định mức) và `npm run build`:
  *     npm run seed:demo            (thêm dữ liệu demo nếu chưa có)
  *     npm run seed:demo -- --reset (gỡ dữ liệu demo cũ rồi dựng lại)
+ *     npm run seed:demo -- --append (giữ dữ liệu demo cũ, thêm một bộ mới; mã số thuế và mã hồ sơ đánh tiếp sau mã lớn nhất đang có)
  *
  * - Đây là dữ liệu MÔ PHỎNG, không phải dữ liệu thật và không dùng để huấn luyện mô hình.
  * - Giờ xử lý lấy từ backend/prisma/demo-cases.json (hồ sơ giả lập). Thời điểm vào/ra từng công đoạn tính bằng đúng hàm giờ làm việc
@@ -38,6 +39,8 @@ const cal = calendarByVersion(CAL_VERSION);
 const NOW = new Date();
 const H = 3600000;
 const RESET = process.argv.includes('--reset');
+const APPEND = process.argv.includes('--append');
+if (RESET && APPEND) { console.error('Chỉ dùng một trong hai: --reset hoặc --append.'); process.exit(1); }
 if (process.env.NODE_ENV === 'production') { console.error('seed:demo không chạy trên môi trường production.'); process.exit(1); }
 // Mật khẩu lấy từ DEMO_PASSWORD; không đặt thì sinh ngẫu nhiên và in ra một lần (không ghi cố định trong mã nguồn/tài liệu).
 const GENERATED_PASSWORD = !process.env.DEMO_PASSWORD;
@@ -125,8 +128,8 @@ async function main() {
   const SLA = { TIEP_NHAN: stage.TIEP_NHAN.standardSlaHours, THAM_DINH: stage.THAM_DINH.standardSlaHours, HOAN_TAT: stage.HOAN_TAT.standardSlaHours };
 
   const existing = await db.company.count({ where: { taxCode: { startsWith: 'DEMO' } } });
-  if (existing && !RESET) { console.log(`Đã có ${existing} công ty demo; bỏ qua. Dùng --reset để dựng lại.`); await app.close(); return; }
-  if (existing) {
+  if (existing && !RESET && !APPEND) { console.log(`Đã có ${existing} công ty demo; bỏ qua. Dùng --reset để dựng lại hoặc --append để thêm bộ mới.`); await app.close(); return; }
+  if (existing && RESET) {
     const demoLoan = { company: { taxCode: { startsWith: 'DEMO' } } };
     // Thông báo, yêu cầu điều chuyển và đề nghị cổng không tự xóa theo hồ sơ. Hồ sơ demo gắn với đề nghị cổng thì dừng thay vì xóa dữ liệu của doanh nghiệp.
     const linkedPortal = await db.portalRequest.count({ where: { loan: demoLoan } });
@@ -191,8 +194,16 @@ async function main() {
   ];
   const plan = [...done, ...open.map(([kind, elapsed, status]) => ({ c: take(cleanPool, 1)[0], kind, elapsed, status }))];
 
+  // Mã số thuế DEMO và mã hồ sơ SME-<ngày>-<số> đánh tiếp sau số lớn nhất đang có để không trùng dữ liệu còn giữ lại.
   let companySeq = 100000, created = 0, tnRound = 0, tdRound = 0, doneRound = 0;
+  for (const { taxCode } of await db.company.findMany({ where: { taxCode: { startsWith: 'DEMO' } }, select: { taxCode: true } })) {
+    const n = Number(taxCode.slice(4)); if (Number.isInteger(n) && n > companySeq) companySeq = n;
+  }
   const codeSeq = {}, openIds = [];
+  for (const { applicationCode } of await db.loanApplication.findMany({ where: { applicationCode: { startsWith: 'SME-' } }, select: { applicationCode: true } })) {
+    const m = /^SME-(\d{8})-(\d+)$/.exec(applicationCode);
+    if (m && Number(m[2]) >= 8000 && Number(m[2]) > (codeSeq[m[1]] || 0)) codeSeq[m[1]] = Number(m[2]);
+  }
   const base = { slaPolicy: 'PA1', slaCalendarVersion: CAL_VERSION };
   for (const item of plan) {
     const { c, kind } = item;
