@@ -42,7 +42,7 @@ if (process.env.NODE_ENV === 'production') { console.error('seed:demo không ch�
 // Mật khẩu lấy từ DEMO_PASSWORD; không đặt thì sinh ngẫu nhiên và in ra một lần (không ghi cố định trong mã nguồn/tài liệu).
 const GENERATED_PASSWORD = !process.env.DEMO_PASSWORD;
 const PASSWORD = process.env.DEMO_PASSWORD || require('node:crypto').randomBytes(9).toString('base64url') + 'aA1';
-const N_DONE = 179;   // + 15 hồ sơ đang mở = 194
+const N_DONE = 179;   // + 35 hồ sơ đang mở = 214
 
 function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const rnd = mulberry32(20261107);
@@ -166,6 +166,12 @@ async function main() {
     ['TN_WAIT', 0.38 * tn, 'SUPPLEMENT_REQUIRED'], ['TN_WAIT', 0.65 * tn, 'SUPPLEMENT_REQUIRED'],
     ['TD', 0.08 * td, 'PENDING_APPRAISAL'], ['TD', 0.28 * td, 'PENDING_APPRAISAL'], ['TD', 0.48 * td, 'PENDING_APPRAISAL'], ['TD', 0.74 * td, 'PENDING_APPRAISAL'],
     ['TD', 0.83 * td, 'PENDING_APPRAISAL'], ['TD', 0.95 * td, 'PENDING_APPRAISAL'], ['TD', 1.1 * td, 'PENDING_APPRAISAL'],
+    // Bổ sung 20 hồ sơ đang mở (18/11/2026) để mỗi cán bộ tín dụng có nhiều hồ sơ ở các mức SLA khác nhau khi trình diễn.
+    ['TN', 0.05 * tn, 'RECEIVED'], ['TN', 0.12 * tn, 'CHECKED'], ['TN', 0.20 * tn, 'RECEIVED'], ['TN', 0.33 * tn, 'CHECKED'], ['TN', 0.45 * tn, 'RECEIVED'], ['TN', 0.62 * tn, 'CHECKED'],
+    ['TN', 0.72 * tn, 'RECEIVED'], ['TN', 0.82 * tn, 'CHECKED'], ['TN', 0.92 * tn, 'RECEIVED'], ['TN', 1.05 * tn, 'CHECKED'],
+    ['TN_WAIT', 0.22 * tn, 'SUPPLEMENT_REQUIRED'], ['TN_WAIT', 0.50 * tn, 'SUPPLEMENT_REQUIRED'],
+    ['TD', 0.12 * td, 'PENDING_APPRAISAL'], ['TD', 0.22 * td, 'PENDING_APPRAISAL'], ['TD', 0.38 * td, 'PENDING_APPRAISAL'], ['TD', 0.55 * td, 'PENDING_APPRAISAL'],
+    ['TD', 0.66 * td, 'PENDING_APPRAISAL'], ['TD', 0.80 * td, 'PENDING_APPRAISAL'], ['TD', 0.90 * td, 'PENDING_APPRAISAL'], ['TD', 1.04 * td, 'PENDING_APPRAISAL'],
   ];
   const plan = [
     ...fixture.slice(0, N_DONE).map(c => ({ c, kind: 'DONE' })),
