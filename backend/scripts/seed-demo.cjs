@@ -1,4 +1,4 @@
-/* Dựng dữ liệu DEMO: 7 tài khoản mô phỏng + 194 hồ sơ trong quá khứ kèm lịch sử SLA (PA1) + dự báo cho hồ sơ đang mở.
+/* Dựng dữ liệu DEMO: 7 tài khoản mô phỏng + 200 hồ sơ (166 đã kết thúc gồm Phê duyệt, Từ chối, Đóng quá hạn bổ sung; 34 đang mở) chia đều cho 3 CBTD, kèm lịch sử SLA (PA1) + dự báo cho hồ sơ đang mở.
  *
  * Chạy sau `npm run prisma:push`, `npm run prisma:seed` (seed bật PA1 và đặt định mức) và `npm run build`:
  *     npm run seed:demo            (thêm dữ liệu demo nếu chưa có)
@@ -42,7 +42,6 @@ if (process.env.NODE_ENV === 'production') { console.error('seed:demo không ch�
 // Mật khẩu lấy từ DEMO_PASSWORD; không đặt thì sinh ngẫu nhiên và in ra một lần (không ghi cố định trong mã nguồn/tài liệu).
 const GENERATED_PASSWORD = !process.env.DEMO_PASSWORD;
 const PASSWORD = process.env.DEMO_PASSWORD || require('node:crypto').randomBytes(9).toString('base64url') + 'aA1';
-const N_DONE = 179;   // + 15 hồ sơ đang mở = 194
 
 function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const rnd = mulberry32(20261107);
@@ -157,22 +156,42 @@ async function main() {
     await usersService.create({ username, password: PASSWORD, fullName, email: `${username}@sme-demo.example`, branchName: 'Chi nhánh TP.HCM', roles });
     madeUsers++;
   }
-  const users = Object.fromEntries((await db.user.findMany({ where: { username: { in: [...OPEN_POOL, ...TQ] } } })).map(u => [u.username, u.id]));
+  const users = Object.fromEntries((await db.user.findMany({ where: { username: { in: [...OPEN_POOL, ...TQ, 'nhung.nguyen'] } } })).map(u => [u.username, u.id]));
 
   // ----- kế hoạch hồ sơ: định mức mở theo tỷ lệ so với SLA hiện hành -----
   const tn = SLA.TIEP_NHAN, td = SLA.THAM_DINH;
+  // ----- kế hoạch 200 hồ sơ demo (19/11/2026): 166 đã kết thúc (lịch sử cho biểu đồ) + 34 đang mở, chia đều cho 3 CBTD, đủ mọi trạng thái -----
+  // Đã kết thúc: Phê duyệt 100, Từ chối 54, Đóng do quá hạn bổ sung 12. Đang mở: Tiếp nhận (RECEIVED/CHECKED) 12, Chờ bổ sung 6, Thẩm định 16.
+  // Trễ hạn 23 hồ sơ (khoảng 11%): 18 hồ sơ đã kết thúc có công đoạn vượt SLA và 5 hồ sơ đang mở đã quá hạn; còn lại đúng hạn.
+  // Mẫu thời gian trong demo-cases.json được dùng lại theo vòng khi cần nhiều hồ sơ hơn số mẫu; tên doanh nghiệp, ngày và người phụ trách vẫn khác nhau.
+  const cleanPool = fixture.filter(c => c.tn <= 0.9 * tn && c.td <= 0.9 * td && c.wait <= 60);
+  const latePool = fixture.filter(c => c.td > td && c.td <= 2.5 * td && c.tn <= tn);
+  const cursors = new Map();
+  const take = (pool, n) => {
+    if (!pool.length) throw new Error('Không có mẫu hồ sơ phù hợp trong demo-cases.json cho định mức SLA hiện hành.');
+    const from = cursors.get(pool) || 0; cursors.set(pool, from + n);
+    return Array.from({ length: n }, (_, i) => pool[(from + i) % pool.length]);
+  };
+  const done = [
+    ...take(cleanPool, 89).map(c => ({ c, kind: 'DONE', outcome: 'APPROVED' })),
+    ...take(cleanPool, 47).map(c => ({ c, kind: 'DONE', outcome: 'REJECTED' })),
+    ...take(latePool, 11).map(c => ({ c, kind: 'DONE', outcome: 'APPROVED' })),
+    ...take(latePool, 7).map(c => ({ c, kind: 'DONE', outcome: 'REJECTED' })),
+    ...take(cleanPool, 12).map(c => ({ c, kind: 'CLOSED' })),
+  ];
   const open = [
-    ['TN', 0.08 * tn, 'RECEIVED'], ['TN', 0.15 * tn, 'CHECKED'], ['TN', 0.26 * tn, 'CHECKED'], ['TN', 0.55 * tn, 'RECEIVED'], ['TN', 0.88 * tn, 'CHECKED'], ['TN', 0.96 * tn, 'RECEIVED'],
-    ['TN_WAIT', 0.38 * tn, 'SUPPLEMENT_REQUIRED'], ['TN_WAIT', 0.65 * tn, 'SUPPLEMENT_REQUIRED'],
-    ['TD', 0.08 * td, 'PENDING_APPRAISAL'], ['TD', 0.28 * td, 'PENDING_APPRAISAL'], ['TD', 0.48 * td, 'PENDING_APPRAISAL'], ['TD', 0.74 * td, 'PENDING_APPRAISAL'],
-    ['TD', 0.83 * td, 'PENDING_APPRAISAL'], ['TD', 0.95 * td, 'PENDING_APPRAISAL'], ['TD', 1.1 * td, 'PENDING_APPRAISAL'],
+    ['TN', 0.06 * tn, 'RECEIVED'], ['TN', 0.18 * tn, 'RECEIVED'], ['TN', 0.35 * tn, 'RECEIVED'], ['TN', 0.55 * tn, 'RECEIVED'], ['TN', 0.80 * tn, 'RECEIVED'], ['TN', 1.06 * tn, 'RECEIVED'],
+    ['TN', 0.10 * tn, 'CHECKED'], ['TN', 0.24 * tn, 'CHECKED'], ['TN', 0.42 * tn, 'CHECKED'], ['TN', 0.68 * tn, 'CHECKED'], ['TN', 0.90 * tn, 'CHECKED'], ['TN', 1.12 * tn, 'CHECKED'],
+    ['TN_WAIT', 0.12 * tn, 'SUPPLEMENT_REQUIRED'], ['TN_WAIT', 0.25 * tn, 'SUPPLEMENT_REQUIRED'], ['TN_WAIT', 0.40 * tn, 'SUPPLEMENT_REQUIRED'],
+    ['TN_WAIT', 0.55 * tn, 'SUPPLEMENT_REQUIRED'], ['TN_WAIT', 0.70 * tn, 'SUPPLEMENT_REQUIRED'], ['TN_WAIT', 0.85 * tn, 'SUPPLEMENT_REQUIRED'],
+    ['TD', 0.08 * td, 'PENDING_APPRAISAL'], ['TD', 0.15 * td, 'PENDING_APPRAISAL'], ['TD', 0.22 * td, 'PENDING_APPRAISAL'], ['TD', 0.30 * td, 'PENDING_APPRAISAL'],
+    ['TD', 0.38 * td, 'PENDING_APPRAISAL'], ['TD', 0.48 * td, 'PENDING_APPRAISAL'], ['TD', 0.55 * td, 'PENDING_APPRAISAL'], ['TD', 0.62 * td, 'PENDING_APPRAISAL'],
+    ['TD', 0.70 * td, 'PENDING_APPRAISAL'], ['TD', 0.78 * td, 'PENDING_APPRAISAL'], ['TD', 0.85 * td, 'PENDING_APPRAISAL'], ['TD', 0.90 * td, 'PENDING_APPRAISAL'],
+    ['TD', 0.95 * td, 'PENDING_APPRAISAL'], ['TD', 1.04 * td, 'PENDING_APPRAISAL'], ['TD', 1.12 * td, 'PENDING_APPRAISAL'], ['TD', 1.25 * td, 'PENDING_APPRAISAL'],
   ];
-  const plan = [
-    ...fixture.slice(0, N_DONE).map(c => ({ c, kind: 'DONE' })),
-    ...open.map(([kind, elapsed, status], i) => ({ c: fixture[N_DONE + i], kind, elapsed, status })),
-  ];
+  const plan = [...done, ...open.map(([kind, elapsed, status]) => ({ c: take(cleanPool, 1)[0], kind, elapsed, status }))];
 
-  let companySeq = 100000, created = 0, tnRound = 0, tdRound = 0;
+  let companySeq = 100000, created = 0, tnRound = 0, tdRound = 0, doneRound = 0;
   const codeSeq = {}, openIds = [];
   const base = { slaPolicy: 'PA1', slaCalendarVersion: CAL_VERSION };
   for (const item of plan) {
@@ -180,10 +199,14 @@ async function main() {
     let tl;
     if (kind === 'DONE') {
       for (let t = 0; t < 60 && !tl; t++) {
-        const cand = forward(randomWorkStart(new Date('2026-01-12T01:00:00Z'), new Date(NOW.getTime() - 25 * 24 * H)), c, splitWaits(c));
-        if (cand.tdExit.getTime() < NOW.getTime() - 2 * 24 * H) tl = cand;
+        const cand = forward(randomWorkStart(new Date('2026-01-12T01:00:00Z'), new Date(NOW.getTime() - 6 * 24 * H)), c, splitWaits(c));
+        if (cand.tdExit.getTime() < NOW.getTime() - 6 * H) tl = cand;
       }
       if (!tl) continue;
+    } else if (kind === 'CLOSED') {
+      const start = randomWorkStart(new Date(NOW.getTime() - 90 * 24 * H), new Date(NOW.getTime() - 32 * 24 * H));
+      const pStart = new Date(start.getTime() + 2 * 24 * H), closeAt = new Date(pStart.getTime() + (11 + Math.floor(rnd() * 4)) * 24 * H);
+      tl = { start, tnExit: closeAt, tdExit: closeAt, pauses: [{ start: pStart, end: closeAt }] };
     } else if (kind === 'TN') {
       tl = { start: solveStart((s) => workingHoursBetween(s, NOW, cal), item.elapsed), pauses: [] };
     } else if (kind === 'TN_WAIT') {
@@ -194,7 +217,7 @@ async function main() {
       tl = forward(solveStart((s) => workingHoursBetween(forward(s, cc, w).tdEnter, NOW, cal), item.elapsed), cc, w);
     }
 
-    const owner = kind === 'DONE' ? pick(CBTD) : (kind === 'TD' ? OPEN_POOL[tdRound++ % OPEN_POOL.length] : OPEN_POOL[tnRound++ % OPEN_POOL.length]);
+    const owner = (kind === 'DONE' || kind === 'CLOSED') ? CBTD[doneRound++ % CBTD.length] : (kind === 'TD' ? OPEN_POOL[tdRound++ % OPEN_POOL.length] : OPEN_POOL[tnRound++ % OPEN_POOL.length]);
     const cbtd = owner, tq = pick(TQ.filter(x => x !== cbtd));
     const day = tl.start.toISOString().slice(0, 10).replace(/-/g, '');
     codeSeq[day] = (codeSeq[day] || 8000) + 1;
@@ -205,19 +228,20 @@ async function main() {
       representativeName: pick(REPRESENTATIVES), phone: '09' + String(Math.floor(rnd() * 1e8)).padStart(8, '0'), address: `${1 + Math.floor(rnd() * 200)} đường mô phỏng, ${pick(ADDRESSES)}`,
     } });
     const proposed = Math.round(c.amount * 1e9);
-    const done = kind === 'DONE';
-    const approved = done && rnd() < 0.78;
+    const done = kind === 'DONE', closed = kind === 'CLOSED', finished = done || closed;
+    const approved = done && item.outcome === 'APPROVED';
     const rej = pick(REJECT);
     const loanType = c.term >= 12 && c.amount > 3 ? 'VAY_DAU_TU_TSCD' : 'VAY_VON_LUU_DONG';
     const band = bandFor(loanType, c.term);
     const loan = await db.loanApplication.create({ data: {
       applicationCode: `SME-${day}-${codeSeq[day]}`, companyId: company.id, loanPurpose: pick(['Bổ sung vốn lưu động', 'Mua nguyên vật liệu', 'Mở rộng kho xưởng', 'Đầu tư máy móc thiết bị']),
       loanType, proposedAmount: proposed, officialAmount: proposed, loanTermMonths: c.term,
-      currentStage: done ? 'HOAN_TAT' : (kind === 'TD' ? 'THAM_DINH' : 'TIEP_NHAN'), currentStatus: done ? (approved ? 'APPROVED' : 'REJECTED') : item.status,
-      assignedTo: users[cbtd], intakeOfficerId: users[cbtd], businessPolicyVersion: BRANCH_POLICY, isDocumentComplete: !done ? (item.status !== 'RECEIVED' && item.status !== 'SUPPLEMENT_REQUIRED') : true,
-      supplementCount: kind === 'TN_WAIT' ? 1 : tl.pauses.length, createdAt: tl.start, completedAt: done ? tl.tdExit : null,
+      currentStage: finished ? 'HOAN_TAT' : (kind === 'TD' ? 'THAM_DINH' : 'TIEP_NHAN'), currentStatus: closed ? 'CLOSED_TIMEOUT' : done ? (approved ? 'APPROVED' : 'REJECTED') : item.status,
+      assignedTo: users[cbtd], intakeOfficerId: users[cbtd], businessPolicyVersion: BRANCH_POLICY, isDocumentComplete: closed ? false : !done ? (item.status !== 'RECEIVED' && item.status !== 'SUPPLEMENT_REQUIRED') : true,
+      supplementCount: kind === 'TN_WAIT' ? 1 : tl.pauses.length, createdAt: tl.start, completedAt: finished ? tl.tdExit : null,
       ...(done && approved ? { approvedAmount: Math.round(proposed * between(0.8, 1)), interestRate: rateInBand(band, rnd()) } : {}),
       ...(done && !approved ? { rejectionReasonCode: rej[0], rejectionNote: rej[1] } : {}),
+      ...(closed ? { rejectionReasonCode: 'TC05', rejectionNote: 'Quá hạn bổ sung chứng từ, đóng hồ sơ (hồ sơ mô phỏng).' } : {}),
     } });
 
     const closeStage = async (code, enteredAt, exitedAt, pauses, handledBy) => {
@@ -230,7 +254,11 @@ async function main() {
       for (const p of pauses) await db.supplementRequest.create({ data: { applicationId: loan.id, requestContent: 'Đề nghị doanh nghiệp bổ sung chứng từ còn thiếu', requestedBy: users[cbtd],
         requestedAt: p.start, deadlineAt: new Date(p.start.getTime() + 10 * 24 * H), resolvedAt: p.end, status: p.end ? 'RESOLVED' : 'PENDING' } });
     };
-    if (done) {
+    if (closed) {
+      await closeStage('TIEP_NHAN', tl.start, tl.tnExit, tl.pauses, users[cbtd]);
+      await db.supplementRequest.create({ data: { applicationId: loan.id, requestContent: 'Đề nghị doanh nghiệp bổ sung chứng từ còn thiếu', requestedBy: users[cbtd], requestedAt: tl.pauses[0].start, deadlineAt: new Date(tl.pauses[0].start.getTime() + 10 * 24 * H), status: 'PENDING' } });
+      await db.applicationStageHistory.create({ data: { applicationId: loan.id, stageId: stage.HOAN_TAT.id, enteredAt: tl.tnExit, exitedAt: tl.tnExit, actualDurationHours: 0, netWorkDurationHours: 0, slaStandardHours: SLA.HOAN_TAT, handledBy: users['nhung.nguyen'], ...base, notes: 'Đóng hồ sơ do quá hạn bổ sung: doanh nghiệp không bổ sung chứng từ sau 10 ngày (hồ sơ mô phỏng).' } });
+    } else if (done) {
       await closeStage('TIEP_NHAN', tl.start, tl.tnExit, tl.pauses, users[cbtd]); await supplements(tl.pauses);
       await closeStage('THAM_DINH', tl.tdEnter, tl.tdExit, [], users[tq]);
       await closeStage('HOAN_TAT', tl.tdExit, tl.tdExit, [], users[tq]);
@@ -253,7 +281,7 @@ async function main() {
       await db.appraisalReportEvent.create({ data: { reportId: report.id, actorId: users[cbtd], kind: 'SUBMITTED', clientRequestId: 'demo-submit-' + loan.id, payloadHash: digest({ demo: loan.id }), payload: {}, createdAt: tl.tdEnter } });
       if (clarifying) await db.appraisalReportEvent.create({ data: { reportId: report.id, actorId: users[tq], kind: 'CLARIFICATION_REQUESTED', clientRequestId: 'demo-clarify-' + loan.id, payloadHash: digest({ demo: 'c' + loan.id }), payload: { message: 'Đề nghị làm rõ nguồn trả nợ và tình hình công nợ phải thu (hồ sơ mô phỏng).' }, createdAt: new Date(tl.tdEnter.getTime() + 0.6 * (NOW.getTime() - tl.tdEnter.getTime())) } });
     }
-    if (!done) openIds.push(loan.id);
+    if (!finished) openIds.push(loan.id);
     created++;
   }
 
