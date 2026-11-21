@@ -90,23 +90,27 @@ test('the dashboard coordination shortcut is offered only to the role that can r
   for (const role of ['QUAN_LY', 'ADMIN']) assert.equal(nav.canOpenTab('assignments', role), true, role);
 });
 
-test('every role sees the whole menu; entries outside its permission are locked, not hidden', () => {
+test('each role sees only the menu entries it may open; other entries are hidden, not locked', () => {
   for (const role of ROLES) {
-    const menu = nav.menuItems(role);
-    assert.deepEqual(menu.map(item => item.tab), ALL_TABS, role);
-    for (const item of menu) {
-      const expected = item.unavailable ? 'unavailable' : ALLOWED[role].includes(item.tab) ? 'open' : 'locked';
-      assert.equal(item.access, expected, `${role}:${item.tab}`);
-    }
+    const shown = nav.allowedNavItems(role).map(item => item.tab);
+    assert.deepEqual(shown, ALL_TABS.filter(tab => ALLOWED[role].includes(tab)), role);
+    for (const tab of shown) assert.equal(nav.canOpenTab(tab, role), true, `${role}:${tab}`);
   }
-  assert.deepEqual(nav.menuItems(null).map(item => item.access), ALL_TABS.map(tab => nav.NAV_ITEMS.find(item => item.tab === tab).unavailable ? 'unavailable' : 'locked'));
+  assert.deepEqual(nav.allowedNavItems(null), []);
+  assert.deepEqual(nav.allowedNavItems(undefined), []);
+  assert.equal('menuItems' in nav, false);
 });
 
-test('a locked entry stays unreachable even though it is shown', () => {
-  for (const item of nav.menuItems('CBTD').filter(entry => entry.access === 'locked')) {
-    assert.equal(nav.canOpenTab(item.tab, 'CBTD'), false, item.tab);
-    assert.equal(nav.resolveTab(item.tab, 'CBTD'), 'dashboard', item.tab);
-  }
+test('the sidebar renders only visible entries and drops groups left empty', async () => {
+  const navbar = await readFile(new URL('../src/components/Navbar.tsx', import.meta.url), 'utf8');
+  assert.match(navbar, /allowedNavItems\(activeRole\)/);
+  assert.doesNotMatch(navbar, /is-locked|all-locked|không có quyền truy cập/);
+  assert.match(navbar, /if \(!items\.length\) return null;/);
+  const theme = await readFile(new URL('../src/theme.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(theme, /is-locked|all-locked/);
+  const groupsShown = role => nav.NAV_GROUPS.filter(group => nav.allowedNavItems(role).some(item => item.group === group.id)).map(group => group.id);
+  assert.deepEqual(groupsShown('CBTD'), ['overview', 'operations', 'loans']);
+  assert.deepEqual(groupsShown('ADMIN'), ['overview', 'operations', 'loans', 'system']);
 });
 
 test('every role lands on the dashboard after signing in', () => {
