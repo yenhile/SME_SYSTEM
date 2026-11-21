@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth, ROLE_NAMES } from '../context/AuthContext';
 import { BarChart3, LogOut, Settings, FolderOpen, History, ChevronDown, CircleUserRound, Languages, CircleHelp, ShieldCheck, KeyRound } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
-import { NAV_GROUPS, menuItems, type Tab } from '../navigation';
+import { NAV_GROUPS, allowedNavItems, type Tab } from '../navigation';
 import { NotificationBell } from './NotificationBell';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { AccountDialog, type AccountDialogKind, type AccountPageKind } from './AccountDialogs';
@@ -25,6 +25,7 @@ export function Navbar({ activeTab, onTabChange, onOpenAccountPage, onOpenIntake
   const accountRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const navItems = allowedNavItems(activeRole);
   const displayName = user?.fullName || user?.username || '';
   const initial = displayName.trim().split(/\s+/).at(-1)?.charAt(0).toLocaleUpperCase('vi-VN') || 'U';
 
@@ -65,30 +66,24 @@ export function Navbar({ activeTab, onTabChange, onOpenAccountPage, onOpenIntake
       </div>
       <nav aria-label="Menu chính" className="grouped-navigation">
         {NAV_GROUPS.map(group => {
-          const items = menuItems(activeRole).filter(item => item.group === group.id);
+          const items = navItems.filter(item => item.group === group.id);
           if (!items.length) return null;
           const Icon = groupIcons[group.id];
-          const allLocked = items.every(item => item.access === 'locked');
-          return <section className={`nav-group${allLocked ? ' all-locked' : ''}`} key={group.id} aria-labelledby={`nav-group-${group.id}`}>
+          return <section className="nav-group" key={group.id} aria-labelledby={`nav-group-${group.id}`}>
             <h2 id={`nav-group-${group.id}`} className="nav-group-heading"><Icon size={18} />{group.label}</h2>
             <div className="nav-group-items">
-              {items.map(item => {
-                const locked = item.access === 'locked';
-                return <button
-                  key={item.tab}
-                  data-tab={item.tab}
-                  disabled={item.access === 'unavailable'}
-                  aria-disabled={locked || undefined}
-                  title={item.access === 'unavailable' ? `${item.label}: chức năng chưa triển khai.` : locked ? 'Vai trò của bạn không có quyền truy cập mục này.' : undefined}
-                  aria-current={activeTab === item.tab ? 'page' : undefined}
-                  className={`nav-tab-btn ${activeTab === item.tab ? 'active' : ''}${locked ? ' is-locked' : ''}`}
-                  onClick={() => { if (!locked) onTabChange(item.tab); }}
-                >
-                  <span>{item.label}</span>
-                  {locked && <span className="nav-sr-only">, không có quyền truy cập</span>}
-                  {item.unavailable && <small>Chưa triển khai</small>}
-                </button>;
-              })}
+              {items.map(item => <button
+                key={item.tab}
+                data-tab={item.tab}
+                disabled={item.unavailable}
+                title={item.unavailable ? `${item.label}: chức năng chưa triển khai.` : undefined}
+                aria-current={activeTab === item.tab ? 'page' : undefined}
+                className={`nav-tab-btn ${activeTab === item.tab ? 'active' : ''}`}
+                onClick={() => onTabChange(item.tab)}
+              >
+                <span>{item.label}</span>
+                {item.unavailable && <small>Chưa triển khai</small>}
+              </button>)}
             </div>
           </section>;
         })}

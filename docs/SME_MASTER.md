@@ -811,6 +811,16 @@ Kiểm chứng: `frontend/scripts/check-coordination-ui.mjs` thêm 3 test (đỏ
 
 **Kanban:** `check-sme-rollout` và các script tích hợp không dùng Kanban; CSS `.kanban-*` trong `theme.css` còn lại, chờ dọn riêng.
 
+### Menu chỉ hiện mục trong quyền — ngày 21/11/2026
+
+**PO duyệt (phương án A):** mỗi vai trò chỉ thấy mục menu mình được mở; mục ngoài quyền ẩn hẳn ở mọi khổ màn, nhóm không còn mục thì ẩn cả tiêu đề. Thay quyết định "menu giữ đủ mục, mục ngoài quyền làm mờ" ngày 05/11/2026. Quyền vai trò, route, API, `canOpenTab`/`resolveTab` không đổi; gõ đường dẫn trang ngoài quyền vẫn về Dashboard, backend vẫn chặn.
+
+**Kết quả:** CBTD 3 mục (Tổng quan, Cài đặt vận hành, Quản lý hồ sơ), Thẩm quyền 4, Quản lý 5, Admin đủ 9 mục ở chế độ chỉ xem. `Navbar` dựng menu từ `allowedNavItems`; bỏ `menuItems`/`MenuAccess` ở `navigation.ts`, bỏ CSS `.is-locked`, `.all-locked`, `.nav-sr-only` ở `theme.css`. Lỗi tương phản 3,63:1 của chữ menu mờ hết vì không còn mục mờ.
+
+**Kiểm chứng:** test đỏ trước ở `check-navigation.mjs` (2 ca mới: mỗi vai trò chỉ thấy đúng mục được mở; Navbar và CSS không còn trạng thái khóa, nhóm rỗng bị bỏ), sau sửa 15/15; toàn bộ 26 script `test:*` frontend không lỗi; `tsc` đạt; Vite build đạt. **Kiểm trên trình duyệt:** PO tự đăng nhập và kiểm menu trên hệ thống local (cổng 5173, sau khi bật lại container PostgreSQL), xác nhận đạt yêu cầu ngày 21/11/2026.
+
+**Backlog (chờ PO chốt):** sau khi ẩn, nhóm "Cài đặt vận hành" của CBTD, Quản lý, Thẩm quyền chỉ còn "Liên hệ doanh nghiệp"; cân nhắc chuyển mục này sang "Quản lý hồ sơ" hoặc đổi tên nhóm.
+
 ---
 
 <a id="review-vai-tro-tham-quyen"></a>

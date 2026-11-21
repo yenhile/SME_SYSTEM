@@ -6,7 +6,7 @@ interface NavItem {
   tab: Tab;
   group: GroupId;
   label: string;
-  /** Vai trò được vào mục này; vai trò khác thấy mục ở dạng khóa và không mở được trang dù biết đường dẫn. Khớp quyền backend. */
+  /** Vai trò được vào mục này; vai trò khác không thấy mục trên menu và không mở được trang dù biết đường dẫn. Khớp quyền backend. */
   roles: readonly RoleCode[];
   unavailable?: boolean;
 }
@@ -36,17 +36,9 @@ export const NAV_ITEMS: NavItem[] = [
 
 type RoleInput = RoleCode | null | undefined;
 
-/** Các mục menu mà vai trò đang dùng có quyền. Chưa có vai trò thì không có mục nào. */
+/** Các mục menu vai trò đang dùng được thấy, cũng là các mục có quyền. Chưa có vai trò thì không có mục nào. */
 export function allowedNavItems(role: RoleInput): NavItem[] {
   return role ? NAV_ITEMS.filter(item => item.roles.includes(role)) : [];
-}
-
-export type MenuAccess = 'open' | 'locked' | 'unavailable';
-
-/** Toàn bộ menu kèm tình trạng với vai trò đang dùng: mục ngoài quyền vẫn hiện nhưng bị khóa. */
-export function menuItems(role: RoleInput): (NavItem & { access: MenuAccess })[] {
-  const allowed = new Set(allowedNavItems(role).map(item => item.tab));
-  return NAV_ITEMS.map(item => ({ ...item, access: item.unavailable ? 'unavailable' : allowed.has(item.tab) ? 'open' : 'locked' }));
 }
 
 export function canOpenTab(tab: Tab, role: RoleInput): boolean {
